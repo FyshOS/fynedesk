@@ -1,11 +1,10 @@
 package main
 
-import efl "github.com/fyne-io/fyne/desktop"
-
 import "github.com/fyne-io/desktop"
+import "github.com/fyne-io/desktop/cmd/fynedesk/driver"
 
 func main() {
-	app := efl.NewApp()
+	app := driver.NewApp()
 	desk := desktop.NewDesktop(app)
 
 	desk.Show()
