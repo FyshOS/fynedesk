@@ -24,7 +24,7 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 }
 
 func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	return fyne.NewSize(1024, 768)
+	return fyne.NewSize(1280, 720)
 }
 
 func isEmbedded() bool {
