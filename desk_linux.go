@@ -27,11 +27,10 @@ func isEmbedded() bool {
 	return env != nil
 }
 
-// NewDesktopWindow creates a new desktop window (fullscreen for main usage
-// or a smaller window when used "embedded" for testing).
-// This will automatically detect which mode to run in based on the presence
-// of a DISPLAY or WAYLAND_DISPLAY environment variable.
-func NewDesktopWindow(app fyne.App) fyne.Window {
+// newDesktopWindow will return a new window based the current environment.
+// When running in an existing desktop then load a window.
+// Otherwise let's return a desktop root!
+func newDesktopWindow(app fyne.App) fyne.Window {
 	if isEmbedded() {
 		return app.NewWindow("Fyne Desktop")
 	}

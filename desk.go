@@ -35,8 +35,13 @@ func newDeskLayout(bar fyne.CanvasObject) fyne.CanvasObject {
 
 // NewDesktop creates a new desktop in fullscreen for main usage
 // or a window in the current desktop for test purposes.
+// This will automatically detect which mode to run in based on the presence
+// of a DISPLAY or WAYLAND_DISPLAY environment variable on Linux.
+// When run on a different platform it will only run in embedded mode.
+// If run during CI for testing it will return an in-memory window using the
+// fyne/test package.
 func NewDesktop(app fyne.App) fyne.Window {
-	desk := NewDesktopWindow(app)
+	desk := newDesktopWindow(app)
 	initInput()
 
 	desk.SetContent(newDeskLayout(newBar(app)))

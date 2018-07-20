@@ -9,8 +9,8 @@ func isEmbedded() bool {
 	return true
 }
 
-// NewDesktopWindow creates a test window in memory for automated testing.
-func NewDesktopWindow(app fyne.App) fyne.Window {
+// newDesktopWindow creates a test window in memory for automated testing.
+func newDesktopWindow(app fyne.App) fyne.Window {
 	return app.NewWindow("Fyne Desktop")
 }
 
