@@ -41,9 +41,21 @@ func newDesktopWindow(app fyne.App) fyne.Window {
 	return desk
 }
 
+// getWindow returns the window containing the passed CanvasObject.
+// It will return nil if the object is not associated with any existing windows.
+func getWindowForObject(o fyne.CanvasObject) fyne.Window {
+	for _, window := range fyne.GetDriver().AllWindows() {
+		if window.Canvas() != nil && window.Canvas().Contains(o) {
+			return window
+		}
+	}
+
+	return nil
+}
+
 //export onMouseMove
 func onMouseMove(ew C.Ecore_Window, info *C.Ecore_Event_Mouse_Move) {
-	canvas := fyne.GetCanvas(mouse)
+	canvas := getWindowForObject(mouse).Canvas()
 	x := int(float32(info.x) / canvas.Scale())
 	y := int(float32(info.y) / canvas.Scale())
 
