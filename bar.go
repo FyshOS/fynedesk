@@ -27,7 +27,7 @@ func formattedDate() string {
 	return time.Now().Format("2 Jan")
 }
 
-func createClock() *widget.List {
+func createClock() *widget.Box {
 	clock := widget.NewLabel(formattedTime())
 	clock.Alignment = fyne.TextAlignCenter
 	clock.TextStyle.Monospace = true
@@ -37,7 +37,7 @@ func createClock() *widget.List {
 
 	go clockTick(clock, date)
 
-	return widget.NewList(clock, date)
+	return widget.NewHBox(clock, date)
 }
 
 func newBar(app fyne.App) fyne.CanvasObject {
