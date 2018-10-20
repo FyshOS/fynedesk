@@ -3,7 +3,7 @@
 package desktop
 
 /*
-#cgo pkg-config: evas ecore-evas ecore-wl2
+#cgo pkg-config: evas ecore-evas
 #cgo CFLAGS: -DEFL_BETA_API_SUPPORT=1
 #include <Evas.h>
 #include <Ecore.h>
