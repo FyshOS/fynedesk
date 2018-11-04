@@ -6,7 +6,7 @@ import "github.com/fyne-io/fyne"
 import "github.com/fyne-io/fyne/canvas"
 import "github.com/fyne-io/fyne/theme"
 
-func stripesPattern(x, y, w, h int) color.RGBA {
+func stripesPattern(x, y, w, h int) color.Color {
 	if x%20 == y%20 || (x+y)%20 == 0 {
 		return theme.ButtonColor()
 	}

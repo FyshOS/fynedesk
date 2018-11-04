@@ -7,5 +7,5 @@ func main() {
 	app := driver.NewApp()
 	desk := desktop.NewDesktop(app)
 
-	desk.Show()
+	desk.ShowAndRun()
 }
