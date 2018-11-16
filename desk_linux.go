@@ -36,7 +36,7 @@ func newDesktopWindow(app fyne.App) fyne.Window {
 	}
 
 	desk := efl.CreateWindowWithEngine("drm")
-	desk.SetFullscreen(true)
+	desk.SetFullScreen(true)
 
 	return desk
 }
@@ -60,7 +60,7 @@ func onMouseMove(ew C.Ecore_Window, info *C.Ecore_Event_Mouse_Move) {
 	x := int(float32(info.x) / canvas.Scale())
 	y := int(float32(info.y) / canvas.Scale())
 
-	if !window.Fullscreen() {
+	if !window.FullScreen() {
 		x -= theme.Padding()
 		y -= theme.Padding()
 	}
