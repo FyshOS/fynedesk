@@ -4,7 +4,7 @@ package desktop
 
 import "unsafe"
 
-import "github.com/fyne-io/fyne/desktop"
+import "github.com/fyne-io/fyne/driver/efl"
 import "github.com/fyne-io/fyne/theme"
 
 // #cgo pkg-config: ecore ecore-input
@@ -35,7 +35,7 @@ func newDesktopWindow(app fyne.App) fyne.Window {
 		return app.NewWindow("Fyne Desktop")
 	}
 
-	desk := desktop.CreateWindowWithEngine("drm")
+	desk := efl.CreateWindowWithEngine("drm")
 	desk.SetFullscreen(true)
 
 	return desk
@@ -55,11 +55,12 @@ func getWindowForObject(o fyne.CanvasObject) fyne.Window {
 
 //export onMouseMove
 func onMouseMove(ew C.Ecore_Window, info *C.Ecore_Event_Mouse_Move) {
-	canvas := getWindowForObject(mouse).Canvas()
+	window := getWindowForObject(mouse)
+	canvas := window.Canvas()
 	x := int(float32(info.x) / canvas.Scale())
 	y := int(float32(info.y) / canvas.Scale())
 
-	if !fyne.GetWindow(canvas).Fullscreen() {
+	if !window.Fullscreen() {
 		x -= theme.Padding()
 		y -= theme.Padding()
 	}
