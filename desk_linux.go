@@ -17,6 +17,8 @@ import "C"
 
 import "github.com/fyne-io/fyne"
 
+var desk fyne.Window
+
 func isEmbedded() bool {
 	env := C.getenv(C.CString("DISPLAY"))
 	if env != nil {
@@ -32,35 +34,23 @@ func isEmbedded() bool {
 // Otherwise let's return a desktop root!
 func newDesktopWindow(app fyne.App) fyne.Window {
 	if isEmbedded() {
-		return app.NewWindow("Fyne Desktop")
+		desk = app.NewWindow("Fyne Desktop")
+		return desk
 	}
 
-	desk := efl.CreateWindowWithEngine("drm")
+	desk = efl.CreateWindowWithEngine("drm")
 	desk.SetFullScreen(true)
 
 	return desk
 }
 
-// getWindow returns the window containing the passed CanvasObject.
-// It will return nil if the object is not associated with any existing windows.
-func getWindowForObject(o fyne.CanvasObject) fyne.Window {
-	for _, window := range fyne.GetDriver().AllWindows() {
-		if window.Canvas() != nil && window.Canvas().Contains(o) {
-			return window
-		}
-	}
-
-	return nil
-}
-
 //export onMouseMove
 func onMouseMove(ew C.Ecore_Window, info *C.Ecore_Event_Mouse_Move) {
-	window := getWindowForObject(mouse)
-	canvas := window.Canvas()
+	canvas := desk.Canvas()
 	x := int(float32(info.x) / canvas.Scale())
 	y := int(float32(info.y) / canvas.Scale())
 
-	if !window.FullScreen() {
+	if !desk.FullScreen() {
 		x -= theme.Padding()
 		y -= theme.Padding()
 	}
