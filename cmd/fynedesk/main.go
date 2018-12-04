@@ -1,10 +1,10 @@
 package main
 
 import "github.com/fyne-io/desktop"
-import "github.com/fyne-io/desktop/cmd/fynedesk/driver"
+import "github.com/fyne-io/fyne/app"
 
 func main() {
-	app := driver.NewApp()
+	app := app.New()
 	desk := desktop.NewDesktop(app)
 
 	desk.ShowAndRun()
