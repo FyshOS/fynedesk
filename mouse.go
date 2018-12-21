@@ -9,11 +9,10 @@ var mouse *canvas.Image
 
 func newMouse() fyne.CanvasObject {
 	mouse = canvas.NewImageFromFile(wmtheme.PointerDefault.CachePath())
-	mouse.Options.RepeatEvents = true
 
 	if isEmbedded() {
 		// hide the mouse cursor as the parent desktop will paint one
-		mouse.Resize(fyne.NewSize(0, 0))
+		mouse.Hidden = true
 		return mouse
 	}
 
