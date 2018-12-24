@@ -35,11 +35,13 @@ func isEmbedded() bool {
 func newDesktopWindow(app fyne.App) fyne.Window {
 	if isEmbedded() {
 		desk = app.NewWindow("Fyne Desktop")
+		desk.SetPadded(false)
 		return desk
 	}
 
 	desk = efl.CreateWindowWithEngine("drm")
 	desk.SetFullScreen(true)
+	desk.SetPadded(false)
 
 	return desk
 }
