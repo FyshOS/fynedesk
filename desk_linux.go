@@ -4,8 +4,9 @@ package desktop
 
 import "unsafe"
 
-import "github.com/fyne-io/fyne/driver/efl"
-import "github.com/fyne-io/fyne/theme"
+import "fyne.io/fyne"
+import "fyne.io/fyne/driver/efl"
+import "fyne.io/fyne/theme"
 
 // #cgo pkg-config: ecore ecore-input
 // #include <stdlib.h>
@@ -14,8 +15,6 @@ import "github.com/fyne-io/fyne/theme"
 //
 // void onMouseMove_cgo(void *data, int type, void *event_info);
 import "C"
-
-import "github.com/fyne-io/fyne"
 
 var desk fyne.Window
 

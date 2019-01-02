@@ -1,7 +1,7 @@
 package desktop
 
-import "github.com/fyne-io/fyne"
-import "github.com/fyne-io/fyne/canvas"
+import "fyne.io/fyne"
+import "fyne.io/fyne/canvas"
 
 import wmtheme "github.com/fyne-io/desktop/theme"
 

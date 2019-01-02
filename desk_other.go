@@ -5,8 +5,8 @@ package desktop
 import "log"
 import "runtime"
 
-import "github.com/fyne-io/fyne"
-import _ "github.com/fyne-io/fyne/test"
+import "fyne.io/fyne"
+import _ "fyne.io/fyne/test"
 
 func isEmbedded() bool {
 	return true

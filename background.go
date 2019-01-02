@@ -2,9 +2,9 @@ package desktop
 
 import "image/color"
 
-import "github.com/fyne-io/fyne"
-import "github.com/fyne-io/fyne/canvas"
-import "github.com/fyne-io/fyne/theme"
+import "fyne.io/fyne"
+import "fyne.io/fyne/canvas"
+import "fyne.io/fyne/theme"
 
 func stripesPattern(x, y, w, h int) color.Color {
 	if x%20 == y%20 || (x+y)%20 == 0 {

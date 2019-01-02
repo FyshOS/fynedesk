@@ -1,6 +1,6 @@
 package desktop
 
-import "github.com/fyne-io/fyne"
+import "fyne.io/fyne"
 
 type deskLayout struct {
 	bar fyne.CanvasObject

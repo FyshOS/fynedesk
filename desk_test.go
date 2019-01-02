@@ -2,7 +2,7 @@ package desktop
 
 import "testing"
 
-import "github.com/fyne-io/fyne/test"
+import "fyne.io/fyne/test"
 
 import "github.com/stretchr/testify/assert"
 

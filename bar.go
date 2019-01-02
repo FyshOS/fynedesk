@@ -3,10 +3,10 @@ package desktop
 import "os/exec"
 import "time"
 
-import "github.com/fyne-io/fyne"
-import "github.com/fyne-io/fyne/layout"
-import "github.com/fyne-io/fyne/theme"
-import "github.com/fyne-io/fyne/widget"
+import "fyne.io/fyne"
+import "fyne.io/fyne/layout"
+import "fyne.io/fyne/theme"
+import "fyne.io/fyne/widget"
 
 func clockTick(clock, date *widget.Label) {
 	tick := time.NewTicker(time.Second)
