@@ -1,4 +1,5 @@
 // +build !ci
+// +build efl
 
 package desktop
 
