@@ -31,12 +31,19 @@ func formattedDate() string {
 }
 
 func createClock() *widget.Box {
-	clock := widget.NewLabel(formattedTime())
-	clock.Alignment = fyne.TextAlignCenter
-	clock.TextStyle.Monospace = true
-	date := widget.NewLabel(formattedDate())
-	date.Alignment = fyne.TextAlignCenter
-	date.TextStyle.Monospace = true
+	var style fyne.TextStyle
+	style.Monospace = true
+
+	clock := &widget.Label{
+		Text:      formattedTime(),
+		Alignment: fyne.TextAlignCenter,
+		TextStyle: style,
+	}
+	date := &widget.Label{
+		Text:      formattedDate(),
+		Alignment: fyne.TextAlignCenter,
+		TextStyle: style,
+	}
 
 	go clockTick(clock, date)
 
