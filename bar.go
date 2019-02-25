@@ -1,12 +1,15 @@
 package desktop
 
-import "os/exec"
-import "time"
+import (
+	"os/exec"
+	"time"
 
-import "fyne.io/fyne"
-import "fyne.io/fyne/layout"
-import "fyne.io/fyne/theme"
-import "fyne.io/fyne/widget"
+	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/layout"
+	"fyne.io/fyne/theme"
+	"fyne.io/fyne/widget"
+)
 
 func clockTick(clock, date *widget.Label) {
 	tick := time.NewTicker(time.Second)
@@ -54,9 +57,13 @@ func newBar(app fyne.App) fyne.CanvasObject {
 		}),
 	)
 
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, quit, clock),
+	content := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, quit, clock),
 		quit,
 		clock,
 		buttons,
+	)
+	return fyne.NewContainerWithLayout(layout.NewMaxLayout(),
+		canvas.NewRectangle(theme.BackgroundColor()),
+		content,
 	)
 }
