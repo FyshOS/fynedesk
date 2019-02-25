@@ -1,10 +1,26 @@
 package desktop
 
-import "image/color"
+import (
+	"image/color"
+	"os"
 
-import "fyne.io/fyne"
-import "fyne.io/fyne/canvas"
-import "fyne.io/fyne/theme"
+	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/theme"
+)
+
+func wallpaperPath() string {
+	pathEnv := os.Getenv("FYNE_DESKTOP")
+	if pathEnv == "" {
+		return ""
+	}
+
+	if stat, err := os.Stat(pathEnv); os.IsNotExist(err) || !stat.Mode().IsRegular() {
+		return ""
+	}
+
+	return pathEnv
+}
 
 func stripesPattern(x, y, w, h int) color.Color {
 	if x%20 == y%20 || (x+y)%20 == 0 {
@@ -15,5 +31,9 @@ func stripesPattern(x, y, w, h int) color.Color {
 }
 
 func newBackground() fyne.CanvasObject {
+	imagePath := wallpaperPath()
+	if imagePath != "" {
+		return canvas.NewImageFromFile(imagePath)
+	}
 	return canvas.NewRasterWithPixels(stripesPattern)
 }
