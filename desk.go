@@ -45,5 +45,6 @@ func NewDesktop(app fyne.App) fyne.Window {
 	initInput()
 
 	desk.SetContent(newDeskLayout(newBar(app)))
+	desk.SetPadded(false)
 	return desk
 }
