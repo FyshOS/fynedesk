@@ -8,7 +8,7 @@ import wmtheme "github.com/fyne-io/desktop/theme"
 var mouse *canvas.Image
 
 func newMouse() fyne.CanvasObject {
-	mouse = canvas.NewImageFromFile(wmtheme.PointerDefault.CachePath())
+	mouse = canvas.NewImageFromResource(wmtheme.PointerDefault)
 
 	if isEmbedded() {
 		// hide the mouse cursor as the parent desktop will paint one

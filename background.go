@@ -15,5 +15,5 @@ func stripesPattern(x, y, w, h int) color.Color {
 }
 
 func newBackground() fyne.CanvasObject {
-	return canvas.NewRaster(stripesPattern)
+	return canvas.NewRasterWithPixels(stripesPattern)
 }
