@@ -6,6 +6,8 @@ type deskLayout struct {
 	bar fyne.CanvasObject
 }
 
+var desk fyne.Window
+
 func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 	for _, child := range objs {
 		if child == l.bar {
@@ -47,5 +49,12 @@ func NewDesktop(app fyne.App) fyne.Window {
 	}
 
 	desk.SetContent(newDeskLayout(newBar(app)))
+	return desk
+}
+
+func createWindow(a fyne.App) fyne.Window {
+	desk = a.NewWindow("Fyne Desktop")
+	desk.SetPadded(false)
+
 	return desk
 }

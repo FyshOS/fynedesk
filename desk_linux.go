@@ -13,7 +13,6 @@ import (
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
-var desk fyne.Window
 var embed bool
 
 func isEmbedded() bool {
@@ -23,13 +22,6 @@ func isEmbedded() bool {
 	}
 
 	return embed
-}
-
-func createWindow(a fyne.App) fyne.Window {
-	desk = a.NewWindow("Fyne Desktop")
-	desk.SetPadded(false)
-
-	return desk
 }
 
 // newDesktopWindow will return a new window based the current environment.
