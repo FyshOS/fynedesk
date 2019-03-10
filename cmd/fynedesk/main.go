@@ -1,12 +1,20 @@
 package main
 
-import "fyne.io/fyne/app"
+import (
+	"log"
 
-import "github.com/fyne-io/desktop"
+	"fyne.io/fyne/app"
+
+	"github.com/fyne-io/desktop"
+)
 
 func main() {
-	app := app.New()
-	desk := desktop.NewDesktop(app)
+	a := app.New()
+	desk := desktop.NewDesktop(a)
+	if desk == nil {
+		log.Println("Could not create window, exiting")
+		return
+	}
 
 	desk.ShowAndRun()
 }

@@ -17,6 +17,3 @@ func newDesktopWindow(app fyne.App) fyne.Window {
 
 	return nil
 }
-
-func initInput() {
-}

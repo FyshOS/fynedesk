@@ -2,18 +2,92 @@
 
 package desktop
 
-import "os"
+import (
+	"log"
+	"os"
 
-import "fyne.io/fyne"
+	"fyne.io/fyne"
+
+	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/xwindow"
+)
 
 var desk fyne.Window
+var embed bool
 
 func isEmbedded() bool {
-	env := os.Getenv("DISPLAY")
+	env := os.Getenv("WAYLAND_DISPLAY")
 	if env != "" {
-		return true
+		embed = true
 	}
 
-	env = os.Getenv("WAYLAND_DISPLAY")
-	return env != ""
+	return embed
+}
+
+func createWindow(a fyne.App) fyne.Window {
+	desk = a.NewWindow("Fyne Desktop")
+	desk.SetPadded(false)
+
+	return desk
+}
+
+// newDesktopWindow will return a new window based the current environment.
+// When running in an existing desktop then load a window.
+// Otherwise let's return a desktop root!
+func newDesktopWindow(a fyne.App) fyne.Window {
+	if isEmbedded() {
+		return createWindow(a)
+	}
+
+	conn, err := xgbutil.NewConn()
+	if err != nil {
+		log.Println("Failed to connect to the XServer", err)
+		return nil
+	}
+
+	root := conn.RootWin()
+	disp := xproto.Setup(conn.Conn()).Roots[0]
+	log.Println("Default Root", disp.WidthInPixels, "x", disp.HeightInPixels)
+
+	eventMask := xproto.EventMaskVisibilityChange |
+		xproto.EventMaskStructureNotify |
+		xproto.EventMaskSubstructureNotify |
+		xproto.EventMaskSubstructureRedirect
+
+	win := xwindow.New(conn, root)
+	if err := win.Listen(eventMask); err != nil {
+		conn.Conn().Close()
+		log.Println("Window manager detected, running in Embedded mode")
+
+		embed = true
+		return createWindow(a)
+	}
+
+	go func() {
+		for {
+			ev, err := conn.Conn().WaitForEvent()
+			if err != nil {
+				log.Println("X11 Error:", err)
+			}
+
+			if ev != nil {
+				switch ev := ev.(type) {
+				case xproto.MapRequestEvent:
+					xproto.MapWindow(conn.Conn(), ev.Window)
+				case xproto.ConfigureRequestEvent:
+					xproto.ConfigureWindow(conn.Conn(), ev.Window, xproto.ConfigWindowX|xproto.ConfigWindowY|
+						xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+						[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width), uint32(ev.Height)})
+				}
+			}
+		}
+	}()
+
+	desk = createWindow(a)
+	desk.SetFullScreen(true)
+
+	// TODO leave this until we exit
+	conn.Conn().Close()
+	return desk
 }

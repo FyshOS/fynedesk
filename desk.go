@@ -42,9 +42,10 @@ func newDeskLayout(bar fyne.CanvasObject) fyne.CanvasObject {
 // fyne/test package.
 func NewDesktop(app fyne.App) fyne.Window {
 	desk := newDesktopWindow(app)
-	initInput()
+	if desk == nil {
+		return nil
+	}
 
 	desk.SetContent(newDeskLayout(newBar(app)))
-	desk.SetPadded(false)
 	return desk
 }
