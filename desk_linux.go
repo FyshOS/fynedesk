@@ -42,7 +42,11 @@ func newDesktopWindow(a fyne.App) fyne.Window {
 	disp := xproto.Setup(conn.Conn()).Roots[0]
 	log.Println("Default Root", disp.WidthInPixels, "x", disp.HeightInPixels)
 
-	eventMask := xproto.EventMaskVisibilityChange |
+	eventMask := xproto.EventMaskPropertyChange |
+		xproto.EventMaskFocusChange |
+		xproto.EventMaskButtonPress |
+		xproto.EventMaskButtonRelease |
+		xproto.EventMaskVisibilityChange |
 		xproto.EventMaskStructureNotify |
 		xproto.EventMaskSubstructureNotify |
 		xproto.EventMaskSubstructureRedirect
@@ -55,18 +59,21 @@ func newDesktopWindow(a fyne.App) fyne.Window {
 		embed = true
 		return createWindow(a)
 	}
+	win.Destroy()
 
 	go func() {
 		for {
 			ev, err := conn.Conn().WaitForEvent()
 			if err != nil {
 				log.Println("X11 Error:", err)
+				continue
 			}
 
 			if ev != nil {
 				switch ev := ev.(type) {
 				case xproto.MapRequestEvent:
 					xproto.MapWindow(conn.Conn(), ev.Window)
+					xproto.SetInputFocus(conn.Conn(), 0, ev.Window, 0)
 				case xproto.ConfigureRequestEvent:
 					xproto.ConfigureWindow(conn.Conn(), ev.Window, xproto.ConfigWindowX|xproto.ConfigWindowY|
 						xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -79,7 +86,5 @@ func newDesktopWindow(a fyne.App) fyne.Window {
 	desk = createWindow(a)
 	desk.SetFullScreen(true)
 
-	// TODO leave this until we exit
-	conn.Conn().Close()
 	return desk
 }
