@@ -60,7 +60,7 @@ func newBar(app fyne.App) fyne.CanvasObject {
 			exec.Command("chromium").Start()
 		}),
 		widget.NewButton("Terminal", func() {
-			exec.Command("terminology").Start()
+			exec.Command("xterm").Start()
 		}),
 	)
 
