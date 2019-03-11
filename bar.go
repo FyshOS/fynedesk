@@ -50,9 +50,9 @@ func createClock() *widget.Box {
 	return widget.NewHBox(clock, date)
 }
 
-func newBar(app fyne.App) fyne.CanvasObject {
+func (l *deskLayout) newBar() fyne.CanvasObject {
 	quit := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
-		app.Quit()
+		l.Root().Close()
 	})
 	clock := createClock()
 	buttons := fyne.NewContainerWithLayout(layout.NewGridLayout(5),

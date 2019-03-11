@@ -1,46 +1,39 @@
-// +build !ci
+// +build linux,!ci
 
-package desktop
+package wm
 
 import (
 	"log"
-	"os"
 
 	"fyne.io/fyne"
+	"github.com/fyne-io/desktop"
+	"github.com/pkg/errors"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
-var embed bool
-
-func isEmbedded() bool {
-	env := os.Getenv("WAYLAND_DISPLAY")
-	if env != "" {
-		embed = true
-	}
-
-	return embed
+type x11WM struct {
+	x *xgbutil.XUtil
 }
 
-// newDesktopWindow will return a new window based the current environment.
-// When running in an existing desktop then load a window.
-// Otherwise let's return a desktop root!
-func newDesktopWindow(a fyne.App) fyne.Window {
-	if isEmbedded() {
-		return createWindow(a)
-	}
+func (x *x11WM) Close() {
+	log.Println("Disconnecting from X server")
+	// TODO unregister etc
+	x.x.Conn().Close()
+}
 
+// NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
+func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	conn, err := xgbutil.NewConn()
 	if err != nil {
 		log.Println("Failed to connect to the XServer", err)
-		return nil
+		return nil, err
 	}
 
 	root := conn.RootWin()
 	disp := xproto.Setup(conn.Conn()).Roots[0]
-	log.Println("Default Root", disp.WidthInPixels, "x", disp.HeightInPixels)
 
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -54,12 +47,15 @@ func newDesktopWindow(a fyne.App) fyne.Window {
 	win := xwindow.New(conn, root)
 	if err := win.Listen(eventMask); err != nil {
 		conn.Conn().Close()
-		log.Println("Window manager detected, running in Embedded mode")
 
-		embed = true
-		return createWindow(a)
+		return nil, errors.New("Window manager detected, running embedded")
 	}
 	win.Destroy()
+
+	log.Println("Connected to X server")
+	log.Println("Default Root", disp.WidthInPixels, "x", disp.HeightInPixels)
+
+	mgr := &x11WM{x: conn}
 
 	go func() {
 		for {
@@ -83,8 +79,5 @@ func newDesktopWindow(a fyne.App) fyne.Window {
 		}
 	}()
 
-	desk = createWindow(a)
-	desk.SetFullScreen(true)
-
-	return desk
+	return mgr, nil
 }
