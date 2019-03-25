@@ -5,7 +5,6 @@ package wm
 import (
 	"errors"
 	"log"
-	"time"
 
 	"fyne.io/fyne"
 
@@ -22,8 +21,10 @@ const (
 )
 
 type x11WM struct {
-	x    *xgbutil.XUtil
-	root fyne.Window
+	x      *xgbutil.XUtil
+	root   fyne.Window
+	rootID xproto.Window
+	loaded bool
 
 	frames map[xproto.Window]xproto.Window
 }
@@ -50,9 +51,11 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		return nil, err
 	}
 
-	root := conn.RootWin()
-	disp := xproto.Setup(conn.Conn()).Roots[0]
+	mgr := &x11WM{x: conn}
+	mgr.frames = make(map[xproto.Window]xproto.Window)
+	mgr.frameExisting()
 
+	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
 		xproto.EventMaskButtonPress |
@@ -61,21 +64,12 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		xproto.EventMaskStructureNotify |
 		xproto.EventMaskSubstructureNotify |
 		xproto.EventMaskSubstructureRedirect
-
-	win := xwindow.New(conn, root)
 	if err := xproto.ChangeWindowAttributesChecked(conn.Conn(), root, xproto.CwEventMask,
 		[]uint32{uint32(eventMask)}).Check(); err != nil {
 		conn.Conn().Close()
 
 		return nil, errors.New("Window manager detected, running embedded")
 	}
-	win.Destroy()
-
-	log.Println("Connected to X server")
-	log.Println("Default Root", disp.WidthInPixels, "x", disp.HeightInPixels)
-
-	mgr := &x11WM{x: conn}
-	mgr.frames = make(map[xproto.Window]xproto.Window)
 
 	go mgr.runLoop()
 
@@ -110,53 +104,56 @@ func (x *x11WM) runLoop() {
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
-	if x.frames[win] != 0 {
-		xproto.ConfigureWindow(x.x.Conn(), x.frames[win], xproto.ConfigWindowX|xproto.ConfigWindowY|
+	framed := x.frames[win] != 0
+	if framed {
+		err := xproto.ConfigureWindowChecked(x.x.Conn(), x.frames[win], xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width + borderWidth*2), uint32(ev.Height + borderWidth*2 + titleHeight)})
+			[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width + borderWidth*2), uint32(ev.Height + borderWidth*2 + titleHeight)}).Check()
+
+		if err != nil {
+			log.Println("ConfigureFrame Err", err)
+		}
 	}
-	xproto.ConfigureWindow(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width), uint32(ev.Height)}).Check()
+	if err != nil {
+		log.Println("ConfigureWindow Err", err)
+	}
 
 	prop, _ := xprop.GetProperty(x.x, win, "WM_NAME")
-	if string(prop.Value) == x.root.Title() {
-		go func() {
-			time.Sleep(time.Second)
-			tree, err := xproto.QueryTree(x.x.Conn(), x.x.RootWin()).Reply()
+	if !framed && string(prop.Value) == x.root.Title() {
+		if x.loaded {
+			return
+		}
+		x.rootID = win
+		x.loaded = true
+
+		for _, frame := range x.frames {
+			err = xproto.ConfigureWindowChecked(x.x.Conn(), frame, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+				[]uint32{uint32(x.rootID), uint32(xproto.StackModeAbove)}).Check()
 			if err != nil {
-				log.Println("QueryTree Err", err)
-				return
+				log.Println("Restack Err", err)
 			}
-
-			for _, child := range tree.Children {
-				prop, _ := xprop.GetProperty(x.x, child, "WM_NAME")
-				if prop != nil && string(prop.Value) == x.root.Title() {
-					continue
-				}
-
-				attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
-				if err != nil {
-					log.Println("GetWindowAttributes Err", err)
-					continue
-				}
-				if attrs.MapState == xproto.MapStateUnmapped {
-					continue
-				}
-
-				xproto.ConfigureWindow(x.x.Conn(), child, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-					[]uint32{uint32(win),uint32(xproto.StackModeAbove)}).Check()
-
-				x.frame(child)
-			}}()
+		}
 	}
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {
-	prop, _ := xprop.GetProperty(x.x, win, "WM_NAME")
-	if string(prop.Value) == x.root.Title() {
-		xproto.MapWindow(x.x.Conn(), win).Check()
+	framed := x.frames[win] != 0
+	prop, err := xprop.GetProperty(x.x, win, "WM_NAME")
+	if err != nil {
+		log.Println("GetProperty Err", err)
+	}
+	if framed || string(prop.Value) == x.root.Title() {
+		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
+		if err != nil {
+			log.Println("ShowWindow Err", err)
+		}
 
+		return
+	}
+	if x.rootID == 0 {
 		return
 	}
 
@@ -190,11 +187,14 @@ func (x *x11WM) frame(win xproto.Window) {
 
 	x.frames[win] = frame.Id
 
-	xproto.ReparentWindow(x.x.Conn(), win, frame.Id, borderWidth-1, borderWidth+titleHeight-1).Check()
 	frame.Map()
-	xproto.MapWindow(x.x.Conn(), win).Check()
-	xproto.ConfigureWindow(x.x.Conn(), frame.Id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-		[]uint32{uint32(win),uint32(xproto.StackModeAbove)}).Check()
+	xproto.ReparentWindow(x.x.Conn(), win, frame.Id, borderWidth-1, borderWidth+titleHeight-1)
+	xproto.MapWindow(x.x.Conn(), win)
+	err = xproto.ConfigureWindowChecked(x.x.Conn(), frame.Id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		[]uint32{uint32(x.rootID), uint32(xproto.StackModeTopIf)}).Check()
+	if err != nil {
+		log.Println("Restack Err", err)
+	}
 
 	xproto.SetInputFocus(x.x.Conn(), 0, win, 0)
 }
@@ -215,6 +215,32 @@ func (x *x11WM) unframe(win xproto.Window) {
 	xproto.ReparentWindow(x.x.Conn(), win, x.x.RootWin(), attrs.X, attrs.Y)
 
 	xproto.UnmapWindow(x.x.Conn(), frame)
+}
+
+func (x *x11WM) frameExisting() {
+	tree, err := xproto.QueryTree(x.x.Conn(), x.x.RootWin()).Reply()
+	if err != nil {
+		log.Println("QueryTree Err", err)
+		return
+	}
+
+	for _, child := range tree.Children {
+		prop, _ := xprop.GetProperty(x.x, child, "WM_NAME")
+		if prop == nil || x.root != nil && string(prop.Value) == x.root.Title() {
+			continue
+		}
+
+		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
+		if err != nil {
+			log.Println("GetWindowAttributes Err", err)
+			continue
+		}
+		if attrs.MapState == xproto.MapStateUnmapped {
+			continue
+		}
+
+		x.frame(child)
+	}
 }
 
 func (x *x11WM) hideWindow(win xproto.Window) {
