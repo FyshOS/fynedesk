@@ -95,7 +95,6 @@ func (x *x11WM) runLoop() {
 				x.hideWindow(ev.Window)
 			case xproto.ConfigureRequestEvent:
 				x.configureWindow(ev.Window, ev)
-				}
 			}
 		}
 	}
