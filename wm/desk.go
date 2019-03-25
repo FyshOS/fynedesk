@@ -7,6 +7,7 @@ import (
 	"log"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/theme"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
@@ -173,7 +174,8 @@ func (x *x11WM) frame(win xproto.Window) {
 		return
 	}
 
-	values := []uint32{0xffaa66, xproto.EventMaskStructureNotify |
+	r, g, b, _ := theme.BackgroundColor().RGBA()
+	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify |
 		xproto.EventMaskSubstructureNotify | xproto.EventMaskSubstructureRedirect |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
 		xproto.EventMaskFocusChange}
