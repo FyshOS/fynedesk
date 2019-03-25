@@ -5,6 +5,7 @@ package wm
 import (
 	"errors"
 	"log"
+	"time"
 
 	"fyne.io/fyne"
 
@@ -99,6 +100,10 @@ func (x *x11WM) runLoop() {
 				x.hideWindow(ev.Window)
 			case xproto.ConfigureRequestEvent:
 				x.configureWindow(ev.Window, ev)
+			case xproto.PropertyNotifyEvent:
+				if ev.Atom == xproto.AtomWmIconName {
+					log.Println("Hints", ev.State)
+				}
 			}
 		}
 	}
@@ -112,13 +117,46 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 	xproto.ConfigureWindow(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width), uint32(ev.Height)})
+		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width), uint32(ev.Height)}).Check()
+
+	prop, _ := xprop.GetProperty(x.x, win, "WM_NAME")
+	if string(prop.Value) == x.root.Title() {
+		go func() {
+			time.Sleep(time.Second)
+			tree, err := xproto.QueryTree(x.x.Conn(), x.x.RootWin()).Reply()
+			if err != nil {
+				log.Println("QueryTree Err", err)
+				return
+			}
+
+			for _, child := range tree.Children {
+				prop, _ := xprop.GetProperty(x.x, child, "WM_NAME")
+				if prop != nil && string(prop.Value) == x.root.Title() {
+					continue
+				}
+
+				attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
+				if err != nil {
+					log.Println("GetWindowAttributes Err", err)
+					continue
+				}
+				if attrs.MapState == xproto.MapStateUnmapped {
+					continue
+				}
+
+				xproto.ConfigureWindow(x.x.Conn(), child, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+					[]uint32{uint32(win),uint32(xproto.StackModeAbove)}).Check()
+
+				x.frame(child)
+			}}()
+	}
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {
 	prop, _ := xprop.GetProperty(x.x, win, "WM_NAME")
 	if string(prop.Value) == x.root.Title() {
-		xproto.MapWindow(x.x.Conn(), win)
+		xproto.MapWindow(x.x.Conn(), win).Check()
+
 		return
 	}
 
@@ -151,9 +189,12 @@ func (x *x11WM) frame(win xproto.Window) {
 	}
 
 	x.frames[win] = frame.Id
-	xproto.ReparentWindow(x.x.Conn(), win, frame.Id, borderWidth-1, borderWidth+titleHeight-1)
+
+	xproto.ReparentWindow(x.x.Conn(), win, frame.Id, borderWidth-1, borderWidth+titleHeight-1).Check()
 	frame.Map()
-	xproto.MapWindow(x.x.Conn(), win)
+	xproto.MapWindow(x.x.Conn(), win).Check()
+	xproto.ConfigureWindow(x.x.Conn(), frame.Id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		[]uint32{uint32(win),uint32(xproto.StackModeAbove)}).Check()
 
 	xproto.SetInputFocus(x.x.Conn(), 0, win, 0)
 }
