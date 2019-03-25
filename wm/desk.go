@@ -29,7 +29,11 @@ type x11WM struct {
 
 func (x *x11WM) Close() {
 	log.Println("Disconnecting from X server")
-	// TODO unregister etc
+
+	for child := range x.frames {
+		x.unframe(child)
+	}
+
 	x.x.Conn().Close()
 }
 
@@ -118,15 +122,19 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		return
 	}
 
+	x.frame(win)
+}
+
+func (x *x11WM) frame(win xproto.Window) {
 	attrs, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(win)).Reply()
 	if err != nil {
-		log.Println("Err", err)
+		log.Println("GetGeometry Err", err)
 		return
 	}
 
 	frame, err := xwindow.Generate(x.x)
 	if err != nil {
-		log.Println("Err", err)
+		log.Println("GenerateWindow Err", err)
 		return
 	}
 
@@ -138,7 +146,7 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		0, 0, attrs.Width+borderWidth*2, attrs.Height+borderWidth*2+titleHeight, 0, xproto.WindowClassInputOutput,
 		x.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
 	if err != nil {
-		log.Println("Err", err)
+		log.Println("CreateWindow Err", err)
 		return
 	}
 
@@ -148,6 +156,24 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	xproto.MapWindow(x.x.Conn(), win)
 
 	xproto.SetInputFocus(x.x.Conn(), 0, win, 0)
+}
+
+func (x *x11WM) unframe(win xproto.Window) {
+	frame := x.frames[win]
+	x.frames[win] = 0
+
+	if frame == 0 {
+		return
+	}
+	attrs, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(frame)).Reply()
+	if err != nil {
+		log.Println("GetGeometry Err", err)
+		return
+	}
+
+	xproto.ReparentWindow(x.x.Conn(), win, x.x.RootWin(), attrs.X, attrs.Y)
+
+	xproto.UnmapWindow(x.x.Conn(), frame)
 }
 
 func (x *x11WM) hideWindow(win xproto.Window) {
