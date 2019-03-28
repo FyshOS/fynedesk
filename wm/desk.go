@@ -74,6 +74,17 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 
 	go mgr.runLoop()
 
+	listener := make(chan fyne.Settings)
+	a.Settings().AddChangeListener(listener)
+	go func() {
+		for {
+			<-listener
+			for _, frame := range mgr.frames {
+				mgr.ApplyTheme(frame)
+			}
+		}
+	}()
+
 	return mgr, nil
 }
 
@@ -123,7 +134,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 
 	prop, _ := xprop.GetProperty(x.x, win, "WM_NAME")
-	if !framed && string(prop.Value) == x.root.Title() {
+	if !framed && prop != nil && x.root != nil && string(prop.Value) == x.root.Title() {
 		if x.loaded {
 			return
 		}
@@ -159,6 +170,30 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	}
 
 	x.frame(win)
+}
+
+func (x *x11WM) ApplyTheme(frame xproto.Window) {
+	r, g, b, _ := theme.BackgroundColor().RGBA()
+	log.Println("rgb", r, g, b)
+	r8, g8, b8 := uint8(r), uint8(g), uint8(b)
+	values := []uint32{uint32(r8)<<16 | uint32(g8)<<8 | uint32(b8)}
+	log.Println("v", values[0])
+
+	err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), frame,
+		xproto.CwBackPixel, values).Check()
+	if err != nil {
+		log.Println("ChangeAttribute Err", err)
+	}
+
+	attrs, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(frame)).Reply()
+	if err != nil {
+		log.Println("GetGeometry Err", err)
+		return
+	}
+	err = xproto.ClearAreaChecked(x.x.Conn(), true, frame, 0, 0, attrs.Width, attrs.Height).Check()
+	if err != nil {
+		log.Println("ClearArea Err", err)
+	}
 }
 
 func (x *x11WM) frame(win xproto.Window) {

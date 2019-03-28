@@ -54,7 +54,13 @@ func (l *deskLayout) newBar() fyne.CanvasObject {
 	quit := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
 		l.Root().Close()
 	})
-	clock := createClock()
+	clock := widget.NewHBox(widget.NewButton("L", func() {
+		fyne.CurrentApp().Settings().SetTheme(theme.LightTheme())
+	}),
+		widget.NewButton("D", func() {
+			fyne.CurrentApp().Settings().SetTheme(theme.DarkTheme())
+		}),
+		createClock())
 	buttons := fyne.NewContainerWithLayout(layout.NewGridLayout(5),
 		widget.NewButton("Browser", func() {
 			exec.Command("chromium").Start()
@@ -64,10 +70,11 @@ func (l *deskLayout) newBar() fyne.CanvasObject {
 		}),
 	)
 
-	content := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, quit, clock),
+	content := widget.NewHBox(
 		quit,
-		clock,
 		buttons,
+		layout.NewSpacer(),
+		clock,
 	)
 	return fyne.NewContainerWithLayout(layout.NewMaxLayout(),
 		canvas.NewRectangle(theme.BackgroundColor()),
