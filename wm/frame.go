@@ -4,7 +4,6 @@ import (
 	"log"
 
 	"fyne.io/fyne/theme"
-
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
@@ -16,7 +15,7 @@ type frame struct {
 
 func (f *frame) unframe() {
 	frame := f.wm.frames[f.win]
-	f.wm.frames[f.win] = nil
+	delete(f.wm.frames, f.win)
 
 	if frame == nil {
 		return
@@ -32,6 +31,21 @@ func (f *frame) unframe() {
 	xproto.UnmapWindow(f.wm.x.Conn(), f.id)
 }
 
+func (f *frame) close() {
+	f.unframe()
+
+	err := xproto.DestroyWindowChecked(f.wm.x.Conn(), f.win).Check()
+	if err != nil {
+		log.Println("Close Err", err)
+	}
+}
+
+func (f *frame) tapped(x, y int16) {
+	if x <= 25 && y <= 18 {
+		f.close()
+	}
+}
+
 func (f *frame) ApplyTheme() {
 	r, g, b, _ := theme.BackgroundColor().RGBA()
 	r8, g8, b8 := uint8(r), uint8(g), uint8(b)
@@ -43,12 +57,7 @@ func (f *frame) ApplyTheme() {
 		log.Println("ChangeAttribute Err", err)
 	}
 
-	attrs, err := xproto.GetGeometry(f.wm.x.Conn(), xproto.Drawable(f.id)).Reply()
-	if err != nil {
-		log.Println("GetGeometry Err", err)
-		return
-	}
-	err = xproto.ClearAreaChecked(f.wm.x.Conn(), true, f.id, 0, 0, attrs.Width, attrs.Height).Check()
+	err = xproto.ClearAreaChecked(f.wm.x.Conn(), false, f.id, 0, 0, 0, 0).Check()
 	if err != nil {
 		log.Println("ClearArea Err", err)
 	}

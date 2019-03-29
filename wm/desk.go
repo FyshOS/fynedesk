@@ -108,6 +108,13 @@ func (x *x11WM) runLoop() {
 				if ev.Atom == xproto.AtomWmIconName {
 					log.Println("Hints", ev.State)
 				}
+
+			case xproto.ButtonReleaseEvent:
+				for _, fr := range x.frames {
+					if fr.id == ev.Event {
+						fr.tapped(ev.EventX, ev.EventY)
+					}
+				}
 			}
 		}
 	}
