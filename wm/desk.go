@@ -7,12 +7,10 @@ import (
 	"log"
 
 	"fyne.io/fyne"
-	"fyne.io/fyne/theme"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/xprop"
-	"github.com/BurntSushi/xgbutil/xwindow"
 	"github.com/fyne-io/desktop"
 )
 
@@ -27,14 +25,14 @@ type x11WM struct {
 	rootID xproto.Window
 	loaded bool
 
-	frames map[xproto.Window]xproto.Window
+	frames map[xproto.Window]*frame
 }
 
 func (x *x11WM) Close() {
 	log.Println("Disconnecting from X server")
 
-	for child := range x.frames {
-		x.unframe(child)
+	for _, child := range x.frames {
+		child.unframe()
 	}
 
 	x.x.Conn().Close()
@@ -53,7 +51,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
-	mgr.frames = make(map[xproto.Window]xproto.Window)
+	mgr.frames = make(map[xproto.Window]*frame)
 	mgr.frameExisting()
 
 	root := conn.RootWin()
@@ -80,7 +78,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		for {
 			<-listener
 			for _, frame := range mgr.frames {
-				mgr.ApplyTheme(frame)
+				frame.ApplyTheme()
 			}
 		}
 	}()
@@ -116,9 +114,9 @@ func (x *x11WM) runLoop() {
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
-	framed := x.frames[win] != 0
+	framed := x.frames[win] != nil
 	if framed {
-		err := xproto.ConfigureWindowChecked(x.x.Conn(), x.frames[win], xproto.ConfigWindowX|xproto.ConfigWindowY|
+		err := xproto.ConfigureWindowChecked(x.x.Conn(), x.frames[win].id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 			[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width + borderWidth*2), uint32(ev.Height + borderWidth*2 + titleHeight)}).Check()
 
@@ -141,8 +139,8 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		x.rootID = win
 		x.loaded = true
 
-		for _, frame := range x.frames {
-			err = xproto.ConfigureWindowChecked(x.x.Conn(), frame, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		for _, framed := range x.frames {
+			err = xproto.ConfigureWindowChecked(x.x.Conn(), framed.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
 				[]uint32{uint32(x.rootID), uint32(xproto.StackModeAbove)}).Check()
 			if err != nil {
 				log.Println("Restack Err", err)
@@ -152,7 +150,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {
-	framed := x.frames[win] != 0
+	framed := x.frames[win] != nil
 	prop, err := xprop.GetProperty(x.x, win, "WM_NAME")
 	if err != nil {
 		log.Println("GetProperty Err", err)
@@ -172,86 +170,10 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	x.frame(win)
 }
 
-func (x *x11WM) ApplyTheme(frame xproto.Window) {
-	r, g, b, _ := theme.BackgroundColor().RGBA()
-	log.Println("rgb", r, g, b)
-	r8, g8, b8 := uint8(r), uint8(g), uint8(b)
-	values := []uint32{uint32(r8)<<16 | uint32(g8)<<8 | uint32(b8)}
-	log.Println("v", values[0])
-
-	err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), frame,
-		xproto.CwBackPixel, values).Check()
-	if err != nil {
-		log.Println("ChangeAttribute Err", err)
-	}
-
-	attrs, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(frame)).Reply()
-	if err != nil {
-		log.Println("GetGeometry Err", err)
-		return
-	}
-	err = xproto.ClearAreaChecked(x.x.Conn(), true, frame, 0, 0, attrs.Width, attrs.Height).Check()
-	if err != nil {
-		log.Println("ClearArea Err", err)
-	}
-}
-
 func (x *x11WM) frame(win xproto.Window) {
-	attrs, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(win)).Reply()
-	if err != nil {
-		log.Println("GetGeometry Err", err)
-		return
-	}
+	frame := newFrame(win, x)
 
-	frame, err := xwindow.Generate(x.x)
-	if err != nil {
-		log.Println("GenerateWindow Err", err)
-		return
-	}
-
-	r, g, b, _ := theme.BackgroundColor().RGBA()
-	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify |
-		xproto.EventMaskSubstructureNotify | xproto.EventMaskSubstructureRedirect |
-		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
-		xproto.EventMaskFocusChange}
-	err = xproto.CreateWindowChecked(x.x.Conn(), x.x.Screen().RootDepth, frame.Id, x.x.RootWin(),
-		0, 0, attrs.Width+borderWidth*2, attrs.Height+borderWidth*2+titleHeight, 0, xproto.WindowClassInputOutput,
-		x.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
-	if err != nil {
-		log.Println("CreateWindow Err", err)
-		return
-	}
-
-	x.frames[win] = frame.Id
-
-	frame.Map()
-	xproto.ReparentWindow(x.x.Conn(), win, frame.Id, borderWidth-1, borderWidth+titleHeight-1)
-	xproto.MapWindow(x.x.Conn(), win)
-	err = xproto.ConfigureWindowChecked(x.x.Conn(), frame.Id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-		[]uint32{uint32(x.rootID), uint32(xproto.StackModeTopIf)}).Check()
-	if err != nil {
-		log.Println("Restack Err", err)
-	}
-
-	xproto.SetInputFocus(x.x.Conn(), 0, win, 0)
-}
-
-func (x *x11WM) unframe(win xproto.Window) {
-	frame := x.frames[win]
-	x.frames[win] = 0
-
-	if frame == 0 {
-		return
-	}
-	attrs, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(frame)).Reply()
-	if err != nil {
-		log.Println("GetGeometry Err", err)
-		return
-	}
-
-	xproto.ReparentWindow(x.x.Conn(), win, x.x.RootWin(), attrs.X, attrs.Y)
-
-	xproto.UnmapWindow(x.x.Conn(), frame)
+	x.frames[win] = frame
 }
 
 func (x *x11WM) frameExisting() {
@@ -281,8 +203,8 @@ func (x *x11WM) frameExisting() {
 }
 
 func (x *x11WM) hideWindow(win xproto.Window) {
-	if x.frames[win] != 0 {
+	if x.frames[win] != nil {
 		frame := x.frames[win]
-		xproto.UnmapWindow(x.x.Conn(), frame)
+		xproto.UnmapWindow(x.x.Conn(), frame.id)
 	}
 }
