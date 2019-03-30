@@ -1,9 +1,12 @@
+// +build linux,!ci
+
 package wm
 
 import (
 	"log"
 
 	"fyne.io/fyne/theme"
+
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
