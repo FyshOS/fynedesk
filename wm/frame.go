@@ -82,7 +82,7 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
 		xproto.EventMaskFocusChange}
 	err = xproto.CreateWindowChecked(wm.x.Conn(), wm.x.Screen().RootDepth, fr.Id, wm.x.RootWin(),
-		0, 0, attrs.Width+borderWidth*2, attrs.Height+borderWidth*2+titleHeight, 0, xproto.WindowClassInputOutput,
+		attrs.X, attrs.Y, attrs.Width+borderWidth*2, attrs.Height+borderWidth*2+titleHeight, 0, xproto.WindowClassInputOutput,
 		wm.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
 	if err != nil {
 		log.Println("CreateWindow Err", err)

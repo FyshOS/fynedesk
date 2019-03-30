@@ -212,6 +212,7 @@ func (x *x11WM) frameExisting() {
 func (x *x11WM) hideWindow(win xproto.Window) {
 	if x.frames[win] != nil {
 		frame := x.frames[win]
+		x.frames[win] = nil
 		xproto.UnmapWindow(x.x.Conn(), frame.id)
 	}
 }
