@@ -41,12 +41,27 @@ func (f *frame) close() {
 	if err != nil {
 		log.Println("Close Err", err)
 	}
+
+	// TODO if top pick next down - requires real stack handling
 }
 
 func (f *frame) tapped(x, y int16) {
 	if x <= 25 && y <= 18 {
 		f.close()
+	} else {
+		f.stackTop()
 	}
+}
+
+func (f *frame) stackTop() {
+	err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		[]uint32{uint32(f.wm.topID), uint32(xproto.StackModeAbove)}).Check()
+	if err != nil {
+		log.Println("Restack Err", err)
+	}
+
+	f.wm.topID = f.id
+	xproto.SetInputFocus(f.wm.x.Conn(), 0, f.win, 0)
 }
 
 func (f *frame) ApplyTheme() {
@@ -102,7 +117,5 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 	if err != nil {
 		log.Println("Restack Err", err)
 	}
-
-	xproto.SetInputFocus(wm.x.Conn(), 0, win, 0)
 	return framed
 }

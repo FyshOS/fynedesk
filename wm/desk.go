@@ -23,6 +23,7 @@ type x11WM struct {
 	x      *xgbutil.XUtil
 	root   fyne.Window
 	rootID xproto.Window
+	topID  xproto.Window
 	loaded bool
 
 	frames map[xproto.Window]*frame
@@ -144,14 +145,11 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 			return
 		}
 		x.rootID = win
+		x.topID = win
 		x.loaded = true
 
 		for _, framed := range x.frames {
-			err = xproto.ConfigureWindowChecked(x.x.Conn(), framed.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-				[]uint32{uint32(x.rootID), uint32(xproto.StackModeAbove)}).Check()
-			if err != nil {
-				log.Println("Restack Err", err)
-			}
+			framed.stackTop()
 		}
 	}
 }
@@ -174,13 +172,14 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		return
 	}
 
-	x.frame(win)
+	x.frame(win).stackTop()
 }
 
-func (x *x11WM) frame(win xproto.Window) {
+func (x *x11WM) frame(win xproto.Window) *frame {
 	frame := newFrame(win, x)
 
 	x.frames[win] = frame
+	return frame
 }
 
 func (x *x11WM) frameExisting() {
@@ -205,7 +204,7 @@ func (x *x11WM) frameExisting() {
 			continue
 		}
 
-		x.frame(child)
+		x.frame(child).stackTop()
 	}
 }
 
