@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/theme"
 
 	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
 
@@ -46,7 +47,7 @@ func (f *frame) close() {
 }
 
 func (f *frame) tapped(x, y int16) {
-	if x <= 25 && y <= 18 {
+	if x <= 25 && y <= 19 {
 		f.close()
 	} else {
 		f.stackTop()
@@ -62,12 +63,13 @@ func (f *frame) stackTop() {
 
 	f.wm.topID = f.id
 	xproto.SetInputFocus(f.wm.x.Conn(), 0, f.win, 0)
+
+	f.ApplyTheme()
 }
 
 func (f *frame) ApplyTheme() {
 	r, g, b, _ := theme.BackgroundColor().RGBA()
-	r8, g8, b8 := uint8(r), uint8(g), uint8(b)
-	values := []uint32{uint32(r8)<<16 | uint32(g8)<<8 | uint32(b8)}
+	values := []uint32{r<<16 | g<<8 | b}
 
 	err := xproto.ChangeWindowAttributesChecked(f.wm.x.Conn(), f.id,
 		xproto.CwBackPixel, values).Check()
@@ -79,6 +81,48 @@ func (f *frame) ApplyTheme() {
 	if err != nil {
 		log.Println("ClearArea Err", err)
 	}
+
+	rf, gf, bf, _ := theme.ButtonColor().RGBA()
+	rect := xproto.Rectangle{X: 0, Y: 0, Width: 25, Height: 19}
+	values = []uint32{rf<<16 | gf<<8 | bf}
+	gc, err := xproto.NewGcontextId(f.wm.x.Conn())
+	err = xproto.CreateGCChecked(f.wm.x.Conn(), gc, xproto.Drawable(f.id), xproto.GcForeground, values).Check()
+	if err != nil {
+		log.Println("CreateGraphics Err", err)
+	}
+	err = xproto.PolyFillRectangleChecked(f.wm.x.Conn(), xproto.Drawable(f.id), gc, []xproto.Rectangle{rect}).Check()
+	if err != nil {
+		log.Println("PolyRectangle Err", err)
+	}
+	xproto.FreeGC(f.wm.x.Conn(), gc)
+
+	fid, err := xproto.NewFontId(f.wm.x.Conn())
+	err = xproto.OpenFontChecked(f.wm.x.Conn(), fid, 5, "fixed").Check()
+	if err != nil {
+		log.Println("OpenFont Err", err)
+	}
+
+	prop, _ := xprop.GetProperty(f.wm.x, f.win, "WM_NAME")
+	title := ""
+	if prop != nil {
+		title = string(prop.Value)
+	}
+
+	rf, gf, bf, _ = theme.TextColor().RGBA()
+	values = []uint32{rf<<16 | gf<<8 | bf, r<<16 | g<<8 | b, uint32(fid)}
+	gc, err = xproto.NewGcontextId(f.wm.x.Conn())
+	err = xproto.CreateGCChecked(f.wm.x.Conn(), gc, xproto.Drawable(f.id), xproto.GcForeground|xproto.GcBackground|xproto.GcFont, values).Check()
+	if err != nil {
+		log.Println("CreateGraphics Err", err)
+	}
+
+	xproto.CloseFont(f.wm.x.Conn(), fid)
+
+	err = xproto.ImageText8Checked(f.wm.x.Conn(), byte(len(title)), xproto.Drawable(f.id), gc, 29, 14, title).Check()
+	if err != nil {
+		log.Println("PolyText8 Err", err)
+	}
+
 }
 
 func newFrame(win xproto.Window, wm *x11WM) *frame {
@@ -117,5 +161,7 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 	if err != nil {
 		log.Println("Restack Err", err)
 	}
+
+	framed.ApplyTheme()
 	return framed
 }

@@ -139,8 +139,13 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		log.Println("ConfigureWindow Err", err)
 	}
 
+	if framed {
+		x.frames[win].ApplyTheme()
+		return
+	}
+
 	prop, _ := xprop.GetProperty(x.x, win, "WM_NAME")
-	if !framed && prop != nil && x.root != nil && string(prop.Value) == x.root.Title() {
+	if prop != nil && x.root != nil && string(prop.Value) == x.root.Title() {
 		if x.loaded {
 			return
 		}
