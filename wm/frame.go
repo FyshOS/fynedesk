@@ -154,6 +154,7 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 	framed := &frame{fr.Id, win, wm}
 
 	fr.Map()
+	xproto.ChangeSaveSet(wm.x.Conn(), xproto.SetModeInsert, win)
 	xproto.ReparentWindow(wm.x.Conn(), win, fr.Id, borderWidth-1, borderWidth+titleHeight-1)
 	xproto.MapWindow(wm.x.Conn(), win)
 	err = xproto.ConfigureWindowChecked(wm.x.Conn(), fr.Id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
