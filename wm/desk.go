@@ -110,10 +110,22 @@ func (x *x11WM) runLoop() {
 					log.Println("Hints", ev.State)
 				}
 
+			case xproto.ButtonPressEvent:
+				for _, fr := range x.frames {
+					if fr.id == ev.Event {
+						fr.press(ev.EventX, ev.EventY)
+					}
+				}
 			case xproto.ButtonReleaseEvent:
 				for _, fr := range x.frames {
 					if fr.id == ev.Event {
-						fr.tapped(ev.EventX, ev.EventY)
+						fr.release(ev.EventX, ev.EventY)
+					}
+				}
+			case xproto.MotionNotifyEvent:
+				for _, fr := range x.frames {
+					if fr.id == ev.Event {
+						fr.motion(ev.EventX, ev.EventY)
 					}
 				}
 			}

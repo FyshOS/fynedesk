@@ -13,8 +13,11 @@ import (
 )
 
 type frame struct {
-	id, win xproto.Window
-	wm      *x11WM
+	id, win        xproto.Window
+	x, y           int16
+	mouseX, mouseY int16
+
+	wm *x11WM
 }
 
 func (f *frame) unframe() {
@@ -46,11 +49,30 @@ func (f *frame) close() {
 	// TODO if top pick next down - requires real stack handling
 }
 
-func (f *frame) tapped(x, y int16) {
+func (f *frame) press(x, y int16) {
+	f.mouseX = x
+	f.mouseY = y
+
+	f.stackTop()
+}
+
+func (f *frame) release(x, y int16) {
 	if x <= 25 && y <= 19 {
 		f.close()
-	} else {
-		f.stackTop()
+	}
+}
+
+func (f *frame) motion(x, y int16) {
+	deltaX := x - f.mouseX
+	deltaY := y - f.mouseY
+
+	f.x += deltaX
+	f.y += deltaY
+
+	err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.id, xproto.ConfigWindowX|xproto.ConfigWindowY,
+		[]uint32{uint32(f.x), uint32(f.y)}).Check()
+	if err != nil {
+		log.Println("ConfigureWindow Err", err)
 	}
 }
 
@@ -141,7 +163,7 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 	r, g, b, _ := theme.BackgroundColor().RGBA()
 	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify |
 		xproto.EventMaskSubstructureNotify | xproto.EventMaskSubstructureRedirect |
-		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease |
+		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
 		xproto.EventMaskFocusChange}
 	err = xproto.CreateWindowChecked(wm.x.Conn(), wm.x.Screen().RootDepth, fr.Id, wm.x.RootWin(),
 		attrs.X, attrs.Y, attrs.Width+borderWidth*2, attrs.Height+borderWidth*2+titleHeight, 0, xproto.WindowClassInputOutput,
@@ -151,7 +173,7 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 		return nil
 	}
 
-	framed := &frame{fr.Id, win, wm}
+	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, wm: wm}
 
 	fr.Map()
 	xproto.ChangeSaveSet(wm.x.Conn(), xproto.SetModeInsert, win)
