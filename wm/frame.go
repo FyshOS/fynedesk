@@ -39,8 +39,6 @@ func (f *frame) unframe() {
 }
 
 func (f *frame) close() {
-	f.unframe()
-
 	err := xproto.DestroyWindowChecked(f.wm.x.Conn(), f.win).Check()
 	if err != nil {
 		log.Println("Close Err", err)
