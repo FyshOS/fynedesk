@@ -144,9 +144,20 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 			log.Println("ConfigureFrame Err", err)
 		}
 	}
+
+	prop, _ := xprop.GetProperty(x.x, win, "WM_NAME")
+	isRoot := prop != nil && x.root != nil && string(prop.Value) == x.root.Title()
+
+	width := ev.Width
+	height := ev.Height
+	if isRoot {
+		width = x.x.Screen().WidthInPixels
+		height = x.x.Screen().HeightInPixels
+	}
+
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width), uint32(ev.Height)}).Check()
+		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(width), uint32(height)}).Check()
 	if err != nil {
 		log.Println("ConfigureWindow Err", err)
 	}
@@ -156,8 +167,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		return
 	}
 
-	prop, _ := xprop.GetProperty(x.x, win, "WM_NAME")
-	if prop != nil && x.root != nil && string(prop.Value) == x.root.Title() {
+	if isRoot {
 		if x.loaded {
 			return
 		}
