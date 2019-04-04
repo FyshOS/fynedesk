@@ -33,7 +33,7 @@ func (x *x11WM) Close() {
 	log.Println("Disconnecting from X server")
 
 	for _, child := range x.frames {
-		child.unframe()
+		child.unFrame()
 	}
 
 	x.x.Conn().Close()
@@ -68,7 +68,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		[]uint32{uint32(eventMask)}).Check(); err != nil {
 		conn.Conn().Close()
 
-		return nil, errors.New("Window manager detected, running embedded")
+		return nil, errors.New("window manager detected, running embedded")
 	}
 
 	go mgr.runLoop()
@@ -202,6 +202,14 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	x.frame(win).stackTop()
 }
 
+func (x *x11WM) hideWindow(win xproto.Window) {
+	if x.frames[win] != nil {
+		frame := x.frames[win]
+		delete(x.frames, win)
+		xproto.UnmapWindow(x.x.Conn(), frame.id)
+	}
+}
+
 func (x *x11WM) frame(win xproto.Window) *frame {
 	frame := newFrame(win, x)
 
@@ -232,13 +240,5 @@ func (x *x11WM) frameExisting() {
 		}
 
 		x.frame(child).stackTop()
-	}
-}
-
-func (x *x11WM) hideWindow(win xproto.Window) {
-	if x.frames[win] != nil {
-		frame := x.frames[win]
-		delete(x.frames, win)
-		xproto.UnmapWindow(x.x.Conn(), frame.id)
 	}
 }

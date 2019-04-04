@@ -20,7 +20,7 @@ type frame struct {
 	wm *x11WM
 }
 
-func (f *frame) unframe() {
+func (f *frame) unFrame() {
 	frame := f.wm.frames[f.win]
 	delete(f.wm.frames, f.win)
 

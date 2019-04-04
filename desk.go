@@ -4,12 +4,6 @@ import (
 	"fyne.io/fyne"
 )
 
-// WindowManager describes a full window manager which may be loaded as part of the setup.
-type WindowManager interface {
-	Close()
-	SetRoot(window fyne.Window)
-}
-
 // Desktop defines an embedded or full desktop envionment that we can run.
 type Desktop interface {
 	Root() fyne.Window
@@ -66,9 +60,8 @@ func (l *deskLayout) Root() fyne.Window {
 			mouse,
 		))
 
-		if l.wm == nil {
-			l.mouse.Hide()
-		} else {
+		l.mouse.Hide() // temporarily we do not handle mouse (using X default)
+		if l.wm != nil {
 			l.win.SetOnClosed(func() {
 				l.wm.Close()
 			})
