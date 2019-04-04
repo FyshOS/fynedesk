@@ -18,7 +18,7 @@ func main() {
 		if err == nil {
 			return
 		}
-	
+
 		exitErr, ok := err.(*exec.ExitError)
 		if !ok {
 			log.Println("Could not execute", runCmd, "command")
