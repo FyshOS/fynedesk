@@ -29,7 +29,7 @@ Using standard go tools you can install Fyne's desktop using:
 
 And you can run that in an embedded X window for testing using:
 
-    DISPLAY=:0 Xephyr :1 -screen 1280x720
+    DISPLAY=:0 Xephyr :1 -screen 1280x720 &
     DISPLAY=:1 fynedesk
 
 It should look like this:
