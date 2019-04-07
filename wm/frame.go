@@ -75,6 +75,10 @@ func (f *frame) motion(x, y int16) {
 }
 
 func (f *frame) stackTop() {
+	if f.id == f.wm.topID {
+		return
+	}
+
 	err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
 		[]uint32{uint32(f.wm.topID), uint32(xproto.StackModeAbove)}).Check()
 	if err != nil {
