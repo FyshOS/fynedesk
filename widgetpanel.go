@@ -105,6 +105,7 @@ func (w *widgetPanel) clockTick() {
 			canvas.Refresh(w.clock)
 
 			w.date.SetText(formattedDate())
+			canvas.Refresh(w.date)
 		}
 	}()
 }
