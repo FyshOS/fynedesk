@@ -70,6 +70,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		return nil, errors.New("window manager detected, running embedded")
 	}
 
+	loadCursors(conn)
 	go mgr.runLoop()
 
 	listener := make(chan fyne.Settings)
@@ -123,7 +124,11 @@ func (x *x11WM) runLoop() {
 			case xproto.MotionNotifyEvent:
 				for _, fr := range x.frames {
 					if fr.id == ev.Event {
-						fr.motion(ev.EventX, ev.EventY)
+						if ev.State&xproto.ButtonMask1 != 0 {
+							fr.drag(ev.EventX, ev.EventY)
+						} else {
+							fr.motion(ev.EventX, ev.EventY)
+						}
 					}
 				}
 			}

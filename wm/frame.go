@@ -95,7 +95,7 @@ func (f *frame) release(x, y int16) {
 	}
 }
 
-func (f *frame) motion(x, y int16) {
+func (f *frame) drag(x, y int16) {
 	deltaX := x - f.mouseX
 	deltaY := y - f.mouseY
 
@@ -126,6 +126,21 @@ func (f *frame) motion(x, y int16) {
 	}
 
 	f.ApplyTheme()
+}
+
+func (f *frame) motion(x, y int16) {
+	cursor := defaultCursor
+	if x <= 25 && y <= 19 {
+		cursor = closeCursor
+	} else if x >= int16(f.width)-25 && y >= int16(f.height)-25 {
+		cursor = resizeCursor
+	}
+
+	err := xproto.ChangeWindowAttributesChecked(f.wm.x.Conn(), f.id, xproto.CwCursor,
+		[]uint32{uint32(cursor)}).Check()
+	if err != nil {
+		log.Println("SetCursor Err", err)
+	}
 }
 
 func (f *frame) stackTop() {
@@ -224,7 +239,7 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify |
 		xproto.EventMaskSubstructureNotify | xproto.EventMaskSubstructureRedirect |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
-		xproto.EventMaskFocusChange}
+		xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange}
 	err = xproto.CreateWindowChecked(wm.x.Conn(), wm.x.Screen().RootDepth, fr.Id, wm.x.RootWin(),
 		attrs.X, attrs.Y, attrs.Width+borderWidth*2, attrs.Height+borderWidth*2+titleHeight, 0, xproto.WindowClassInputOutput,
 		wm.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
