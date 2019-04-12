@@ -17,10 +17,15 @@ type frame struct {
 	x, y           int16
 	mouseX, mouseY int16
 
-	wm *x11WM
+	framed bool
+	wm     *x11WM
 }
 
 func (f *frame) unFrame() {
+	if !f.framed {
+		return
+	}
+
 	frame := f.wm.frames[f.win]
 	delete(f.wm.frames, f.win)
 
@@ -92,6 +97,10 @@ func (f *frame) stackTop() {
 }
 
 func (f *frame) ApplyTheme() {
+	if !f.framed {
+		return
+	}
+
 	r, g, b, _ := theme.BackgroundColor().RGBA()
 	values := []uint32{r<<16 | g<<8 | b}
 
@@ -175,7 +184,7 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 		return nil
 	}
 
-	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, wm: wm}
+	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, wm: wm, framed: true}
 
 	fr.Map()
 	xproto.ChangeSaveSet(wm.x.Conn(), xproto.SetModeInsert, win)
@@ -189,4 +198,14 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 
 	framed.ApplyTheme()
 	return framed
+}
+
+func newFrameBorderless(win xproto.Window, wm *x11WM) *frame {
+	attrs, err := xproto.GetGeometry(wm.x.Conn(), xproto.Drawable(win)).Reply()
+	if err != nil {
+		log.Println("GetGeometry Err", err)
+		return nil
+	}
+
+	return &frame{id: win, win: win, x: attrs.X, y: attrs.Y, wm: wm, framed: false}
 }

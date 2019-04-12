@@ -10,7 +10,6 @@ import (
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
-	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/fyne-io/desktop"
 )
 
@@ -136,17 +135,23 @@ func (x *x11WM) runLoop() {
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
 	framed := x.frames[win] != nil
 	if framed {
+		width := ev.Width
+		height := ev.Height
+		if x.frames[win].framed {
+			width += borderWidth * 2
+			height += borderWidth*2 + titleHeight
+		}
 		err := xproto.ConfigureWindowChecked(x.x.Conn(), x.frames[win].id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width + borderWidth*2), uint32(ev.Height + borderWidth*2 + titleHeight)}).Check()
+			[]uint32{uint32(ev.X), uint32(ev.Y), uint32(width), uint32(height)}).Check()
 
 		if err != nil {
 			log.Println("ConfigureFrame Err", err)
 		}
 	}
 
-	prop, _ := xprop.GetProperty(x.x, win, "WM_NAME")
-	isRoot := prop != nil && x.root != nil && string(prop.Value) == x.root.Title()
+	name := windowName(x.x, win)
+	isRoot := x.root != nil && name == x.root.Title()
 
 	width := ev.Width
 	height := ev.Height
@@ -183,11 +188,8 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 
 func (x *x11WM) showWindow(win xproto.Window) {
 	framed := x.frames[win] != nil
-	prop, err := xprop.GetProperty(x.x, win, "WM_NAME")
-	if err != nil {
-		log.Println("GetProperty Err", err)
-	}
-	if framed || string(prop.Value) == x.root.Title() {
+	name := windowName(x.x, win)
+	if framed || name == x.root.Title() {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
 		if err != nil {
 			log.Println("ShowWindow Err", err)
@@ -199,7 +201,7 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		return
 	}
 
-	x.frame(win).stackTop()
+	x.setupWindow(win)
 }
 
 func (x *x11WM) hideWindow(win xproto.Window) {
@@ -210,11 +212,16 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 	}
 }
 
-func (x *x11WM) frame(win xproto.Window) *frame {
-	frame := newFrame(win, x)
+func (x *x11WM) setupWindow(win xproto.Window) {
+	var frame *frame
+	if !windowBorderless(x.x, win) {
+		frame = newFrame(win, x)
+	} else {
+		frame = newFrameBorderless(win, x)
+	}
 
 	x.frames[win] = frame
-	return frame
+	frame.stackTop()
 }
 
 func (x *x11WM) frameExisting() {
@@ -225,8 +232,8 @@ func (x *x11WM) frameExisting() {
 	}
 
 	for _, child := range tree.Children {
-		prop, _ := xprop.GetProperty(x.x, child, "WM_NAME")
-		if prop == nil || x.root != nil && string(prop.Value) == x.root.Title() {
+		name := windowName(x.x, child)
+		if x.root != nil && name == x.root.Title() {
 			continue
 		}
 
@@ -239,6 +246,6 @@ func (x *x11WM) frameExisting() {
 			continue
 		}
 
-		x.frame(child).stackTop()
+		x.setupWindow(child)
 	}
 }
