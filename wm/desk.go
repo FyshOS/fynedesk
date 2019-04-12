@@ -133,14 +133,10 @@ func (x *x11WM) runLoop() {
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
-	framed := x.frames[win] != nil
-	if framed {
+	frame := x.frames[win]
+	if frame != nil {
 		width := ev.Width
 		height := ev.Height
-		if x.frames[win].framed {
-			width += borderWidth * 2
-			height += borderWidth*2 + titleHeight
-		}
 		err := xproto.ConfigureWindowChecked(x.x.Conn(), x.frames[win].id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 			[]uint32{uint32(ev.X), uint32(ev.Y), uint32(width), uint32(height)}).Check()
@@ -148,6 +144,9 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		if err != nil {
 			log.Println("ConfigureFrame Err", err)
 		}
+
+		frame.ApplyTheme()
+		return
 	}
 
 	name := windowName(x.x, win)
@@ -165,11 +164,6 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(width), uint32(height)}).Check()
 	if err != nil {
 		log.Println("ConfigureWindow Err", err)
-	}
-
-	if framed {
-		x.frames[win].ApplyTheme()
-		return
 	}
 
 	if isRoot {

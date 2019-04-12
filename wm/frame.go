@@ -15,6 +15,7 @@ import (
 type frame struct {
 	id, win        xproto.Window
 	x, y           int16
+	width, height  uint16
 	mouseX, mouseY int16
 
 	framed bool
@@ -32,14 +33,8 @@ func (f *frame) unFrame() {
 	if frame == nil {
 		return
 	}
-	attrs, err := xproto.GetGeometry(f.wm.x.Conn(), xproto.Drawable(frame.id)).Reply()
-	if err != nil {
-		log.Println("GetGeometry Err", err)
-		return
-	}
 
-	xproto.ReparentWindow(f.wm.x.Conn(), f.win, f.wm.x.RootWin(), attrs.X, attrs.Y)
-
+	xproto.ReparentWindow(f.wm.x.Conn(), f.win, f.wm.x.RootWin(), f.x, f.y)
 	xproto.UnmapWindow(f.wm.x.Conn(), f.id)
 }
 
@@ -69,14 +64,33 @@ func (f *frame) motion(x, y int16) {
 	deltaX := x - f.mouseX
 	deltaY := y - f.mouseY
 
-	f.x += deltaX
-	f.y += deltaY
+	if x >= int16(f.width)-25 && y >= int16(f.height)-25 {
+		f.width = f.width + uint16(deltaX)
+		f.height = f.height + uint16(deltaY)
+		f.mouseX = x
+		f.mouseY = y
 
-	err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.id, xproto.ConfigWindowX|xproto.ConfigWindowY,
-		[]uint32{uint32(f.x), uint32(f.y)}).Check()
+		if f.framed {
+			err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+				[]uint32{uint32(borderWidth), uint32(borderWidth + titleHeight), uint32(f.width - 2*borderWidth), uint32(f.height - 2*borderWidth - titleHeight)}).Check()
+			if err != nil {
+				log.Println("ConfigureWindow Err", err)
+			}
+		}
+	} else {
+		f.x += deltaX
+		f.y += deltaY
+	}
+
+	err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
 	if err != nil {
 		log.Println("ConfigureWindow Err", err)
 	}
+
+	f.ApplyTheme()
 }
 
 func (f *frame) stackTop() {
@@ -184,17 +198,13 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 		return nil
 	}
 
-	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, wm: wm, framed: true}
+	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, width: attrs.Width + borderWidth*2, height: attrs.Height + borderWidth*2 + titleHeight,
+		wm: wm, framed: true}
 
 	fr.Map()
 	xproto.ChangeSaveSet(wm.x.Conn(), xproto.SetModeInsert, win)
 	xproto.ReparentWindow(wm.x.Conn(), win, fr.Id, borderWidth-1, borderWidth+titleHeight-1)
 	xproto.MapWindow(wm.x.Conn(), win)
-	err = xproto.ConfigureWindowChecked(wm.x.Conn(), fr.Id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-		[]uint32{uint32(wm.rootID), uint32(xproto.StackModeTopIf)}).Check()
-	if err != nil {
-		log.Println("Restack Err", err)
-	}
 
 	framed.ApplyTheme()
 	return framed
