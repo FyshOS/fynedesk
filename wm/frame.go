@@ -8,6 +8,8 @@ import (
 	"fyne.io/fyne/theme"
 
 	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
@@ -39,9 +41,42 @@ func (f *frame) unFrame() {
 }
 
 func (f *frame) close() {
-	err := xproto.DestroyWindowChecked(f.wm.x.Conn(), f.win).Check()
+	winProtos, err := icccm.WmProtocolsGet(f.wm.x, f.win)
 	if err != nil {
-		log.Println("Close Err", err)
+		log.Println("GetProtocols err", err)
+	}
+
+	askNicely := false
+	for _, proto := range winProtos {
+		if proto == "WM_DELETE_WINDOW" {
+			askNicely = true
+		}
+	}
+
+	if !askNicely {
+		err := xproto.DestroyWindowChecked(f.wm.x.Conn(), f.win).Check()
+		if err != nil {
+			log.Println("Close Err", err)
+		}
+
+		return
+	}
+
+	protocols, err := xprop.Atm(f.wm.x, "WM_PROTOCOLS")
+	if err != nil {
+		return
+	}
+
+	delWin, err := xprop.Atm(f.wm.x, "WM_DELETE_WINDOW")
+	if err != nil {
+		return
+	}
+	cm, err := xevent.NewClientMessage(32, f.win, protocols,
+		int(delWin))
+	err = xproto.SendEventChecked(f.wm.x.Conn(), false, f.win, 0,
+		string(cm.Bytes())).Check()
+	if err != nil {
+		log.Println("WinDelete Err", err)
 	}
 
 	// TODO if top pick next down - requires real stack handling

@@ -104,6 +104,8 @@ func (x *x11WM) runLoop() {
 				x.hideWindow(ev.Window)
 			case xproto.ConfigureRequestEvent:
 				x.configureWindow(ev.Window, ev)
+			case xproto.DestroyNotifyEvent:
+				x.destroyWindow(ev.Window)
 			case xproto.PropertyNotifyEvent:
 				// TODO
 			case xproto.ButtonPressEvent:
@@ -213,6 +215,10 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 
 	x.frames[win] = frame
 	frame.stackTop()
+}
+
+func (x *x11WM) destroyWindow(win xproto.Window) {
+	xproto.ChangeSaveSet(x.x.Conn(), xproto.SetModeDelete, win)
 }
 
 func (x *x11WM) frameExisting() {
