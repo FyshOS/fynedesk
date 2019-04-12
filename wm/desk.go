@@ -105,10 +105,7 @@ func (x *x11WM) runLoop() {
 			case xproto.ConfigureRequestEvent:
 				x.configureWindow(ev.Window, ev)
 			case xproto.PropertyNotifyEvent:
-				if ev.Atom == xproto.AtomWmIconName {
-					log.Println("Hints", ev.State)
-				}
-
+				// TODO
 			case xproto.ButtonPressEvent:
 				for _, fr := range x.frames {
 					if fr.id == ev.Event {

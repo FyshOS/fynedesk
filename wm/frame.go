@@ -94,7 +94,7 @@ func (f *frame) motion(x, y int16) {
 }
 
 func (f *frame) stackTop() {
-	if f.id == f.wm.topID {
+	if f.id == f.wm.topID || f.wm.topID == 0 {
 		return
 	}
 
