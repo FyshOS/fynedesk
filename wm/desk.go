@@ -138,26 +138,23 @@ func (x *x11WM) runLoop() {
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
 	frame := x.frames[win]
-	if frame != nil {
-		width := ev.Width
-		height := ev.Height
-		err := xproto.ConfigureWindowChecked(x.x.Conn(), x.frames[win].id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	width := ev.Width
+	height := ev.Height
+
+	if frame != nil && frame.framed {
+		err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(ev.X), uint32(ev.Y), uint32(width), uint32(height)}).Check()
+			[]uint32{uint32(borderWidth), uint32(borderWidth + titleHeight),
+				uint32(width - 1), uint32(height - 1)}).Check()
 
 		if err != nil {
 			log.Println("ConfigureFrame Err", err)
 		}
-
-		frame.ApplyTheme()
 		return
 	}
 
 	name := windowName(x.x, win)
 	isRoot := x.root != nil && name == x.root.Title()
-
-	width := ev.Width
-	height := ev.Height
 	if isRoot {
 		width = x.x.Screen().WidthInPixels
 		height = x.x.Screen().HeightInPixels
