@@ -1,3 +1,5 @@
+// +build linux,!ci
+
 package wm
 
 import (
