@@ -56,6 +56,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		xproto.EventMaskFocusChange |
 		xproto.EventMaskButtonPress |
 		xproto.EventMaskButtonRelease |
+		xproto.EventMaskKeyPress |
 		xproto.EventMaskVisibilityChange |
 		xproto.EventMaskStructureNotify |
 		xproto.EventMaskSubstructureNotify |
@@ -128,6 +129,18 @@ func (x *x11WM) runLoop() {
 						}
 					}
 				}
+			case xproto.KeyPressEvent:
+				winList := x.Windows()
+				winCount := len(winList)
+				if winCount <= 1 {
+					return
+				}
+
+				if ev.State&xproto.ModMaskShift != 0 {
+					x.RaiseToTop(winList[winCount-1])
+				} else {
+					x.RaiseToTop(winList[1])
+				}
 			}
 		}
 	}
@@ -183,6 +196,7 @@ func (x *x11WM) showWindow(win xproto.Window) {
 			log.Println("ShowWindow Err", err)
 		}
 
+		x.bindKeys(win)
 		if name == x.root.Title() {
 			for _, framed := range x.frames {
 				x.raiseWinAboveID(framed.(*frame).id, x.rootID)
@@ -216,10 +230,17 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 
 	x.AddWindow(frame)
 	x.RaiseToTop(frame)
+
+	x.bindKeys(win)
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
 	xproto.ChangeSaveSet(x.x.Conn(), xproto.SetModeDelete, win)
+}
+
+func (x *x11WM) bindKeys(win xproto.Window) {
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1|xproto.ModMask2, 23, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1|xproto.ModMask2, 23, xproto.GrabModeAsync, xproto.GrabModeAsync)
 }
 
 func (x *x11WM) frameExisting() {
