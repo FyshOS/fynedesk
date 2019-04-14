@@ -6,6 +6,7 @@ import (
 	"log"
 
 	"fyne.io/fyne/theme"
+	"github.com/fyne-io/desktop"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
@@ -24,13 +25,23 @@ type frame struct {
 	wm     *x11WM
 }
 
+func (s *stack) frameForWin(id xproto.Window) desktop.Window {
+	for _, w := range s.frames {
+		if w.(*frame).id == id || w.(*frame).win == id {
+			return w
+		}
+	}
+
+	return nil
+}
+
 func (f *frame) unFrame() {
 	if !f.framed {
 		return
 	}
 
-	frame := f.wm.frames[f.win]
-	delete(f.wm.frames, f.win)
+	frame := f.wm.frameForWin(f.win)
+	f.wm.RemoveWindow(frame)
 
 	if frame == nil {
 		return
@@ -40,7 +51,11 @@ func (f *frame) unFrame() {
 	xproto.UnmapWindow(f.wm.x.Conn(), f.id)
 }
 
-func (f *frame) close() {
+func (f *frame) Decorated() bool {
+	return f.framed
+}
+
+func (f *frame) Close() {
 	winProtos, err := icccm.WmProtocolsGet(f.wm.x, f.win)
 	if err != nil {
 		log.Println("GetProtocols err", err)
@@ -78,20 +93,22 @@ func (f *frame) close() {
 	if err != nil {
 		log.Println("WinDelete Err", err)
 	}
+}
 
-	// TODO if top pick next down - requires real stack handling
+func (f *frame) Focus() {
+	xproto.SetInputFocus(f.wm.x.Conn(), 0, f.win, 0)
 }
 
 func (f *frame) press(x, y int16) {
 	f.mouseX = x
 	f.mouseY = y
 
-	f.stackTop()
+	f.wm.RaiseToTop(f)
 }
 
 func (f *frame) release(x, y int16) {
 	if x <= 25 && y <= 19 {
-		f.close()
+		f.Close()
 	}
 }
 
@@ -143,19 +160,22 @@ func (f *frame) motion(x, y int16) {
 	}
 }
 
-func (f *frame) stackTop() {
-	if f.id == f.wm.topID || f.wm.topID == 0 {
+func (f *frame) raiseToTop() {
+	topID := f.wm.rootID
+	if len(f.wm.frames) >= 1 {
+		topID = f.wm.frames[0].(*frame).id
+	}
+
+	f.Focus()
+	if f.id == topID {
 		return
 	}
 
 	err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-		[]uint32{uint32(f.wm.topID), uint32(xproto.StackModeAbove)}).Check()
+		[]uint32{uint32(topID), uint32(xproto.StackModeAbove)}).Check()
 	if err != nil {
 		log.Println("Restack Err", err)
 	}
-
-	f.wm.topID = f.id
-	xproto.SetInputFocus(f.wm.x.Conn(), 0, f.win, 0)
 
 	f.ApplyTheme()
 }

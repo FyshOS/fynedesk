@@ -19,20 +19,18 @@ const (
 )
 
 type x11WM struct {
+	stack
 	x      *xgbutil.XUtil
 	root   fyne.Window
 	rootID xproto.Window
-	topID  xproto.Window
 	loaded bool
-
-	frames map[xproto.Window]*frame
 }
 
 func (x *x11WM) Close() {
 	log.Println("Disconnecting from X server")
 
 	for _, child := range x.frames {
-		child.unFrame()
+		child.(*frame).unFrame()
 	}
 
 	x.x.Conn().Close()
@@ -51,7 +49,6 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
-	mgr.frames = make(map[xproto.Window]*frame)
 	mgr.frameExisting()
 
 	root := conn.RootWin()
@@ -78,8 +75,8 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	go func() {
 		for {
 			<-listener
-			for _, frame := range mgr.frames {
-				frame.ApplyTheme()
+			for _, fr := range mgr.frames {
+				fr.(*frame).ApplyTheme()
 			}
 		}
 	}()
@@ -111,23 +108,23 @@ func (x *x11WM) runLoop() {
 				// TODO
 			case xproto.ButtonPressEvent:
 				for _, fr := range x.frames {
-					if fr.id == ev.Event {
-						fr.press(ev.EventX, ev.EventY)
+					if fr.(*frame).id == ev.Event {
+						fr.(*frame).press(ev.EventX, ev.EventY)
 					}
 				}
 			case xproto.ButtonReleaseEvent:
 				for _, fr := range x.frames {
-					if fr.id == ev.Event {
-						fr.release(ev.EventX, ev.EventY)
+					if fr.(*frame).id == ev.Event {
+						fr.(*frame).release(ev.EventX, ev.EventY)
 					}
 				}
 			case xproto.MotionNotifyEvent:
 				for _, fr := range x.frames {
-					if fr.id == ev.Event {
+					if fr.(*frame).id == ev.Event {
 						if ev.State&xproto.ButtonMask1 != 0 {
-							fr.drag(ev.EventX, ev.EventY)
+							fr.(*frame).drag(ev.EventX, ev.EventY)
 						} else {
-							fr.motion(ev.EventX, ev.EventY)
+							fr.(*frame).motion(ev.EventX, ev.EventY)
 						}
 					}
 				}
@@ -137,11 +134,11 @@ func (x *x11WM) runLoop() {
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
-	frame := x.frames[win]
+	frame := x.frameForWin(win)
 	width := ev.Width
 	height := ev.Height
 
-	if frame != nil && frame.framed {
+	if frame != nil && frame.Decorated() {
 		err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 			[]uint32{uint32(borderWidth), uint32(borderWidth + titleHeight),
@@ -172,17 +169,16 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 			return
 		}
 		x.rootID = win
-		x.topID = win
 		x.loaded = true
 
 		for _, framed := range x.frames {
-			framed.stackTop()
+			x.RaiseToTop(framed)
 		}
 	}
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {
-	framed := x.frames[win] != nil
+	framed := x.frameForWin(win) != nil
 	name := windowName(x.x, win)
 	if framed || name == x.root.Title() {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
@@ -200,10 +196,10 @@ func (x *x11WM) showWindow(win xproto.Window) {
 }
 
 func (x *x11WM) hideWindow(win xproto.Window) {
-	if x.frames[win] != nil {
-		frame := x.frames[win]
-		delete(x.frames, win)
-		xproto.UnmapWindow(x.x.Conn(), frame.id)
+	if x.frameForWin(win) != nil {
+		fr := x.frameForWin(win)
+		x.RemoveWindow(fr)
+		xproto.UnmapWindow(x.x.Conn(), fr.(*frame).id)
 	}
 }
 
@@ -215,8 +211,8 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 		frame = newFrameBorderless(win, x)
 	}
 
-	x.frames[win] = frame
-	frame.stackTop()
+	x.AddWindow(frame)
+	x.RaiseToTop(frame)
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
