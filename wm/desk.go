@@ -239,8 +239,8 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 }
 
 func (x *x11WM) bindKeys(win xproto.Window) {
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1|xproto.ModMask2, 23, xproto.GrabModeAsync, xproto.GrabModeAsync)
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1|xproto.ModMask2, 23, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, 23, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1, 23, xproto.GrabModeAsync, xproto.GrabModeAsync)
 }
 
 func (x *x11WM) frameExisting() {
