@@ -52,7 +52,7 @@ func (s *stack) Windows() []desktop.Window {
 }
 
 func (s *stack) RaiseToTop(win desktop.Window) {
-	win.(*frame).raiseToTop()
+	win.RaiseAbove(s.frames[0])
 
 	s.removeFromStack(win)
 	s.addToStack(win)

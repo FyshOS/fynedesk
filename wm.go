@@ -15,8 +15,9 @@ type WindowManager interface {
 type Window interface {
 	Decorated() bool // Should this window have borders drawn?
 
-	Focus() // Ask this window to get input focus
-	Close() // Close this window and possibly the application running it
+	Focus()            // Ask this window to get input focus
+	Close()            // Close this window and possibly the application running it
+	RaiseAbove(Window) // Raise this window above a given other window
 }
 
 // Stack describes an ordered list of windows.

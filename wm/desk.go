@@ -170,20 +170,23 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		}
 		x.rootID = win
 		x.loaded = true
-
-		for _, framed := range x.frames {
-			x.RaiseToTop(framed)
-		}
 	}
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {
 	framed := x.frameForWin(win) != nil
 	name := windowName(x.x, win)
+
 	if framed || name == x.root.Title() {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
 		if err != nil {
 			log.Println("ShowWindow Err", err)
+		}
+
+		if name == x.root.Title() {
+			for _, framed := range x.frames {
+				x.raiseWinAboveID(framed.(*frame).id, x.rootID)
+			}
 		}
 
 		return

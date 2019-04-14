@@ -160,10 +160,10 @@ func (f *frame) motion(x, y int16) {
 	}
 }
 
-func (f *frame) raiseToTop() {
+func (f *frame) RaiseAbove(win desktop.Window) {
 	topID := f.wm.rootID
-	if len(f.wm.frames) >= 1 {
-		topID = f.wm.frames[0].(*frame).id
+	if win != nil {
+		topID = win.(*frame).id
 	}
 
 	f.Focus()
@@ -171,13 +171,17 @@ func (f *frame) raiseToTop() {
 		return
 	}
 
-	err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-		[]uint32{uint32(topID), uint32(xproto.StackModeAbove)}).Check()
+	f.wm.raiseWinAboveID(f.id, topID)
+
+	f.ApplyTheme()
+}
+
+func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
+	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		[]uint32{uint32(top), uint32(xproto.StackModeAbove)}).Check()
 	if err != nil {
 		log.Println("Restack Err", err)
 	}
-
-	f.ApplyTheme()
 }
 
 func (f *frame) ApplyTheme() {
@@ -259,7 +263,7 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify |
 		xproto.EventMaskSubstructureNotify | xproto.EventMaskSubstructureRedirect |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
-		xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange}
+		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange}
 	err = xproto.CreateWindowChecked(wm.x.Conn(), wm.x.Screen().RootDepth, fr.Id, wm.x.RootWin(),
 		attrs.X, attrs.Y, attrs.Width+borderWidth*2, attrs.Height+borderWidth*2+titleHeight, 0, xproto.WindowClassInputOutput,
 		wm.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
