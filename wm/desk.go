@@ -101,6 +101,11 @@ func (x *x11WM) runLoop() {
 				x.destroyWindow(ev.Window)
 			case xproto.PropertyNotifyEvent:
 				// TODO
+			case xproto.ExposeEvent:
+				border := x.frameForWin(ev.Window)
+				if border != nil {
+					border.(*frame).ApplyTheme()
+				}
 			case xproto.ButtonPressEvent:
 				for _, fr := range x.frames {
 					if fr.(*frame).id == ev.Event {
