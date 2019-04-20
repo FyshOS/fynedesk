@@ -20,6 +20,7 @@ type frame struct {
 	x, y           int16
 	width, height  uint16
 	mouseX, mouseY int16
+	mouseResize    bool
 
 	framed bool
 	wm     *x11WM
@@ -102,6 +103,11 @@ func (f *frame) Focus() {
 func (f *frame) press(x, y int16) {
 	f.mouseX = x
 	f.mouseY = y
+	if x >= int16(f.width-f.wm.buttonWidth()) && y >= int16(f.height-f.wm.buttonWidth()) {
+		f.mouseResize = true
+	} else {
+		f.mouseResize = false
+	}
 
 	f.wm.RaiseToTop(f)
 }
@@ -117,7 +123,7 @@ func (f *frame) drag(x, y int16) {
 	deltaX := x - f.mouseX
 	deltaY := y - f.mouseY
 
-	if x >= int16(f.width)-25 && y >= int16(f.height)-25 {
+	if f.mouseResize {
 		f.width = f.width + uint16(deltaX)
 		f.height = f.height + uint16(deltaY)
 		f.mouseX = x
