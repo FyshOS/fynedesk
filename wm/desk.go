@@ -45,8 +45,6 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
-	mgr.frameExisting()
-
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -193,11 +191,7 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		}
 
 		x.bindKeys(win)
-		if name == x.root.Title() {
-			for _, framed := range x.frames {
-				x.raiseWinAboveID(framed.(*frame).id, x.rootID)
-			}
-		}
+		go x.frameExisting()
 
 		return
 	}
@@ -224,10 +218,13 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 		frame = newFrameBorderless(win, x)
 	}
 
+	x.bindKeys(win)
+	if x.root != nil && windowName(x.x, win) == x.root.Title() {
+		return
+	}
+
 	x.AddWindow(frame)
 	x.RaiseToTop(frame)
-
-	x.bindKeys(win)
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
