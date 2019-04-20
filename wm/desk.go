@@ -11,11 +11,7 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/fyne-io/desktop"
-)
-
-const (
-	borderWidth = 5
-	titleHeight = 15
+	"github.com/fyne-io/desktop/theme"
 )
 
 type x11WM struct {
@@ -154,7 +150,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	if frame != nil && frame.Decorated() {
 		err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(borderWidth), uint32(borderWidth + titleHeight),
+			[]uint32{uint32(x.borderWidth()), uint32(x.borderWidth() + x.titleHeight()),
 				uint32(width - 1), uint32(height - 1)}).Check()
 
 		if err != nil {
@@ -267,4 +263,28 @@ func (x *x11WM) frameExisting() {
 
 		x.setupWindow(child)
 	}
+}
+
+func (x *x11WM) borderWidth() uint16 {
+	scale := float32(1.0)
+	if x.root != nil {
+		scale = x.root.Canvas().Scale()
+	}
+	return uint16(float32(theme.BorderWidth) * scale)
+}
+
+func (x *x11WM) buttonWidth() uint16 {
+	scale := float32(1.0)
+	if x.root != nil {
+		scale = x.root.Canvas().Scale()
+	}
+	return uint16(float32(theme.ButtonWidth) * scale)
+}
+
+func (x *x11WM) titleHeight() uint16 {
+	scale := float32(1.0)
+	if x.root != nil {
+		scale = x.root.Canvas().Scale()
+	}
+	return uint16(float32(theme.TitleHeight) * scale)
 }

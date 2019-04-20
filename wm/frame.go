@@ -107,7 +107,8 @@ func (f *frame) press(x, y int16) {
 }
 
 func (f *frame) release(x, y int16) {
-	if x <= 25 && y <= 19 {
+	if x > int16(f.wm.borderWidth()) && x <= int16(f.wm.borderWidth()+f.wm.buttonWidth()) &&
+		y <= int16(f.wm.borderWidth()+f.wm.titleHeight()) {
 		f.Close()
 	}
 }
@@ -125,7 +126,8 @@ func (f *frame) drag(x, y int16) {
 		if f.framed {
 			err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-				[]uint32{uint32(borderWidth), uint32(borderWidth + titleHeight), uint32(f.width - 2*borderWidth), uint32(f.height - 2*borderWidth - titleHeight)}).Check()
+				[]uint32{uint32(f.wm.borderWidth()), uint32(f.wm.borderWidth() + f.wm.titleHeight()), uint32(f.width - 2*f.wm.borderWidth()),
+					uint32(f.height - 2*f.wm.borderWidth() - f.wm.titleHeight())}).Check()
 			if err != nil {
 				log.Println("ConfigureWindow Err", err)
 			}
@@ -147,9 +149,10 @@ func (f *frame) drag(x, y int16) {
 
 func (f *frame) motion(x, y int16) {
 	cursor := defaultCursor
-	if x <= 25 && y <= 19 {
+	if x > int16(f.wm.borderWidth()) && x <= int16(f.wm.borderWidth()+f.wm.buttonWidth()) &&
+		y <= int16(f.wm.borderWidth()+f.wm.titleHeight()) {
 		cursor = closeCursor
-	} else if x >= int16(f.width)-25 && y >= int16(f.height)-25 {
+	} else if x >= int16(f.width-f.wm.buttonWidth()) && y >= int16(f.height-f.wm.buttonWidth()) {
 		cursor = resizeCursor
 	}
 
@@ -204,7 +207,7 @@ func (f *frame) ApplyTheme() {
 	}
 
 	rf, gf, bf, _ := theme.ButtonColor().RGBA()
-	rect := xproto.Rectangle{X: 0, Y: 0, Width: 25, Height: 19}
+	rect := xproto.Rectangle{X: int16(f.wm.borderWidth()), Y: 0, Width: f.wm.buttonWidth(), Height: f.wm.titleHeight() + f.wm.borderWidth()}
 	values = []uint32{rf<<16 | gf<<8 | bf}
 	gc, err := xproto.NewGcontextId(f.wm.x.Conn())
 	err = xproto.CreateGCChecked(f.wm.x.Conn(), gc, xproto.Drawable(f.id), xproto.GcForeground, values).Check()
@@ -239,7 +242,8 @@ func (f *frame) ApplyTheme() {
 
 	xproto.CloseFont(f.wm.x.Conn(), fid)
 
-	err = xproto.ImageText8Checked(f.wm.x.Conn(), byte(len(title)), xproto.Drawable(f.id), gc, 29, 14, title).Check()
+	err = xproto.ImageText8Checked(f.wm.x.Conn(), byte(len(title)), xproto.Drawable(f.id), gc, int16(f.wm.buttonWidth()+f.wm.borderWidth()*2),
+		int16(f.wm.titleHeight()), title).Check()
 	if err != nil {
 		log.Println("PolyText8 Err", err)
 	}
@@ -260,24 +264,24 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 	}
 
 	r, g, b, _ := theme.BackgroundColor().RGBA()
-	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify |
-		xproto.EventMaskSubstructureNotify | xproto.EventMaskSubstructureRedirect |
+	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
+		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
 		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange}
 	err = xproto.CreateWindowChecked(wm.x.Conn(), wm.x.Screen().RootDepth, fr.Id, wm.x.RootWin(),
-		attrs.X, attrs.Y, attrs.Width+borderWidth*2, attrs.Height+borderWidth*2+titleHeight, 0, xproto.WindowClassInputOutput,
+		attrs.X, attrs.Y, attrs.Width+wm.borderWidth()*2, attrs.Height+wm.borderWidth()*2+wm.titleHeight(), 0, xproto.WindowClassInputOutput,
 		wm.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
 	if err != nil {
 		log.Println("CreateWindow Err", err)
 		return nil
 	}
 
-	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, width: attrs.Width + borderWidth*2, height: attrs.Height + borderWidth*2 + titleHeight,
-		wm: wm, framed: true}
+	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, width: attrs.Width + wm.borderWidth()*2,
+		height: attrs.Height + wm.borderWidth()*2 + wm.titleHeight(), wm: wm, framed: true}
 
 	fr.Map()
 	xproto.ChangeSaveSet(wm.x.Conn(), xproto.SetModeInsert, win)
-	xproto.ReparentWindow(wm.x.Conn(), win, fr.Id, borderWidth-1, borderWidth+titleHeight-1)
+	xproto.ReparentWindow(wm.x.Conn(), win, fr.Id, int16(wm.borderWidth()-1), int16(wm.borderWidth()+wm.titleHeight()-1))
 	xproto.MapWindow(wm.x.Conn(), win)
 
 	framed.ApplyTheme()
