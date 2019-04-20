@@ -1,6 +1,9 @@
 package desktop
 
 import (
+	"log"
+	"runtime/debug"
+
 	"fyne.io/fyne"
 )
 
@@ -78,6 +81,15 @@ func (l *deskLayout) Root() fyne.Window {
 }
 
 func (l *deskLayout) Run() {
+	debug.SetPanicOnFault(true)
+
+	defer func() {
+		if r := recover(); r != nil {
+			log.Println("Crashed!!!")
+			l.wm.Close() // attempt to close cleanly to leave X server running
+		}
+	}()
+
 	l.Root().ShowAndRun()
 }
 

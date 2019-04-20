@@ -2,6 +2,7 @@ package desktop
 
 import (
 	"image/color"
+	"os"
 	"time"
 
 	"fyne.io/fyne"
@@ -148,16 +149,22 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		widget.NewButton("Dark", func() {
 			fyne.CurrentApp().Settings().SetTheme(theme.DarkTheme())
 		}))
+	reload := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
+		os.Exit(1)
+	})
+
 	quit := widget.NewButton("Log Out", func() {
 		w.root.Close()
 	})
+	buttons := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, reload, nil),
+		reload, quit)
 
 	objects := []fyne.CanvasObject{
 		w.clock,
 		w.date,
 		layout.NewSpacer(),
 		themes,
-		quit,
+		buttons,
 	}
 
 	return &widgetRenderer{
