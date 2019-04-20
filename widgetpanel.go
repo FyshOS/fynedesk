@@ -145,9 +145,11 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	themes := fyne.NewContainerWithLayout(layout.NewGridLayout(2),
 		widget.NewButton("Light", func() {
 			fyne.CurrentApp().Settings().SetTheme(theme.LightTheme())
+			_ = os.Setenv("FYNE_THEME", "light")
 		}),
 		widget.NewButton("Dark", func() {
 			fyne.CurrentApp().Settings().SetTheme(theme.DarkTheme())
+			_ = os.Setenv("FYNE_THEME", "dark")
 		}))
 	reload := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		os.Exit(1)
