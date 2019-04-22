@@ -1,8 +1,13 @@
 package desktop
 
 import (
+	"fmt"
 	"image/color"
+	"io/ioutil"
+	"log"
 	"os"
+	"strconv"
+	"strings"
 	"time"
 
 	"fyne.io/fyne"
@@ -53,8 +58,8 @@ type widgetPanel struct {
 	pos    fyne.Position
 	hidden bool
 
-	clock *canvas.Text
-	date  *widget.Label
+	clock         *canvas.Text
+	date, battery *widget.Label
 }
 
 func (w *widgetPanel) Hide() {
@@ -111,6 +116,17 @@ func (w *widgetPanel) clockTick() {
 	}()
 }
 
+func (w *widgetPanel) batteryTick() {
+	tick := time.NewTicker(time.Second * 10)
+	go func() {
+		for {
+			<-tick.C
+			w.battery.Text = formattedBattery()
+			canvas.Refresh(w.battery)
+		}
+	}()
+}
+
 func formattedTime() string {
 	return time.Now().Format("15:04pm")
 }
@@ -119,7 +135,34 @@ func formattedDate() string {
 	return time.Now().Format("2 January")
 }
 
-func (w *widgetPanel) createClock() *widget.Box {
+func formattedBattery() string {
+	nowStr, err1 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_now")
+	fullStr, err2 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_full")
+	if err1 != nil || err2 != nil {
+		log.Println("Error reading battery info", err1)
+		return "n/a"
+	}
+
+	now, err1 := strconv.Atoi(strings.TrimSpace(string(nowStr)))
+	full, err2 := strconv.Atoi(strings.TrimSpace(string(fullStr)))
+	if err1 != nil || err2 != nil {
+		log.Println("Error converting battery info", err1)
+		return "err"
+	}
+
+	return fmt.Sprintf("%d%%", int(float32(now)/float32(full)*100))
+}
+
+func (w *widgetPanel) createBattery() {
+	w.battery = &widget.Label{
+		Text:      formattedBattery(),
+		Alignment: fyne.TextAlignTrailing,
+	}
+
+	go w.batteryTick()
+}
+
+func (w *widgetPanel) createClock() {
 	var style fyne.TextStyle
 	style.Monospace = true
 
@@ -137,8 +180,6 @@ func (w *widgetPanel) createClock() *widget.Box {
 	}
 
 	go w.clockTick()
-
-	return widget.NewVBox(w.clock, w.date)
 }
 
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
@@ -161,9 +202,14 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	buttons := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, reload, nil),
 		reload, quit)
 
+	battery := fyne.NewContainerWithLayout(layout.NewGridLayout(2),
+		widget.NewLabel("Battery:"),
+		w.battery)
+
 	objects := []fyne.CanvasObject{
 		w.clock,
 		w.date,
+		battery,
 		layout.NewSpacer(),
 		themes,
 		buttons,
@@ -181,6 +227,7 @@ func newWidgetPanel(rootWin fyne.Window) *widgetPanel {
 		root: rootWin,
 	}
 	w.createClock()
+	w.createBattery()
 
 	return w
 }
