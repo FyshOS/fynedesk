@@ -195,6 +195,10 @@ func (x *x11WM) showWindow(win xproto.Window) {
 			log.Println("ShowWindow Err", err)
 		}
 
+		if name != x.root.Title() {
+			return
+		}
+
 		x.bindKeys(win)
 		go x.frameExisting()
 
