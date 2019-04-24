@@ -15,6 +15,8 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
+
+	wmtheme "github.com/fyne-io/desktop/theme"
 )
 
 type widgetRenderer struct {
@@ -120,9 +122,8 @@ func (w *widgetPanel) batteryTick() {
 	tick := time.NewTicker(time.Second * 10)
 	go func() {
 		for {
+			w.battery.SetValue(battery())
 			<-tick.C
-			w.battery.Text = formattedBattery()
-			canvas.Refresh(w.battery)
 		}
 	}()
 }
@@ -135,29 +136,27 @@ func formattedDate() string {
 	return time.Now().Format("2 January")
 }
 
-func formattedBattery() string {
+func battery() float64 {
 	nowStr, err1 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_now")
 	fullStr, err2 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_full")
 	if err1 != nil || err2 != nil {
 		log.Println("Error reading battery info", err1)
-		return "n/a"
+		return 0
 	}
 
 	now, err1 := strconv.Atoi(strings.TrimSpace(string(nowStr)))
 	full, err2 := strconv.Atoi(strings.TrimSpace(string(fullStr)))
 	if err1 != nil || err2 != nil {
 		log.Println("Error converting battery info", err1)
-		return "err"
+		return 0
 	}
 
-	return fmt.Sprintf("%d%%", int(float32(now)/float32(full)*100))
+	return float64(now)/float64(full)
 }
 
 func (w *widgetPanel) createBattery() {
-	w.battery = &widget.Label{
-		Text:      formattedBattery(),
-		Alignment: fyne.TextAlignTrailing,
-	}
+	w.battery = widget.NewProgressBar()
+	w.brightness = widget.NewProgressBar()
 
 	go w.batteryTick()
 }
@@ -202,15 +201,13 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	buttons := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, reload, nil),
 		reload, quit)
 
-	battery := fyne.NewContainerWithLayout(layout.NewGridLayout(2),
-		widget.NewLabel("Battery:"),
-		w.battery)
+	batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
 
 	objects := []fyne.CanvasObject{
 		w.clock,
 		w.date,
-		battery,
 		layout.NewSpacer(),
+		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, w.battery),
 		themes,
 		buttons,
 	}
