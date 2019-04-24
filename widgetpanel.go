@@ -182,6 +182,12 @@ func brightness() float64 {
 func (w *widgetPanel) setBrightness(diff int) {
 	value := int(brightness()*100) + diff
 
+	if value < 5 {
+		value = 5
+	} else if value > 100 {
+		value = 100
+	}
+
 	err := exec.Command("xbacklight", "-set", fmt.Sprintf("%d", value)).Run()
 	if err != nil {
 		log.Println("Error running xbacklight", err)
@@ -233,10 +239,10 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
 	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-		w.setBrightness(-10)
+		w.setBrightness(-5)
 	})
 	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		w.setBrightness(10)
+		w.setBrightness(5)
 	})
 	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
 		less, w.brightness, more)
