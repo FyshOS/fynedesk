@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
 	"strconv"
 	"strings"
 	"time"
@@ -60,8 +61,9 @@ type widgetPanel struct {
 	pos    fyne.Position
 	hidden bool
 
-	clock         *canvas.Text
-	date, battery *widget.Label
+	clock               *canvas.Text
+	date                *widget.Label
+	battery, brightness *widget.ProgressBar
 }
 
 func (w *widgetPanel) Hide() {
@@ -123,6 +125,7 @@ func (w *widgetPanel) batteryTick() {
 	go func() {
 		for {
 			w.battery.SetValue(battery())
+			w.brightness.SetValue(brightness())
 			<-tick.C
 		}
 	}()
@@ -151,7 +154,7 @@ func battery() float64 {
 		return 0
 	}
 
-	return float64(now)/float64(full)
+	return float64(now) / float64(full)
 }
 
 func (w *widgetPanel) createBattery() {
@@ -159,6 +162,32 @@ func (w *widgetPanel) createBattery() {
 	w.brightness = widget.NewProgressBar()
 
 	go w.batteryTick()
+}
+
+func brightness() float64 {
+	out, err := exec.Command("xbacklight").Output()
+	if err != nil {
+		log.Println("Error running xbacklight", err)
+	} else {
+		ret, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
+		if err != nil {
+			log.Println("Error reading brightness info", err)
+			return 0
+		}
+		return float64(ret) / 100
+	}
+	return 0
+}
+
+func (w *widgetPanel) setBrightness(diff int) {
+	value := int(brightness()*100) + diff
+
+	err := exec.Command("xbacklight", "-set", fmt.Sprintf("%d", value)).Run()
+	if err != nil {
+		log.Println("Error running xbacklight", err)
+	} else {
+		w.brightness.SetValue(brightness())
+	}
 }
 
 func (w *widgetPanel) createClock() {
@@ -202,12 +231,22 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		reload, quit)
 
 	batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
+	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
+	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
+		w.setBrightness(-10)
+	})
+	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+		w.setBrightness(10)
+	})
+	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
+		less, w.brightness, more)
 
 	objects := []fyne.CanvasObject{
 		w.clock,
 		w.date,
 		layout.NewSpacer(),
 		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, w.battery),
+		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright),
 		themes,
 		buttons,
 	}

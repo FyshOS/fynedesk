@@ -21,6 +21,12 @@ standard go tools:
 
     go get -u fyne.io/fyne
 
+# Dependencies
+
+For a full desktop experience you will also need the following external tools installed:
+
+* xbacklight
+
 # Getting Started
 
 Using standard go tools you can install Fyne's desktop using:
