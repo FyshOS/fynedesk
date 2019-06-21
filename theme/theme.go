@@ -7,9 +7,9 @@ var (
 	PointerDefault = pointerDefault
 
 	// BatteryIcon is the material design icon for battery in light and dark theme
-	BatteryIcon = theme.NewThemedResource(batteryDark, batteryLight)
+	BatteryIcon = theme.NewThemedResource(batteryIcon, nil)
 	// BrightnessIcon is the material design icon for brightness in light and dark theme
-	BrightnessIcon = theme.NewThemedResource(brightnessDark, brightnessLight)
+	BrightnessIcon = theme.NewThemedResource(brightnessIcon, nil)
 
 	// BorderWidth is the width of window frames
 	BorderWidth = 4
