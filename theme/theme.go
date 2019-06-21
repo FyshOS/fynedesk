@@ -6,6 +6,9 @@ var (
 	// PointerDefault is the standard pointer resource
 	PointerDefault = pointerDefault
 
+	// Background is the default background image
+	Background = lochFynePicture
+
 	// BatteryIcon is the material design icon for battery in light and dark theme
 	BatteryIcon = theme.NewThemedResource(batteryIcon, nil)
 	// BrightnessIcon is the material design icon for brightness in light and dark theme
