@@ -217,7 +217,6 @@ func (f *frame) ApplyTheme() {
 	scale := float32(1) // TODO detect like the gl driver
 	f.canvas.SetScale(scale)
 	f.canvas.SetContent(newBorder(title))
-	f.canvas.ApplyTheme()
 
 	f.canvas.Resize(fyne.NewSize(int(float32(f.width)*scale), int(float32(f.height)*scale)))
 	img := f.canvas.Capture()
