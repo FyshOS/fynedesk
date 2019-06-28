@@ -17,7 +17,7 @@ var (
 	// BorderWidth is the width of window frames
 	BorderWidth = 4
 	// ButtonWidth is the width of window buttons
-	ButtonWidth = 24
+	ButtonWidth = 28
 	// TitleHeight is the height of a frame titleBar
-	TitleHeight = 16
+	TitleHeight = 24
 )

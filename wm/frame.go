@@ -5,14 +5,19 @@ package wm
 import (
 	"log"
 
+	"fyne.io/fyne"
 	"fyne.io/fyne/theme"
-	"github.com/fyne-io/desktop"
+	"fyne.io/fyne/widget"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/BurntSushi/xgbutil/xwindow"
+
+	"github.com/fyne-io/desktop"
+	"github.com/fyne-io/desktop/driver"
+	wmTheme "github.com/fyne-io/desktop/theme"
 )
 
 type frame struct {
@@ -24,6 +29,7 @@ type frame struct {
 
 	framed bool
 	wm     *x11WM
+	canvas driver.WindowlessCanvas
 }
 
 func (s *stack) frameForWin(id xproto.Window) desktop.Window {
@@ -113,8 +119,8 @@ func (f *frame) press(x, y int16) {
 }
 
 func (f *frame) release(x, y int16) {
-	if x > int16(f.wm.borderWidth()) && x <= int16(f.wm.borderWidth()+f.wm.buttonWidth()) &&
-		y <= int16(f.wm.borderWidth()+f.wm.titleHeight()) {
+	if x > int16(f.wm.borderWidth()) && x < int16(f.wm.borderWidth()+f.wm.buttonWidth()) &&
+		y < int16(f.wm.borderWidth()+f.wm.titleHeight()) {
 		f.Close()
 	}
 }
@@ -137,6 +143,8 @@ func (f *frame) drag(x, y int16) {
 			if err != nil {
 				log.Println("ConfigureWindow Err", err)
 			}
+
+			f.ApplyTheme()
 		}
 	} else {
 		f.x += deltaX
@@ -149,8 +157,6 @@ func (f *frame) drag(x, y int16) {
 	if err != nil {
 		log.Println("ConfigureWindow Err", err)
 	}
-
-	f.ApplyTheme()
 }
 
 func (f *frame) motion(x, y int16) {
@@ -181,8 +187,6 @@ func (f *frame) RaiseAbove(win desktop.Window) {
 	}
 
 	f.wm.raiseWinAboveID(f.id, topID)
-
-	f.ApplyTheme()
 }
 
 func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
@@ -198,62 +202,71 @@ func (f *frame) ApplyTheme() {
 		return
 	}
 
-	r, g, b, _ := theme.BackgroundColor().RGBA()
-	values := []uint32{r<<16 | g<<8 | b}
-
-	err := xproto.ChangeWindowAttributesChecked(f.wm.x.Conn(), f.id,
-		xproto.CwBackPixel, values).Check()
-	if err != nil {
-		log.Println("ChangeAttribute Err", err)
-	}
-
-	err = xproto.ClearAreaChecked(f.wm.x.Conn(), false, f.id, 0, 0, 0, 0).Check()
-	if err != nil {
-		log.Println("ClearArea Err", err)
-	}
-
-	rf, gf, bf, _ := theme.ButtonColor().RGBA()
-	rect := xproto.Rectangle{X: int16(f.wm.borderWidth()), Y: 0, Width: f.wm.buttonWidth(), Height: f.wm.titleHeight() + f.wm.borderWidth()}
-	values = []uint32{rf<<16 | gf<<8 | bf}
-	gc, err := xproto.NewGcontextId(f.wm.x.Conn())
-	err = xproto.CreateGCChecked(f.wm.x.Conn(), gc, xproto.Drawable(f.id), xproto.GcForeground, values).Check()
-	if err != nil {
-		log.Println("CreateGraphics Err", err)
-	}
-	err = xproto.PolyFillRectangleChecked(f.wm.x.Conn(), xproto.Drawable(f.id), gc, []xproto.Rectangle{rect}).Check()
-	if err != nil {
-		log.Println("PolyRectangle Err", err)
-	}
-	xproto.FreeGC(f.wm.x.Conn(), gc)
-
-	fid, err := xproto.NewFontId(f.wm.x.Conn())
-	err = xproto.OpenFontChecked(f.wm.x.Conn(), fid, 5, "fixed").Check()
-	if err != nil {
-		log.Println("OpenFont Err", err)
-	}
-
+	depth := f.wm.x.Screen().RootDepth
+	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
+	bgColor := backR<<16 | backG<<8 | backB
 	prop, _ := xprop.GetProperty(f.wm.x, f.win, "WM_NAME")
 	title := ""
 	if prop != nil {
 		title = string(prop.Value)
 	}
 
-	rf, gf, bf, _ = theme.TextColor().RGBA()
-	values = []uint32{rf<<16 | gf<<8 | bf, r<<16 | g<<8 | b, uint32(fid)}
-	gc, err = xproto.NewGcontextId(f.wm.x.Conn())
-	err = xproto.CreateGCChecked(f.wm.x.Conn(), gc, xproto.Drawable(f.id), xproto.GcForeground|xproto.GcBackground|xproto.GcFont, values).Check()
+	if f.canvas == nil {
+		f.canvas = driver.NewSoftwareCanvas(widget.NewLabel(title))
+	}
+	scale := float32(1) // TODO detect like the gl driver
+	f.canvas.SetScale(scale)
+	f.canvas.SetContent(newBorder(title))
+	f.canvas.ApplyTheme()
+
+	f.canvas.Resize(fyne.NewSize(int(float32(f.width)*scale), int(float32(f.height)*scale)))
+	img := f.canvas.Capture()
+
+	pid, err := xproto.NewPixmapId(f.wm.x.Conn())
 	if err != nil {
-		log.Println("CreateGraphics Err", err)
+		log.Println("NewPixmap Err", err)
+		return
+	}
+	xproto.CreatePixmap(f.wm.x.Conn(), depth, pid,
+		xproto.Drawable(f.wm.x.Screen().Root), f.width, f.height)
+
+	draw, _ := xproto.NewGcontextId(f.wm.x.Conn())
+	xproto.CreateGC(f.wm.x.Conn(), draw, xproto.Drawable(pid), xproto.GcForeground, []uint32{bgColor})
+
+	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
+	xproto.PolyFillRectangleChecked(f.wm.x.Conn(), xproto.Drawable(pid), draw, []xproto.Rectangle{rect})
+
+	// DATA is BGRx
+	width, height := uint32(f.width), uint32(wmTheme.TitleHeight+wmTheme.BorderWidth)
+	data := make([]byte, width*height*4)
+	i := uint32(0)
+	for y := uint32(0); y < height; y++ {
+		for x := uint32(0); x < width; x++ {
+			r, g, b, _ := img.At(int(x), int(y)).RGBA()
+
+			data[i] = byte(b)
+			data[i+1] = byte(g)
+			data[i+2] = byte(r)
+			data[i+3] = 0
+
+			i += 4
+		}
+
 	}
 
-	xproto.CloseFont(f.wm.x.Conn(), fid)
+	xproto.PutImageChecked(f.wm.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
+		uint16(width), uint16(height), 0, 0, 0, depth, data)
 
-	err = xproto.ImageText8Checked(f.wm.x.Conn(), byte(len(title)), xproto.Drawable(f.id), gc, int16(f.wm.buttonWidth()+f.wm.borderWidth()*2),
-		int16(f.wm.titleHeight()), title).Check()
+	err = xproto.ChangeWindowAttributesChecked(f.wm.x.Conn(), f.id,
+		xproto.CwBackPixmap, []uint32{uint32(pid)}).Check()
 	if err != nil {
-		log.Println("PolyText8 Err", err)
+		log.Println("ChangeAttribute Err", err)
+		err = xproto.ChangeWindowAttributesChecked(f.wm.x.Conn(), f.id,
+			xproto.CwBackPixmap, []uint32{0}).Check()
+		log.Println(err)
 	}
 
+	xproto.FreePixmap(f.wm.x.Conn(), pid)
 }
 
 func newFrame(win xproto.Window, wm *x11WM) *frame {
@@ -284,13 +297,13 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 
 	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, width: attrs.Width + wm.borderWidth()*2,
 		height: attrs.Height + wm.borderWidth()*2 + wm.titleHeight(), wm: wm, framed: true}
+	framed.ApplyTheme()
 
 	fr.Map()
 	xproto.ChangeSaveSet(wm.x.Conn(), xproto.SetModeInsert, win)
 	xproto.ReparentWindow(wm.x.Conn(), win, fr.Id, int16(wm.borderWidth()-1), int16(wm.borderWidth()+wm.titleHeight()-1))
 	xproto.MapWindow(wm.x.Conn(), win)
 
-	framed.ApplyTheme()
 	return framed
 }
 
