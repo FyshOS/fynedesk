@@ -27,7 +27,9 @@ type frame struct {
 	mouseX, mouseY int16
 	mouseResize    bool
 
-	framed bool
+	framed              bool
+	minWidth, minHeight uint
+
 	wm     *x11WM
 	canvas driver.WindowlessCanvas
 }
@@ -135,11 +137,20 @@ func (f *frame) drag(x, y int16) {
 		f.mouseX = x
 		f.mouseY = y
 
+		borderWidth := 2 * f.wm.borderWidth()
+		if f.width < uint16(f.minWidth)+borderWidth {
+			f.width = uint16(f.minWidth) + borderWidth
+		}
+		borderHeight := 2*f.wm.borderWidth() + f.wm.titleHeight()
+		if f.height < uint16(f.minHeight)+borderHeight {
+			f.height = uint16(f.minHeight) + borderHeight
+		}
+
 		if f.framed {
 			err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-				[]uint32{uint32(f.wm.borderWidth()), uint32(f.wm.borderWidth() + f.wm.titleHeight()), uint32(f.width - 2*f.wm.borderWidth()),
-					uint32(f.height - 2*f.wm.borderWidth() - f.wm.titleHeight())}).Check()
+				[]uint32{uint32(f.wm.borderWidth()), uint32(f.wm.borderWidth() + f.wm.titleHeight()),
+					uint32(f.width - borderWidth), uint32(f.height - borderHeight)}).Check()
 			if err != nil {
 				log.Println("ConfigureWindow Err", err)
 			}

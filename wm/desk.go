@@ -146,18 +146,21 @@ func (x *x11WM) runLoop() {
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
-	frame := x.frameForWin(win)
+	fr := x.frameForWin(win)
 	width := ev.Width
 	height := ev.Height
 
-	if frame != nil && frame.Decorated() {
-		err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(x.borderWidth()), uint32(x.borderWidth() + x.titleHeight()),
-				uint32(width - 1), uint32(height - 1)}).Check()
+	if fr != nil {
+		fr.(*frame).minWidth, fr.(*frame).minHeight = windowMinSize(x.x, win)
+		if fr.Decorated() {
+			err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+				[]uint32{uint32(x.borderWidth()), uint32(x.borderWidth() + x.titleHeight()),
+					uint32(width - 1), uint32(height - 1)}).Check()
 
-		if err != nil {
-			log.Println("ConfigureFrame Err", err)
+			if err != nil {
+				log.Println("ConfigureFrame Err", err)
+			}
 		}
 		return
 	}

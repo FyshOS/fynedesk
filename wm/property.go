@@ -30,3 +30,12 @@ func windowBorderless(x *xgbutil.XUtil, win xproto.Window) bool {
 
 	return false
 }
+
+func windowMinSize(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
+	hints, err := icccm.WmNormalHintsGet(x, win)
+	if err == nil {
+		return hints.MinWidth, hints.MinHeight
+	}
+
+	return 0, 0
+}
