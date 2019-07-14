@@ -32,6 +32,10 @@ func (x *x11WM) Close() {
 	x.x.Conn().Close()
 }
 
+func (x *x11WM) AddStackListener(l desktop.StackListener) {
+	x.stack.listeners = append(x.stack.listeners, l)
+}
+
 func (x *x11WM) SetRoot(win fyne.Window) {
 	x.root = win
 }

@@ -29,6 +29,7 @@ type frame struct {
 
 	framed              bool
 	minWidth, minHeight uint
+	title               string
 
 	wm     *x11WM
 	canvas driver.WindowlessCanvas
@@ -62,6 +63,14 @@ func (f *frame) unFrame() {
 
 func (f *frame) Decorated() bool {
 	return f.framed
+}
+
+func (f *frame) Title() string {
+	if f.title == "" {
+		f.title = windowName(f.wm.x, f.win)
+	}
+
+	return f.title
 }
 
 func (f *frame) Close() {
@@ -216,12 +225,8 @@ func (f *frame) ApplyTheme() {
 	depth := f.wm.x.Screen().RootDepth
 	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
 	bgColor := backR<<16 | backG<<8 | backB
-	prop, _ := xprop.GetProperty(f.wm.x, f.win, "WM_NAME")
-	title := ""
-	if prop != nil {
-		title = string(prop.Value)
-	}
 
+	title := f.Title()
 	if f.canvas == nil {
 		f.canvas = driver.NewSoftwareCanvas(widget.NewLabel(title))
 	}

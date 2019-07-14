@@ -5,6 +5,7 @@ import "fyne.io/fyne"
 // WindowManager describes a full window manager which may be loaded as part of the setup.
 type WindowManager interface {
 	Stack
+	AddStackListener(StackListener)
 
 	Close()
 	SetRoot(window fyne.Window)
@@ -14,6 +15,7 @@ type WindowManager interface {
 // There may be borders or not depending on configuration.
 type Window interface {
 	Decorated() bool // Should this window have borders drawn?
+	Title() string   // The title of this window
 
 	Focus()            // Ask this window to get input focus
 	Close()            // Close this window and possibly the application running it
@@ -31,4 +33,9 @@ type Stack interface {
 	Windows() []Window // Return a list of all managed windows. This should not be modified
 
 	RaiseToTop(Window) // Request that the passed window become top of the stack.
+}
+
+type StackListener interface {
+	WindowAdded(Window)
+	WindowRemoved(Window)
 }

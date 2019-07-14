@@ -4,6 +4,8 @@ import "github.com/fyne-io/desktop"
 
 type stack struct {
 	frames []desktop.Window
+
+	listeners []desktop.StackListener
 }
 
 func (s *stack) addToStack(win desktop.Window) {
@@ -29,6 +31,10 @@ func (s *stack) AddWindow(win desktop.Window) {
 		return
 	}
 	s.addToStack(win)
+
+	for _, l := range s.listeners {
+		l.WindowAdded(win)
+	}
 }
 
 func (s *stack) RemoveWindow(win desktop.Window) {
@@ -36,6 +42,10 @@ func (s *stack) RemoveWindow(win desktop.Window) {
 
 	if s.TopWindow() != nil {
 		s.TopWindow().Focus()
+	}
+
+	for _, l := range s.listeners {
+		l.WindowRemoved(win)
 	}
 }
 
