@@ -1,14 +1,11 @@
 package driver
 
 import (
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/widget"
-	"github.com/golang/freetype"
-	"github.com/golang/freetype/truetype"
-	"golang.org/x/image/font"
 	"image"
 	"image/draw"
+
+	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
 )
 
 type WindowlessCanvas interface {
@@ -121,43 +118,23 @@ func (c *softwareCanvas) Capture() image.Image {
 
 	size := c.Size().Union(c.content.MinSize())
 	bounds := image.Rect(0, 0, int(float32(size.Width)*c.Scale()), int(float32(size.Height)*c.Scale()))
-	img := image.NewRGBA(bounds)
-	draw.Draw(img, bounds, image.NewUniform(theme.BackgroundColor()), image.ZP, draw.Src)
+	base := image.NewRGBA(bounds)
+	draw.Draw(base, bounds, image.NewUniform(theme.BackgroundColor()), image.ZP, draw.Src)
 
 	paint := func(obj fyne.CanvasObject, pos fyne.Position) {
-		if text, ok := obj.(*canvas.Text); ok {
-			bounds := text.MinSize()
-			width := bounds.Width   //textureScaleInt(c, bounds.Width)
-			height := bounds.Height //textureScaleInt(c, bounds.Height)
-			txtImg := image.NewRGBA(image.Rect(0, 0, width, height))
-
-			var opts truetype.Options
-			fontSize := float64(text.TextSize) * float64(c.Scale())
-			opts.Size = fontSize
-			opts.DPI = 78.0
-			f, _ := truetype.Parse(theme.TextFont().Content())
-			face := truetype.NewFace(f, &opts)
-
-			d := font.Drawer{}
-			d.Dst = txtImg
-			d.Src = &image.Uniform{C: text.Color}
-			d.Face = face
-			d.Dot = freetype.Pt(0, height-face.Metrics().Descent.Ceil())
-			d.DrawString(text.Text)
-
-			imgBounds := image.Rect(pos.X, pos.Y, text.Size().Width+pos.X, text.Size().Height+pos.Y)
-			draw.Draw(img, imgBounds, txtImg, image.ZP, draw.Over)
+		if img, ok := obj.(*canvas.Image); ok {
+			c.drawImage(img, pos, size, base)
+		} else if text, ok := obj.(*canvas.Text); ok {
+			c.drawText(text, pos, size, base)
 		} else if rect, ok := obj.(*canvas.Rectangle); ok {
-			bounds = image.Rect(pos.X, pos.Y, rect.Size().Width+pos.X, rect.Size().Height+pos.Y)
-			draw.Draw(img, bounds, image.NewUniform(rect.FillColor), image.ZP, draw.Over)
+			c.drawRectangle(rect, pos, size, base)
 		} else if wid, ok := obj.(fyne.Widget); ok {
-			bounds = image.Rect(pos.X, pos.Y, wid.Size().Width+pos.X, wid.Size().Height+pos.Y)
-			draw.Draw(img, bounds, image.NewUniform(widget.Renderer(wid).BackgroundColor()), image.ZP, draw.Over)
+			c.drawWidget(wid, pos, size, base)
 		}
 	}
 
 	walkObjectTree(c.content, paint)
-	return img
+	return base
 }
 
 func NewSoftwareCanvas(content fyne.CanvasObject) WindowlessCanvas {
