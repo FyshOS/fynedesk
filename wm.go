@@ -35,6 +35,8 @@ type Stack interface {
 	RaiseToTop(Window) // Request that the passed window become top of the stack.
 }
 
+// StackListener is used to listen for events in the window manager stack (window list).
+// See WindowManager.AddStackListener.
 type StackListener interface {
 	WindowAdded(Window)
 	WindowRemoved(Window)
