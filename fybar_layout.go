@@ -82,6 +82,9 @@ func (fbl *FybarLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 				iconX := child.Position().X
 				scale := 1.75 - (math.Abs(float64(mouseX-(iconX+int(fyconSize/2.0))) / float64((fyconSize * 4.0))))
 				newSize := int(math.Floor(float64(float64(fyconSize) * scale)))
+				if newSize < fyconSize {
+					newSize = fyconSize
+				}
 				child.Resize(fyne.NewSize(newSize, newSize))
 				if largestY < newSize {
 					largestY = newSize
@@ -98,6 +101,9 @@ func (fbl *FybarLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 				iconY := child.Position().Y
 				scale := 1.75 - (math.Abs(float64(mouseY-(iconY+int(fyconSize/2.0))) / float64((fyconSize * 4.0))))
 				newSize := int(math.Floor(float64(float64(fyconSize) * scale)))
+				if newSize < fyconSize {
+					newSize = fyconSize
+				}
 				child.Resize(fyne.NewSize(newSize, newSize))
 				if largestX < newSize {
 					largestX = newSize
