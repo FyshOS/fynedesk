@@ -7,7 +7,7 @@ import (
 )
 
 // A base widget class to define the standard widget behaviours.
-type fybarBaseWidget struct {
+type baseWidget struct {
 	size     fyne.Size
 	position fyne.Position
 	Hidden   bool
@@ -15,43 +15,43 @@ type fybarBaseWidget struct {
 }
 
 // Get the current size of this widget.
-func (w *fybarBaseWidget) Size() fyne.Size {
+func (w *baseWidget) Size() fyne.Size {
 	return w.size
 }
 
 // Set a new size for a widget.
 // Note this should not be used if the widget is being managed by a Layout within a Container.
-func (w *fybarBaseWidget) resize(size fyne.Size, parent fyne.Widget) {
+func (w *baseWidget) resize(size fyne.Size, parent fyne.Widget) {
 	w.size = size
 
 	widget.Renderer(parent).Layout(size)
 }
 
 // Get the current position of this widget, relative to its parent.
-func (w *fybarBaseWidget) Position() fyne.Position {
+func (w *baseWidget) Position() fyne.Position {
 	return w.position
 }
 
 // Move the widget to a new position, relative to its parent.
 // Note this should not be used if the widget is being managed by a Layout within a Container.
-func (w *fybarBaseWidget) move(pos fyne.Position, parent fyne.Widget) {
+func (w *baseWidget) move(pos fyne.Position, parent fyne.Widget) {
 	w.position = pos
 
 	canvas.Refresh(parent)
 }
 
-func (w *fybarBaseWidget) minSize(parent fyne.Widget) fyne.Size {
+func (w *baseWidget) minSize(parent fyne.Widget) fyne.Size {
 	if widget.Renderer(parent) == nil {
 		return fyne.NewSize(0, 0)
 	}
 	return widget.Renderer(parent).MinSize()
 }
 
-func (w *fybarBaseWidget) Visible() bool {
+func (w *baseWidget) Visible() bool {
 	return !w.Hidden
 }
 
-func (w *fybarBaseWidget) show(parent fyne.Widget) {
+func (w *baseWidget) show(parent fyne.Widget) {
 	if !w.Hidden {
 		return
 	}
@@ -60,7 +60,7 @@ func (w *fybarBaseWidget) show(parent fyne.Widget) {
 	canvas.Refresh(parent)
 }
 
-func (w *fybarBaseWidget) hide(parent fyne.Widget) {
+func (w *baseWidget) hide(parent fyne.Widget) {
 	if w.Hidden {
 		return
 	}
@@ -69,7 +69,7 @@ func (w *fybarBaseWidget) hide(parent fyne.Widget) {
 	canvas.Refresh(parent)
 }
 
-func (w *fybarBaseWidget) enable(parent fyne.Widget) {
+func (w *baseWidget) enable(parent fyne.Widget) {
 	if !w.disabled {
 		return
 	}
@@ -78,7 +78,7 @@ func (w *fybarBaseWidget) enable(parent fyne.Widget) {
 	canvas.Refresh(parent)
 }
 
-func (w *fybarBaseWidget) disable(parent fyne.Widget) {
+func (w *baseWidget) disable(parent fyne.Widget) {
 	if w.disabled {
 		return
 	}
