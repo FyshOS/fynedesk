@@ -80,8 +80,8 @@ func (fbl *FybarLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 			if fbl.MouseInside {
 				mouseX := fbl.MousePosition.X
 				iconX := child.Position().X
-				scale := 1.75 - (math.Abs(float64(mouseX-(iconX+int(fyconSize/2.0))) / float64((fyconSize * 4.0))))
-				newSize := int(math.Floor(float64(float64(fyconSize) * scale)))
+				scale := 1.75 - (math.Abs(float64(mouseX-(iconX+fyconSize/2))) / float64((fyconSize * 4)))
+				newSize := int(math.Floor(float64(fyconSize) * scale))
 				if newSize < fyconSize {
 					newSize = fyconSize
 				}
@@ -99,8 +99,8 @@ func (fbl *FybarLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 			if fbl.MouseInside {
 				mouseY := fbl.MousePosition.Y
 				iconY := child.Position().Y
-				scale := 1.75 - (math.Abs(float64(mouseY-(iconY+int(fyconSize/2.0))) / float64((fyconSize * 4.0))))
-				newSize := int(math.Floor(float64(float64(fyconSize) * scale)))
+				scale := 1.75 - (math.Abs(float64(mouseY-(iconY+fyconSize/2))) / float64((fyconSize * 4)))
+				newSize := int(math.Floor(float64(fyconSize) * scale))
 				if newSize < fyconSize {
 					newSize = fyconSize
 				}

@@ -1,13 +1,10 @@
 package desktop
 
 import (
-	"sync"
-
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/widget"
 )
-
-var renderers sync.Map
 
 // A base widget class to define the standard widget behaviours.
 type fybarBaseWidget struct {
@@ -27,7 +24,7 @@ func (w *fybarBaseWidget) Size() fyne.Size {
 func (w *fybarBaseWidget) resize(size fyne.Size, parent fyne.Widget) {
 	w.size = size
 
-	Renderer(parent).Layout(size)
+	widget.Renderer(parent).Layout(size)
 }
 
 // Get the current position of this widget, relative to its parent.
@@ -44,10 +41,10 @@ func (w *fybarBaseWidget) move(pos fyne.Position, parent fyne.Widget) {
 }
 
 func (w *fybarBaseWidget) minSize(parent fyne.Widget) fyne.Size {
-	if Renderer(parent) == nil {
+	if widget.Renderer(parent) == nil {
 		return fyne.NewSize(0, 0)
 	}
-	return Renderer(parent).MinSize()
+	return widget.Renderer(parent).MinSize()
 }
 
 func (w *fybarBaseWidget) Visible() bool {
@@ -88,32 +85,4 @@ func (w *fybarBaseWidget) disable(parent fyne.Widget) {
 
 	w.disabled = true
 	canvas.Refresh(parent)
-}
-
-// Renderer looks up the render implementation for a widget
-func Renderer(wid fyne.Widget) fyne.WidgetRenderer {
-	renderer, ok := renderers.Load(wid)
-	if !ok {
-		renderer = wid.CreateRenderer()
-		renderers.Store(wid, renderer)
-	}
-
-	return renderer.(fyne.WidgetRenderer)
-}
-
-// DestroyRenderer frees a render implementation for a widget.
-// This is typically for internal use only.
-func DestroyRenderer(wid fyne.Widget) {
-	Renderer(wid).Destroy()
-
-	renderers.Delete(wid)
-}
-
-// Refresh instructs the containing canvas to refresh the specified widget.
-func Refresh(wid fyne.Widget) {
-	render := Renderer(wid)
-
-	if render != nil {
-		render.Refresh()
-	}
 }
