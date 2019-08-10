@@ -59,7 +59,7 @@ func (fy *fyconRenderer) Destroy() {
 
 // Fycon widget is a basic image component that load's its resource to match the theme.
 type Fycon struct {
-	fybarBaseWidget
+	baseWidget
 
 	OnTapped func()
 	Resource fyne.Resource // The resource for this Fycon

@@ -9,12 +9,39 @@ import (
 	"strings"
 )
 
-//FybarDesktop contains the information from Linux .desktop files
-type FybarDesktop struct {
+//FdoDesktop contains the information from Linux .desktop files
+type FdoDesktop struct {
 	Name     string
 	IconName string
 	IconPath string
 	Exec     string
+}
+
+//FdoLookupXdgDataDirs returns a string slice of all XDG_DATA_DIRS
+func FdoLookupXdgDataDirs() []string {
+	dataLocation := os.Getenv("XDG_DATA_DIRS")
+	locationLookup := strings.Split(dataLocation, ":")
+	if len(locationLookup) == 1 && locationLookup[0] == dataLocation {
+		var fallbackLocations []string
+		fallbackLocations = append(fallbackLocations, "/usr/local/share")
+		fallbackLocations = append(fallbackLocations, "/usr/share")
+		return fallbackLocations
+	}
+	return locationLookup
+}
+
+//FdoLookupApplication looks up an application by name and returns a FdoDesktop
+func FdoLookupApplication(appName string) *FdoDesktop {
+	locationLookup := FdoLookupXdgDataDirs()
+	for _, dataDir := range locationLookup {
+		testLocation := filepath.Join(dataDir, "applications", appName+".desktop")
+		if _, err := os.Stat(testLocation); os.IsNotExist(err) {
+			continue
+		} else {
+			return NewFdoDesktop(testLocation)
+		}
+	}
+	return nil
 }
 
 func lookupIconPathInTheme(dir string, iconName string) string {
@@ -67,9 +94,9 @@ func lookupIconPathInTheme(dir string, iconName string) string {
 	return ""
 }
 
-//LookupIconPath will take the name of an Icon and find a matching image file
-func LookupIconPath(iconName string) string {
-	locationLookup := lookupXDGdirs()
+//FdoLookupIconPath will take the name of an Icon and find a matching image file
+func FdoLookupIconPath(iconName string) string {
+	locationLookup := FdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
 		//Example is /usr/share/icons/icon_theme
 		dir := filepath.Join(dataDir, "icons", fyconTheme)
@@ -132,8 +159,8 @@ func LookupIconPath(iconName string) string {
 	return ""
 }
 
-//NewFybarDesktop returns a new instance of FybarDesktop
-func NewFybarDesktop(desktopPath string) *FybarDesktop {
+//NewFdoDesktop returns a new instance of FdoDesktop
+func NewFdoDesktop(desktopPath string) *FdoDesktop {
 	file, err := os.Open(desktopPath)
 	if err != nil {
 		log.Print(err)
@@ -142,19 +169,19 @@ func NewFybarDesktop(desktopPath string) *FybarDesktop {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	fbIcon := FybarDesktop{}
+	fdoDesktop := FdoDesktop{}
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "Name=") {
 			name := strings.SplitAfter(line, "=")
-			fbIcon.Name = name[1]
+			fdoDesktop.Name = name[1]
 		} else if strings.HasPrefix(line, "Icon=") {
 			icon := strings.SplitAfter(line, "=")
-			fbIcon.IconName = icon[1]
-			fbIcon.IconPath = LookupIconPath(fbIcon.IconName)
+			fdoDesktop.IconName = icon[1]
+			fdoDesktop.IconPath = FdoLookupIconPath(fdoDesktop.IconName)
 		} else if strings.HasPrefix(line, "Exec=") {
 			exec := strings.SplitAfter(line, "=")
-			fbIcon.Exec = exec[1]
+			fdoDesktop.Exec = exec[1]
 		} else {
 			continue
 		}
@@ -163,5 +190,5 @@ func NewFybarDesktop(desktopPath string) *FybarDesktop {
 		log.Print(err)
 		return nil
 	}
-	return &fbIcon
+	return &fdoDesktop
 }
