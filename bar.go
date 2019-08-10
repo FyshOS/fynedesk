@@ -4,21 +4,33 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
-	"fyne.io/fyne/widget"
 )
 
 var fyconSize = 32
 var fyconTheme = "Papirus"
 
-func locateApplication(appName string) *FybarDesktop {
+func lookupXDGdirs() []string {
 	dataLocation := os.Getenv("XDG_DATA_DIRS")
 	locationLookup := strings.Split(dataLocation, ":")
+	if len(locationLookup) == 1 && locationLookup[0] == dataLocation {
+		var fallbackLocations []string
+		fallbackLocations = append(fallbackLocations, "/usr/local/share")
+		fallbackLocations = append(fallbackLocations, "/usr/share")
+		return fallbackLocations
+	}
+	return locationLookup
+}
+
+func locateApplication(appName string) *FybarDesktop {
+	locationLookup := lookupXDGdirs()
 	for _, dataDir := range locationLookup {
-		testLocation := dataDir + "/applications/" + appName + ".desktop"
+		testLocation := filepath.Join(dataDir, "applications", appName+".desktop")
 		if _, err := os.Stat(testLocation); os.IsNotExist(err) {
 			continue
 		} else {
@@ -47,13 +59,11 @@ func newBar() fyne.CanvasObject {
 					log.Print(err)
 					continue
 				}
-				res := fyne.NewStaticResource(formatVariable(strings.ToLower(fybarDesktop.IconName+".svg")), bytes)
-				fycon := widget.NewIcon(res)
-				//Uncomment to use Fycon which is a clickable icon.  You have to switch themes to get them to show, and their sizing is wonky compared to widget.Icon
-				//fycon := NewFycon(res)
-				//fycon.OnTapped = func() {
-				//	exec.Command(fybarDesktop.Exec).Start()
-				//}
+				res := fyne.NewStaticResource(formatVariable(strings.ToLower(filepath.Base(fybarDesktop.IconPath))), bytes)
+				fycon := NewFycon(res)
+				fycon.OnTapped = func() {
+					exec.Command(fybarDesktop.Exec).Start()
+				}
 				fybar.Append(fycon)
 			}
 		}

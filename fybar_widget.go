@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/driver/desktop"
+	"fyne.io/fyne/widget"
 )
 
 //Fybar is the main widget housing the icon launcher
@@ -26,13 +27,13 @@ func (fb *Fybar) MouseIn(*desktop.MouseEvent) {
 //MouseOut alerts the widget that the mouse has left
 func (fb *Fybar) MouseOut() {
 	fb.MouseInside = false
-	Renderer(fb).Layout(fb.Size())
+	widget.Renderer(fb).Layout(fb.Size())
 }
 
 //MouseMoved alerts the widget that the mouse has changed position
 func (fb *Fybar) MouseMoved(event *desktop.MouseEvent) {
 	fb.MousePosition = event.Position
-	Renderer(fb).Layout(fb.Size())
+	widget.Renderer(fb).Layout(fb.Size())
 }
 
 //Resize resizes the widget to the provided size
@@ -67,7 +68,7 @@ func (fb *Fybar) Prepend(object fyne.CanvasObject) {
 	}
 	fb.Children = append([]fyne.CanvasObject{object}, fb.Children...)
 
-	Refresh(fb)
+	widget.Refresh(fb)
 }
 
 //Append adds an object to the end of the widget
@@ -77,7 +78,7 @@ func (fb *Fybar) Append(object fyne.CanvasObject) {
 	}
 	fb.Children = append(fb.Children, object)
 
-	Refresh(fb)
+	widget.Refresh(fb)
 }
 
 //CreateRenderer creates the renderer that will be responsible for painting the widget
@@ -95,14 +96,14 @@ func (fb *Fybar) CreateRenderer() fyne.WidgetRenderer {
 //NewHFybar returns a horizontal list of icons for an icon launcher
 func NewHFybar(children ...fyne.CanvasObject) *Fybar {
 	fybar := &Fybar{Horizontal: true, Children: children}
-	Renderer(fybar).Layout(fybar.MinSize())
+	widget.Renderer(fybar).Layout(fybar.MinSize())
 	return fybar
 }
 
 //NewVFybar returns a vertical list of icons for an icon launcher
 func NewVFybar(children ...fyne.CanvasObject) *Fybar {
 	fybar := &Fybar{Horizontal: false, Children: children}
-	Renderer(fybar).Layout(fybar.MinSize())
+	widget.Renderer(fybar).Layout(fybar.MinSize())
 	return fybar
 }
 

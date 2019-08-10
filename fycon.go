@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/theme"
+	"fyne.io/fyne/widget"
 )
 
 type fyconRenderer struct {
@@ -104,7 +105,7 @@ func (fy *Fycon) Hide() {
 func (fy *Fycon) SetResource(res fyne.Resource) {
 	fy.Resource = res
 
-	Refresh(fy)
+	widget.Refresh(fy)
 }
 
 // CreateRenderer is a private method to Fyne which links this widget to its renderer
@@ -118,8 +119,8 @@ func (fy *Fycon) CreateRenderer() fyne.WidgetRenderer {
 
 // NewFycon returns a new Fycon widget that displays a themed Fycon resource
 func NewFycon(res fyne.Resource) *Fycon {
-	Fycon := &Fycon{}
-	Fycon.SetResource(res) // force the image conversion
+	fycon := &Fycon{Resource: res}
 
-	return Fycon
+	widget.Refresh(fycon)
+	return fycon
 }
