@@ -2,6 +2,13 @@ language: go
 go:
 - 1.10.x
 gobuild_args: "-v -tags ci"
+
+addons:
+  apt:
+    packages:
+      - libgl1-mesa-dev
+      - xorg-dev
+
 before_script:
 - go get golang.org/x/lint/golint
 - go get github.com/mattn/goveralls
@@ -14,13 +21,6 @@ script:
 - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then exit; fi'
 - $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 
-notifications:
-  irc:
-    channels:
-    - irc.freenode.net#fyne
-    on_success: change
-    template:
-    - Build %{repository_name}#%{build_number} %{result} (%{branch} %{commit} "%{commit_subject}")
 env:
   global:
   - secure: fYilSMkbYxLMVNZ9N2d4pQwRu83LaApl/vAbaUGqQRCqQzPIXXM3lAp5rePQ73JYBjCwsOiwC64no859TkNWm+bxLKNF53QCaWtorD5Ro8OSMByDWyOr8kDZlkEhiGStCqKkXLo4TEurfn65Zl/H0H1pGsriA9sFLGugx/OMEmmZgE4xQg8h9DEe7OM8EjzJVe37EDuUD1ut9uIDQTivNhbW8BiJ0WhOsSwSrJXucEWLVLTK+uhxgW/ti3ILdV+OEZFuNCROpQd9iETcN8hShN4Wc0smANgg6JxZm6IewVARppnvsbSqb/j4p2twA4dt0HjAfSuky5AhGV9yifI80AEez56nSXAXOzmKOYNlv+rBSMLAG6LKgkUzVWexNMZOPeHg7lDmdgUO5pUmXjpOuQONZ5+S/scd911I/QT4t6z7jkCRu3/nYavJ+EKT3Dlw0bpA9Ob2pgPsHSw+NRFjYEDs8n4uLqbCvCk6Erd/GKVniupAJDWK58Jf5XmR0nRT/NASyKVVrxS4NEpH194IUeThgd6/lSDoK1vaGWo4hc7UCC9RYMr21C7n3xqmQrNGEF5Da5qHgtsyscmzflqMzojm29FLq2PrT9vmFAfI8BXDbT8Fpe0Akda+Tmno/LNNoExUfazs0HSdUF47ePkfwm0qBepaEUuOdQP+Dyq2GcA=

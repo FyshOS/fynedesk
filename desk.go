@@ -18,26 +18,19 @@ type deskLayout struct {
 	win fyne.Window
 	wm  WindowManager
 
-	bar, widgets, mouse fyne.CanvasObject
+	background, bar, widgets, mouse fyne.CanvasObject
 }
 
 func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
-	for _, child := range objs {
-		switch child {
-		case l.bar:
-			barHeight := l.bar.MinSize().Height
-			child.Resize(fyne.NewSize(size.Width, barHeight))
-			child.Move(fyne.NewPos(0, size.Height-barHeight))
-		case l.widgets:
-			widgetsWidth := l.widgets.MinSize().Width
-			child.Resize(fyne.NewSize(widgetsWidth, size.Height))
-			child.Move(fyne.NewPos(size.Width-widgetsWidth, 0))
-		default:
-			if child != l.mouse {
-				child.Resize(size)
-			}
-		}
-	}
+	barHeight := l.bar.MinSize().Height
+	l.bar.Resize(fyne.NewSize(size.Width, barHeight))
+	l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
+
+	widgetsWidth := l.widgets.MinSize().Width
+	l.widgets.Resize(fyne.NewSize(widgetsWidth, size.Height))
+	l.widgets.Move(fyne.NewPos(size.Width-widgetsWidth, 0))
+
+	l.background.Resize(size)
 }
 
 func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
@@ -59,11 +52,12 @@ func (l *deskLayout) Root() fyne.Window {
 	if l.win == nil {
 		l.win = l.newDesktopWindow()
 
+		l.background = newBackground()
 		l.bar = newBar()
 		l.widgets = newWidgetPanel(l.win)
 		l.mouse = newMouse()
 		l.win.SetContent(fyne.NewContainerWithLayout(l,
-			newBackground(),
+			l.background,
 			l.bar,
 			l.widgets,
 			mouse,
