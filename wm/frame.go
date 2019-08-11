@@ -73,6 +73,18 @@ func (f *frame) Title() string {
 	return f.title
 }
 
+func (f *frame) Class() []string {
+	return windowClass(f.wm.x, f.win)
+}
+
+func (f *frame) Command() string {
+	return windowCommand(f.wm.x, f.win)
+}
+
+func (f *frame) IconName() string {
+	return windowIconName(f.wm.x, f.win)
+}
+
 func (f *frame) Close() {
 	winProtos, err := icccm.WmProtocolsGet(f.wm.x, f.win)
 	if err != nil {
@@ -232,7 +244,7 @@ func (f *frame) ApplyTheme() {
 	}
 	scale := float32(1) // TODO detect like the gl driver
 	f.canvas.SetScale(scale)
-	border := newBorder(title)
+	border := newBorder(f)
 	border.Resize(f.canvas.Size())
 	f.canvas.SetContent(border)
 

@@ -6,6 +6,8 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/driver/desktop"
+	"fyne.io/fyne/layout"
+	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 )
 
@@ -76,6 +78,28 @@ func (b *Bar) Append(object fyne.CanvasObject) {
 		object.Hide()
 	}
 	b.Children = append(b.Children, object)
+
+	widget.Refresh(b)
+}
+
+//AppendSeparator adds a separator between the default icons and the taskbar
+func (b *Bar) AppendSeparator() {
+	object := canvas.NewRectangle(theme.BackgroundColor())
+	if b.Hidden && object.Visible() {
+		object.Hide()
+	}
+	b.Children = append(b.Children, object)
+
+	widget.Refresh(b)
+}
+
+//AppendTaskbar adds an object to the taskbar area of the widget just before the final spacer
+func (b *Bar) AppendTaskbar(object fyne.CanvasObject) {
+	if b.Hidden && object.Visible() {
+		object.Hide()
+	}
+	b.Children[len(b.Children)-1] = object
+	b.Append(layout.NewSpacer())
 
 	widget.Refresh(b)
 }

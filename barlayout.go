@@ -4,6 +4,7 @@ import (
 	"math"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 )
@@ -71,13 +72,21 @@ func (bl *BarLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 			if newSize < fyconSize {
 				newSize = fyconSize
 			}
-			child.Resize(fyne.NewSize(newSize, newSize))
+			if _, ok := child.(*canvas.Rectangle); ok {
+				child.Resize(fyne.NewSize(2, newSize))
+			} else {
+				child.Resize(fyne.NewSize(newSize, newSize))
+			}
 			if largestY < newSize {
 				largestY = newSize
 			}
 			total += newSize
 		} else {
-			child.Resize(fyne.NewSize(fyconSize, fyconSize))
+			if _, ok := child.(*canvas.Rectangle); ok {
+				child.Resize(fyne.NewSize(2, fyconSize))
+			} else {
+				child.Resize(fyne.NewSize(fyconSize, fyconSize))
+			}
 			total += fyconSize
 			largestY = fyconSize
 		}
