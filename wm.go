@@ -14,8 +14,11 @@ type WindowManager interface {
 // Window represents a single managed window within a window manager.
 // There may be borders or not depending on configuration.
 type Window interface {
-	Decorated() bool // Should this window have borders drawn?
-	Title() string   // The title of this window
+	Decorated() bool  // Should this window have borders drawn?
+	Title() string    // The name of this window
+	Class() []string  // The class of this window
+	Command() string  // The command of this window
+	IconName() string // The icon name of this window
 
 	Focus()            // Ask this window to get input focus
 	Close()            // Close this window and possibly the application running it

@@ -3,11 +3,14 @@ package desktop
 import (
 	"bufio"
 	"io/ioutil"
-	"log"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"fyne.io/fyne"
 )
+
+var iconExtensions = []string{".png", ".svg", ".xpm"}
 
 //FdoDesktop contains the information from Linux .desktop files
 type FdoDesktop struct {
@@ -15,6 +18,12 @@ type FdoDesktop struct {
 	IconName string
 	IconPath string
 	Exec     string
+}
+
+//FdoResourceFormat turns a string into a usable name for fyne.Resources
+func FdoResourceFormat(name string) string {
+	str := strings.Replace(name, "-", "", -1)
+	return strings.Replace(str, "_", "", -1)
 }
 
 //FdoLookupXdgDataDirs returns a string slice of all XDG_DATA_DIRS
@@ -44,33 +53,31 @@ func FdoLookupApplication(appName string) *FdoDesktop {
 	return nil
 }
 
-func lookupIconPathInTheme(dir string, iconName string) string {
-	if _, err := os.Stat(dir); os.IsNotExist(err) {
-		return ""
+//FdoLookupApplicationWinInfo looks up an application based on window info
+func FdoLookupApplicationWinInfo(title string, classes []string, command string, iconName string) *FdoDesktop {
+	desktop := FdoLookupApplication(title)
+	if desktop != nil {
+		return desktop
 	}
-	extensions := []string{".png", ".svg", ".xpm"}
-	for _, extension := range extensions {
-		//Example is /usr/share/icons/icon_theme/32x32/apps/xterm.png
-		testIcon := filepath.Join(dir, string(fyconSize)+"x"+string(fyconSize), "apps", iconName+extension)
-		if _, err := os.Stat(testIcon); os.IsNotExist(err) {
-			continue
-		} else {
-			return testIcon
+	for _, class := range classes {
+		desktop := FdoLookupApplication(class)
+		if desktop != nil {
+			return desktop
 		}
 	}
-	for _, extension := range extensions {
-		//Example is /usr/share/icons/icon_theme/scalable/apps/xterm.png - Try this if the requested size didn't exist
-		testIcon := filepath.Join(dir, "scalable", "apps", iconName+extension)
-		if _, err := os.Stat(testIcon); os.IsNotExist(err) {
-			continue
-		} else {
-			return testIcon
-		}
+	desktop = FdoLookupApplication(command)
+	if desktop != nil {
+		return desktop
 	}
+	desktop = FdoLookupApplication(iconName)
+	return desktop
+}
+
+func reverseWalkDirectoryMatch(directory string, joiner string, iconName string) string {
 	//If the requested icon wasn't found in the Example 32x32 or scalable dirs of the theme, try other sizes within theme
-	files, err := ioutil.ReadDir(dir)
+	files, err := ioutil.ReadDir(directory)
 	if err != nil {
-		log.Print(err)
+		fyne.LogError("", err)
 		return ""
 	}
 	//Lets walk the files in reverse so bigger icons are selected first (Unless it is a 3 digit icon size like 128)
@@ -78,10 +85,15 @@ func lookupIconPathInTheme(dir string, iconName string) string {
 		f := files[i]
 		if strings.HasPrefix(f.Name(), ".") == false {
 			if f.IsDir() {
-				fallbackDir := filepath.Join(dir, f.Name())
-				for _, extension := range extensions {
+				matchDir := filepath.Join(directory, f.Name())
+				for _, extension := range iconExtensions {
 					//Example is /usr/share/icons/icon_theme/64x64/apps/xterm.png
-					testIcon := filepath.Join(fallbackDir, "/apps/", iconName+extension)
+					var testIcon = ""
+					if joiner != "" {
+						testIcon = filepath.Join(matchDir, joiner, iconName+extension)
+					} else {
+						testIcon = filepath.Join(matchDir, iconName+extension)
+					}
 					if _, err := os.Stat(testIcon); os.IsNotExist(err) {
 						continue
 					} else {
@@ -92,6 +104,60 @@ func lookupIconPathInTheme(dir string, iconName string) string {
 		}
 	}
 	return ""
+}
+
+func lookupIconPathInTheme(dir string, iconName string) string {
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return ""
+	}
+	for _, extension := range iconExtensions {
+		//Example is /usr/share/icons/icon_theme/32x32/apps/xterm.png
+		testIcon := filepath.Join(dir, string(fyconSize), "apps", iconName+extension)
+		if _, err := os.Stat(testIcon); os.IsNotExist(err) {
+			testIcon := filepath.Join(dir, string(fyconSize)+"x"+string(fyconSize), "apps", iconName+extension)
+			if _, err := os.Stat(testIcon); os.IsNotExist(err) {
+				testIcon := filepath.Join(dir, "apps", string(fyconSize), iconName+extension)
+				if _, err := os.Stat(testIcon); os.IsNotExist(err) {
+					testIcon := filepath.Join(dir, "apps", string(fyconSize)+"x"+string(fyconSize), iconName+extension)
+					if _, err := os.Stat(testIcon); os.IsNotExist(err) {
+						continue
+					} else {
+						return testIcon
+					}
+				} else {
+					return testIcon
+				}
+			} else {
+				return testIcon
+			}
+		} else {
+			return testIcon
+		}
+	}
+	for _, extension := range iconExtensions {
+		//Example is /usr/share/icons/icon_theme/scalable/apps/xterm.png - Try this if the requested size didn't exist
+		testIcon := filepath.Join(dir, "scalable", "apps", iconName+extension)
+		if _, err := os.Stat(testIcon); os.IsNotExist(err) {
+			testIcon := filepath.Join(dir, "apps", "scalable", iconName+extension)
+			if _, err := os.Stat(testIcon); os.IsNotExist(err) {
+				continue
+			} else {
+				return testIcon
+			}
+		} else {
+			return testIcon
+		}
+	}
+	//If the requested icon wasn't found in the Example 32x32 or scalable dirs of the theme, try other sizes within theme
+	testIcon := reverseWalkDirectoryMatch(dir, "apps", iconName)
+	if testIcon != "" {
+		return testIcon
+	}
+
+	//One last chance at finding it - assume apps comes before size in path name
+	testIcon = reverseWalkDirectoryMatch(filepath.Join(dir, "apps"), "", iconName)
+
+	return testIcon
 }
 
 //FdoLookupIconPath will take the name of an Icon and find a matching image file
@@ -118,7 +184,7 @@ func FdoLookupIconPath(iconName string) string {
 		//Example is /usr/share/icons
 		files, err := ioutil.ReadDir(dataDir + "icons")
 		if err != nil {
-			log.Print(err)
+			fyne.LogError("", err)
 			continue
 		}
 		//Enter icon theme
@@ -126,9 +192,10 @@ func FdoLookupIconPath(iconName string) string {
 			if strings.HasPrefix(f.Name(), ".") == false {
 				if f.IsDir() {
 					//Example is /usr/share/icons/gnome
+
 					subFiles, err := ioutil.ReadDir(filepath.Join(dataDir, "icons", f.Name()))
 					if err != nil {
-						log.Print(err)
+						fyne.LogError("", err)
 						continue
 					}
 					//Let's walk the files in reverse order so larger sizes come first - Except 3 digit icon size like 128
@@ -143,6 +210,9 @@ func FdoLookupIconPath(iconName string) string {
 									//Example is /usr/share/icons/gnome/32x32/apps/xterm.png
 									testIcon := filepath.Join(fallbackDir, "apps", iconName+extension)
 									if _, err := os.Stat(testIcon); os.IsNotExist(err) {
+										if subf.Name() == "apps" {
+											reverseWalkDirectoryMatch(fallbackDir, "", iconName)
+										}
 										continue
 									} else {
 										return testIcon
@@ -163,7 +233,7 @@ func FdoLookupIconPath(iconName string) string {
 func NewFdoDesktop(desktopPath string) *FdoDesktop {
 	file, err := os.Open(desktopPath)
 	if err != nil {
-		log.Print(err)
+		fyne.LogError("", err)
 		return nil
 	}
 	defer file.Close()
@@ -187,7 +257,7 @@ func NewFdoDesktop(desktopPath string) *FdoDesktop {
 		}
 	}
 	if err := scanner.Err(); err != nil {
-		log.Print(err)
+		fyne.LogError("", err)
 		return nil
 	}
 	return &fdoDesktop
