@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/canvas"
 )
 
+// WindowlessCanvas represents a canvas with no window to manipulate it
 type WindowlessCanvas interface {
 	fyne.Canvas
 	Resize(fyne.Size)
@@ -137,6 +138,7 @@ func (c *softwareCanvas) Capture() image.Image {
 	return base
 }
 
+// NewSoftwareCanvas loads a new in-memory fyne canvas for quick rendering
 func NewSoftwareCanvas(content fyne.CanvasObject) WindowlessCanvas {
 	return &softwareCanvas{content: content}
 }
