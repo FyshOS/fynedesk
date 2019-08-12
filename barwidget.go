@@ -111,7 +111,7 @@ func (b *Bar) Remove(object fyne.CanvasObject) {
 	}
 	for i, fycon := range b.Children {
 		if fycon == object {
-			b.Children = append(b.Children[:i], b.Children[i+1:])
+			b.Children = append(b.Children[:i], b.Children[i+1:]...)
 		}
 	}
 
