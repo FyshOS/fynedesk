@@ -104,6 +104,20 @@ func (b *Bar) AppendTaskbar(object fyne.CanvasObject) {
 	widget.Refresh(b)
 }
 
+//Remove removes an object from the taskbar area of the widget
+func (b *Bar) Remove(object fyne.CanvasObject) {
+	if b.Hidden && object.Visible() {
+		object.Hide()
+	}
+	for i, fycon := range b.Children {
+		if fycon == object {
+			b.Children = append(b.Children[:i], b.Children[i+1:])
+		}
+	}
+
+	widget.Refresh(b)
+}
+
 //CreateRenderer creates the renderer that will be responsible for painting the widget
 func (b *Bar) CreateRenderer() fyne.WidgetRenderer {
 	return &BarRenderer{objects: b.Children, layout: NewBarLayout(), Bar: b}

@@ -61,8 +61,9 @@ func (fy *fyconRenderer) Destroy() {
 type Fycon struct {
 	baseWidget
 
-	OnTapped func()
-	Resource fyne.Resource // The resource for this Fycon
+	OnTapped      func()
+	Resource      fyne.Resource // The resource for this Fycon
+	TaskbarWindow Window
 }
 
 //Tapped means Fycon has been clicked
