@@ -84,7 +84,7 @@ func (b *Bar) Append(object fyne.CanvasObject) {
 
 //AppendSeparator adds a separator between the default icons and the taskbar
 func (b *Bar) AppendSeparator() {
-	object := canvas.NewRectangle(theme.BackgroundColor())
+	object := canvas.NewRectangle(theme.TextColor())
 	if b.Hidden && object.Visible() {
 		object.Hide()
 	}

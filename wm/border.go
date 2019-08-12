@@ -15,11 +15,11 @@ import (
 	"fyne.io/fyne/widget"
 )
 
-func newBorder(f *frame) fyne.CanvasObject {
+func newBorder(title string, class []string, command string, iconName string) fyne.CanvasObject {
 	var res fyne.Resource
 	filler := canvas.NewRectangle(theme.BackgroundColor()) // make a border on the X axis only
 	filler.SetMinSize(fyne.NewSize(0, 2))                  // 0 wide forced
-	fdoDesktop := desktop.FdoLookupApplicationWinInfo(f.Title(), f.Class(), f.Command(), f.IconName())
+	fdoDesktop := desktop.FdoLookupApplicationWinInfo(title, class, command, iconName)
 	if fdoDesktop != nil {
 		bytes, err := ioutil.ReadFile(fdoDesktop.IconPath)
 		if err != nil {
@@ -30,15 +30,13 @@ func newBorder(f *frame) fyne.CanvasObject {
 	}
 	titleBar := widget.NewHBox(filler,
 		widget.NewButtonWithIcon("", theme.CancelIcon(), func() {}),
-		widget.NewLabel(f.Title()),
+		widget.NewLabel(title),
 		layout.NewSpacer())
 
 	if res != nil {
 		icon := fyne.NewContainerWithLayout(layout.NewCenterLayout(), widget.NewIcon(res))
 		titleBar.Append(icon)
 	}
-
-	titleBar.Resize(fyne.NewSize(int(f.width), int(f.height)))
 
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(titleBar, nil, nil, nil),
 		titleBar)

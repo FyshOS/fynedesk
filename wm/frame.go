@@ -244,7 +244,7 @@ func (f *frame) ApplyTheme() {
 	}
 	scale := float32(1) // TODO detect like the gl driver
 	f.canvas.SetScale(scale)
-	border := newBorder(f)
+	border := newBorder(f.Title(), f.Class(), f.Command(), f.IconName())
 	border.Resize(f.canvas.Size())
 	f.canvas.SetContent(border)
 
