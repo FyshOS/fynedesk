@@ -19,6 +19,8 @@ script:
 - go test -v -tags ci -covermode=atomic -coverprofile=coverage.out ./...
 - go vet -tags ci ./...
 - golint -set_exit_status $(go list -tags ci)
+- coverage=$(go tool cover -func cover.out | tail -n 1 | awk '{ print $3 }' | cut -d \% -f 1 | cut -d \. -f 1)
+- if [ $coverage -lt 16 ]; then echo "Test coverage lowered"; exit 1; fi
 - 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then exit; fi'
 - $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
 
