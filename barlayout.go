@@ -5,52 +5,30 @@ import (
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 )
 
 // Declare conformity with Layout interface
-var _ fyne.Layout = (*BarLayout)(nil)
+var _ fyne.Layout = (*barLayout)(nil)
 
-//BarLayout returns a layout used for zooming linear groups of icons
-type BarLayout struct {
-	MouseInside   bool
-	MousePosition fyne.Position
+//barLayout returns a layout used for zooming linear groups of icons
+type barLayout struct {
+	mouseInside   bool          // Is the mouse inside of the layout?
+	mousePosition fyne.Position // Current coordinates of the mouse cursor
 }
 
-func isHorizontalSpacer(obj fyne.CanvasObject) bool {
-	if spacer, ok := obj.(layout.SpacerObject); ok {
-		return spacer.ExpandHorizontal()
-	}
-
-	return false
+//setPointerInside tells the barLayout that the mouse is inside of the Layout.
+func (bl *barLayout) setPointerInside(inside bool) {
+	bl.mouseInside = inside
 }
 
-//SetPointerInside tells the BarLayout that the mouse is inside of the Layout.
-func (bl *BarLayout) SetPointerInside(inside bool) {
-	bl.MouseInside = inside
+//setPointerPosition tells the barLayout that the mouse position has been updated.
+func (bl *barLayout) setPointerPosition(position fyne.Position) {
+	bl.mousePosition = position
 }
 
-//SetPointerPosition tells the BarLayout that the mouse position has been updated.
-func (bl *BarLayout) SetPointerPosition(position fyne.Position) {
-	bl.MousePosition = position
-}
-
-func (bl *BarLayout) isSpacer(obj fyne.CanvasObject) bool {
-	// invisible spacers don't impact layout
-	if !obj.Visible() {
-		return false
-	}
-
-	return isHorizontalSpacer(obj)
-}
-
-// Layout is called to pack all child objects into a specified size.
-// For a VBoxLayout this will pack objects into a single column where each item
-// is full width but the height is the minimum required.
-// Any spacers added will pad the view, sharing the space if there are two or more.
-func (bl *BarLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
-	spacers := make([]fyne.CanvasObject, 0)
+// Layout is called to pack all icons into a specified size.  It also handles the zooming effect of the icons.
+func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	total := 0
 	largestY := 0
 
@@ -59,18 +37,13 @@ func (bl *BarLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 			continue
 		}
 
-		if bl.isSpacer(child) {
-			spacers = append(spacers, child)
-			continue
-		}
-
-		if bl.MouseInside {
-			mouseX := bl.MousePosition.X
+		if bl.mouseInside {
+			mouseX := bl.mousePosition.X
 			iconX := child.Position().X
-			scale := 1.75 - (math.Abs(float64(mouseX-(iconX+fyconSize/2))) / float64((fyconSize * 4)))
-			newSize := int(math.Floor(float64(fyconSize) * scale))
-			if newSize < fyconSize {
-				newSize = fyconSize
+			scale := 1.75 - (math.Abs(float64(mouseX-(iconX+iconSize/2))) / float64((iconSize * 4)))
+			newSize := int(math.Floor(float64(iconSize) * scale))
+			if newSize < iconSize {
+				newSize = iconSize
 			}
 			if _, ok := child.(*canvas.Rectangle); ok {
 				child.Resize(fyne.NewSize(2, newSize))
@@ -83,23 +56,20 @@ func (bl *BarLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 			total += newSize
 		} else {
 			if _, ok := child.(*canvas.Rectangle); ok {
-				child.Resize(fyne.NewSize(2, fyconSize))
+				child.Resize(fyne.NewSize(2, iconSize))
 			} else {
-				child.Resize(fyne.NewSize(fyconSize, fyconSize))
+				child.Resize(fyne.NewSize(iconSize, iconSize))
 			}
-			total += fyconSize
-			largestY = fyconSize
+			total += iconSize
+			largestY = iconSize
 		}
 	}
 
 	x := 0
-	var extra int
-	extra = size.Width - total - (theme.Padding() * (len(objects) - len(spacers) - 1))
-
-	extraCell := 0
-	if len(spacers) > 0 {
-		extraCell = int(float64(extra) / float64(len(spacers)))
-	}
+	var extra, offset int
+	extra = size.Width - total - (theme.Padding() * (len(objects) - 1))
+	offset = int(math.Floor(float64(extra / 2.0)))
+	x += offset
 
 	for _, child := range objects {
 		if !child.Visible() {
@@ -109,28 +79,19 @@ func (bl *BarLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 		width := child.Size().Width
 		height := child.Size().Height
 
-		if bl.isSpacer(child) {
-			x += extraCell
-			continue
-		}
 		child.Move(fyne.NewPos(x, largestY-height))
 		x += theme.Padding() + width
 	}
 }
 
 // MinSize finds the smallest size that satisfies all the child objects.
-// For a BarLayout this is the width of the widest item and the height is
+// For a barLayout this is the width of the widest item and the height is
 // the sum of of all children combined with padding between each.
-func (bl *BarLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
+func (bl *barLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	spacerCount := 0
 	minSize := fyne.NewSize(0, 0)
 	for _, child := range objects {
 		if !child.Visible() {
-			continue
-		}
-
-		if bl.isSpacer(child) {
-			spacerCount++
 			continue
 		}
 		minSize = minSize.Add(fyne.NewSize(child.Size().Width, 0))
@@ -139,7 +100,7 @@ func (bl *BarLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	return minSize.Add(fyne.NewSize(theme.Padding()*(len(objects)-1-spacerCount), 0))
 }
 
-// NewBarLayout returns a horizontal fybar
-func NewBarLayout() BarLayout {
-	return BarLayout{false, fyne.NewPos(0, 0)}
+// NewbarLayout returns a horizontal icon bar
+func newBarLayout() barLayout {
+	return barLayout{false, fyne.NewPos(0, 0)}
 }

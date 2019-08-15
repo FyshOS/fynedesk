@@ -1,5 +1,7 @@
 package desktop
 
+//This is a copy of fyne's baseWidget - It should be removed once the new, better BaseWidget is complete http://github.com/fyne-io/fyne/issues/324
+
 import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"

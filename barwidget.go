@@ -11,107 +11,97 @@ import (
 	"fyne.io/fyne/widget"
 )
 
-//Bar is the main widget housing the icon launcher
-type Bar struct {
+//bar is the main widget housing the icon launcher
+type bar struct {
 	baseWidget
 
-	Children      []fyne.CanvasObject
-	MouseInside   bool
-	MousePosition fyne.Position
+	children      []fyne.CanvasObject // Icons that are laid out by the barr
+	mouseInside   bool                // Is the mouse inside of the bar?
+	mousePosition fyne.Position       // The current coordinates of the mouse cursor
 }
 
 //MouseIn alerts the widget that the mouse has entered
-func (b *Bar) MouseIn(*desktop.MouseEvent) {
-	b.MouseInside = true
+func (b *bar) MouseIn(*desktop.MouseEvent) {
+	b.mouseInside = true
 }
 
 //MouseOut alerts the widget that the mouse has left
-func (b *Bar) MouseOut() {
-	b.MouseInside = false
+func (b *bar) MouseOut() {
+	b.mouseInside = false
 	widget.Renderer(b).Layout(b.Size())
 }
 
 //MouseMoved alerts the widget that the mouse has changed position
-func (b *Bar) MouseMoved(event *desktop.MouseEvent) {
-	b.MousePosition = event.Position
+func (b *bar) MouseMoved(event *desktop.MouseEvent) {
+	b.mousePosition = event.Position
 	widget.Renderer(b).Layout(b.Size())
 }
 
 //Resize resizes the widget to the provided size
-func (b *Bar) Resize(size fyne.Size) {
+func (b *bar) Resize(size fyne.Size) {
 	b.resize(size, b)
 }
 
 //Move moves the widget to the provide position
-func (b *Bar) Move(pos fyne.Position) {
+func (b *bar) Move(pos fyne.Position) {
 	b.move(pos, b)
 }
 
 //MinSize returns the minimum size of the widget
-func (b *Bar) MinSize() fyne.Size {
+func (b *bar) MinSize() fyne.Size {
 	return b.minSize(b)
 }
 
 //Show makes the widget visible
-func (b *Bar) Show() {
+func (b *bar) Show() {
 	b.show(b)
 }
 
 //Hide makes the widget hidden
-func (b *Bar) Hide() {
+func (b *bar) Hide() {
 	b.hide(b)
 }
 
-//Prepend adds an object to the begging of the widget
-func (b *Bar) Prepend(object fyne.CanvasObject) {
+//append adds an object to the end of the widget
+func (b *bar) append(object fyne.CanvasObject) {
 	if b.Hidden && object.Visible() {
 		object.Hide()
 	}
-	b.Children = append([]fyne.CanvasObject{object}, b.Children...)
+	b.children = append(b.children, object)
 
 	widget.Refresh(b)
 }
 
-//Append adds an object to the end of the widget
-func (b *Bar) Append(object fyne.CanvasObject) {
-	if b.Hidden && object.Visible() {
-		object.Hide()
-	}
-	b.Children = append(b.Children, object)
-
-	widget.Refresh(b)
-}
-
-//AppendSeparator adds a separator between the default icons and the taskbar
-func (b *Bar) AppendSeparator() {
+//appendSeparator adds a separator between the default icons and the taskbar
+func (b *bar) appendSeparator() {
 	object := canvas.NewRectangle(theme.TextColor())
 	if b.Hidden && object.Visible() {
 		object.Hide()
 	}
-	b.Children = append(b.Children, object)
+	b.children = append(b.children, object)
 
 	widget.Refresh(b)
 }
 
-//AppendTaskbar adds an object to the taskbar area of the widget just before the final spacer
-func (b *Bar) AppendTaskbar(object fyne.CanvasObject) {
+//appendToTaskbar adds an object to the taskbar area of the widget just before the final spacer
+func (b *bar) appendToTaskbar(object fyne.CanvasObject) {
 	if b.Hidden && object.Visible() {
 		object.Hide()
 	}
-	b.Children[len(b.Children)-1] = object
-	b.Append(layout.NewSpacer())
+	b.children[len(b.children)-1] = object
+	b.append(layout.NewSpacer())
 
 	widget.Refresh(b)
 }
 
-//Remove removes an object from the taskbar area of the widget
-func (b *Bar) Remove(object fyne.CanvasObject) {
+//removeFromTaskbar removes an object from the taskbar area of the widget
+func (b *bar) removeFromTaskbar(object fyne.CanvasObject) {
 	if b.Hidden && object.Visible() {
 		object.Hide()
 	}
-	for i, fycon := range b.Children {
+	for i, fycon := range b.children {
 		if fycon == object {
-			b.Children = append(b.Children[:i], b.Children[i+1:]...)
+			b.children = append(b.children[:i], b.children[i+1:]...)
 		}
 	}
 
@@ -119,60 +109,60 @@ func (b *Bar) Remove(object fyne.CanvasObject) {
 }
 
 //CreateRenderer creates the renderer that will be responsible for painting the widget
-func (b *Bar) CreateRenderer() fyne.WidgetRenderer {
-	return &BarRenderer{objects: b.Children, layout: NewBarLayout(), Bar: b}
+func (b *bar) CreateRenderer() fyne.WidgetRenderer {
+	return &barRenderer{objects: b.children, layout: newBarLayout(), appBar: b}
 }
 
-//NewAppBar returns a horizontal list of icons for an icon launcher
-func NewAppBar(children ...fyne.CanvasObject) *Bar {
-	Bar := &Bar{Children: children}
-	widget.Renderer(Bar).Layout(Bar.MinSize())
-	return Bar
+//newAppBar returns a horizontal list of icons for an icon launcher
+func newAppBar(children ...fyne.CanvasObject) *bar {
+	bar := &bar{children: children}
+	widget.Renderer(bar).Layout(bar.MinSize())
+	return bar
 }
 
-//BarRenderer privdes the renderer functions for the Bar Widget
-type BarRenderer struct {
-	layout BarLayout
+//barRenderer privdes the renderer functions for the bar Widget
+type barRenderer struct {
+	layout barLayout
 
-	Bar     *Bar
+	appBar  *bar
 	objects []fyne.CanvasObject
 }
 
 //MinSize returns the layout's Min Size
-func (b *BarRenderer) MinSize() fyne.Size {
+func (b *barRenderer) MinSize() fyne.Size {
 	return b.layout.MinSize(b.objects)
 }
 
 //Layout recalculates the widget
-func (b *BarRenderer) Layout(size fyne.Size) {
-	b.layout.SetPointerInside(b.Bar.MouseInside)
-	b.layout.SetPointerPosition(b.Bar.MousePosition)
+func (b *barRenderer) Layout(size fyne.Size) {
+	b.layout.setPointerInside(b.appBar.mouseInside)
+	b.layout.setPointerPosition(b.appBar.mousePosition)
 	b.layout.Layout(b.objects, size)
 }
 
 //ApplyTheme sets the theme object on the widget
-func (b *BarRenderer) ApplyTheme() {
+func (b *barRenderer) ApplyTheme() {
 }
 
 //BackgroundColor returns the background color of the widget
-func (b *BarRenderer) BackgroundColor() color.Color {
+func (b *barRenderer) BackgroundColor() color.Color {
 	return color.Transparent
 }
 
 //Objects returns the objects associated with the widget
-func (b *BarRenderer) Objects() []fyne.CanvasObject {
+func (b *barRenderer) Objects() []fyne.CanvasObject {
 	return b.objects
 }
 
 //Refresh will recalculate the widget and repaint it
-func (b *BarRenderer) Refresh() {
-	b.objects = b.Bar.Children
-	b.Layout(b.Bar.Size())
+func (b *barRenderer) Refresh() {
+	b.objects = b.appBar.children
+	b.Layout(b.appBar.Size())
 
-	canvas.Refresh(b.Bar)
+	canvas.Refresh(b.appBar)
 }
 
 //Destroy destroys the renderer
-func (b *BarRenderer) Destroy() {
+func (b *barRenderer) Destroy() {
 
 }

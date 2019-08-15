@@ -2,12 +2,11 @@ package wm
 
 import (
 	"io/ioutil"
-	"log"
 	"path/filepath"
-
-	"github.com/fyne-io/desktop"
+	"strings"
 
 	"fyne.io/fyne"
+	"github.com/fyne-io/desktop"
 
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/layout"
@@ -19,13 +18,15 @@ func newBorder(title string, class []string, command string, iconName string) fy
 	var res fyne.Resource
 	filler := canvas.NewRectangle(theme.BackgroundColor()) // make a border on the X axis only
 	filler.SetMinSize(fyne.NewSize(0, 2))                  // 0 wide forced
-	fdoDesktop := desktop.FdoLookupApplicationWinInfo(title, class, command, iconName)
-	if fdoDesktop != nil {
-		bytes, err := ioutil.ReadFile(fdoDesktop.IconPath)
+	icon := desktop.FdoLookupApplicationWinInfo(title, class, command, iconName)
+	if icon != nil {
+		bytes, err := ioutil.ReadFile(icon.IconPath)
 		if err != nil {
-			log.Print(err)
+			fyne.LogError("Cannot read file", err)
 		} else {
-			res = fyne.NewStaticResource(desktop.FdoResourceFormat(filepath.Base(fdoDesktop.IconPath)), bytes)
+			str := strings.Replace(icon.IconPath, "-", "", -1)
+			iconResource := strings.Replace(str, "_", "", -1)
+			res = fyne.NewStaticResource(strings.ToLower(filepath.Base(iconResource)), bytes)
 		}
 	}
 	titleBar := widget.NewHBox(filler,

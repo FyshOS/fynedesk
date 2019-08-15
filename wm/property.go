@@ -28,7 +28,7 @@ func windowClass(x *xgbutil.XUtil, win xproto.Window) []string {
 	if err != nil {
 		class, err := xprop.PropValStrs(xprop.GetProperty(x, win, "_NET_WM_CLASS"))
 		if err != nil {
-			return []string{"Noclass"}
+			return []string{""}
 		}
 		return class
 	}
@@ -41,7 +41,7 @@ func windowCommand(x *xgbutil.XUtil, win xproto.Window) string {
 	if err != nil {
 		command, err := xprop.PropValStr(xprop.GetProperty(x, win, "_NET_WM_COMMAND"))
 		if err != nil {
-			return "Nocommand"
+			return ""
 		}
 		return command
 	}
@@ -54,7 +54,7 @@ func windowIconName(x *xgbutil.XUtil, win xproto.Window) string {
 	if err != nil {
 		icon, err = ewmh.WmIconNameGet(x, win)
 		if err != nil {
-			return "Noiconname"
+			return ""
 		}
 	}
 
