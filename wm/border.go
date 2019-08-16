@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne"
-	"github.com/fyne-io/desktop/driver"
+	"github.com/fyne-io/desktop"
 
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/layout"
@@ -19,24 +19,28 @@ var (
 	iconSize  = 32
 )
 
-func newBorder(title string, class []string, command string, iconName string) fyne.CanvasObject {
+func newBorder(win desktop.Window) fyne.CanvasObject {
 	var res fyne.Resource
+
 	filler := canvas.NewRectangle(theme.BackgroundColor()) // make a border on the X axis only
 	filler.SetMinSize(fyne.NewSize(0, 2))                  // 0 wide forced
-	icon := driver.GetIconDataByWinInfo(iconTheme, iconSize, title, class, command, iconName)
+
+	icon := desktop.GetIconDataByWinInfo(iconTheme, iconSize, win)
 	if icon != nil {
-		bytes, err := ioutil.ReadFile(icon.IconPath())
-		if err != nil {
-			fyne.LogError("Cannot read file", err)
-		} else {
-			str := strings.Replace(icon.IconPath(), "-", "", -1)
-			iconResource := strings.Replace(str, "_", "", -1)
-			res = fyne.NewStaticResource(strings.ToLower(filepath.Base(iconResource)), bytes)
+		if icon.IconPath() != "" {
+			bytes, err := ioutil.ReadFile(icon.IconPath())
+			if err != nil {
+				fyne.LogError("Cannot read file", err)
+			} else {
+				str := strings.Replace(icon.IconPath(), "-", "", -1)
+				iconResource := strings.Replace(str, "_", "", -1)
+				res = fyne.NewStaticResource(strings.ToLower(filepath.Base(iconResource)), bytes)
+			}
 		}
 	}
 	titleBar := widget.NewHBox(filler,
 		widget.NewButtonWithIcon("", theme.CancelIcon(), func() {}),
-		widget.NewLabel(title),
+		widget.NewLabel(win.Title()),
 		layout.NewSpacer())
 
 	if res != nil {

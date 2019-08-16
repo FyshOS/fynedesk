@@ -1,4 +1,8 @@
-package driver
+package desktop
+
+import (
+	"github.com/fyne-io/desktop/internal"
+)
 
 //IconData is an interface containing relavent information about application icons
 type IconData interface {
@@ -10,12 +14,15 @@ type IconData interface {
 
 //GetIconDataByAppName matches an icon name to a location and returns an IconData interface
 func GetIconDataByAppName(theme string, size int, appName string) IconData {
-	fdoIcon := fdoLookupApplication(theme, size, appName)
+	fdoIcon := internal.FdoLookupApplication(theme, size, appName)
 	return fdoIcon
 }
 
 //GetIconDataByWinInfo matches window information to an icon location and returns an IconData interface
-func GetIconDataByWinInfo(theme string, size int, name string, classes []string, command string, iconName string) IconData {
-	fdoIcon := fdoLookupApplicationWinInfo(theme, size, name, classes, command, iconName)
+func GetIconDataByWinInfo(theme string, size int, win Window) IconData {
+	fdoIcon := internal.FdoLookupApplicationWinInfo(theme, size, win.Title(), win.Class(), win.Command(), win.IconName())
+	if fdoIcon == nil {
+		return nil
+	}
 	return fdoIcon
 }

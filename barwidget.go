@@ -6,7 +6,6 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 )
@@ -79,17 +78,6 @@ func (b *bar) appendSeparator() {
 		object.Hide()
 	}
 	b.children = append(b.children, object)
-
-	widget.Refresh(b)
-}
-
-//appendToTaskbar adds an object to the taskbar area of the widget just before the final spacer
-func (b *bar) appendToTaskbar(object fyne.CanvasObject) {
-	if b.Hidden && object.Visible() {
-		object.Hide()
-	}
-	b.children[len(b.children)-1] = object
-	b.append(layout.NewSpacer())
 
 	widget.Refresh(b)
 }
