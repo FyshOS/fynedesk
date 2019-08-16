@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
+	"github.com/fyne-io/desktop/driver"
 )
 
 var (
@@ -22,23 +23,23 @@ var (
 type barStackListener struct {
 }
 
-func barCreateIcon(taskbar bool, idata *IconData, win Window) *barIcon {
-	if idata == nil || idata.IconPath == "" {
+func barCreateIcon(taskbar bool, idata driver.IconData, win Window) *barIcon {
+	if idata == nil || idata.IconPath() == "" {
 		return nil
 	}
-	bytes, err := ioutil.ReadFile(idata.IconPath)
+	bytes, err := ioutil.ReadFile(idata.IconPath())
 	if err != nil {
 		fyne.LogError("Could not read file", err)
 		return nil
 	}
-	str := strings.Replace(idata.IconPath, "-", "", -1)
+	str := strings.Replace(idata.IconPath(), "-", "", -1)
 	iconResource := strings.Replace(str, "_", "", -1)
 
 	res := fyne.NewStaticResource(strings.ToLower(filepath.Base(iconResource)), bytes)
 	icon := newBarIcon(res)
 	if taskbar == false {
 		icon.onTapped = func() {
-			command := strings.Split(idata.Exec, " ")
+			command := strings.Split(idata.Exec(), " ")
 			if len(command) > 1 {
 				args := fmt.Sprintf("%s", command[1:])
 				exec.Command(command[0], args).Start()
@@ -54,8 +55,8 @@ func barCreateIcon(taskbar bool, idata *IconData, win Window) *barIcon {
 }
 
 func (bsl *barStackListener) WindowAdded(win Window) {
-	fdoDesktop := FdoLookupApplicationWinInfo(win.Title(), win.Class(), win.Command(), win.IconName())
-	icon := barCreateIcon(true, fdoDesktop, win)
+	idata := driver.GetIconDataByWinInfo(iconTheme, iconSize, win.Title(), win.Class(), win.Command(), win.IconName())
+	icon := barCreateIcon(true, idata, win)
 	if icon != nil {
 		icon.onTapped = func() {
 			win.Focus()
@@ -84,8 +85,8 @@ func newBar(wm WindowManager) fyne.CanvasObject {
 		wm.AddStackListener(bsl)
 	}
 	for _, app := range apps {
-		fdoDesktop := FdoLookupApplication(app)
-		icon := barCreateIcon(false, fdoDesktop, nil)
+		idata := driver.GetIconDataByAppName(iconTheme, iconSize, app)
+		icon := barCreateIcon(false, idata, nil)
 		if icon != nil {
 			appBar.append(icon)
 		}
