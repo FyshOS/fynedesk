@@ -54,6 +54,9 @@ func barCreateIcon(taskbar bool, data IconData, win Window) *barIcon {
 
 func (bsl *barStackListener) WindowAdded(win Window) {
 	data := GetIconDataByWinInfo(iconTheme, iconSize, win)
+	if data == nil {
+		return
+	}
 	icon := barCreateIcon(true, data, win)
 	if icon != nil {
 		icon.onTapped = func() {
@@ -83,6 +86,9 @@ func newBar(wm WindowManager) fyne.CanvasObject {
 	}
 	for _, app := range apps {
 		data := GetIconDataByAppName(iconTheme, iconSize, app)
+		if data == nil {
+			continue
+		}
 		icon := barCreateIcon(false, data, nil)
 		if icon != nil {
 			appBar.append(icon)
