@@ -20,5 +20,7 @@ func setupDesktop(a fyne.App) desktop.Desktop {
 		return desktop.NewEmbeddedDesktop(a, icons)
 	}
 
-	return desktop.NewDesktop(a, mgr, icons)
+	desk := desktop.NewDesktop(a, mgr, icons)
+	mgr.SetRoot(desk.Root())
+	return desk
 }
