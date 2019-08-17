@@ -1,9 +1,10 @@
 package wm
 
 import (
+	"testing"
+
 	"github.com/fyne-io/desktop"
 	"github.com/magiconair/properties/assert"
-	"testing"
 )
 
 type dummyWindow struct {
@@ -15,6 +16,18 @@ func (*dummyWindow) Decorated() bool {
 
 func (*dummyWindow) Title() string {
 	return "Dummy"
+}
+
+func (*dummyWindow) Class() []string {
+	return []string{"dummy1", "dummy2"}
+}
+
+func (*dummyWindow) Command() string {
+	return "DummyCommand"
+}
+
+func (*dummyWindow) IconName() string {
+	return "DummyIcon"
 }
 
 func (*dummyWindow) Focus() {

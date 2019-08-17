@@ -53,7 +53,7 @@ func (l *deskLayout) Root() fyne.Window {
 		l.win = l.newDesktopWindow()
 
 		l.background = newBackground()
-		l.bar = newBar()
+		l.bar = newBar(l.wm)
 		l.widgets = newWidgetPanel(l.win)
 		l.mouse = newMouse()
 		l.win.SetContent(fyne.NewContainerWithLayout(l,
