@@ -9,12 +9,18 @@ import (
 
 // Desktop defines an embedded or full desktop envionment that we can run.
 type Desktop interface {
+	DesktopEnvironment
+
 	Root() fyne.Window
 	Run()
+}
 
+type DesktopEnvironment interface {
 	IconProvider() IconProvider
 	WindowManager() WindowManager
 }
+
+var env DesktopEnvironment
 
 type deskLayout struct {
 	app   fyne.App
@@ -99,11 +105,16 @@ func (l *deskLayout) WindowManager() WindowManager {
 	return l.wm
 }
 
+func Environment() DesktopEnvironment {
+	return env
+}
+
 // NewDesktop creates a new desktop in fullscreen for main usage.
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An IconProvider is used to lookup application icons from the operating system.
 func NewDesktop(app fyne.App, wm WindowManager, icons IconProvider) Desktop {
-	return &deskLayout{app: app, wm: wm, icons: icons}
+	env := &deskLayout{app: app, wm: wm, icons: icons}
+	return env
 }
 
 // NewEmbeddedDesktop creates a new windowed desktop for test purposes.
@@ -111,5 +122,6 @@ func NewDesktop(app fyne.App, wm WindowManager, icons IconProvider) Desktop {
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
 func NewEmbeddedDesktop(app fyne.App, icons IconProvider) Desktop {
-	return &deskLayout{app: app, icons: icons}
+	env := &deskLayout{app: app, icons: icons}
+	return env
 }

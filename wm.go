@@ -6,7 +6,6 @@ type WindowManager interface {
 	AddStackListener(StackListener)
 
 	Close()
-	SetDesktop(Desktop)
 }
 
 // Window represents a single managed window within a window manager.

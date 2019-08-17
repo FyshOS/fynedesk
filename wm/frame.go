@@ -299,8 +299,7 @@ func (f *frame) ApplyTheme() {
 	xproto.FreePixmap(f.wm.x.Conn(), pid)
 }
 
-func newFrame(win xproto.Window, desk desktop.Desktop) *frame {
-	wm := desk.WindowManager().(*x11WM)
+func newFrame(win xproto.Window, wm *x11WM) *frame {
 	attrs, err := xproto.GetGeometry(wm.x.Conn(), xproto.Drawable(win)).Reply()
 	if err != nil {
 		log.Println("GetGeometry Err", err)
@@ -327,7 +326,7 @@ func newFrame(win xproto.Window, desk desktop.Desktop) *frame {
 	}
 
 	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, width: attrs.Width + wm.borderWidth()*2,
-		height: attrs.Height + wm.borderWidth()*2 + wm.titleHeight(), wm: wm, desk: desk, framed: true}
+		height: attrs.Height + wm.borderWidth()*2 + wm.titleHeight(), wm: wm, framed: true}
 	framed.ApplyTheme()
 
 	fr.Map()
@@ -338,13 +337,12 @@ func newFrame(win xproto.Window, desk desktop.Desktop) *frame {
 	return framed
 }
 
-func newFrameBorderless(win xproto.Window, desk desktop.Desktop) *frame {
-	wm := desk.WindowManager().(*x11WM)
+func newFrameBorderless(win xproto.Window, wm *x11WM) *frame {
 	attrs, err := xproto.GetGeometry(wm.x.Conn(), xproto.Drawable(win)).Reply()
 	if err != nil {
 		log.Println("GetGeometry Err", err)
 		return nil
 	}
 
-	return &frame{id: win, win: win, x: attrs.X, y: attrs.Y, wm: wm, desk: desk, framed: false}
+	return &frame{id: win, win: win, x: attrs.X, y: attrs.Y, wm: wm, framed: false}
 }
