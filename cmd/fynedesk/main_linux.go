@@ -7,9 +7,9 @@ import (
 
 	"fyne.io/fyne"
 
-	"github.com/fyne-io/desktop"
-	"github.com/fyne-io/desktop/internal"
-	"github.com/fyne-io/desktop/wm"
+	"fyne.io/desktop"
+	"fyne.io/desktop/internal"
+	"fyne.io/desktop/wm"
 )
 
 func setupDesktop(a fyne.App) desktop.Desktop {

@@ -1,4 +1,4 @@
-package internal
+package internal // import "fyne.io/desktop/internal"
 
 import (
 	"bufio"
@@ -9,8 +9,7 @@ import (
 	"strings"
 
 	"fyne.io/fyne"
-
-	"github.com/fyne-io/desktop"
+	"fyne.io/desktop"
 )
 
 var iconExtensions = []string{".png", ".svg"}

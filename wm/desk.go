@@ -1,17 +1,17 @@
 // +build linux,!ci
 
-package wm
+package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
 	"log"
 
 	"fyne.io/fyne"
+	"fyne.io/desktop"
+	"fyne.io/desktop/theme"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
-	"github.com/fyne-io/desktop"
-	"github.com/fyne-io/desktop/theme"
 )
 
 type x11WM struct {

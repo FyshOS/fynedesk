@@ -17,7 +17,7 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	wmtheme "github.com/fyne-io/desktop/theme"
+	wmtheme "fyne.io/desktop/theme"
 )
 
 type widgetRenderer struct {

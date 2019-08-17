@@ -15,9 +15,9 @@ import (
 	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/BurntSushi/xgbutil/xwindow"
 
-	"github.com/fyne-io/desktop"
-	"github.com/fyne-io/desktop/driver"
-	wmTheme "github.com/fyne-io/desktop/theme"
+	"fyne.io/desktop"
+	"fyne.io/desktop/driver"
+	wmTheme "fyne.io/desktop/theme"
 )
 
 type frame struct {

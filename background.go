@@ -6,7 +6,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 
-	wmtheme "github.com/fyne-io/desktop/theme"
+	wmtheme "fyne.io/desktop/theme"
 )
 
 func wallpaperPath() string {

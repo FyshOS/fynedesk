@@ -1,4 +1,4 @@
-package theme
+package theme // import "fyne.io/desktop/theme"
 
 import "fyne.io/fyne/theme"
 

@@ -10,8 +10,7 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-
-	"github.com/fyne-io/desktop"
+	"fyne.io/desktop"
 )
 
 var (

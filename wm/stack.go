@@ -1,6 +1,6 @@
 package wm
 
-import "github.com/fyne-io/desktop"
+import "fyne.io/desktop"
 
 type stack struct {
 	frames []desktop.Window

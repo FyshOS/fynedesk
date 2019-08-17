@@ -8,8 +8,8 @@ import (
 
 	"fyne.io/fyne"
 
-	"github.com/fyne-io/desktop"
-	"github.com/fyne-io/desktop/internal"
+	"fyne.io/desktop"
+	"fyne.io/desktop/internal"
 )
 
 func setupDesktop(a fyne.App) desktop.Desktop {
