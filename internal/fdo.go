@@ -254,6 +254,7 @@ func (f *fdoIconProvider) FindIconFromWinInfo(theme string, size int, win deskto
 	return fdoLookupApplicationWinInfo(theme, size, win)
 }
 
+// NewFDOIconProvider returns a new icon provider following the FreeDesktop.org specifications
 func NewFDOIconProvider() desktop.IconProvider {
 	return &fdoIconProvider{}
 }

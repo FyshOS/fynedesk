@@ -25,7 +25,7 @@ func newBorder(win desktop.Window) fyne.CanvasObject {
 	filler := canvas.NewRectangle(theme.BackgroundColor()) // make a border on the X axis only
 	filler.SetMinSize(fyne.NewSize(0, 2))                  // 0 wide forced
 
-	icon := desktop.Environment().IconProvider().FindIconFromWinInfo(iconTheme, iconSize, win)
+	icon := desktop.Instance().IconProvider().FindIconFromWinInfo(iconTheme, iconSize, win)
 	if icon != nil {
 		if icon.IconPath() != "" {
 			bytes, err := ioutil.ReadFile(icon.IconPath())
