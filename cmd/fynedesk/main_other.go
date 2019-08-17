@@ -9,9 +9,10 @@ import (
 	"fyne.io/fyne"
 
 	"github.com/fyne-io/desktop"
+	"github.com/fyne-io/desktop/internal"
 )
 
 func setupDesktop(a fyne.App) desktop.Desktop {
 	log.Println("Full desktop not possible on", runtime.GOOS)
-	return desktop.NewEmbeddedDesktop(a)
+	return desktop.NewEmbeddedDesktop(a, internal.NewFDOIconProvider())
 }

@@ -11,12 +11,16 @@ import (
 type Desktop interface {
 	Root() fyne.Window
 	Run()
+
+	IconProvider() IconProvider
+	WindowManager() WindowManager
 }
 
 type deskLayout struct {
-	app fyne.App
-	win fyne.Window
-	wm  WindowManager
+	app   fyne.App
+	win   fyne.Window
+	wm    WindowManager
+	icons IconProvider
 
 	background, bar, widgets, mouse fyne.CanvasObject
 }
@@ -53,7 +57,7 @@ func (l *deskLayout) Root() fyne.Window {
 		l.win = l.newDesktopWindow()
 
 		l.background = newBackground()
-		l.bar = newBar(l.wm)
+		l.bar = newBar(l)
 		l.widgets = newWidgetPanel(l.win)
 		l.mouse = newMouse()
 		l.win.SetContent(fyne.NewContainerWithLayout(l,
@@ -87,15 +91,25 @@ func (l *deskLayout) Run() {
 	l.Root().ShowAndRun()
 }
 
+func (l *deskLayout) IconProvider() IconProvider {
+	return l.icons
+}
+
+func (l *deskLayout) WindowManager() WindowManager {
+	return l.wm
+}
+
 // NewDesktop creates a new desktop in fullscreen for main usage.
 // The WindowManager passed in will be used to manage the screen it is loaded on.
-func NewDesktop(app fyne.App, wm WindowManager) Desktop {
-	return &deskLayout{app: app, wm: wm}
+// An IconProvider is used to lookup application icons from the operating system.
+func NewDesktop(app fyne.App, wm WindowManager, icons IconProvider) Desktop {
+	return &deskLayout{app: app, wm: wm, icons: icons}
 }
 
 // NewEmbeddedDesktop creates a new windowed desktop for test purposes.
+// An IconProvider is used to lookup application icons from the operating system.
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
-func NewEmbeddedDesktop(app fyne.App) Desktop {
-	return &deskLayout{app: app}
+func NewEmbeddedDesktop(app fyne.App, icons IconProvider) Desktop {
+	return &deskLayout{app: app, icons: icons}
 }

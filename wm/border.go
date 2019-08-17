@@ -6,8 +6,6 @@ import (
 	"strings"
 
 	"fyne.io/fyne"
-	"github.com/fyne-io/desktop"
-
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
@@ -19,13 +17,13 @@ var (
 	iconSize  = 32
 )
 
-func newBorder(win desktop.Window) fyne.CanvasObject {
+func newBorder(win *frame) fyne.CanvasObject {
 	var res fyne.Resource
 
 	filler := canvas.NewRectangle(theme.BackgroundColor()) // make a border on the X axis only
 	filler.SetMinSize(fyne.NewSize(0, 2))                  // 0 wide forced
 
-	icon := desktop.GetIconDataByWinInfo(iconTheme, iconSize, win)
+	icon := win.desk.IconProvider().FindIconFromWinInfo(iconTheme, iconSize, win)
 	if icon != nil {
 		if icon.IconPath() != "" {
 			bytes, err := ioutil.ReadFile(icon.IconPath())

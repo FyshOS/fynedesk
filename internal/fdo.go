@@ -9,12 +9,14 @@ import (
 	"strings"
 
 	"fyne.io/fyne"
+
+	"github.com/fyne-io/desktop"
 )
 
 var iconExtensions = []string{".png", ".svg"}
 
-//FdoIconData is a structure that contains information about .desktop files
-type FdoIconData struct {
+//fdoIconData is a structure that contains information about .desktop files
+type fdoIconData struct {
 	name     string // Application name
 	iconName string // Icon name
 	iconPath string // Icon path
@@ -22,22 +24,22 @@ type FdoIconData struct {
 }
 
 //Name returns the name associated with an fdo app
-func (data *FdoIconData) Name() string {
+func (data *fdoIconData) Name() string {
 	return data.name
 }
 
 //IconName returns the name of the icon that an fdo app wishes to use
-func (data *FdoIconData) IconName() string {
+func (data *fdoIconData) IconName() string {
 	return data.iconName
 }
 
 //IconPath returns the path of the icon that an fdo app wishes to use
-func (data *FdoIconData) IconPath() string {
+func (data *fdoIconData) IconPath() string {
 	return data.iconPath
 }
 
 //Exec returns the command used to execute the fdo app
-func (data *FdoIconData) Exec() string {
+func (data *fdoIconData) Exec() string {
 	return data.exec
 }
 
@@ -54,8 +56,8 @@ func fdoLookupXdgDataDirs() []string {
 	return locationLookup
 }
 
-//FdoLookupApplication looks up an application by name and returns an FdoIconData struct
-func FdoLookupApplication(theme string, size int, appName string) *FdoIconData {
+//fdoLookupApplication looks up an application by name and returns an fdoIconData struct
+func fdoLookupApplication(theme string, size int, appName string) desktop.IconData {
 	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
 		testLocation := filepath.Join(dataDir, "applications", appName+".desktop")
@@ -66,24 +68,23 @@ func FdoLookupApplication(theme string, size int, appName string) *FdoIconData {
 	return nil
 }
 
-//FdoLookupApplicationWinInfo looks up an application based on window info and returns an FdoIconData struct
-func FdoLookupApplicationWinInfo(theme string, size int, title string, classes []string, command string, iconName string) *FdoIconData {
-	desktop := FdoLookupApplication(theme, size, title)
-	if desktop != nil {
-		return desktop
+//fdoLookupApplicationWinInfo looks up an application based on window info and returns an fdoIconData struct
+func fdoLookupApplicationWinInfo(theme string, size int, win desktop.Window) desktop.IconData {
+	icon := fdoLookupApplication(theme, size, win.Title())
+	if icon != nil {
+		return icon
 	}
-	for _, class := range classes {
-		desktop := FdoLookupApplication(theme, size, class)
-		if desktop != nil {
-			return desktop
+	for _, class := range win.Class() {
+		icon := fdoLookupApplication(theme, size, class)
+		if icon != nil {
+			return icon
 		}
 	}
-	desktop = FdoLookupApplication(theme, size, command)
-	if desktop != nil {
-		return desktop
+	icon = fdoLookupApplication(theme, size, win.Command())
+	if icon != nil {
+		return icon
 	}
-	desktop = FdoLookupApplication(theme, size, iconName)
-	return desktop
+	return fdoLookupApplication(theme, size, win.IconName())
 }
 
 //reverseWalkDirectoryMatch walks file inside of a directory in reverse order to make sure larger sized icons are found first
@@ -186,7 +187,7 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 	for _, dataDir := range locationLookup {
 		//Icon was not found in default theme or default fallback theme - Check all themes for a match
 		//Example is /usr/share/icons
-		files, err := ioutil.ReadDir(dataDir + "icons")
+		files, err := ioutil.ReadDir(filepath.Join(dataDir, "icons"))
 		if err != nil {
 			fyne.LogError("Could not read directory", err)
 			continue
@@ -207,7 +208,7 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 }
 
 //newFdoIconData creates and returns a struct that contains needed fields from a .desktop file
-func newFdoIconData(theme string, size int, desktopPath string) *FdoIconData {
+func newFdoIconData(theme string, size int, desktopPath string) *fdoIconData {
 	file, err := os.Open(desktopPath)
 	if err != nil {
 		fyne.LogError("Could not open file", err)
@@ -216,7 +217,7 @@ func newFdoIconData(theme string, size int, desktopPath string) *FdoIconData {
 	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
-	fdoApp := FdoIconData{name: "", iconName: "", iconPath: "", exec: ""}
+	fdoApp := fdoIconData{name: "", iconName: "", iconPath: "", exec: ""}
 	for scanner.Scan() {
 		line := scanner.Text()
 		if strings.HasPrefix(line, "Name=") {
@@ -238,4 +239,21 @@ func newFdoIconData(theme string, size int, desktopPath string) *FdoIconData {
 		return nil
 	}
 	return &fdoApp
+}
+
+type fdoIconProvider struct {
+}
+
+//FindIconFromAppName matches an icon name to a location and returns an IconData interface
+func (f *fdoIconProvider) FindIconFromAppName(theme string, size int, appName string) desktop.IconData {
+	return fdoLookupApplication(theme, size, appName)
+}
+
+//FindIconFromWinInfo matches window information to an icon location and returns an IconData interface
+func (f *fdoIconProvider) FindIconFromWinInfo(theme string, size int, win desktop.Window) desktop.IconData {
+	return fdoLookupApplicationWinInfo(theme, size, win)
+}
+
+func NewFDOIconProvider() desktop.IconProvider {
+	return &fdoIconProvider{}
 }

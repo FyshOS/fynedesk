@@ -43,12 +43,30 @@ func (*dummyWindow) RaiseAbove(Window) {
 	// no-op (this is instructing the window after stack changes)
 }
 
+type dummyIcon struct {
+}
+
+func (d *dummyIcon) Name() string {
+	return "Fyne"
+}
+
+func (d *dummyIcon) IconName() string {
+	return "fyne"
+}
+
+func (d *dummyIcon) IconPath() string {
+	return "testdata/fyne.png"
+}
+
+func (d *dummyIcon) Exec() string {
+	return ""
+}
+
 func TestAppBar(t *testing.T) {
-	appBar := newAppBar()
-	icons := []string{"xterm", "xterm", "xterm", "xterm"}
-	for _, iconName := range icons {
-		data := GetIconDataByAppName("hicolor", 32, iconName)
-		icon := barCreateIcon(false, data, nil)
+	appBar := newAppBar(nil)
+	icons := []string{"fyne", "fyne", "fyne", "fyne"}
+	for range icons {
+		icon := barCreateIcon(false, &dummyIcon{}, nil)
 		if icon != nil {
 			appBar.append(icon)
 		}
@@ -57,8 +75,7 @@ func TestAppBar(t *testing.T) {
 	appBar.appendSeparator()
 	assert.Equal(t, len(icons)+1, len(appBar.children))
 	win := &dummyWindow{}
-	data := GetIconDataByWinInfo("hicolor", 32, win)
-	icon := barCreateIcon(true, data, win)
+	icon := barCreateIcon(true, &dummyIcon{}, win)
 	appBar.append(icon)
 	assert.Equal(t, len(icons)+2, len(appBar.children))
 	appBar.removeFromTaskbar(icon)

@@ -20,6 +20,7 @@ type x11WM struct {
 	root   fyne.Window
 	rootID xproto.Window
 	loaded bool
+	desk   desktop.Desktop
 }
 
 func (x *x11WM) Close() {
@@ -36,8 +37,9 @@ func (x *x11WM) AddStackListener(l desktop.StackListener) {
 	x.stack.listeners = append(x.stack.listeners, l)
 }
 
-func (x *x11WM) SetRoot(win fyne.Window) {
-	x.root = win
+func (x *x11WM) SetDesktop(desk desktop.Desktop) {
+	x.desk = desk
+	x.root = desk.Root()
 }
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
@@ -229,9 +231,9 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 func (x *x11WM) setupWindow(win xproto.Window) {
 	var frame *frame
 	if !windowBorderless(x.x, win) {
-		frame = newFrame(win, x)
+		frame = newFrame(win, x.desk)
 	} else {
-		frame = newFrameBorderless(win, x)
+		frame = newFrameBorderless(win, x.desk)
 	}
 
 	x.bindKeys(win)

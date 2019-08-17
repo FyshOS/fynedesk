@@ -18,9 +18,6 @@ var (
 	icons     []*barIcon
 )
 
-type barStackListener struct {
-}
-
 func barCreateIcon(taskbar bool, data IconData, win Window) *barIcon {
 	if data == nil || data.IconPath() == "" {
 		return nil
@@ -52,8 +49,8 @@ func barCreateIcon(taskbar bool, data IconData, win Window) *barIcon {
 	return icon
 }
 
-func (bsl *barStackListener) WindowAdded(win Window) {
-	data := GetIconDataByWinInfo(iconTheme, iconSize, win)
+func (b *bar) WindowAdded(win Window) {
+	data := b.desk.IconProvider().FindIconFromWinInfo(iconTheme, iconSize, win)
 	if data == nil {
 		return
 	}
@@ -66,7 +63,7 @@ func (bsl *barStackListener) WindowAdded(win Window) {
 	}
 }
 
-func (bsl *barStackListener) WindowRemoved(win Window) {
+func (b *bar) WindowRemoved(win Window) {
 	for i, icon := range icons {
 		if icon.taskbarWindow != nil {
 			if win == icon.taskbarWindow {
@@ -77,15 +74,14 @@ func (bsl *barStackListener) WindowRemoved(win Window) {
 	}
 }
 
-func newBar(wm WindowManager) fyne.CanvasObject {
-	appBar = newAppBar()
+func newBar(desk Desktop) fyne.CanvasObject {
+	appBar = newAppBar(desk)
 
-	if wm != nil {
-		bsl := &barStackListener{}
-		wm.AddStackListener(bsl)
+	if desk.WindowManager() != nil {
+		desk.WindowManager().AddStackListener(appBar)
 	}
 	for _, app := range apps {
-		data := GetIconDataByAppName(iconTheme, iconSize, app)
+		data := desk.IconProvider().FindIconFromAppName(iconTheme, iconSize, app)
 		if data == nil {
 			continue
 		}

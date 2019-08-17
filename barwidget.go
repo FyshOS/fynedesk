@@ -14,7 +14,8 @@ import (
 type bar struct {
 	baseWidget
 
-	children      []fyne.CanvasObject // Icons that are laid out by the barr
+	desk          Desktop             // The desktop instance we are holding icons for
+	children      []fyne.CanvasObject // Icons that are laid out by the bar
 	mouseInside   bool                // Is the mouse inside of the bar?
 	mousePosition fyne.Position       // The current coordinates of the mouse cursor
 }
@@ -102,8 +103,8 @@ func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 }
 
 //newAppBar returns a horizontal list of icons for an icon launcher
-func newAppBar(children ...fyne.CanvasObject) *bar {
-	bar := &bar{children: children}
+func newAppBar(desk Desktop, children ...fyne.CanvasObject) *bar {
+	bar := &bar{desk: desk, children: children}
 	widget.Renderer(bar).Layout(bar.MinSize())
 	return bar
 }
