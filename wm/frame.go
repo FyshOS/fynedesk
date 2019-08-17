@@ -6,8 +6,9 @@ import (
 	"log"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/app/util"
+	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
@@ -16,7 +17,6 @@ import (
 	"github.com/BurntSushi/xgbutil/xwindow"
 
 	"fyne.io/desktop"
-	"fyne.io/desktop/driver"
 	wmTheme "fyne.io/desktop/theme"
 )
 
@@ -33,7 +33,7 @@ type frame struct {
 
 	wm     *x11WM
 	desk   desktop.Desktop
-	canvas driver.WindowlessCanvas
+	canvas test.WindowlessCanvas
 }
 
 func (s *stack) frameForWin(id xproto.Window) desktop.Window {
@@ -239,9 +239,8 @@ func (f *frame) ApplyTheme() {
 	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
 	bgColor := backR<<16 | backG<<8 | backB
 
-	title := f.Title()
 	if f.canvas == nil {
-		f.canvas = driver.NewSoftwareCanvas(widget.NewLabel(title))
+		f.canvas = util.NewSoftwareCanvas()
 	}
 	scale := float32(1) // TODO detect like the gl driver
 	f.canvas.SetScale(scale)
