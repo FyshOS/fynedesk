@@ -6,9 +6,9 @@ import (
 	"errors"
 	"log"
 
-	"fyne.io/fyne"
 	"fyne.io/desktop"
 	"fyne.io/desktop/theme"
+	"fyne.io/fyne"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"

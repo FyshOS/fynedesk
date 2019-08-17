@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 
-	"fyne.io/fyne"
 	"fyne.io/desktop"
+	"fyne.io/fyne"
 )
 
 var iconExtensions = []string{".png", ".svg"}
