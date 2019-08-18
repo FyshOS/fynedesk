@@ -32,7 +32,6 @@ type frame struct {
 	title               string
 
 	wm     *x11WM
-	desk   desktop.Desktop
 	canvas test.WindowlessCanvas
 }
 
@@ -239,16 +238,18 @@ func (f *frame) ApplyTheme() {
 	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
 	bgColor := backR<<16 | backG<<8 | backB
 
+	scale := float32(2)
 	if f.canvas == nil {
 		f.canvas = util.NewSoftwareCanvas()
+		f.canvas.SetPadded(false)
 	}
-	scale := float32(1) // TODO detect like the gl driver
+	scale = desktop.Instance().Root().Canvas().Scale()
 	f.canvas.SetScale(scale)
 	border := newBorder(f)
 	border.Resize(f.canvas.Size())
 	f.canvas.SetContent(border)
 
-	f.canvas.Resize(fyne.NewSize(int(float32(f.width)*scale), int(float32(f.height)*scale)))
+	f.canvas.Resize(fyne.NewSize(int(float32(f.width)/scale), int(float32(f.height)/scale)))
 	img := f.canvas.Capture()
 
 	pid, err := xproto.NewPixmapId(f.wm.x.Conn())
@@ -266,7 +267,7 @@ func (f *frame) ApplyTheme() {
 	xproto.PolyFillRectangleChecked(f.wm.x.Conn(), xproto.Drawable(pid), draw, []xproto.Rectangle{rect})
 
 	// DATA is BGRx
-	width, height := uint32(f.width), uint32(wmTheme.TitleHeight+wmTheme.BorderWidth)
+	width, height := uint32(f.width), uint32(float32(wmTheme.TitleHeight)*scale+float32(wmTheme.BorderWidth)*scale)
 	data := make([]byte, width*height*4)
 	i := uint32(0)
 	for y := uint32(0); y < height; y++ {
@@ -311,21 +312,22 @@ func newFrame(win xproto.Window, wm *x11WM) *frame {
 		return nil
 	}
 
+	scale := desktop.Instance().Root().Canvas().Scale()
 	r, g, b, _ := theme.BackgroundColor().RGBA()
 	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
 		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
 		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange}
 	err = xproto.CreateWindowChecked(wm.x.Conn(), wm.x.Screen().RootDepth, fr.Id, wm.x.RootWin(),
-		attrs.X, attrs.Y, attrs.Width+wm.borderWidth()*2, attrs.Height+wm.borderWidth()*2+wm.titleHeight(), 0, xproto.WindowClassInputOutput,
+		attrs.X, attrs.Y, attrs.Width+uint16(float32(wm.borderWidth())/scale)*2, attrs.Height+uint16(float32(wm.borderWidth())/scale)*2+wm.titleHeight(), 0, xproto.WindowClassInputOutput,
 		wm.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
 	if err != nil {
 		log.Println("CreateWindow Err", err)
 		return nil
 	}
 
-	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, width: attrs.Width + wm.borderWidth()*2,
-		height: attrs.Height + wm.borderWidth()*2 + wm.titleHeight(), wm: wm, framed: true}
+	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, width: attrs.Width + uint16(float32(wm.borderWidth())*2/scale),
+		height: attrs.Height + uint16(float32(wm.borderWidth())/scale*2) + uint16(float32(wm.titleHeight())/scale), wm: wm, framed: true}
 	framed.ApplyTheme()
 
 	fr.Map()
