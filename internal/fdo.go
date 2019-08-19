@@ -239,7 +239,7 @@ func newFdoIconData(theme string, size int, desktopPath string) *fdoIconData {
 			fdoApp.iconName = icon[1]
 			fdoApp.iconPath = fdoLookupIconPath(theme, size, fdoApp.iconName)
 			if fdoApp.iconPath == "" {
-				fyne.LogError("Could not find path for icon " + fdoApp.iconName, nil)
+				fyne.LogError("Could not find path for icon "+fdoApp.iconName, nil)
 			}
 		} else if strings.HasPrefix(line, "Exec=") {
 			exec := strings.SplitAfter(line, "=")
