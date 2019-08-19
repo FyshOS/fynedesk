@@ -211,7 +211,10 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 			}
 
 			//Example is /usr/share/icons/gnome
-			lookupIconPathInTheme(iconSize, filepath.Join(dataDir, "icons", f.Name()), iconName)
+			iconPath := lookupIconPathInTheme(iconSize, filepath.Join(dataDir, "icons", f.Name()), iconName)
+			if iconPath != "" {
+				return iconPath
+			}
 		}
 	}
 	//No Icon Was Found
