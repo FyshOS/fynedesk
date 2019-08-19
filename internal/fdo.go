@@ -86,79 +86,94 @@ func fdoLookupApplicationWinInfo(theme string, size int, win desktop.Window) des
 	return fdoLookupApplication(theme, size, win.IconName())
 }
 
-//reverseWalkDirectoryMatch walks file inside of a directory in reverse order to make sure larger sized icons are found first
-func reverseWalkDirectoryMatch(directory string, joiner string, iconName string) string {
-	//If the requested icon wasn't found in the Example 32x32 or scalable dirs of the theme, try other sizes within theme
+// lookupAnyIconSizeInThemeDir walks file inside of a directory in reverse order to make sure larger sized icons are found first
+func lookupAnyIconSizeInThemeDir(directory string, joiner string, iconName string) string {
 	files, err := ioutil.ReadDir(directory)
+	if err == nil {
+		// Lets walk the files in reverse so bigger icons are selected first (Unless it is a 3 digit icon size like 128)
+		// Example is /usr/share/icons/icon_theme/<size>/<joiner>/xterm.png
+		for i := len(files) - 1; i >= 0; i-- {
+			f := files[i]
+			if strings.HasPrefix(f.Name(), ".") || !f.IsDir() {
+				continue
+			}
+			matchDir := filepath.Join(directory, f.Name())
+			for _, extension := range iconExtensions {
+				testIcon := filepath.Join(matchDir, joiner, iconName+extension)
+				if _, err := os.Stat(testIcon); err == nil {
+					return testIcon
+				}
+			}
+		}
+	}
+
+	directory = filepath.Join(directory, joiner)
+	files, err = ioutil.ReadDir(directory)
 	if err != nil {
-		fyne.LogError("Could not read directory", err)
 		return ""
 	}
-	//Lets walk the files in reverse so bigger icons are selected first (Unless it is a 3 digit icon size like 128)
+	// And then walk the directories in <joiner>/<size> order
+	// Example is /usr/share/icons/icon_theme/<joiner>/<size>/xterm.png
 	for i := len(files) - 1; i >= 0; i-- {
 		f := files[i]
-		if strings.HasPrefix(f.Name(), ".") == true || f.IsDir() == true {
+		if strings.HasPrefix(f.Name(), ".") || !f.IsDir() {
 			continue
 		}
 		matchDir := filepath.Join(directory, f.Name())
 		for _, extension := range iconExtensions {
-			//Example is /usr/share/icons/icon_theme/64x64/apps/xterm.png
-			var testIcon = ""
-			if joiner != "" {
-				testIcon = filepath.Join(matchDir, joiner, iconName+extension)
-			} else {
-				testIcon = filepath.Join(matchDir, iconName+extension)
-			}
+			testIcon := filepath.Join(matchDir, iconName+extension)
 			if _, err := os.Stat(testIcon); err == nil {
 				return testIcon
 			}
 		}
 	}
+
 	return ""
 }
 
-//lookupIconPathInTheme searches icon locations to find a match using a provided theme directory
+// lookupIconPathInTheme searches icon locations to find a match using a provided theme directory
 func lookupIconPathInTheme(iconSize string, dir string, iconName string) string {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return ""
 	}
 	for _, extension := range iconExtensions {
-		//Example is /usr/share/icons/icon_theme/32x32/apps/xterm.png
+		// Example is /usr/share/icons/icon_theme/32/apps/xterm.png
 		testIcon := filepath.Join(dir, iconSize, "apps", iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
+		// Example is /usr/share/icons/icon_theme/32x32/apps/xterm.png
 		testIcon = filepath.Join(dir, iconSize+"x"+iconSize, "apps", iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
 
+		// Example is /usr/share/icons/icon_theme/apps/32/xterm.png
 		testIcon = filepath.Join(dir, "apps", iconSize, iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
+		// Example is /usr/share/icons/icon_theme/apps/32x32/xterm.png
 		testIcon = filepath.Join(dir, "apps", iconSize+"x"+iconSize, iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
 
-		//Example is /usr/share/icons/icon_theme/scalable/apps/xterm.png - Try this if the requested iconSize didn't exist
+		// Try this if the requested iconSize didn't exist
+		// Example is /usr/share/icons/icon_theme/scalable/apps/xterm.png
 		testIcon = filepath.Join(dir, "scalable", "apps", iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
+		// Example is /usr/share/icons/icon_theme/apps/scalable/xterm.png
 		testIcon = filepath.Join(dir, "apps", "scalable", iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
 	}
-	//If the requested icon wasn't found in the Example 32x32 or scalable dirs of the theme, try other sizes within theme
-	testIcon := reverseWalkDirectoryMatch(dir, "apps", iconName)
-	if testIcon != "" {
-		return testIcon
-	}
-
-	return testIcon
+	// If the requested icon wasn't found in the specific size or scalable dirs
+	// of the theme try all sizes within theme
+	return lookupAnyIconSizeInThemeDir(dir, "apps", iconName)
 }
 
 //fdoLookupIconPath will take the name of an icon and find a matching image file
@@ -187,18 +202,16 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 		//Example is /usr/share/icons
 		files, err := ioutil.ReadDir(filepath.Join(dataDir, "icons"))
 		if err != nil {
-			fyne.LogError("Could not read directory", err)
 			continue
 		}
 		//Enter icon theme
 		for _, f := range files {
-			if strings.HasPrefix(f.Name(), ".") == true || f.IsDir() == true {
+			if strings.HasPrefix(f.Name(), ".") || !f.IsDir() {
 				continue
 			}
-			if f.IsDir() {
-				//Example is /usr/share/icons/gnome
-				lookupIconPathInTheme(iconSize, filepath.Join(dataDir, "icons", f.Name()), iconName)
-			}
+
+			//Example is /usr/share/icons/gnome
+			lookupIconPathInTheme(iconSize, filepath.Join(dataDir, "icons", f.Name()), iconName)
 		}
 	}
 	//No Icon Was Found
@@ -225,6 +238,9 @@ func newFdoIconData(theme string, size int, desktopPath string) *fdoIconData {
 			icon := strings.SplitAfter(line, "=")
 			fdoApp.iconName = icon[1]
 			fdoApp.iconPath = fdoLookupIconPath(theme, size, fdoApp.iconName)
+			if fdoApp.iconPath == "" {
+				fyne.LogError("Could not find path for icon " + fdoApp.iconName, nil)
+			}
 		} else if strings.HasPrefix(line, "Exec=") {
 			exec := strings.SplitAfter(line, "=")
 			fdoApp.exec = exec[1]
