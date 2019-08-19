@@ -132,16 +132,18 @@ func lookupIconPathInTheme(iconSize string, dir string, iconName string) string 
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
+
+		testIcon = filepath.Join(dir, "apps", iconSize, iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
+		testIcon = filepath.Join(dir, "apps", iconSize+"x"+iconSize, iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
-	}
-	for _, extension := range iconExtensions {
+
 		//Example is /usr/share/icons/icon_theme/scalable/apps/xterm.png - Try this if the requested iconSize didn't exist
-		testIcon := filepath.Join(dir, "scalable", "apps", iconName+extension)
+		testIcon = filepath.Join(dir, "scalable", "apps", iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
@@ -156,9 +158,6 @@ func lookupIconPathInTheme(iconSize string, dir string, iconName string) string 
 		return testIcon
 	}
 
-	//One last chance at finding it - assume apps comes before size in path name
-	testIcon = reverseWalkDirectoryMatch(filepath.Join(dir, "apps"), "", iconName)
-
 	return testIcon
 }
 
@@ -170,7 +169,7 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 	for _, dataDir := range locationLookup {
 		//Example is /usr/share/icons/icon_theme
 		dir := filepath.Join(dataDir, "icons", iconTheme)
-		iconPath := lookupIconPathInTheme(iconSize, dir, iconTheme)
+		iconPath := lookupIconPathInTheme(iconSize, dir, iconName)
 		if iconPath != "" {
 			return iconPath
 		}
