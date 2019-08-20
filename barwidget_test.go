@@ -1,11 +1,12 @@
 package desktop
 
 import (
+	"fyne.io/fyne"
+	"github.com/stretchr/testify/assert"
 	"testing"
 
 	_ "fyne.io/fyne/test"
 	"fyne.io/fyne/widget"
-	"github.com/magiconair/properties/assert"
 )
 
 type dummyWindow struct {
@@ -50,23 +51,20 @@ func (d *dummyIcon) Name() string {
 	return "Fyne"
 }
 
-func (d *dummyIcon) IconName() string {
-	return "fyne"
+func (d *dummyIcon) Icon(theme string, size int) fyne.Resource {
+	return fyne.NewStaticResource("test.png", []byte{})
 }
 
-func (d *dummyIcon) IconPath() string {
-	return "testdata/fyne.png"
-}
-
-func (d *dummyIcon) Exec() string {
-	return ""
+func (d *dummyIcon) Run() error {
+	// no-op
+	return nil
 }
 
 func TestAppBar(t *testing.T) {
-	appBar := newAppBar(nil)
+	appBar := newAppBar(&testDesk{})
 	icons := []string{"fyne", "fyne", "fyne", "fyne"}
 	for range icons {
-		icon := barCreateIcon(false, &dummyIcon{}, nil)
+		icon := barCreateIcon(appBar, false, &dummyIcon{}, nil)
 		if icon != nil {
 			appBar.append(icon)
 		}
@@ -75,7 +73,7 @@ func TestAppBar(t *testing.T) {
 	appBar.appendSeparator()
 	assert.Equal(t, len(icons)+1, len(appBar.children))
 	win := &dummyWindow{}
-	icon := barCreateIcon(true, &dummyIcon{}, win)
+	icon := barCreateIcon(appBar, true, &dummyIcon{}, win)
 	appBar.append(icon)
 	assert.Equal(t, len(icons)+2, len(appBar.children))
 	appBar.removeFromTaskbar(icon)

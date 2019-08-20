@@ -8,6 +8,35 @@ import (
 	"testing"
 )
 
+type testDesk struct {
+}
+
+func (*testDesk) Root() fyne.Window {
+	return nil
+}
+
+func (*testDesk) Run() {
+}
+
+func (*testDesk) Settings() DeskSettings {
+	return &testSettings{}
+}
+
+func (*testDesk) IconProvider() ApplicationProvider {
+	return nil
+}
+
+func (*testDesk) WindowManager() WindowManager {
+	return nil
+}
+
+type testSettings struct {
+}
+
+func (*testSettings) IconTheme() string {
+	return "testTheme"
+}
+
 func TestDeskLayout_Layout(t *testing.T) {
 	l := &deskLayout{}
 	l.background = canvas.NewRectangle(color.White)
