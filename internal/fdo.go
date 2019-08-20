@@ -38,6 +38,9 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 	path := data.iconPath
 	if path == "" {
 		path = fdoLookupIconPath(theme, size, data.iconName)
+		if path == "" {
+			return nil
+		}
 	}
 	return loadIcon(path)
 }
@@ -67,7 +70,7 @@ func loadIcon(path string) fyne.Resource {
 func fdoLookupXdgDataDirs() []string {
 	dataLocation := os.Getenv("XDG_DATA_DIRS")
 	locationLookup := strings.Split(dataLocation, ":")
-	if len(locationLookup) == 0 {
+	if len(locationLookup) == 0 || (len(locationLookup) == 1 && locationLookup[0] == "") {
 		var fallbackLocations []string
 		fallbackLocations = append(fallbackLocations, "/usr/local/share")
 		fallbackLocations = append(fallbackLocations, "/usr/share")
