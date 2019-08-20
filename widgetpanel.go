@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -56,10 +57,10 @@ func (w *widgetRenderer) Destroy() {
 }
 
 type widgetPanel struct {
-	root   fyne.Window
-	size   fyne.Size
-	pos    fyne.Position
-	hidden bool
+	baseWidget
+
+	desk *deskLayout
+	root fyne.Window
 
 	clock               *canvas.Text
 	date                *widget.Label
@@ -67,7 +68,7 @@ type widgetPanel struct {
 }
 
 func (w *widgetPanel) Hide() {
-	w.hidden = true
+	w.Hidden = true
 
 	canvas.Refresh(w)
 }
@@ -77,13 +78,13 @@ func (w *widgetPanel) MinSize() fyne.Size {
 }
 
 func (w *widgetPanel) Move(pos fyne.Position) {
-	w.pos = pos
+	w.position = pos
 
 	canvas.Refresh(w)
 }
 
 func (w *widgetPanel) Position() fyne.Position {
-	return w.pos
+	return w.position
 }
 
 func (w *widgetPanel) Resize(size fyne.Size) {
@@ -93,17 +94,71 @@ func (w *widgetPanel) Resize(size fyne.Size) {
 }
 
 func (w *widgetPanel) Show() {
-	w.hidden = false
+	w.Hidden = false
 
 	canvas.Refresh(w)
 }
 
-func (w *widgetPanel) Size() fyne.Size {
-	return w.size
+func appExecPopUpListMatches(w *widgetPanel, popup *widget.PopUp, appList *fyne.Container, input string) {
+	iconTheme := w.desk.Settings().IconTheme()
+	dataRange := w.desk.IconProvider().FindIconsMatchingAppName(iconTheme, iconSize, input)
+	if len(dataRange) == 0 {
+		return
+	}
+	for _, data := range dataRange {
+		if data == nil || data.IconPath() == "" {
+			continue
+		}
+		bytes, err := ioutil.ReadFile(data.IconPath())
+		if err != nil {
+			fyne.LogError("Could not read file", err)
+			continue
+		}
+		str := strings.Replace(data.IconPath(), "-", "", -1)
+		iconResource := strings.Replace(str, "_", "", -1)
+
+		res := fyne.NewStaticResource(strings.ToLower(filepath.Base(iconResource)), bytes)
+		app := widget.NewButtonWithIcon(data.Name(), res, func() {
+			command := strings.Split(data.Exec(), " ")
+			exec.Command(command[0]).Start()
+			popup.Hide()
+			popup = nil
+		})
+		appList.AddObject(app)
+	}
 }
 
-func (w *widgetPanel) Visible() bool {
-	return !w.hidden
+func appExecPopUp(w *widgetPanel) {
+	entry := widget.NewEntry()
+	entry.SetPlaceHolder("Application")
+
+	appList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
+	appScroller := widget.NewScrollContainer(appList)
+
+	sizingRect := canvas.NewRectangle(color.Transparent)
+	sizingRect.SetMinSize(fyne.NewSize(int(w.root.Canvas().Size().Width/4), iconSize*3))
+
+	sizer := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, nil, nil), sizingRect, appScroller)
+	content := fyne.NewContainerWithLayout(layout.NewVBoxLayout(), entry, sizer)
+	popup := widget.NewModalPopUp(content, w.root.Canvas())
+
+	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
+		popup.Hide()
+		popup = nil
+	})
+	content.AddObject(cancel)
+
+	entry.OnChanged = func(input string) {
+		appList.Objects = nil
+		if input != "" {
+			appExecPopUpListMatches(w, popup, appList, input)
+		}
+		canvas.Refresh(appList)
+	}
+
+	popup.Show()
+	w.root.RequestFocus()
+	w.root.Canvas().Focus(entry)
 }
 
 func (w *widgetPanel) clockTick() {
@@ -246,11 +301,14 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	})
 	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
 		less, w.brightness, more)
-
+	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), func() {
+		appExecPopUp(w)
+	})
 	objects := []fyne.CanvasObject{
 		w.clock,
 		w.date,
 		layout.NewSpacer(),
+		appExecButton,
 		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, w.battery),
 		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright),
 		themes,
@@ -264,9 +322,10 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-func newWidgetPanel(rootWin fyne.Window) *widgetPanel {
+func newWidgetPanel(rootDesk *deskLayout) *widgetPanel {
 	w := &widgetPanel{
-		root: rootWin,
+		desk: rootDesk,
+		root: rootDesk.win,
 	}
 	w.createClock()
 	w.createBattery()
