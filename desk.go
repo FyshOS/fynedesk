@@ -11,6 +11,7 @@ import (
 type Desktop interface {
 	Root() fyne.Window
 	Run()
+	Settings() DeskSettings
 
 	IconProvider() IconProvider
 	WindowManager() WindowManager
@@ -19,10 +20,11 @@ type Desktop interface {
 var instance Desktop
 
 type deskLayout struct {
-	app   fyne.App
-	win   fyne.Window
-	wm    WindowManager
-	icons IconProvider
+	app      fyne.App
+	win      fyne.Window
+	wm       WindowManager
+	icons    IconProvider
+	settings DeskSettings
 
 	background, bar, widgets, mouse fyne.CanvasObject
 }
@@ -93,6 +95,10 @@ func (l *deskLayout) Run() {
 	l.Root().ShowAndRun()
 }
 
+func (l *deskLayout) Settings() DeskSettings {
+	return l.settings
+}
+
 func (l *deskLayout) IconProvider() IconProvider {
 	return l.icons
 }
@@ -110,7 +116,7 @@ func Instance() Desktop {
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An IconProvider is used to lookup application icons from the operating system.
 func NewDesktop(app fyne.App, wm WindowManager, icons IconProvider) Desktop {
-	instance = &deskLayout{app: app, wm: wm, icons: icons}
+	instance = &deskLayout{app: app, wm: wm, icons: icons, settings: NewDeskSettings()}
 	return instance
 }
 
@@ -119,6 +125,6 @@ func NewDesktop(app fyne.App, wm WindowManager, icons IconProvider) Desktop {
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
 func NewEmbeddedDesktop(app fyne.App, icons IconProvider) Desktop {
-	instance = &deskLayout{app: app, icons: icons}
+	instance = &deskLayout{app: app, icons: icons, settings: NewDeskSettings()}
 	return instance
 }

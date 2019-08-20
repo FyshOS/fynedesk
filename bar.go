@@ -11,11 +11,10 @@ import (
 )
 
 var (
-	appBar    *bar
-	apps      = []string{"xterm", "gimp", "google-chrome", "firefox"}
-	iconSize  = 32
-	iconTheme = "hicolor"
-	icons     []*barIcon
+	appBar   *bar
+	apps     = []string{"xterm", "gimp", "google-chrome", "firefox"}
+	iconSize = 32
+	icons    []*barIcon
 )
 
 func barCreateIcon(taskbar bool, data IconData, win Window) *barIcon {
@@ -50,6 +49,7 @@ func barCreateIcon(taskbar bool, data IconData, win Window) *barIcon {
 }
 
 func (b *bar) WindowAdded(win Window) {
+	iconTheme := b.desk.Settings().IconTheme()
 	data := b.desk.IconProvider().FindIconFromWinInfo(iconTheme, iconSize, win)
 	if data == nil {
 		return
@@ -81,6 +81,7 @@ func newBar(desk Desktop) fyne.CanvasObject {
 		desk.WindowManager().AddStackListener(appBar)
 	}
 	for _, app := range apps {
+		iconTheme := desk.Settings().IconTheme()
 		data := desk.IconProvider().FindIconFromAppName(iconTheme, iconSize, app)
 		if data == nil {
 			continue
