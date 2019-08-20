@@ -103,7 +103,6 @@ func TestFdoIconNameIsPath(t *testing.T) {
 		t.FailNow()
 	}
 	data := fdoLookupApplication(iconTheme, iconSize, "app3")
-	fmt.Println(data.IconPath())
 	assert.Equal(t, exists(data), true)
 }
 
