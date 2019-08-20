@@ -7,7 +7,6 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -101,26 +100,20 @@ func (w *widgetPanel) Show() {
 
 func appExecPopUpListMatches(w *widgetPanel, popup *widget.PopUp, appList *fyne.Container, input string) {
 	iconTheme := w.desk.Settings().IconTheme()
-	dataRange := w.desk.IconProvider().FindIconsMatchingAppName(iconTheme, iconSize, input)
+	dataRange := w.desk.IconProvider().FindAppsMatching(input)
 	if len(dataRange) == 0 {
 		return
 	}
 	for _, data := range dataRange {
-		if data == nil || data.IconPath() == "" {
+		if data == nil {
 			continue
 		}
-		bytes, err := ioutil.ReadFile(data.IconPath())
-		if err != nil {
-			fyne.LogError("Could not read file", err)
-			continue
-		}
-		str := strings.Replace(data.IconPath(), "-", "", -1)
-		iconResource := strings.Replace(str, "_", "", -1)
-
-		res := fyne.NewStaticResource(strings.ToLower(filepath.Base(iconResource)), bytes)
-		app := widget.NewButtonWithIcon(data.Name(), res, func() {
-			command := strings.Split(data.Exec(), " ")
-			exec.Command(command[0]).Start()
+		icon := data.Icon(iconTheme, iconSize)
+		app := widget.NewButtonWithIcon(data.Name(), icon, func() {
+			err := data.Run()
+			if err != nil {
+				fyne.LogError("Failed to start app", err)
+			}
 			popup.Hide()
 			popup = nil
 		})
