@@ -46,13 +46,38 @@ func (data *fdoIconData) Exec() string {
 func fdoLookupXdgDataDirs() []string {
 	dataLocation := os.Getenv("XDG_DATA_DIRS")
 	locationLookup := strings.Split(dataLocation, ":")
-	if len(locationLookup) == 1 && locationLookup[0] == dataLocation {
+	if len(locationLookup) == 0 {
 		var fallbackLocations []string
 		fallbackLocations = append(fallbackLocations, "/usr/local/share")
 		fallbackLocations = append(fallbackLocations, "/usr/share")
 		return fallbackLocations
 	}
 	return locationLookup
+}
+
+//fdoLookupApplicationByMetadata looks up an application by comparing the requested name to the contents of .desktop files
+func fdoLookupApplicationByMetadata(theme string, size int, appName string) desktop.IconData {
+	locationLookup := fdoLookupXdgDataDirs()
+	for _, dataDir := range locationLookup {
+		testLocation := filepath.Join(dataDir, "applications")
+		files, err := ioutil.ReadDir(testLocation)
+		if err != nil {
+			continue
+		}
+		for _, f := range files {
+			if strings.HasPrefix(f.Name(), ".") || f.IsDir() {
+				continue
+			}
+			icon := newFdoIconData(theme, size, filepath.Join(testLocation, f.Name()))
+			if icon == nil {
+				return icon
+			}
+			if icon.name == appName || icon.exec == appName {
+				return icon
+			}
+		}
+	}
+	return nil
 }
 
 //fdoLookupApplication looks up an application by name and returns an fdoIconData struct
@@ -64,7 +89,35 @@ func fdoLookupApplication(theme string, size int, appName string) desktop.IconDa
 			return newFdoIconData(theme, size, testLocation)
 		}
 	}
-	return nil
+	//If no match was found checking by filenames, check by file contents
+	return fdoLookupApplicationByMetadata(theme, size, appName)
+}
+
+//fdoLookupApplicationPartial looks up an application by a partial name and returns all matches in an fdoIconData struct slice
+func fdoLookupApplicationsMatching(theme string, size int, appName string) []desktop.IconData {
+	var icons []desktop.IconData
+	locationLookup := fdoLookupXdgDataDirs()
+	for _, dataDir := range locationLookup {
+		testLocation := filepath.Join(dataDir, "applications")
+		files, err := ioutil.ReadDir(testLocation)
+		if err != nil {
+			continue
+		}
+		for _, f := range files {
+			if strings.HasPrefix(f.Name(), ".") || f.IsDir() {
+				continue
+			}
+			icon := newFdoIconData(theme, size, filepath.Join(testLocation, f.Name()))
+			if icon == nil {
+				continue
+			}
+			if strings.Contains(strings.ToLower(icon.name), strings.ToLower(appName)) ||
+				strings.Contains(strings.ToLower(icon.exec), strings.ToLower(appName)) {
+				icons = append(icons, icon)
+			}
+		}
+	}
+	return icons
 }
 
 //fdoLookupApplicationWinInfo looks up an application based on window info and returns an fdoIconData struct
@@ -89,20 +142,21 @@ func fdoLookupApplicationWinInfo(theme string, size int, win desktop.Window) des
 // lookupAnyIconSizeInThemeDir walks file inside of a directory in reverse order to make sure larger sized icons are found first
 func lookupAnyIconSizeInThemeDir(directory string, joiner string, iconName string) string {
 	files, err := ioutil.ReadDir(directory)
-	if err == nil {
-		// Lets walk the files in reverse so bigger icons are selected first (Unless it is a 3 digit icon size like 128)
-		// Example is /usr/share/icons/icon_theme/<size>/<joiner>/xterm.png
-		for i := len(files) - 1; i >= 0; i-- {
-			f := files[i]
-			if strings.HasPrefix(f.Name(), ".") || !f.IsDir() {
-				continue
-			}
-			matchDir := filepath.Join(directory, f.Name())
-			for _, extension := range iconExtensions {
-				testIcon := filepath.Join(matchDir, joiner, iconName+extension)
-				if _, err := os.Stat(testIcon); err == nil {
-					return testIcon
-				}
+	if err != nil {
+		return ""
+	}
+	// Lets walk the files in reverse so bigger icons are selected first (Unless it is a 3 digit icon size like 128)
+	// Example is /usr/share/icons/icon_theme/<size>/<joiner>/xterm.png
+	for i := len(files) - 1; i >= 0; i-- {
+		f := files[i]
+		if strings.HasPrefix(f.Name(), ".") || !f.IsDir() {
+			continue
+		}
+		matchDir := filepath.Join(directory, f.Name())
+		for _, extension := range iconExtensions {
+			testIcon := filepath.Join(matchDir, joiner, iconName+extension)
+			if _, err := os.Stat(testIcon); err == nil {
+				return testIcon
 			}
 		}
 	}
@@ -172,8 +226,15 @@ func lookupIconPathInTheme(iconSize string, dir string, iconName string) string 
 		}
 	}
 	// If the requested icon wasn't found in the specific size or scalable dirs
-	// of the theme try all sizes within theme
-	return lookupAnyIconSizeInThemeDir(dir, "apps", iconName)
+	// of the theme try all sizes within theme and all icon dirs besides apps
+	var subIconDirs = []string{"apps", "actions", "devices", "emblems", "mimetypes", "places", "status"}
+	for _, joiner := range subIconDirs {
+		testIcon := lookupAnyIconSizeInThemeDir(dir, joiner, iconName)
+		if testIcon != "" {
+			return testIcon
+		}
+	}
+	return ""
 }
 
 //fdoLookupIconPath will take the name of an icon and find a matching image file
@@ -195,6 +256,15 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 		iconPath := lookupIconPathInTheme(iconSize, dir, iconName)
 		if iconPath != "" {
 			return iconPath
+		}
+	}
+	for _, dataDir := range locationLookup {
+		//Icons may be in the pixmaps directory - test before we do our final fallback
+		for _, extension := range iconExtensions {
+			iconPath := filepath.Join(dataDir, "pixmaps", iconName+extension)
+			if _, err := os.Stat(iconPath); err == nil {
+				return iconPath
+			}
 		}
 	}
 	for _, dataDir := range locationLookup {
@@ -232,23 +302,32 @@ func newFdoIconData(theme string, size int, desktopPath string) *fdoIconData {
 
 	scanner := bufio.NewScanner(file)
 	fdoApp := fdoIconData{name: "", iconName: "", iconPath: "", exec: ""}
+	var currentSection string
 	for scanner.Scan() {
 		line := scanner.Text()
+		if strings.HasPrefix(line, "[") {
+			currentSection = line
+		}
+		if currentSection != "[Desktop Entry]" {
+			continue
+		}
 		if strings.HasPrefix(line, "Name=") {
 			name := strings.SplitAfter(line, "=")
 			fdoApp.name = name[1]
 		} else if strings.HasPrefix(line, "Icon=") {
 			icon := strings.SplitAfter(line, "=")
 			fdoApp.iconName = icon[1]
-			fdoApp.iconPath = fdoLookupIconPath(theme, size, fdoApp.iconName)
+			if _, err := os.Stat(icon[1]); err == nil {
+				fdoApp.iconPath = icon[1]
+			} else {
+				fdoApp.iconPath = fdoLookupIconPath(theme, size, fdoApp.iconName)
+			}
 			if fdoApp.iconPath == "" {
 				fyne.LogError("Could not find path for icon "+fdoApp.iconName, nil)
 			}
 		} else if strings.HasPrefix(line, "Exec=") {
 			exec := strings.SplitAfter(line, "=")
 			fdoApp.exec = exec[1]
-		} else {
-			continue
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -264,6 +343,11 @@ type fdoIconProvider struct {
 //FindIconFromAppName matches an icon name to a location and returns an IconData interface
 func (f *fdoIconProvider) FindIconFromAppName(theme string, size int, appName string) desktop.IconData {
 	return fdoLookupApplication(theme, size, appName)
+}
+
+//FindIconFromPartialAppName returns a list of icons that match a partial name of an app and returns an IconData slice
+func (f *fdoIconProvider) FindIconsMatchingAppName(theme string, size int, appName string) []desktop.IconData {
+	return fdoLookupApplicationsMatching(theme, size, appName)
 }
 
 //FindIconFromWinInfo matches window information to an icon location and returns an IconData interface

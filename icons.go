@@ -12,4 +12,5 @@ type IconData interface {
 type IconProvider interface {
 	FindIconFromAppName(theme string, size int, appName string) IconData
 	FindIconFromWinInfo(theme string, size int, win Window) IconData
+	FindIconsMatchingAppName(theme string, size int, appName string) []IconData
 }
