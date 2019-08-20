@@ -171,7 +171,7 @@ func TestFdoLookupIconByWinInfo(t *testing.T) {
 
 func TestFdoLookupPartialMatches(t *testing.T) {
 	setTestEnv(t)
-	dataMatches := fdoLookupApplicationMatching(iconTheme, iconSize, "app")
+	dataMatches := fdoLookupApplicationsMatching(iconTheme, iconSize, "app")
 	assert.Equal(t, len(dataMatches) > 1, true)
 	for _, data := range dataMatches {
 		assert.Equal(t, exists(data), true)
