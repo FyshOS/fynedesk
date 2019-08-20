@@ -1,7 +1,6 @@
 package desktop
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os/exec"
 	"path/filepath"
@@ -34,12 +33,7 @@ func barCreateIcon(taskbar bool, data IconData, win Window) *barIcon {
 	if taskbar == false {
 		icon.onTapped = func() {
 			command := strings.Split(data.Exec(), " ")
-			if len(command) > 1 {
-				args := fmt.Sprintf("%s", command[1:])
-				exec.Command(command[0], args).Start()
-			} else {
-				exec.Command(command[0]).Start()
-			}
+			exec.Command(command[0]).Start()
 		}
 	} else {
 		icon.taskbarWindow = win
