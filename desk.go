@@ -13,7 +13,7 @@ type Desktop interface {
 	Run()
 	Settings() DeskSettings
 
-	IconProvider() IconProvider
+	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
 }
 
@@ -23,7 +23,7 @@ type deskLayout struct {
 	app      fyne.App
 	win      fyne.Window
 	wm       WindowManager
-	icons    IconProvider
+	icons    ApplicationProvider
 	settings DeskSettings
 
 	background, bar, widgets, mouse fyne.CanvasObject
@@ -99,7 +99,7 @@ func (l *deskLayout) Settings() DeskSettings {
 	return l.settings
 }
 
-func (l *deskLayout) IconProvider() IconProvider {
+func (l *deskLayout) IconProvider() ApplicationProvider {
 	return l.icons
 }
 
@@ -114,17 +114,17 @@ func Instance() Desktop {
 
 // NewDesktop creates a new desktop in fullscreen for main usage.
 // The WindowManager passed in will be used to manage the screen it is loaded on.
-// An IconProvider is used to lookup application icons from the operating system.
-func NewDesktop(app fyne.App, wm WindowManager, icons IconProvider) Desktop {
+// An ApplicationProvider is used to lookup application icons from the operating system.
+func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider) Desktop {
 	instance = &deskLayout{app: app, wm: wm, icons: icons, settings: NewDeskSettings()}
 	return instance
 }
 
 // NewEmbeddedDesktop creates a new windowed desktop for test purposes.
-// An IconProvider is used to lookup application icons from the operating system.
+// An ApplicationProvider is used to lookup application icons from the operating system.
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
-func NewEmbeddedDesktop(app fyne.App, icons IconProvider) Desktop {
+func NewEmbeddedDesktop(app fyne.App, icons ApplicationProvider) Desktop {
 	instance = &deskLayout{app: app, icons: icons, settings: NewDeskSettings()}
 	return instance
 }

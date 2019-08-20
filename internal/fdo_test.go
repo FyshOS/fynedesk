@@ -7,10 +7,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"fyne.io/desktop"
 	"fyne.io/fyne"
 	_ "fyne.io/fyne/test"
-	"github.com/magiconair/properties/assert"
 )
 
 var iconTheme = "default_theme"
@@ -55,14 +56,8 @@ func (*dummyWindow) RaiseAbove(desktop.Window) {
 	// no-op (this is instructing the window after stack changes)
 }
 
-func exists(data desktop.IconData) bool {
-	var test bool
-	if data != nil && data.IconPath() != "" {
-		if _, err := os.Stat(data.IconPath()); err == nil {
-			test = true
-		}
-	}
-	return test
+func exists(data desktop.AppData) bool {
+	return data != nil && data.Icon(iconTheme, iconSize) != nil
 }
 
 func setTestEnv(t *testing.T) {
@@ -81,15 +76,15 @@ func setTestEnv(t *testing.T) {
 //applications/app1.desktop and icons/default_theme/apps/32x32/app1.png
 func TestFdoLookupDefaultTheme(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication(iconTheme, iconSize, "app1")
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplication("app1")
+	assert.Equal(t, true, exists(data))
 }
 
 //applications/com.fyne.app.desktop and icons/default_theme/apps/scalable/app2.svg
 func TestFdoFileNameMisMatchAndScalable(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication(iconTheme, iconSize, "app2")
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplication("app2")
+	assert.Equal(t, true, exists(data))
 }
 
 //applications/app3.desktop and applications/app3.png
@@ -102,77 +97,77 @@ func TestFdoIconNameIsPath(t *testing.T) {
 		fyne.LogError("Could not create desktop for Icon Name path example", err)
 		t.FailNow()
 	}
-	data := fdoLookupApplication(iconTheme, iconSize, "app3")
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplication("app3")
+	assert.Equal(t, true, exists(data))
 }
 
 //applications/app4.desktop and pixmaps/app4.png
 func TestFdoIconInPixmaps(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication(iconTheme, iconSize, "app4")
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplication("app4")
+	assert.Equal(t, true, exists(data))
 }
 
 //applications/app5.desktop and icons/hicolor/32x32/apps/app5.png
 func TestFdoIconHicolorFallback(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication(iconTheme, iconSize, "app5")
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplication("app5")
+	assert.Equal(t, true, exists(data))
 }
 
 //applications/app6.desktop and icons/hicolor/scalable/apps/app6.svg
 func TestFdoIconHicolorFallbackScalable(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication(iconTheme, iconSize, "app6")
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplication("app6")
+	assert.Equal(t, true, exists(data))
 }
 
 //applications/app7.desktop and icons/default_theme/apps/16x16/app7.png
 func TestFdoLookupDefaultThemeDifferentSize(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication(iconTheme, iconSize, "app7")
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplication("app7")
+	assert.Equal(t, true, exists(data))
 }
 
 //applications/app8.desktop and icons/third_theme/apps/32/app8.png
 func TestFdoLookupAnyThemeFallback(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication(iconTheme, iconSize, "app8")
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplication("app8")
+	assert.Equal(t, true, exists(data))
 }
 
 //applications/app9.desktop and icons/third_theme/emblems/16x16/app9.png
 func TestFdoLookupIconNotInApps(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication(iconTheme, iconSize, "app9")
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplication("app9")
+	assert.Equal(t, true, exists(data))
 }
 
 func TestFdoLookupIconByWinInfo(t *testing.T) {
 	setTestEnv(t)
 	//Test win info lookup by title
 	win1 := &dummyWindow{title: "App1"}
-	data := fdoLookupApplicationWinInfo(iconTheme, iconSize, win1)
-	assert.Equal(t, exists(data), true)
+	data := fdoLookupApplicationWinInfo(win1)
+	assert.Equal(t, true, exists(data))
 	//Test win info lookup by class
 	win2 := &dummyWindow{class: []string{"App2", "app2"}}
-	data = fdoLookupApplicationWinInfo(iconTheme, iconSize, win2)
-	assert.Equal(t, exists(data), true)
+	data = fdoLookupApplicationWinInfo(win2)
+	assert.Equal(t, true, exists(data))
 	//Test win info lookup by command
 	win3 := &dummyWindow{command: "app3"}
-	data = fdoLookupApplicationWinInfo(iconTheme, iconSize, win3)
-	assert.Equal(t, exists(data), true)
+	data = fdoLookupApplicationWinInfo(win3)
+	assert.Equal(t, true, exists(data))
 	//Test win info lookup by icon name
 	win4 := &dummyWindow{iconName: "app4"}
-	data = fdoLookupApplicationWinInfo(iconTheme, iconSize, win4)
-	assert.Equal(t, exists(data), true)
+	data = fdoLookupApplicationWinInfo(win4)
+	assert.Equal(t, true, exists(data))
 }
 
 func TestFdoLookupPartialMatches(t *testing.T) {
 	setTestEnv(t)
-	dataMatches := fdoLookupApplicationsMatching(iconTheme, iconSize, "app")
-	assert.Equal(t, len(dataMatches) > 1, true)
+	dataMatches := fdoLookupApplicationsMatching("app")
+	assert.Equal(t, true, len(dataMatches) > 1)
 	for _, data := range dataMatches {
-		assert.Equal(t, exists(data), true)
+		assert.Equal(t, true, exists(data))
 	}
 }

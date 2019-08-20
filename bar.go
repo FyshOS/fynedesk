@@ -1,11 +1,6 @@
 package desktop
 
 import (
-	"io/ioutil"
-	"os/exec"
-	"path/filepath"
-	"strings"
-
 	"fyne.io/fyne"
 )
 
@@ -16,24 +11,22 @@ var (
 	icons    []*barIcon
 )
 
-func barCreateIcon(taskbar bool, data IconData, win Window) *barIcon {
-	if data == nil || data.IconPath() == "" {
+func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
+	iconTheme := b.desk.Settings().IconTheme()
+	if data == nil {
 		return nil
 	}
-	bytes, err := ioutil.ReadFile(data.IconPath())
-	if err != nil {
-		fyne.LogError("Could not read file", err)
+	iconRes := data.Icon(iconTheme, iconSize)
+	if iconRes == nil {
 		return nil
 	}
-	str := strings.Replace(data.IconPath(), "-", "", -1)
-	iconResource := strings.Replace(str, "_", "", -1)
-
-	res := fyne.NewStaticResource(strings.ToLower(filepath.Base(iconResource)), bytes)
-	icon := newBarIcon(res)
+	icon := newBarIcon(iconRes)
 	if taskbar == false {
 		icon.onTapped = func() {
-			command := strings.Split(data.Exec(), " ")
-			exec.Command(command[0]).Start()
+			err := data.Run()
+			if err != nil {
+				fyne.LogError("Failed to start app", err)
+			}
 		}
 	} else {
 		icon.taskbarWindow = win
@@ -43,12 +36,11 @@ func barCreateIcon(taskbar bool, data IconData, win Window) *barIcon {
 }
 
 func (b *bar) WindowAdded(win Window) {
-	iconTheme := b.desk.Settings().IconTheme()
-	data := b.desk.IconProvider().FindIconFromWinInfo(iconTheme, iconSize, win)
+	data := b.desk.IconProvider().FindAppFromWinInfo(win)
 	if data == nil {
 		return
 	}
-	icon := barCreateIcon(true, data, win)
+	icon := barCreateIcon(b, true, data, win)
 	if icon != nil {
 		icon.onTapped = func() {
 			win.Focus()
@@ -75,12 +67,11 @@ func newBar(desk Desktop) fyne.CanvasObject {
 		desk.WindowManager().AddStackListener(appBar)
 	}
 	for _, app := range apps {
-		iconTheme := desk.Settings().IconTheme()
-		data := desk.IconProvider().FindIconFromAppName(iconTheme, iconSize, app)
+		data := desk.IconProvider().FindAppFromName(app)
 		if data == nil {
 			continue
 		}
-		icon := barCreateIcon(false, data, nil)
+		icon := barCreateIcon(appBar, false, data, nil)
 		if icon != nil {
 			appBar.append(icon)
 		}
