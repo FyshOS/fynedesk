@@ -11,6 +11,6 @@ type IconData interface {
 // IconProvider describes a type that can locate icons and applications for the current system
 type IconProvider interface {
 	FindIconFromAppName(theme string, size int, appName string) IconData
-	FindIconFromPartialAppName(theme string, size int, appName string) []IconData
 	FindIconFromWinInfo(theme string, size int, win Window) IconData
+	FindIconsMatchingAppName(theme string, size int, appName string) []IconData
 }
