@@ -129,7 +129,6 @@ func TestFdoIconNameIsPath(t *testing.T) {
 		fyne.LogError("Could not create desktop for Icon Name path example", err)
 	}
 	data := fdoLookupApplication(iconTheme, iconSize, "app3")
-	fmt.Println(data.IconPath())
 	assert.Equal(t, exists(data), true)
 }
 
