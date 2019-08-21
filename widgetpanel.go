@@ -58,8 +58,9 @@ func (w *widgetRenderer) Destroy() {
 type widgetPanel struct {
 	baseWidget
 
-	desk *deskLayout
-	root fyne.Window
+	desk       *deskLayout
+	root       fyne.Window
+	appExecWin fyne.Window
 
 	clock               *canvas.Text
 	date                *widget.Label
@@ -98,7 +99,7 @@ func (w *widgetPanel) Show() {
 	canvas.Refresh(w)
 }
 
-func appExecPopUpListMatches(w *widgetPanel, popup *widget.PopUp, appList *fyne.Container, input string) {
+func appExecPopUpListMatches(w *widgetPanel, appList *fyne.Container, input string) {
 	iconTheme := w.desk.Settings().IconTheme()
 	dataRange := w.desk.IconProvider().FindAppsMatching(input)
 	if len(dataRange) == 0 {
@@ -114,44 +115,48 @@ func appExecPopUpListMatches(w *widgetPanel, popup *widget.PopUp, appList *fyne.
 			if err != nil {
 				fyne.LogError("Failed to start app", err)
 			}
-			popup.Hide()
-			popup = nil
+			w.appExecWin.Close()
+			w.appExecWin = nil
 		})
 		appList.AddObject(app)
 	}
 }
 
 func appExecPopUp(w *widgetPanel) {
-	entry := widget.NewEntry()
-	entry.SetPlaceHolder("Application")
+	if w.appExecWin != nil {
+		w.appExecWin.Close()
+		w.appExecWin = nil
+	}
+
+	w.appExecWin = w.desk.app.NewWindow("Applications")
 
 	appList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 	appScroller := widget.NewScrollContainer(appList)
 
-	sizingRect := canvas.NewRectangle(color.Transparent)
-	sizingRect.SetMinSize(fyne.NewSize(int(w.root.Canvas().Size().Width/4), iconSize*3))
-
-	sizer := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, nil, nil), sizingRect, appScroller)
-	content := fyne.NewContainerWithLayout(layout.NewVBoxLayout(), entry, sizer)
-	popup := widget.NewModalPopUp(content, w.root.Canvas())
-
-	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-		popup.Hide()
-		popup = nil
-	})
-	content.AddObject(cancel)
-
+	entry := widget.NewEntry()
+	entry.SetPlaceHolder("Application")
 	entry.OnChanged = func(input string) {
 		appList.Objects = nil
 		if input != "" {
-			appExecPopUpListMatches(w, popup, appList, input)
+			appExecPopUpListMatches(w, appList, input)
 		}
 		canvas.Refresh(appList)
 	}
 
-	popup.Show()
-	w.root.RequestFocus()
-	w.root.Canvas().Focus(entry)
+	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
+		w.appExecWin.Close()
+		w.appExecWin = nil
+	})
+
+	content := fyne.NewContainerWithLayout(layout.NewVBoxLayout(), entry, appScroller, cancel)
+	content.Resize(fyne.NewSize(int(300*w.root.Canvas().Scale()), iconSize*3))
+
+	w.appExecWin.SetContent(content)
+	w.appExecWin.Resize(fyne.NewSize(int(300*w.root.Canvas().Scale()), iconSize*3))
+	w.appExecWin.CenterOnScreen()
+	w.appExecWin.Show()
+	w.appExecWin.RequestFocus()
+	w.appExecWin.Canvas().Focus(entry)
 }
 
 func (w *widgetPanel) clockTick() {
@@ -317,8 +322,9 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 
 func newWidgetPanel(rootDesk *deskLayout) *widgetPanel {
 	w := &widgetPanel{
-		desk: rootDesk,
-		root: rootDesk.win,
+		desk:       rootDesk,
+		root:       rootDesk.win,
+		appExecWin: nil,
 	}
 	w.createClock()
 	w.createBattery()
