@@ -136,10 +136,10 @@ func TestFdoLookupAnyThemeFallback(t *testing.T) {
 	assert.Equal(t, true, exists(data))
 }
 
-//applications/app9.desktop and icons/third_theme/emblems/16x16/app9.png
+//applications/xterm.desktop and icons/third_theme/emblems/16x16/app9.png
 func TestFdoLookupIconNotInApps(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app9")
+	data := fdoLookupApplication("xterm")
 	assert.Equal(t, true, exists(data))
 }
 
@@ -170,4 +170,17 @@ func TestFdoLookupPartialMatches(t *testing.T) {
 	for _, data := range dataMatches {
 		assert.Equal(t, true, exists(data))
 	}
+}
+
+func TestFdoIconProvider_findOneAppFromNames(t *testing.T) {
+	setTestEnv(t)
+	single := NewFDOIconProvider().(*fdoIconProvider).findOneAppFromNames("missing", "app1", "xterm")
+	assert.NotNil(t, single)
+	assert.Equal(t, "App1", single.Name())
+}
+
+func TestFdoIconProvider_DefaultApps(t *testing.T) {
+	setTestEnv(t)
+	defaults := NewFDOIconProvider().DefaultApps()
+	assert.True(t, len(defaults) > 0)
 }

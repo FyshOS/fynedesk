@@ -15,4 +15,5 @@ type ApplicationProvider interface {
 	FindAppFromName(appName string) AppData
 	FindAppFromWinInfo(win Window) AppData
 	FindAppsMatching(pattern string) []AppData
+	DefaultApps() []AppData
 }

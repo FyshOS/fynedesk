@@ -378,6 +378,36 @@ func (f *fdoIconProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppData
 	return fdoLookupApplicationWinInfo(win)
 }
 
+func (f *fdoIconProvider) findOneAppFromNames(names ...string) desktop.AppData {
+	for _, name := range names {
+		app := f.FindAppFromName(name)
+		if app != nil {
+			return app
+		}
+	}
+
+	return nil
+}
+
+func (f *fdoIconProvider) appendAppIfExists(apps []desktop.AppData, app desktop.AppData) []desktop.AppData {
+	if app == nil {
+		return apps
+	}
+
+	return append(apps, app)
+}
+
+func (f *fdoIconProvider) DefaultApps() []desktop.AppData {
+	apps := []desktop.AppData{}
+
+	apps = f.appendAppIfExists(apps, f.findOneAppFromNames("gnome-terminal", "xterm"))
+	apps = f.appendAppIfExists(apps, f.findOneAppFromNames("chromium", "google-chrome", "firefox"))
+	apps = f.appendAppIfExists(apps, f.findOneAppFromNames("sylpheed", "thunderbird", "evolution"))
+	apps = f.appendAppIfExists(apps, f.FindAppFromName("gimp"))
+
+	return apps
+}
+
 // NewFDOIconProvider returns a new icon provider following the FreeDesktop.org specifications
 func NewFDOIconProvider() desktop.ApplicationProvider {
 	return &fdoIconProvider{}

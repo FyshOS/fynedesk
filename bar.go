@@ -6,7 +6,6 @@ import (
 
 var (
 	appBar    *bar
-	apps      = []string{"xterm", "gimp", "google-chrome", "firefox"}
 	iconSize  = 32
 	iconScale = 2.0
 	icons     []*barIcon
@@ -67,12 +66,8 @@ func newBar(desk Desktop) fyne.CanvasObject {
 	if desk.WindowManager() != nil {
 		desk.WindowManager().AddStackListener(appBar)
 	}
-	for _, app := range apps {
-		data := desk.IconProvider().FindAppFromName(app)
-		if data == nil {
-			continue
-		}
-		icon := barCreateIcon(appBar, false, data, nil)
+	for _, app := range appBar.desk.IconProvider().DefaultApps() {
+		icon := barCreateIcon(appBar, false, app, nil)
 		if icon != nil {
 			appBar.append(icon)
 		}
