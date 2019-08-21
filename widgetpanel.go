@@ -68,9 +68,7 @@ type widgetPanel struct {
 }
 
 func (w *widgetPanel) Hide() {
-	w.Hidden = true
-
-	canvas.Refresh(w)
+	w.hide(w)
 }
 
 func (w *widgetPanel) MinSize() fyne.Size {
@@ -78,9 +76,7 @@ func (w *widgetPanel) MinSize() fyne.Size {
 }
 
 func (w *widgetPanel) Move(pos fyne.Position) {
-	w.position = pos
-
-	canvas.Refresh(w)
+	w.move(pos, w)
 }
 
 func (w *widgetPanel) Position() fyne.Position {
@@ -88,48 +84,32 @@ func (w *widgetPanel) Position() fyne.Position {
 }
 
 func (w *widgetPanel) Resize(size fyne.Size) {
-	w.size = size
-
-	widget.Renderer(w).Layout(size)
+	w.resize(size, w)
 }
 
 func (w *widgetPanel) Show() {
-	w.Hidden = false
-
-	canvas.Refresh(w)
+	w.show(w)
 }
 
-func appExecPopUpListMatches(w *widgetPanel, appList *fyne.Container, input string) {
+func appExecPopUpListMatches(w *widgetPanel, win fyne.Window, appList *fyne.Container, input string) {
 	iconTheme := w.desk.Settings().IconTheme()
 	dataRange := w.desk.IconProvider().FindAppsMatching(input)
-	if len(dataRange) == 0 {
-		return
-	}
 	for _, data := range dataRange {
-		if data == nil {
-			continue
-		}
 		icon := data.Icon(iconTheme, iconSize)
 		app := widget.NewButtonWithIcon(data.Name(), icon, func() {
 			err := data.Run()
 			if err != nil {
 				fyne.LogError("Failed to start app", err)
+				return
 			}
-			w.appExecWin.Close()
-			w.appExecWin = nil
+			win.Close()
 		})
 		appList.AddObject(app)
 	}
 }
 
-func appExecPopUp(w *widgetPanel) {
-	if w.appExecWin != nil {
-		w.appExecWin.Close()
-		w.appExecWin = nil
-	}
-
-	w.appExecWin = w.desk.app.NewWindow("Applications")
-
+func appExecPopUp(w *widgetPanel) fyne.Window {
+	win := w.desk.app.NewWindow("Applications")
 	appList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 	appScroller := widget.NewScrollContainer(appList)
 
@@ -137,26 +117,25 @@ func appExecPopUp(w *widgetPanel) {
 	entry.SetPlaceHolder("Application")
 	entry.OnChanged = func(input string) {
 		appList.Objects = nil
-		if input != "" {
-			appExecPopUpListMatches(w, appList, input)
+		if input == "" {
+			return
 		}
-		canvas.Refresh(appList)
+
+		appExecPopUpListMatches(w, win, appList, input)
 	}
 
 	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-		w.appExecWin.Close()
-		w.appExecWin = nil
+		win.Close()
 	})
 
-	content := fyne.NewContainerWithLayout(layout.NewVBoxLayout(), entry, appScroller, cancel)
-	content.Resize(fyne.NewSize(int(300*w.root.Canvas().Scale()), iconSize*3))
+	content := fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, cancel, nil, nil), entry, appScroller, cancel)
 
-	w.appExecWin.SetContent(content)
-	w.appExecWin.Resize(fyne.NewSize(int(300*w.root.Canvas().Scale()), iconSize*3))
-	w.appExecWin.CenterOnScreen()
-	w.appExecWin.Show()
-	w.appExecWin.RequestFocus()
-	w.appExecWin.Canvas().Focus(entry)
+	win.SetContent(content)
+	win.Resize(fyne.NewSize(int(300*w.root.Canvas().Scale()),
+		(iconSize+theme.Padding()*2)*3+cancel.MinSize().Height+entry.MinSize().Height))
+	win.CenterOnScreen()
+	win.Canvas().Focus(entry)
+	return win
 }
 
 func (w *widgetPanel) clockTick() {
@@ -300,7 +279,15 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
 		less, w.brightness, more)
 	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), func() {
-		appExecPopUp(w)
+		if w.appExecWin != nil {
+			w.appExecWin.Close()
+		}
+
+		w.appExecWin = appExecPopUp(w)
+		w.appExecWin.SetOnClosed(func() {
+			w.appExecWin = nil
+		})
+		w.appExecWin.Show()
 	})
 	objects := []fyne.CanvasObject{
 		w.clock,
