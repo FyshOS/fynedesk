@@ -16,7 +16,7 @@ func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
 	if data == nil {
 		return nil
 	}
-	iconRes := data.Icon(iconTheme, iconSize)
+	iconRes := data.Icon(iconTheme, int(float64(iconSize)*iconScale))
 	if iconRes == nil {
 		return nil
 	}
