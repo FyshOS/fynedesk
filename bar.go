@@ -5,10 +5,11 @@ import (
 )
 
 var (
-	appBar   *bar
-	apps     = []string{"xterm", "gimp", "google-chrome", "firefox"}
-	iconSize = 32
-	icons    []*barIcon
+	appBar    *bar
+	apps      = []string{"xterm", "gimp", "google-chrome", "firefox"}
+	iconSize  = 32
+	iconScale = 2.0
+	icons     []*barIcon
 )
 
 func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
