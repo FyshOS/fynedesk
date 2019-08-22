@@ -13,6 +13,8 @@ var (
 	BatteryIcon = theme.NewThemedResource(batteryIcon, nil)
 	// BrightnessIcon is the material design icon for brightness in light and dark theme
 	BrightnessIcon = theme.NewThemedResource(brightnessIcon, nil)
+	// BrokenImageIcon is the material design icon for a broken image
+	BrokenImageIcon = theme.NewThemedResource(brokenImageIcon, nil)
 
 	// BorderWidth is the width of window frames
 	BorderWidth = 4

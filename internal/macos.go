@@ -14,6 +14,7 @@ import (
 	"howett.net/plist"
 
 	"fyne.io/desktop"
+	wmtheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
 )
 
@@ -34,13 +35,13 @@ func (m *macOSAppBundle) Icon(_ string, _ int) fyne.Resource {
 	src, err := os.Open(m.iconPath)
 	if err != nil {
 		fyne.LogError("Failed to read icon data for "+m.iconPath, err)
-		return nil
+		return wmtheme.BrokenImageIcon
 	}
 
 	icon, err := icns.Decode(src)
 	if err != nil {
 		fyne.LogError("Failed to parse icon data for "+m.iconPath, err)
-		return nil
+		return wmtheme.BrokenImageIcon
 	}
 
 	var data bytes.Buffer
