@@ -1,4 +1,4 @@
-// +build !linux,!darwin ci
+// +build linux,ci !linux,!darwin
 
 package main
 
