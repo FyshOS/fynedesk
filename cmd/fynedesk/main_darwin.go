@@ -1,5 +1,3 @@
-// +build !linux,!darwin ci
-
 package main
 
 import (
@@ -14,5 +12,5 @@ import (
 
 func setupDesktop(a fyne.App) desktop.Desktop {
 	log.Println("Full desktop not possible on", runtime.GOOS)
-	return desktop.NewEmbeddedDesktop(a, internal.NewFDOIconProvider())
+	return desktop.NewEmbeddedDesktop(a, internal.NewMacOSAppProvider())
 }

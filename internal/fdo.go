@@ -378,7 +378,7 @@ func (f *fdoIconProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppData
 	return fdoLookupApplicationWinInfo(win)
 }
 
-func (f *fdoIconProvider) findOneAppFromNames(names ...string) desktop.AppData {
+func findOneAppFromNames(f desktop.ApplicationProvider, names ...string) desktop.AppData {
 	for _, name := range names {
 		app := f.FindAppFromName(name)
 		if app != nil {
@@ -389,7 +389,7 @@ func (f *fdoIconProvider) findOneAppFromNames(names ...string) desktop.AppData {
 	return nil
 }
 
-func (f *fdoIconProvider) appendAppIfExists(apps []desktop.AppData, app desktop.AppData) []desktop.AppData {
+func appendAppIfExists(apps []desktop.AppData, app desktop.AppData) []desktop.AppData {
 	if app == nil {
 		return apps
 	}
@@ -400,10 +400,10 @@ func (f *fdoIconProvider) appendAppIfExists(apps []desktop.AppData, app desktop.
 func (f *fdoIconProvider) DefaultApps() []desktop.AppData {
 	apps := []desktop.AppData{}
 
-	apps = f.appendAppIfExists(apps, f.findOneAppFromNames("gnome-terminal", "xterm"))
-	apps = f.appendAppIfExists(apps, f.findOneAppFromNames("chromium", "google-chrome", "firefox"))
-	apps = f.appendAppIfExists(apps, f.findOneAppFromNames("sylpheed", "thunderbird", "evolution"))
-	apps = f.appendAppIfExists(apps, f.FindAppFromName("gimp"))
+	apps = appendAppIfExists(apps, findOneAppFromNames(f, "gnome-terminal", "xterm"))
+	apps = appendAppIfExists(apps, findOneAppFromNames(f, "chromium", "google-chrome", "firefox"))
+	apps = appendAppIfExists(apps, findOneAppFromNames(f, "sylpheed", "thunderbird", "evolution"))
+	apps = appendAppIfExists(apps, f.FindAppFromName("gimp"))
 
 	return apps
 }

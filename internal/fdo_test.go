@@ -174,7 +174,7 @@ func TestFdoLookupPartialMatches(t *testing.T) {
 
 func TestFdoIconProvider_findOneAppFromNames(t *testing.T) {
 	setTestEnv(t)
-	single := NewFDOIconProvider().(*fdoIconProvider).findOneAppFromNames("missing", "app1", "xterm")
+	single := findOneAppFromNames(NewFDOIconProvider(), "missing", "app1", "xterm")
 	assert.NotNil(t, single)
 	assert.Equal(t, "App1", single.Name())
 }
