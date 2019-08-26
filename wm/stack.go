@@ -3,18 +3,18 @@ package wm
 import "fyne.io/desktop"
 
 type stack struct {
-	frames []desktop.Window
+	clients []desktop.Window
 
 	listeners []desktop.StackListener
 }
 
 func (s *stack) addToStack(win desktop.Window) {
-	s.frames = append([]desktop.Window{win}, s.frames...)
+	s.clients = append([]desktop.Window{win}, s.clients...)
 }
 
 func (s *stack) removeFromStack(win desktop.Window) {
 	pos := -1
-	for i, w := range s.frames {
+	for i, w := range s.clients {
 		if w == win {
 			pos = i
 		}
@@ -23,7 +23,7 @@ func (s *stack) removeFromStack(win desktop.Window) {
 	if pos == -1 {
 		return
 	}
-	s.frames = append(s.frames[:pos], s.frames[pos+1:]...)
+	s.clients = append(s.clients[:pos], s.clients[pos+1:]...)
 }
 
 func (s *stack) AddWindow(win desktop.Window) {
@@ -50,19 +50,29 @@ func (s *stack) RemoveWindow(win desktop.Window) {
 }
 
 func (s *stack) TopWindow() desktop.Window {
-	if len(s.frames) == 0 {
+	if len(s.clients) == 0 {
 		return nil
 	}
-
-	return s.frames[0]
+	for _, cli := range s.clients {
+		if !cli.Iconic() {
+			return cli
+		}
+	}
+	return s.clients[0]
 }
 
 func (s *stack) Windows() []desktop.Window {
-	return s.frames
+	return s.clients
 }
 
 func (s *stack) RaiseToTop(win desktop.Window) {
-	win.RaiseAbove(s.frames[0])
+	if win.Iconic() {
+		return
+	}
+	if len(s.clients) == 0 {
+		return
+	}
+	win.RaiseAbove(s.clients[0])
 
 	s.removeFromStack(win)
 	s.addToStack(win)

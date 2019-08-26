@@ -43,6 +43,17 @@ func (w *dummyWindow) Command() string {
 func (w *dummyWindow) IconName() string {
 	return w.iconName
 }
+func (*dummyWindow) Iconic() bool {
+	return false
+}
+
+func (*dummyWindow) Maximized() bool {
+	return false
+}
+
+func (*dummyWindow) TopWindow() bool {
+	return true
+}
 
 func (*dummyWindow) Focus() {
 	// no-op
@@ -52,8 +63,28 @@ func (*dummyWindow) Close() {
 	// no-op
 }
 
+func (*dummyWindow) Iconify() {
+	// no-op
+}
+
+func (*dummyWindow) Uniconify() {
+	// no-op
+}
+
+func (*dummyWindow) Maximize() {
+	// no-op
+}
+
+func (*dummyWindow) Unmaximize() {
+	// no-op
+}
+
 func (*dummyWindow) RaiseAbove(desktop.Window) {
 	// no-op (this is instructing the window after stack changes)
+}
+
+func (*dummyWindow) RaiseToTop() {
+	// no-op
 }
 
 func exists(data desktop.AppData) bool {

@@ -43,6 +43,14 @@ func (b *bar) WindowAdded(win Window) {
 	icon := barCreateIcon(b, true, data, win)
 	if icon != nil {
 		icon.onTapped = func() {
+			if !win.Iconic() && win.TopWindow() {
+				win.Iconify()
+				return
+			}
+			if win.Iconic() {
+				win.Uniconify()
+			}
+			win.RaiseToTop()
 			win.Focus()
 		}
 		appBar.append(icon)
@@ -53,8 +61,10 @@ func (b *bar) WindowRemoved(win Window) {
 	for i, icon := range icons {
 		if icon.taskbarWindow != nil {
 			if win == icon.taskbarWindow {
-				appBar.removeFromTaskbar(icon)
-				icons = append(icons[:i], icons[i+1:]...)
+				if !win.Iconic() {
+					appBar.removeFromTaskbar(icon)
+					icons = append(icons[:i], icons[i+1:]...)
+				}
 			}
 		}
 	}
