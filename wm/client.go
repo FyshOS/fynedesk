@@ -27,11 +27,8 @@ type client struct {
 	iconic    bool
 	maximized bool
 
-	allowedActions []string
-	stateHints     []string
-
-	f  *frame
-	wm *x11WM
+	frame *frame
+	wm    *x11WM
 }
 
 func (s *stack) clientForWin(id xproto.Window) desktop.Window {
@@ -45,8 +42,8 @@ func (s *stack) clientForWin(id xproto.Window) desktop.Window {
 }
 
 func (c *client) Decorated() bool {
-	if c.f != nil {
-		return c.f.framed
+	if c.frame != nil {
+		return c.frame.framed
 	}
 	return false
 }
@@ -141,11 +138,15 @@ func (c *client) sendStateMessage(state int) {
 
 func (c *client) Iconify() {
 	c.sendStateMessage(icccm.StateIconic)
+	windowStateSet(c.wm.x, c.win, icccm.StateIconic)
+	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
 	c.iconic = true
 }
 
 func (c *client) Uniconify() {
 	c.sendStateMessage(icccm.StateNormal)
+	windowStateSet(c.wm.x, c.win, icccm.StateNormal)
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
 	c.iconic = false
 }
 
@@ -156,11 +157,15 @@ func (c *client) maximizeMessage(action clientMessageStateAction) {
 
 func (c *client) Maximize() {
 	c.maximizeMessage(clientMessageStateActionAdd)
+	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
+	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 	c.maximized = true
 }
 
 func (c *client) Unmaximize() {
 	c.maximizeMessage(clientMessageStateActionRemove)
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 	c.maximized = false
 }
 
@@ -194,34 +199,18 @@ func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
 	}
 }
 
-func (c *client) addStateHint(hint string) {
-	c.stateHints = append(c.stateHints, hint)
-	ewmh.WmStateSet(c.wm.x, c.win, c.stateHints)
-}
-
-func (c *client) removeStateHint(hint string) {
-	for i, curHint := range c.stateHints {
-		if curHint == hint {
-			c.stateHints = append(c.stateHints[:i], c.stateHints[i+1:]...)
-			ewmh.WmStateSet(c.wm.x, c.win, c.stateHints)
-			return
-		}
-	}
-}
-
 func (c *client) newFrame() {
 	if !windowBorderless(c.wm.x, c.win) {
-		c.f = newFrame(c)
+		c.frame = newFrame(c)
 	} else {
-		c.f = newFrameBorderless(c)
+		c.frame = newFrameBorderless(c)
 	}
 }
 
 func newClient(win xproto.Window, wm *x11WM) *client {
 	c := &client{win: win, wm: wm}
 	c.newFrame()
-
-	c.allowedActions = []string{
+	allowedActions := []string{
 		"_NET_WM_ACTION_MOVE",
 		"_NET_WM_ACTION_RESIZE",
 		"_NET_WM_ACTION_MINIMIZE",
@@ -229,8 +218,7 @@ func newClient(win xproto.Window, wm *x11WM) *client {
 		"_NET_WM_ACTION_MAXIMIZE_VERT",
 		"_NET_WM_ACTION_CLOSE",
 	}
-
-	ewmh.WmAllowedActionsSet(wm.x, win, c.allowedActions)
+	windowAllowedActionsSet(wm.x, win, allowedActions)
 
 	return c
 }

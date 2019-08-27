@@ -3,6 +3,7 @@
 package wm
 
 import (
+	"fyne.io/fyne"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -77,4 +78,44 @@ func windowMinSize(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
 	}
 
 	return 0, 0
+}
+
+func windowAllowedActionsSet(x *xgbutil.XUtil, win xproto.Window, actions []string) {
+	ewmh.WmAllowedActionsSet(x, win, actions)
+}
+
+func windowStateSet(x *xgbutil.XUtil, win xproto.Window, state uint) {
+	icccm.WmStateSet(x, win, &icccm.WmState{State: state})
+}
+
+func windowStateGet(x *xgbutil.XUtil, win xproto.Window) uint {
+	state, err := icccm.WmStateGet(x, win)
+	if err != nil {
+		fyne.LogError("Could not retrieve window state", err)
+		return icccm.StateNormal
+	}
+	return state.State
+}
+
+func windowExtendedHintsAdd(x *xgbutil.XUtil, win xproto.Window, hint string) {
+	extendedHints, err := ewmh.WmStateGet(x, win)
+	if err != nil {
+		fyne.LogError("Could not get extended hints", err)
+	}
+	extendedHints = append(extendedHints, hint)
+	ewmh.WmStateSet(x, win, extendedHints)
+}
+
+func windowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string) {
+	extendedHints, err := ewmh.WmStateGet(x, win)
+	if err != nil {
+		fyne.LogError("Could not get extended hints", err)
+	}
+	for i, curHint := range extendedHints {
+		if curHint == hint {
+			extendedHints = append(extendedHints[:i], extendedHints[i+1:]...)
+			ewmh.WmStateSet(x, win, extendedHints)
+			return
+		}
+	}
 }

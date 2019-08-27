@@ -28,7 +28,7 @@ func (x *x11WM) Close() {
 	log.Println("Disconnecting from X server")
 
 	for _, child := range x.clients {
-		child.(*client).f.unFrame()
+		child.(*client).frame.unFrame()
 	}
 
 	x.x.Conn().Close()
@@ -77,7 +77,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		for {
 			<-listener
 			for _, c := range mgr.clients {
-				c.(*client).f.applyTheme()
+				c.(*client).frame.applyTheme()
 			}
 		}
 	}()
@@ -112,27 +112,27 @@ func (x *x11WM) runLoop() {
 			case xproto.ExposeEvent:
 				border := x.clientForWin(ev.Window)
 				if border != nil {
-					border.(*client).f.applyTheme()
+					border.(*client).frame.applyTheme()
 				}
 			case xproto.ButtonPressEvent:
 				for _, c := range x.clients {
 					if c.(*client).id == ev.Event {
-						c.(*client).f.press(ev.EventX, ev.EventY)
+						c.(*client).frame.press(ev.EventX, ev.EventY)
 					}
 				}
 			case xproto.ButtonReleaseEvent:
 				for _, c := range x.clients {
 					if c.(*client).id == ev.Event {
-						c.(*client).f.release(ev.EventX, ev.EventY)
+						c.(*client).frame.release(ev.EventX, ev.EventY)
 					}
 				}
 			case xproto.MotionNotifyEvent:
 				for _, c := range x.clients {
 					if c.(*client).id == ev.Event {
 						if ev.State&xproto.ButtonMask1 != 0 {
-							c.(*client).f.drag(ev.EventX, ev.EventY)
+							c.(*client).frame.drag(ev.EventX, ev.EventY)
 						} else {
-							c.(*client).f.motion(ev.EventX, ev.EventY)
+							c.(*client).frame.motion(ev.EventX, ev.EventY)
 						}
 					}
 				}
@@ -159,7 +159,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	height := ev.Height
 
 	if c != nil {
-		f := c.(*client).f
+		f := c.(*client).frame
 		if f != nil {
 			f.minWidth, f.minHeight = windowMinSize(x.x, win)
 			if c.Decorated() {
@@ -236,6 +236,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		}
 		c := x.clientForWin(ev.Window)
 		if c == nil {
+			fyne.LogError("Could not retrieve client", nil)
 			return
 		}
 		switch subMsgAtom {
@@ -258,23 +259,21 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 }
 
 func (x *x11WM) iconifyWindow(win xproto.Window) {
-	icccm.WmStateSet(x.x, win, &icccm.WmState{State: icccm.StateIconic})
 	c := x.clientForWin(win)
 	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
 		return
 	}
-	c.(*client).addStateHint("_NET_WM_STATE_HIDDEN")
-	xproto.ReparentWindow(x.x.Conn(), win, x.x.RootWin(), c.(*client).f.x, c.(*client).f.y)
+	xproto.ReparentWindow(x.x.Conn(), win, x.x.RootWin(), c.(*client).frame.x, c.(*client).frame.y)
 	xproto.UnmapWindow(x.x.Conn(), win)
 }
 
 func (x *x11WM) uniconifyWindow(win xproto.Window) {
-	icccm.WmStateSet(x.x, win, &icccm.WmState{State: icccm.StateNormal})
 	c := x.clientForWin(win)
 	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
 		return
 	}
-	c.(*client).removeStateHint("_NET_WM_STATE_HIDDEN")
 	c.(*client).newFrame()
 	xproto.MapWindow(x.x.Conn(), win)
 }
@@ -282,21 +281,19 @@ func (x *x11WM) uniconifyWindow(win xproto.Window) {
 func (x *x11WM) maximizeWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
 		return
 	}
-	c.(*client).addStateHint("_NET_WM_STATE_MAXIMIZED_VERT")
-	c.(*client).addStateHint("_NET_WM_STATE_MAXIMIZED_HORZ")
-	c.(*client).f.maximize()
+	c.(*client).frame.maximize()
 }
 
 func (x *x11WM) unmaximizeWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
 		return
 	}
-	c.(*client).removeStateHint("_NET_WM_STATE_MAXIMIZED_VERT")
-	c.(*client).removeStateHint("_NET_WM_STATE_MAXIMIZED_HORZ")
-	c.(*client).f.unmaximize()
+	c.(*client).frame.unmaximize()
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {
@@ -328,6 +325,7 @@ func (x *x11WM) showWindow(win xproto.Window) {
 func (x *x11WM) hideWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
 		return
 	}
 	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
