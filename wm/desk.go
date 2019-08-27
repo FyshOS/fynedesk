@@ -199,6 +199,21 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 }
 
+func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeState func(xproto.Window), addState func(xproto.Window), toggleCheck bool) {
+	switch clientMessageStateAction(ev.Data.Data32[0]) {
+	case clientMessageStateActionRemove:
+		removeState(ev.Window)
+	case clientMessageStateActionAdd:
+		addState(ev.Window)
+	case clientMessageStateActionToggle:
+		if toggleCheck {
+			removeState(ev.Window)
+		} else {
+			addState(ev.Window)
+		}
+	}
+}
+
 func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 	msgAtom, err := xprop.AtomName(x.x, ev.Type)
 	if err != nil {
@@ -219,24 +234,13 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 			fyne.LogError("Error getting event", err)
 			return
 		}
+		c := x.clientForWin(ev.Window)
+		if c == nil {
+			return
+		}
 		switch subMsgAtom {
 		case "_NET_WM_STATE_HIDDEN":
-			switch clientMessageStateAction(ev.Data.Data32[0]) {
-			case clientMessageStateActionRemove:
-				x.uniconifyWindow(ev.Window)
-			case clientMessageStateActionAdd:
-				x.iconifyWindow(ev.Window)
-			case clientMessageStateActionToggle:
-				c := x.clientForWin(ev.Window)
-				if c == nil {
-					return
-				}
-				if c.Iconic() {
-					x.uniconifyWindow(ev.Window)
-				} else {
-					x.iconifyWindow(ev.Window)
-				}
-			}
+			x.handleStateActionRequest(ev, x.uniconifyWindow, x.iconifyWindow, c.Iconic())
 		case "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ":
 			extraMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[2]))
 			if err != nil {
@@ -247,22 +251,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 				return
 			}
 			if extraMsgAtom == "_NET_WM_STATE_MAXIMIZED_VERT" || extraMsgAtom == "_NET_WM_STATE_MAXIMIZED_HORZ" {
-				switch clientMessageStateAction(ev.Data.Data32[0]) {
-				case clientMessageStateActionRemove:
-					x.unmaximizeWindow(ev.Window)
-				case clientMessageStateActionAdd:
-					x.maximizeWindow(ev.Window)
-				case clientMessageStateActionToggle:
-					c := x.clientForWin(ev.Window)
-					if c == nil {
-						return
-					}
-					if c.Maximized() {
-						x.unmaximizeWindow(ev.Window)
-					} else {
-						x.maximizeWindow(ev.Window)
-					}
-				}
+				x.handleStateActionRequest(ev, x.unmaximizeWindow, x.maximizeWindow, c.Maximized())
 			}
 		}
 	}
