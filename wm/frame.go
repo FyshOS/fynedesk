@@ -3,214 +3,270 @@
 package wm
 
 import (
+	"log"
+
 	"fyne.io/fyne"
-	"fyne.io/fyne/app/util"
-	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
+	"fyne.io/fyne/widget"
 
 	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/xevent"
+	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/BurntSushi/xgbutil/xwindow"
 
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
+	"github.com/fyne-io/desktop"
+	"github.com/fyne-io/desktop/driver"
+	wmTheme "github.com/fyne-io/desktop/theme"
 )
 
 type frame struct {
-	cli                         *client
-	x, y                        int16
-	restoreX, restoreY          int16
-	width, height               uint16
-	restoreWidth, restoreHeight uint16
-	mouseX, mouseY              int16
-	mouseResize                 bool
+	id, win        xproto.Window
+	x, y           int16
+	width, height  uint16
+	mouseX, mouseY int16
+	mouseResize    bool
 
 	framed              bool
 	minWidth, minHeight uint
+	title               string
 
-	canvas test.WindowlessCanvas
+	wm     *x11WM
+	canvas driver.WindowlessCanvas
 }
 
-func (fr *frame) unFrame() {
-	if !fr.framed {
+func (s *stack) frameForWin(id xproto.Window) desktop.Window {
+	for _, w := range s.frames {
+		if w.(*frame).id == id || w.(*frame).win == id {
+			return w
+		}
+	}
+
+	return nil
+}
+
+func (f *frame) unFrame() {
+	if !f.framed {
 		return
 	}
 
-	cli := fr.cli.wm.clientForWin(fr.cli.win)
-	fr.cli.wm.RemoveWindow(cli)
+	frame := f.wm.frameForWin(f.win)
+	f.wm.RemoveWindow(frame)
 
-	if cli == nil {
+	if frame == nil {
 		return
 	}
 
-	if fr != nil {
-		xproto.ReparentWindow(fr.cli.wm.x.Conn(), fr.cli.win, fr.cli.wm.x.RootWin(), fr.x, fr.y)
-	}
-	xproto.UnmapWindow(fr.cli.wm.x.Conn(), fr.cli.id)
+	xproto.ReparentWindow(f.wm.x.Conn(), f.win, f.wm.x.RootWin(), f.x, f.y)
+	xproto.UnmapWindow(f.wm.x.Conn(), f.id)
 }
 
-func (fr *frame) press(x, y int16) {
-	fr.mouseX = x
-	fr.mouseY = y
-	if x >= int16(fr.width-fr.cli.wm.buttonWidth()) && y >= int16(fr.height-fr.cli.wm.buttonWidth()) {
-		fr.mouseResize = true
+func (f *frame) Decorated() bool {
+	return f.framed
+}
+
+func (f *frame) Title() string {
+	if f.title == "" {
+		f.title = windowName(f.wm.x, f.win)
+	}
+
+	return f.title
+}
+
+func (f *frame) Class() []string {
+	return windowClass(f.wm.x, f.win)
+}
+
+func (f *frame) Command() string {
+	return windowCommand(f.wm.x, f.win)
+}
+
+func (f *frame) IconName() string {
+	return windowIconName(f.wm.x, f.win)
+}
+
+func (f *frame) Close() {
+	winProtos, err := icccm.WmProtocolsGet(f.wm.x, f.win)
+	if err != nil {
+		log.Println("GetProtocols err", err)
+	}
+
+	askNicely := false
+	for _, proto := range winProtos {
+		if proto == "WM_DELETE_WINDOW" {
+			askNicely = true
+		}
+	}
+
+	if !askNicely {
+		err := xproto.DestroyWindowChecked(f.wm.x.Conn(), f.win).Check()
+		if err != nil {
+			log.Println("Close Err", err)
+		}
+
+		return
+	}
+
+	protocols, err := xprop.Atm(f.wm.x, "WM_PROTOCOLS")
+	if err != nil {
+		return
+	}
+
+	delWin, err := xprop.Atm(f.wm.x, "WM_DELETE_WINDOW")
+	if err != nil {
+		return
+	}
+	cm, err := xevent.NewClientMessage(32, f.win, protocols,
+		int(delWin))
+	err = xproto.SendEventChecked(f.wm.x.Conn(), false, f.win, 0,
+		string(cm.Bytes())).Check()
+	if err != nil {
+		log.Println("WinDelete Err", err)
+	}
+}
+
+func (f *frame) Focus() {
+	xproto.SetInputFocus(f.wm.x.Conn(), 0, f.win, 0)
+}
+
+func (f *frame) press(x, y int16) {
+	f.mouseX = x
+	f.mouseY = y
+	if x >= int16(f.width-f.wm.buttonWidth()) && y >= int16(f.height-f.wm.buttonWidth()) {
+		f.mouseResize = true
 	} else {
-		fr.mouseResize = false
+		f.mouseResize = false
 	}
 
-	fr.cli.wm.RaiseToTop(fr.cli)
+	f.wm.RaiseToTop(f)
 }
 
-func (fr *frame) release(x, y int16) {
-	if x > int16(fr.cli.wm.borderWidth()) && x < int16(fr.cli.wm.borderWidth()+fr.cli.wm.buttonWidth()) &&
-		y < int16(fr.cli.wm.borderWidth()+fr.cli.wm.titleHeight()) {
-		fr.cli.Close()
-	} else if x > int16(fr.cli.wm.borderWidth())+int16(theme.Padding())+int16(fr.cli.wm.buttonWidth()) &&
-		x < int16(fr.cli.wm.borderWidth())+int16(theme.Padding()*2)+int16(fr.cli.wm.buttonWidth()*2) &&
-		y < int16(fr.cli.wm.borderWidth())+int16(fr.cli.wm.titleHeight()) {
-		if fr.cli.Maximized() {
-			fr.cli.Unmaximize()
-		} else {
-			fr.cli.Maximize()
-		}
-	} else if x > int16(fr.cli.wm.borderWidth())+int16(theme.Padding()*2)+int16(fr.cli.wm.buttonWidth()*2) &&
-		x < int16(fr.cli.wm.borderWidth())+int16(theme.Padding()*2)+int16(fr.cli.wm.buttonWidth()*3) &&
-		y < int16(fr.cli.wm.borderWidth())+int16(fr.cli.wm.titleHeight()) {
-		fr.cli.Iconify()
+func (f *frame) release(x, y int16) {
+	if x > int16(f.wm.borderWidth()) && x < int16(f.wm.borderWidth()+f.wm.buttonWidth()) &&
+		y < int16(f.wm.borderWidth()+f.wm.titleHeight()) {
+		f.Close()
 	}
 }
 
-func (fr *frame) drag(x, y int16) {
-	deltaX := x - fr.mouseX
-	deltaY := y - fr.mouseY
-	var moveOnly = true
+func (f *frame) drag(x, y int16) {
+	deltaX := x - f.mouseX
+	deltaY := y - f.mouseY
 
-	if fr.mouseResize {
-		fr.width = fr.width + uint16(deltaX)
-		fr.height = fr.height + uint16(deltaY)
-		fr.mouseX = x
-		fr.mouseY = y
+	if f.mouseResize {
+		f.width = f.width + uint16(deltaX)
+		f.height = f.height + uint16(deltaY)
+		f.mouseX = x
+		f.mouseY = y
 
-		borderWidth := 2 * fr.cli.wm.borderWidth()
-		if fr.width < uint16(fr.minWidth)+borderWidth {
-			fr.width = uint16(fr.minWidth) + borderWidth
+		borderWidth := 2 * f.wm.borderWidth()
+		if f.width < uint16(f.minWidth)+borderWidth {
+			f.width = uint16(f.minWidth) + borderWidth
 		}
-		borderHeight := 2*fr.cli.wm.borderWidth() + fr.cli.wm.titleHeight()
-		if fr.height < uint16(fr.minHeight)+borderHeight {
-			fr.height = uint16(fr.minHeight) + borderHeight
+		borderHeight := 2*f.wm.borderWidth() + f.wm.titleHeight()
+		if f.height < uint16(f.minHeight)+borderHeight {
+			f.height = uint16(f.minHeight) + borderHeight
 		}
-		moveOnly = false
+
+		if f.framed {
+			err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+				[]uint32{uint32(f.wm.borderWidth()), uint32(f.wm.borderWidth() + f.wm.titleHeight()),
+					uint32(f.width - borderWidth), uint32(f.height - borderHeight)}).Check()
+			if err != nil {
+				log.Println("ConfigureWindow Err", err)
+			}
+
+			f.ApplyTheme()
+		}
 	} else {
-		fr.x += deltaX
-		fr.y += deltaY
+		f.x += deltaX
+		f.y += deltaY
 	}
-	fr.updateGeometry(uint16(fr.x), uint16(fr.y), fr.width, fr.height, moveOnly)
+
+	err := xproto.ConfigureWindowChecked(f.wm.x.Conn(), f.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
+	if err != nil {
+		log.Println("ConfigureWindow Err", err)
+	}
 }
 
-func (fr *frame) motion(x, y int16) {
+func (f *frame) motion(x, y int16) {
 	cursor := defaultCursor
-	if x > int16(fr.cli.wm.borderWidth()) && x <= int16(fr.cli.wm.borderWidth()+fr.cli.wm.buttonWidth()) &&
-		y <= int16(fr.cli.wm.borderWidth()+fr.cli.wm.titleHeight()) {
+	if x > int16(f.wm.borderWidth()) && x <= int16(f.wm.borderWidth()+f.wm.buttonWidth()) &&
+		y <= int16(f.wm.borderWidth()+f.wm.titleHeight()) {
 		cursor = closeCursor
-	} else if x >= int16(fr.width-fr.cli.wm.buttonWidth()) && y >= int16(fr.height-fr.cli.wm.buttonWidth()) {
+	} else if x >= int16(f.width-f.wm.buttonWidth()) && y >= int16(f.height-f.wm.buttonWidth()) {
 		cursor = resizeCursor
 	}
 
-	err := xproto.ChangeWindowAttributesChecked(fr.cli.wm.x.Conn(), fr.cli.id, xproto.CwCursor,
+	err := xproto.ChangeWindowAttributesChecked(f.wm.x.Conn(), f.id, xproto.CwCursor,
 		[]uint32{uint32(cursor)}).Check()
 	if err != nil {
-		fyne.LogError("Set Cursor Error", err)
+		log.Println("SetCursor Err", err)
 	}
 }
 
-func (fr *frame) updateGeometry(x uint16, y uint16, w uint16, h uint16, moveOnly bool) {
-	if fr.framed && !moveOnly {
-		borderWidth := 2 * fr.cli.wm.borderWidth()
-		if w < uint16(fr.minWidth)+borderWidth {
-			w = uint16(fr.minWidth) + borderWidth
-		}
-		borderHeight := 2*fr.cli.wm.borderWidth() + fr.cli.wm.titleHeight()
-		if h < uint16(fr.minHeight)+borderHeight {
-			h = uint16(fr.minHeight) + borderHeight
-		}
-		err := xproto.ConfigureWindowChecked(fr.cli.wm.x.Conn(), fr.cli.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(fr.cli.wm.borderWidth()), uint32(fr.cli.wm.borderWidth() + fr.cli.wm.titleHeight()),
-				uint32(w - borderWidth), uint32(h - borderHeight)}).Check()
-		if err != nil {
-			fyne.LogError("Configure Window Error", err)
-		}
-		fr.applyTheme()
+func (f *frame) RaiseAbove(win desktop.Window) {
+	topID := f.wm.rootID
+	if win != nil {
+		topID = win.(*frame).id
 	}
-	err := xproto.ConfigureWindowChecked(fr.cli.wm.x.Conn(), fr.cli.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
-		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(x), uint32(y), uint32(w), uint32(h)}).Check()
-	if err != nil {
-		fyne.LogError("Configure Window Error", err)
-	}
-}
 
-func (fr *frame) maximizeFrame() {
-	var w = fr.cli.wm.x.Screen().WidthInPixels
-	var h = fr.cli.wm.x.Screen().HeightInPixels
-	var x, y = 0, 0
-	fr.restoreWidth = fr.width
-	fr.restoreHeight = fr.height
-	fr.restoreX = fr.x
-	fr.restoreY = fr.y
-	fr.width = w
-	fr.height = h
-	fr.x = int16(x)
-	fr.y = int16(y)
-	fr.updateGeometry(uint16(x), uint16(y), w, h, false)
-}
-
-func (fr *frame) unmaximizeFrame() {
-	fr.width = fr.restoreWidth
-	fr.height = fr.restoreHeight
-	fr.x = fr.restoreX
-	fr.y = fr.restoreY
-	fr.updateGeometry(uint16(fr.x), uint16(fr.y), fr.width, fr.height, false)
-}
-
-func (fr *frame) applyTheme() {
-	if !fr.framed {
+	f.Focus()
+	if f.id == topID {
 		return
 	}
 
-	depth := fr.cli.wm.x.Screen().RootDepth
+	f.wm.raiseWinAboveID(f.id, topID)
+}
+
+func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
+	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		[]uint32{uint32(top), uint32(xproto.StackModeAbove)}).Check()
+	if err != nil {
+		log.Println("Restack Err", err)
+	}
+}
+
+func (f *frame) ApplyTheme() {
+	if !f.framed {
+		return
+	}
+
+	depth := f.wm.x.Screen().RootDepth
 	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
 	bgColor := backR<<16 | backG<<8 | backB
 
-	scale := float32(2)
-	if fr.canvas == nil {
-		fr.canvas = util.NewSoftwareCanvas()
-		fr.canvas.SetPadded(false)
+	title := f.Title()
+	if f.canvas == nil {
+		f.canvas = driver.NewSoftwareCanvas(widget.NewLabel(title))
 	}
-	scale = desktop.Instance().Root().Canvas().Scale()
-	fr.canvas.SetScale(scale)
-	border := newBorder(fr.cli)
-	border.Resize(fr.canvas.Size())
-	fr.canvas.SetContent(border)
+	scale := float32(1) // TODO detect like the gl driver
+	f.canvas.SetScale(scale)
+	border := newBorder(f)
+	border.Resize(f.canvas.Size())
+	f.canvas.SetContent(border)
 
-	fr.canvas.Resize(fyne.NewSize(int(float32(fr.width)/scale), int(float32(fr.height)/scale)))
-	img := fr.canvas.Capture()
+	f.canvas.Resize(fyne.NewSize(int(float32(f.width)*scale), int(float32(f.height)*scale)))
+	img := f.canvas.Capture()
 
-	pid, err := xproto.NewPixmapId(fr.cli.wm.x.Conn())
+	pid, err := xproto.NewPixmapId(f.wm.x.Conn())
 	if err != nil {
-		fyne.LogError("New Pixmap Error", err)
+		log.Println("NewPixmap Err", err)
 		return
 	}
-	xproto.CreatePixmap(fr.cli.wm.x.Conn(), depth, pid,
-		xproto.Drawable(fr.cli.wm.x.Screen().Root), fr.width, fr.height)
+	xproto.CreatePixmap(f.wm.x.Conn(), depth, pid,
+		xproto.Drawable(f.wm.x.Screen().Root), f.width, f.height)
 
-	draw, _ := xproto.NewGcontextId(fr.cli.wm.x.Conn())
-	xproto.CreateGC(fr.cli.wm.x.Conn(), draw, xproto.Drawable(pid), xproto.GcForeground, []uint32{bgColor})
+	draw, _ := xproto.NewGcontextId(f.wm.x.Conn())
+	xproto.CreateGC(f.wm.x.Conn(), draw, xproto.Drawable(pid), xproto.GcForeground, []uint32{bgColor})
 
-	rect := xproto.Rectangle{X: 0, Y: 0, Width: fr.width, Height: fr.height}
-	xproto.PolyFillRectangleChecked(fr.cli.wm.x.Conn(), xproto.Drawable(pid), draw, []xproto.Rectangle{rect})
+	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
+	xproto.PolyFillRectangleChecked(f.wm.x.Conn(), xproto.Drawable(pid), draw, []xproto.Rectangle{rect})
 
 	// DATA is BGRx
-	width, height := uint32(fr.width), uint32(float32(wmTheme.TitleHeight)*scale+float32(wmTheme.BorderWidth)*scale)
+	width, height := uint32(f.width), uint32(wmTheme.TitleHeight+wmTheme.BorderWidth)
 	data := make([]byte, width*height*4)
 	i := uint32(0)
 	for y := uint32(0); y < height; y++ {
@@ -227,69 +283,65 @@ func (fr *frame) applyTheme() {
 
 	}
 
-	xproto.PutImageChecked(fr.cli.wm.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
+	xproto.PutImageChecked(f.wm.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
 		uint16(width), uint16(height), 0, 0, 0, depth, data)
 
-	err = xproto.ChangeWindowAttributesChecked(fr.cli.wm.x.Conn(), fr.cli.id,
+	err = xproto.ChangeWindowAttributesChecked(f.wm.x.Conn(), f.id,
 		xproto.CwBackPixmap, []uint32{uint32(pid)}).Check()
 	if err != nil {
-		fyne.LogError("Change Attribute Error", err)
-		err = xproto.ChangeWindowAttributesChecked(fr.cli.wm.x.Conn(), fr.cli.id,
+		log.Println("ChangeAttribute Err", err)
+		err = xproto.ChangeWindowAttributesChecked(f.wm.x.Conn(), f.id,
 			xproto.CwBackPixmap, []uint32{0}).Check()
-		if err != nil {
-			fyne.LogError("Change Attribute Error", err)
-		}
+		log.Println(err)
 	}
 
-	xproto.FreePixmap(fr.cli.wm.x.Conn(), pid)
+	xproto.FreePixmap(f.wm.x.Conn(), pid)
 }
 
-func newFrame(cli *client) *frame {
-	attrs, err := xproto.GetGeometry(cli.wm.x.Conn(), xproto.Drawable(cli.win)).Reply()
+func newFrame(win xproto.Window, wm *x11WM) *frame {
+	attrs, err := xproto.GetGeometry(wm.x.Conn(), xproto.Drawable(win)).Reply()
 	if err != nil {
-		fyne.LogError("Get Geometry Error", err)
+		log.Println("GetGeometry Err", err)
 		return nil
 	}
 
-	fr, err := xwindow.Generate(cli.wm.x)
+	fr, err := xwindow.Generate(wm.x)
 	if err != nil {
-		fyne.LogError("Generate Window Error", err)
+		log.Println("GenerateWindow Err", err)
 		return nil
 	}
 
-	scale := desktop.Instance().Root().Canvas().Scale()
 	r, g, b, _ := theme.BackgroundColor().RGBA()
 	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
 		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
 		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange}
-	err = xproto.CreateWindowChecked(cli.wm.x.Conn(), cli.wm.x.Screen().RootDepth, fr.Id, cli.wm.x.RootWin(),
-		attrs.X, attrs.Y, attrs.Width+uint16(float32(cli.wm.borderWidth())/scale)*2, attrs.Height+uint16(float32(cli.wm.borderWidth())/scale)*2+cli.wm.titleHeight(), 0, xproto.WindowClassInputOutput,
-		cli.wm.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
+	err = xproto.CreateWindowChecked(wm.x.Conn(), wm.x.Screen().RootDepth, fr.Id, wm.x.RootWin(),
+		attrs.X, attrs.Y, attrs.Width+wm.borderWidth()*2, attrs.Height+wm.borderWidth()*2+wm.titleHeight(), 0, xproto.WindowClassInputOutput,
+		wm.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
 	if err != nil {
-		fyne.LogError("Create Window Error", err)
+		log.Println("CreateWindow Err", err)
 		return nil
 	}
-	cli.id = fr.Id
-	framed := &frame{cli: cli, x: attrs.X, y: attrs.Y, width: attrs.Width + uint16(float32(cli.wm.borderWidth())*2/scale),
-		height: attrs.Height + uint16(float32(cli.wm.borderWidth())/scale*2) + uint16(float32(cli.wm.titleHeight())/scale), framed: true}
-	framed.applyTheme()
+
+	framed := &frame{id: fr.Id, win: win, x: attrs.X, y: attrs.Y, width: attrs.Width + wm.borderWidth()*2,
+		height: attrs.Height + wm.borderWidth()*2 + wm.titleHeight(), wm: wm, framed: true}
+	framed.ApplyTheme()
 
 	fr.Map()
-	xproto.ChangeSaveSet(cli.wm.x.Conn(), xproto.SetModeInsert, cli.win)
-	xproto.ReparentWindow(cli.wm.x.Conn(), cli.win, cli.id, int16(cli.wm.borderWidth()-1), int16(cli.wm.borderWidth()+cli.wm.titleHeight()-1))
-	xproto.MapWindow(cli.wm.x.Conn(), cli.win)
+	xproto.ChangeSaveSet(wm.x.Conn(), xproto.SetModeInsert, win)
+	xproto.ReparentWindow(wm.x.Conn(), win, fr.Id, int16(wm.borderWidth()-1), int16(wm.borderWidth()+wm.titleHeight()-1))
+	xproto.MapWindow(wm.x.Conn(), win)
 
 	return framed
 }
 
-func newFrameBorderless(cli *client) *frame {
-	attrs, err := xproto.GetGeometry(cli.wm.x.Conn(), xproto.Drawable(cli.win)).Reply()
+func newFrameBorderless(win xproto.Window, wm *x11WM) *frame {
+	attrs, err := xproto.GetGeometry(wm.x.Conn(), xproto.Drawable(win)).Reply()
 	if err != nil {
-		fyne.LogError("Get Geometry Error", err)
+		log.Println("GetGeometry Err", err)
 		return nil
 	}
 
-	cli.id = cli.win
-	return &frame{cli: cli, x: attrs.X, y: attrs.Y, framed: false}
+	return &frame{id: win, win: win, x: attrs.X, y: attrs.Y, wm: wm, framed: false}
 }
