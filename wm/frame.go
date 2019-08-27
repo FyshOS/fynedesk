@@ -16,13 +16,11 @@ import (
 )
 
 type frame struct {
-	x, y                        int16
-	restoreX, restoreY          int16
-	width, height               uint16
-	restoreWidth, restoreHeight uint16
-	mouseX, mouseY              int16
-	mouseResize                 bool
-	framed                      bool
+	x, y           int16
+	width, height  uint16
+	mouseX, mouseY int16
+	mouseResize    bool
+	framed         bool
 
 	minWidth, minHeight uint
 
@@ -154,10 +152,10 @@ func (f *frame) maximize() {
 	var w = f.client.wm.x.Screen().WidthInPixels
 	var h = f.client.wm.x.Screen().HeightInPixels
 	var x, y = 0, 0
-	f.restoreWidth = f.width
-	f.restoreHeight = f.height
-	f.restoreX = f.x
-	f.restoreY = f.y
+	f.client.restoreWidth = f.width
+	f.client.restoreHeight = f.height
+	f.client.restoreX = f.x
+	f.client.restoreY = f.y
 	f.width = w
 	f.height = h
 	f.x = int16(x)
@@ -166,10 +164,10 @@ func (f *frame) maximize() {
 }
 
 func (f *frame) unmaximize() {
-	f.width = f.restoreWidth
-	f.height = f.restoreHeight
-	f.x = f.restoreX
-	f.y = f.restoreY
+	f.width = f.client.restoreWidth
+	f.height = f.client.restoreHeight
+	f.x = f.client.restoreX
+	f.y = f.client.restoreY
 	f.updateGeometry(false)
 }
 
