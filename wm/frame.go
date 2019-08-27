@@ -238,18 +238,18 @@ func (f *frame) ApplyTheme() {
 	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
 	bgColor := backR<<16 | backG<<8 | backB
 
-	scale := float32(2)
 	if f.canvas == nil {
 		f.canvas = util.NewSoftwareCanvas()
 		f.canvas.SetPadded(false)
 	}
-	scale = desktop.Instance().Root().Canvas().Scale()
+	scale := desktop.Instance().Root().Canvas().Scale()
 	f.canvas.SetScale(scale)
 	border := newBorder(f)
-	border.Resize(f.canvas.Size())
 	f.canvas.SetContent(border)
 
-	f.canvas.Resize(fyne.NewSize(int(float32(f.width)/scale), int(float32(f.height)/scale)))
+	scaledSize := fyne.NewSize(int(float32(f.width)/scale), int(float32(f.height)/scale))
+	f.canvas.Resize(scaledSize)
+	border.Resize(scaledSize)
 	img := f.canvas.Capture()
 
 	pid, err := xproto.NewPixmapId(f.wm.x.Conn())
