@@ -19,10 +19,18 @@ type Window interface {
 	Class() []string  // The class of this window
 	Command() string  // The command of this window
 	IconName() string // The icon name of this window
+	Iconic() bool     // Is the window Iconified?
+	Maximized() bool  // Is the window Maximized?
+	TopWindow() bool  // Is the the window on top?
 
 	Focus()            // Ask this window to get input focus
 	Close()            // Close this window and possibly the application running it
+	Iconify()          // Minimize this window and possibly children of this window
+	Uniconify()        // Restore this window and possibly children of this window from being minimized
+	Maximize()         // Resize this window to it's largest possible size
+	Unmaximize()       // Restore this window to its size before being maximized
 	RaiseAbove(Window) // Raise this window above a given other window
+	RaiseToTop()       // Raise this window to the top of the stack
 }
 
 // Stack describes an ordered list of windows.

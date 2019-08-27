@@ -12,6 +12,8 @@ import (
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/xprop"
 )
 
 type x11WM struct {
@@ -25,8 +27,8 @@ type x11WM struct {
 func (x *x11WM) Close() {
 	log.Println("Disconnecting from X server")
 
-	for _, child := range x.frames {
-		child.(*frame).unFrame()
+	for _, child := range x.clients {
+		child.(*client).frame.unFrame()
 	}
 
 	x.x.Conn().Close()
@@ -44,7 +46,7 @@ func (x *x11WM) SetRoot(win fyne.Window) {
 func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	conn, err := xgbutil.NewConn()
 	if err != nil {
-		log.Println("Failed to connect to the XServer", err)
+		fyne.LogError("Failed to connect to the XServer", err)
 		return nil, err
 	}
 
@@ -74,8 +76,8 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	go func() {
 		for {
 			<-listener
-			for _, fr := range mgr.frames {
-				fr.(*frame).ApplyTheme()
+			for _, c := range mgr.clients {
+				c.(*client).frame.applyTheme()
 			}
 		}
 	}()
@@ -89,7 +91,7 @@ func (x *x11WM) runLoop() {
 	for {
 		ev, err := conn.WaitForEvent()
 		if err != nil {
-			log.Println("X11 Error:", err)
+			fyne.LogError("X11 Error:", err)
 			continue
 		}
 
@@ -105,30 +107,32 @@ func (x *x11WM) runLoop() {
 				x.destroyWindow(ev.Window)
 			case xproto.PropertyNotifyEvent:
 				// TODO
+			case xproto.ClientMessageEvent:
+				x.handleClientMessage(ev)
 			case xproto.ExposeEvent:
-				border := x.frameForWin(ev.Window)
+				border := x.clientForWin(ev.Window)
 				if border != nil {
-					border.(*frame).ApplyTheme()
+					border.(*client).frame.applyTheme()
 				}
 			case xproto.ButtonPressEvent:
-				for _, fr := range x.frames {
-					if fr.(*frame).id == ev.Event {
-						fr.(*frame).press(ev.EventX, ev.EventY)
+				for _, c := range x.clients {
+					if c.(*client).id == ev.Event {
+						c.(*client).frame.press(ev.EventX, ev.EventY)
 					}
 				}
 			case xproto.ButtonReleaseEvent:
-				for _, fr := range x.frames {
-					if fr.(*frame).id == ev.Event {
-						fr.(*frame).release(ev.EventX, ev.EventY)
+				for _, c := range x.clients {
+					if c.(*client).id == ev.Event {
+						c.(*client).frame.release(ev.EventX, ev.EventY)
 					}
 				}
 			case xproto.MotionNotifyEvent:
-				for _, fr := range x.frames {
-					if fr.(*frame).id == ev.Event {
+				for _, c := range x.clients {
+					if c.(*client).id == ev.Event {
 						if ev.State&xproto.ButtonMask1 != 0 {
-							fr.(*frame).drag(ev.EventX, ev.EventY)
+							c.(*client).frame.drag(ev.EventX, ev.EventY)
 						} else {
-							fr.(*frame).motion(ev.EventX, ev.EventY)
+							c.(*client).frame.motion(ev.EventX, ev.EventY)
 						}
 					}
 				}
@@ -150,20 +154,23 @@ func (x *x11WM) runLoop() {
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
-	fr := x.frameForWin(win)
+	c := x.clientForWin(win)
 	width := ev.Width
 	height := ev.Height
 
-	if fr != nil {
-		fr.(*frame).minWidth, fr.(*frame).minHeight = windowMinSize(x.x, win)
-		if fr.Decorated() {
-			err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-				[]uint32{uint32(x.borderWidth()), uint32(x.borderWidth() + x.titleHeight()),
-					uint32(width - 1), uint32(height - 1)}).Check()
+	if c != nil {
+		f := c.(*client).frame
+		if f != nil {
+			f.minWidth, f.minHeight = windowMinSize(x.x, win)
+			if c.Decorated() {
+				err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+					xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+					[]uint32{uint32(x.borderWidth()), uint32(x.borderWidth() + x.titleHeight()),
+						uint32(width - 1), uint32(height - 1)}).Check()
 
-			if err != nil {
-				log.Println("ConfigureFrame Err", err)
+				if err != nil {
+					fyne.LogError("Configure Frame Error", err)
+				}
 			}
 		}
 		return
@@ -180,7 +187,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(width), uint32(height)}).Check()
 	if err != nil {
-		log.Println("ConfigureWindow Err", err)
+		fyne.LogError("Configure Window Error", err)
 	}
 
 	if isRoot {
@@ -192,14 +199,111 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 }
 
+func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeState func(xproto.Window), addState func(xproto.Window), toggleCheck bool) {
+	switch clientMessageStateAction(ev.Data.Data32[0]) {
+	case clientMessageStateActionRemove:
+		removeState(ev.Window)
+	case clientMessageStateActionAdd:
+		addState(ev.Window)
+	case clientMessageStateActionToggle:
+		if toggleCheck {
+			removeState(ev.Window)
+		} else {
+			addState(ev.Window)
+		}
+	}
+}
+
+func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
+	msgAtom, err := xprop.AtomName(x.x, ev.Type)
+	if err != nil {
+		fyne.LogError("Error getting event", err)
+		return
+	}
+	switch msgAtom {
+	case "WM_STATE_CHANGE":
+		switch ev.Data.Bytes()[0] {
+		case icccm.StateIconic:
+			x.iconifyWindow(ev.Window)
+		case icccm.StateNormal:
+			x.uniconifyWindow(ev.Window)
+		}
+	case "_NET_WM_STATE":
+		subMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[1]))
+		if err != nil {
+			fyne.LogError("Error getting event", err)
+			return
+		}
+		c := x.clientForWin(ev.Window)
+		if c == nil {
+			fyne.LogError("Could not retrieve client", nil)
+			return
+		}
+		switch subMsgAtom {
+		case "_NET_WM_STATE_HIDDEN":
+			x.handleStateActionRequest(ev, x.uniconifyWindow, x.iconifyWindow, c.Iconic())
+		case "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ":
+			extraMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[2]))
+			if err != nil {
+				fyne.LogError("Error getting event", err)
+				return
+			}
+			if extraMsgAtom == subMsgAtom {
+				return
+			}
+			if extraMsgAtom == "_NET_WM_STATE_MAXIMIZED_VERT" || extraMsgAtom == "_NET_WM_STATE_MAXIMIZED_HORZ" {
+				x.handleStateActionRequest(ev, x.unmaximizeWindow, x.maximizeWindow, c.Maximized())
+			}
+		}
+	}
+}
+
+func (x *x11WM) iconifyWindow(win xproto.Window) {
+	c := x.clientForWin(win)
+	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
+		return
+	}
+	xproto.ReparentWindow(x.x.Conn(), win, x.x.RootWin(), c.(*client).frame.x, c.(*client).frame.y)
+	xproto.UnmapWindow(x.x.Conn(), win)
+}
+
+func (x *x11WM) uniconifyWindow(win xproto.Window) {
+	c := x.clientForWin(win)
+	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
+		return
+	}
+	c.(*client).newFrame()
+	xproto.MapWindow(x.x.Conn(), win)
+}
+
+func (x *x11WM) maximizeWindow(win xproto.Window) {
+	c := x.clientForWin(win)
+	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
+		return
+	}
+	c.(*client).frame.maximize()
+}
+
+func (x *x11WM) unmaximizeWindow(win xproto.Window) {
+	c := x.clientForWin(win)
+	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
+		return
+	}
+	c.(*client).frame.unmaximize()
+}
+
 func (x *x11WM) showWindow(win xproto.Window) {
-	framed := x.frameForWin(win) != nil
+	c := x.clientForWin(win)
 	name := windowName(x.x, win)
 
-	if framed || name == x.root.Title() {
+	if c != nil || name == x.root.Title() {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
 		if err != nil {
-			log.Println("ShowWindow Err", err)
+			fyne.LogError("Show Window Error", err)
 		}
 
 		if name != x.root.Title() {
@@ -219,32 +323,36 @@ func (x *x11WM) showWindow(win xproto.Window) {
 }
 
 func (x *x11WM) hideWindow(win xproto.Window) {
-	if x.frameForWin(win) != nil {
-		fr := x.frameForWin(win)
-		x.RemoveWindow(fr)
-		xproto.UnmapWindow(x.x.Conn(), fr.(*frame).id)
+	c := x.clientForWin(win)
+	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
+		return
 	}
+	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
 }
 
 func (x *x11WM) setupWindow(win xproto.Window) {
-	var frame *frame
-	if !windowBorderless(x.x, win) {
-		frame = newFrame(win, x)
+	c := x.clientForWin(win)
+	if c != nil {
+		c.(*client).newFrame()
 	} else {
-		frame = newFrameBorderless(win, x)
+		c = newClient(win, x)
 	}
 
 	x.bindKeys(win)
 	if x.root != nil && windowName(x.x, win) == x.root.Title() {
 		return
 	}
-
-	x.AddWindow(frame)
-	x.RaiseToTop(frame)
+	x.AddWindow(c)
+	x.RaiseToTop(c)
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
 	xproto.ChangeSaveSet(x.x.Conn(), xproto.SetModeDelete, win)
+	c := x.clientForWin(win)
+	if c != nil {
+		x.RemoveWindow(c)
+	}
 }
 
 func (x *x11WM) bindKeys(win xproto.Window) {
@@ -255,7 +363,7 @@ func (x *x11WM) bindKeys(win xproto.Window) {
 func (x *x11WM) frameExisting() {
 	tree, err := xproto.QueryTree(x.x.Conn(), x.x.RootWin()).Reply()
 	if err != nil {
-		log.Println("QueryTree Err", err)
+		fyne.LogError("Query Tree Error", err)
 		return
 	}
 
@@ -267,7 +375,7 @@ func (x *x11WM) frameExisting() {
 
 		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
 		if err != nil {
-			log.Println("GetWindowAttributes Err", err)
+			fyne.LogError("Get Window Attributes Error", err)
 			continue
 		}
 		if attrs.MapState == xproto.MapStateUnmapped {
