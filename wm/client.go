@@ -155,14 +155,13 @@ func (c *client) maximizeMessage(action clientMessageStateAction) {
 }
 
 func (c *client) Maximize() {
+	c.maximizeMessage(clientMessageStateActionAdd)
 	c.maximized = true
-	c.maximizeMessage(clientMessageStateActionRemove)
 }
 
 func (c *client) Unmaximize() {
+	c.maximizeMessage(clientMessageStateActionRemove)
 	c.maximized = false
-	//0 is for removing a state
-	c.maximizeMessage(clientMessageStateActionAdd)
 }
 
 func (c *client) Focus() {
