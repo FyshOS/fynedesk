@@ -13,21 +13,24 @@ import (
 	"fyne.io/fyne"
 )
 
+type clientMessageStateAction int
+
+const (
+	clientMessageStateActionRemove clientMessageStateAction = 0
+	clientMessageStateActionAdd    clientMessageStateAction = 1
+	clientMessageStateActionToggle clientMessageStateAction = 2
+)
+
 type client struct {
 	id, win xproto.Window
 
-	framed    bool
 	iconic    bool
 	maximized bool
-	title     string
-	class     []string
-	command   string
-	iconName  string
 
 	allowedActions []string
 	stateHints     []string
 
-	fr *frame
+	f  *frame
 	wm *x11WM
 }
 
@@ -41,55 +44,46 @@ func (s *stack) clientForWin(id xproto.Window) desktop.Window {
 	return nil
 }
 
-func (cli *client) Decorated() bool {
-	return cli.framed
-}
-
-func (cli *client) Title() string {
-	if cli.title == "" {
-		cli.title = windowName(cli.wm.x, cli.win)
+func (c *client) Decorated() bool {
+	if c.f != nil {
+		return c.f.framed
 	}
-	return cli.title
+	return false
 }
 
-func (cli *client) Class() []string {
-	if len(cli.class) == 0 {
-		cli.class = windowClass(cli.wm.x, cli.win)
-	}
-	return cli.class
+func (c *client) Title() string {
+	return windowName(c.wm.x, c.win)
 }
 
-func (cli *client) Command() string {
-	if cli.command == "" {
-		cli.command = windowCommand(cli.wm.x, cli.win)
-	}
-	return cli.command
+func (c *client) Class() []string {
+	return windowClass(c.wm.x, c.win)
 }
 
-func (cli *client) IconName() string {
-	if cli.iconName == "" {
-		cli.iconName = windowIconName(cli.wm.x, cli.win)
-	}
-	return cli.iconName
+func (c *client) Command() string {
+	return windowCommand(c.wm.x, c.win)
 }
 
-func (cli *client) Iconic() bool {
-	return cli.iconic
+func (c *client) IconName() string {
+	return windowIconName(c.wm.x, c.win)
 }
 
-func (cli *client) Maximized() bool {
-	return cli.maximized
+func (c *client) Iconic() bool {
+	return c.iconic
 }
 
-func (cli *client) TopWindow() bool {
-	if cli.wm.TopWindow() == cli {
+func (c *client) Maximized() bool {
+	return c.maximized
+}
+
+func (c *client) TopWindow() bool {
+	if c.wm.TopWindow() == c {
 		return true
 	}
 	return false
 }
 
-func (cli *client) Close() {
-	winProtos, err := icccm.WmProtocolsGet(cli.wm.x, cli.win)
+func (c *client) Close() {
+	winProtos, err := icccm.WmProtocolsGet(c.wm.x, c.win)
 	if err != nil {
 		fyne.LogError("Get Protocols Error", err)
 	}
@@ -102,7 +96,7 @@ func (cli *client) Close() {
 	}
 
 	if !askNicely {
-		err := xproto.DestroyWindowChecked(cli.wm.x.Conn(), cli.win).Check()
+		err := xproto.DestroyWindowChecked(c.wm.x.Conn(), c.win).Check()
 		if err != nil {
 			fyne.LogError("Close Error", err)
 		}
@@ -110,88 +104,87 @@ func (cli *client) Close() {
 		return
 	}
 
-	protocols, err := xprop.Atm(cli.wm.x, "WM_PROTOCOLS")
+	protocols, err := xprop.Atm(c.wm.x, "WM_PROTOCOLS")
 	if err != nil {
 		fyne.LogError("Get Protocols Error", err)
 		return
 	}
 
-	delWin, err := xprop.Atm(cli.wm.x, "WM_DELETE_WINDOW")
+	delWin, err := xprop.Atm(c.wm.x, "WM_DELETE_WINDOW")
 	if err != nil {
 		fyne.LogError("Get Delete Window Error", err)
 		return
 	}
-	cm, err := xevent.NewClientMessage(32, cli.win, protocols,
+	cm, err := xevent.NewClientMessage(32, c.win, protocols,
 		int(delWin))
-	err = xproto.SendEventChecked(cli.wm.x.Conn(), false, cli.win, 0,
+	err = xproto.SendEventChecked(c.wm.x.Conn(), false, c.win, 0,
 		string(cm.Bytes())).Check()
 	if err != nil {
 		fyne.LogError("Window Delete Error", err)
 	}
 }
 
-func (cli *client) iconifyMessage(state int) {
-	iconifyAtm, err := xprop.Atm(cli.wm.x, "WM_STATE_CHANGE")
+func (c *client) sendStateMessage(state int) {
+	stateChangeAtom, err := xprop.Atm(c.wm.x, "WM_STATE_CHANGE")
 	if err != nil {
 		fyne.LogError("Error getting X Atom", err)
 		return
 	}
-	cm, err := xevent.NewClientMessage(32, cli.win, iconifyAtm,
+	cm, err := xevent.NewClientMessage(32, c.win, stateChangeAtom,
 		state)
 	if err != nil {
 		fyne.LogError("Error creating client message", err)
 		return
 	}
-	err = xevent.SendRootEvent(cli.wm.x, cm, xproto.EventMaskSubstructureNotify|xproto.EventMaskSubstructureRedirect)
+	err = xevent.SendRootEvent(c.wm.x, cm, xproto.EventMaskSubstructureNotify|xproto.EventMaskSubstructureRedirect)
 }
 
-func (cli *client) Iconify() {
-	cli.iconifyMessage(icccm.StateIconic)
-	cli.iconic = true
+func (c *client) Iconify() {
+	c.sendStateMessage(icccm.StateIconic)
+	c.iconic = true
 }
 
-func (cli *client) Uniconify() {
-	cli.iconifyMessage(icccm.StateNormal)
-	cli.iconic = false
+func (c *client) Uniconify() {
+	c.sendStateMessage(icccm.StateNormal)
+	c.iconic = false
 }
 
-func (cli *client) maximizeMessage(action int) {
-	ewmh.WmStateReqExtra(cli.wm.x, cli.win, action, "_NET_WM_STATE_MAXIMIZED_VERT",
+func (c *client) maximizeMessage(action clientMessageStateAction) {
+	ewmh.WmStateReqExtra(c.wm.x, c.win, int(action), "_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_MAXIMIZED_HORZ", 1)
 }
 
-func (cli *client) Maximize() {
-	cli.maximized = true
-	//1 is for adding a new state
-	cli.maximizeMessage(1)
+func (c *client) Maximize() {
+	c.maximized = true
+	c.maximizeMessage(clientMessageStateActionRemove)
 }
 
-func (cli *client) Unmaximize() {
-	cli.maximized = false
+func (c *client) Unmaximize() {
+	c.maximized = false
 	//0 is for removing a state
-	cli.maximizeMessage(0)
+	c.maximizeMessage(clientMessageStateActionAdd)
 }
 
-func (cli *client) Focus() {
-	xproto.SetInputFocus(cli.wm.x.Conn(), 0, cli.win, 0)
+func (c *client) Focus() {
+	xproto.SetInputFocus(c.wm.x.Conn(), 0, c.win, 0)
 }
 
-func (cli *client) RaiseToTop() {
-	cli.wm.RaiseToTop(cli)
+func (c *client) RaiseToTop() {
+	c.wm.RaiseToTop(c)
 }
 
-func (cli *client) RaiseAbove(win desktop.Window) {
-	topID := cli.wm.rootID
+func (c *client) RaiseAbove(win desktop.Window) {
+	topID := c.wm.rootID
 	if win != nil {
 		topID = win.(*client).id
 	}
 
-	cli.Focus()
-	if cli.id == topID {
+	c.Focus()
+	if c.id == topID {
 		return
 	}
 
-	cli.wm.raiseWinAboveID(cli.id, topID)
+	c.wm.raiseWinAboveID(c.id, topID)
 }
 
 func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
@@ -202,48 +195,34 @@ func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
 	}
 }
 
-func (cli *client) addStateHint(hint string) {
-	cli.stateHints = append(cli.stateHints, hint)
-	ewmh.WmStateSet(cli.wm.x, cli.win, cli.stateHints)
+func (c *client) addStateHint(hint string) {
+	c.stateHints = append(c.stateHints, hint)
+	ewmh.WmStateSet(c.wm.x, c.win, c.stateHints)
 }
 
-func (cli *client) removeStateHint(hint string) {
-	for i, curHint := range cli.stateHints {
+func (c *client) removeStateHint(hint string) {
+	for i, curHint := range c.stateHints {
 		if curHint == hint {
-			cli.stateHints = append(cli.stateHints[:i], cli.stateHints[i+1:]...)
-			ewmh.WmStateSet(cli.wm.x, cli.win, cli.stateHints)
+			c.stateHints = append(c.stateHints[:i], c.stateHints[i+1:]...)
+			ewmh.WmStateSet(c.wm.x, c.win, c.stateHints)
 			return
 		}
 	}
 }
 
-func (cli *client) maximizeFrame() {
-	if cli.fr != nil {
-		cli.fr.maximizeFrame()
-	}
-}
-
-func (cli *client) unmaximizeFrame() {
-	if cli.fr != nil {
-		cli.fr.unmaximizeFrame()
-	}
-}
-
-func (cli *client) newFrame() {
-	if !windowBorderless(cli.wm.x, cli.win) {
-		cli.framed = true
-		cli.fr = newFrame(cli)
+func (c *client) newFrame() {
+	if !windowBorderless(c.wm.x, c.win) {
+		c.f = newFrame(c)
 	} else {
-		cli.framed = false
-		cli.fr = newFrameBorderless(cli)
+		c.f = newFrameBorderless(c)
 	}
 }
 
 func newClient(win xproto.Window, wm *x11WM) *client {
-	cli := &client{win: win, wm: wm}
-	cli.newFrame()
+	c := &client{win: win, wm: wm}
+	c.newFrame()
 
-	cli.allowedActions = []string{
+	c.allowedActions = []string{
 		"_NET_WM_ACTION_MOVE",
 		"_NET_WM_ACTION_RESIZE",
 		"_NET_WM_ACTION_MINIMIZE",
@@ -252,7 +231,7 @@ func newClient(win xproto.Window, wm *x11WM) *client {
 		"_NET_WM_ACTION_CLOSE",
 	}
 
-	ewmh.WmAllowedActionsSet(wm.x, win, cli.allowedActions)
+	ewmh.WmAllowedActionsSet(wm.x, win, c.allowedActions)
 
-	return cli
+	return c
 }

@@ -16,9 +16,9 @@ var (
 	// BrokenImageIcon is the material design icon for a broken image
 	BrokenImageIcon = theme.NewThemedResource(brokenImageIcon, nil)
 	// MaximizeIcon is the material design icon for maximizing a window
-	MaximizeIcon    = theme.NewThemedResource(maximizeIcon, nil)
+	MaximizeIcon = theme.NewThemedResource(maximizeIcon, nil)
 	// MinimizeIcon is the material design icon for minimizing a window
-	MinimizeIcon = theme.NewThemedResource(minimizeIcon, nil)
+	IconifyIcon = theme.NewThemedResource(iconifyIcon, nil)
 
 	// BorderWidth is the width of window frames
 	BorderWidth = 4

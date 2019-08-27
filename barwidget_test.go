@@ -68,14 +68,13 @@ func (*dummyWindow) Unmaximize() {
 	// no-op
 }
 
-func (*dummyWindow) RaiseAbove(desktop.Window) {
+func (*dummyWindow) RaiseAbove(Window) {
 	// no-op (this is instructing the window after stack changes)
 }
 
 func (*dummyWindow) RaiseToTop() {
 	// no-op
 }
-
 
 type dummyIcon struct {
 }

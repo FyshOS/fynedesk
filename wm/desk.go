@@ -28,7 +28,7 @@ func (x *x11WM) Close() {
 	log.Println("Disconnecting from X server")
 
 	for _, child := range x.clients {
-		child.(*client).fr.unFrame()
+		child.(*client).f.unFrame()
 	}
 
 	x.x.Conn().Close()
@@ -76,8 +76,8 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	go func() {
 		for {
 			<-listener
-			for _, cli := range mgr.clients {
-				cli.(*client).fr.applyTheme()
+			for _, c := range mgr.clients {
+				c.(*client).f.applyTheme()
 			}
 		}
 	}()
@@ -108,31 +108,31 @@ func (x *x11WM) runLoop() {
 			case xproto.PropertyNotifyEvent:
 				// TODO
 			case xproto.ClientMessageEvent:
-				x.clientMessage(ev)
+				x.handleClientMessage(ev)
 			case xproto.ExposeEvent:
 				border := x.clientForWin(ev.Window)
 				if border != nil {
-					border.(*client).fr.applyTheme()
+					border.(*client).f.applyTheme()
 				}
 			case xproto.ButtonPressEvent:
-				for _, cli := range x.clients {
-					if cli.(*client).id == ev.Event {
-						cli.(*client).fr.press(ev.EventX, ev.EventY)
+				for _, c := range x.clients {
+					if c.(*client).id == ev.Event {
+						c.(*client).f.press(ev.EventX, ev.EventY)
 					}
 				}
 			case xproto.ButtonReleaseEvent:
-				for _, cli := range x.clients {
-					if cli.(*client).id == ev.Event {
-						cli.(*client).fr.release(ev.EventX, ev.EventY)
+				for _, c := range x.clients {
+					if c.(*client).id == ev.Event {
+						c.(*client).f.release(ev.EventX, ev.EventY)
 					}
 				}
 			case xproto.MotionNotifyEvent:
-				for _, cli := range x.clients {
-					if cli.(*client).id == ev.Event {
+				for _, c := range x.clients {
+					if c.(*client).id == ev.Event {
 						if ev.State&xproto.ButtonMask1 != 0 {
-							cli.(*client).fr.drag(ev.EventX, ev.EventY)
+							c.(*client).f.drag(ev.EventX, ev.EventY)
 						} else {
-							cli.(*client).fr.motion(ev.EventX, ev.EventY)
+							c.(*client).f.motion(ev.EventX, ev.EventY)
 						}
 					}
 				}
@@ -154,15 +154,15 @@ func (x *x11WM) runLoop() {
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
-	cli := x.clientForWin(win)
+	c := x.clientForWin(win)
 	width := ev.Width
 	height := ev.Height
 
-	if cli != nil {
-		fr := cli.(*client).fr
-		if fr != nil {
-			fr.minWidth, fr.minHeight = windowMinSize(x.x, win)
-			if cli.Decorated() {
+	if c != nil {
+		f := c.(*client).f
+		if f != nil {
+			f.minWidth, f.minHeight = windowMinSize(x.x, win)
+			if c.Decorated() {
 				err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 					xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 					[]uint32{uint32(x.borderWidth()), uint32(x.borderWidth() + x.titleHeight()),
@@ -199,7 +199,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 }
 
-func (x *x11WM) clientMessage(ev xproto.ClientMessageEvent) {
+func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 	msgAtom, err := xprop.AtomName(x.x, ev.Type)
 	if err != nil {
 		fyne.LogError("Error getting event", err)
@@ -221,17 +221,17 @@ func (x *x11WM) clientMessage(ev xproto.ClientMessageEvent) {
 		}
 		switch subMsgAtom {
 		case "_NET_WM_STATE_HIDDEN":
-			switch ev.Data.Data32[0] {
-			case 0: // Remove Atom
+			switch clientMessageStateAction(ev.Data.Data32[0]) {
+			case clientMessageStateActionRemove:
 				x.uniconifyWindow(ev.Window)
-			case 1: // Add Atom
+			case clientMessageStateActionAdd:
 				x.iconifyWindow(ev.Window)
-			case 2: // Toggle Atom
-				cli := x.clientForWin(ev.Window)
-				if cli == nil {
+			case clientMessageStateActionToggle:
+				c := x.clientForWin(ev.Window)
+				if c == nil {
 					return
 				}
-				if cli.Iconic() {
+				if c.Iconic() {
 					x.uniconifyWindow(ev.Window)
 				} else {
 					x.iconifyWindow(ev.Window)
@@ -247,17 +247,17 @@ func (x *x11WM) clientMessage(ev xproto.ClientMessageEvent) {
 				return
 			}
 			if extraMsgAtom == "_NET_WM_STATE_MAXIMIZED_VERT" || extraMsgAtom == "_NET_WM_STATE_MAXIMIZED_HORZ" {
-				switch ev.Data.Data32[0] {
-				case 0: // Remove Atom
+				switch clientMessageStateAction(ev.Data.Data32[0]) {
+				case clientMessageStateActionRemove:
 					x.unmaximizeWindow(ev.Window)
-				case 1: // Add Atom
+				case clientMessageStateActionAdd:
 					x.maximizeWindow(ev.Window)
-				case 2: // Toggle Atom
-					cli := x.clientForWin(ev.Window)
-					if cli == nil {
+				case clientMessageStateActionToggle:
+					c := x.clientForWin(ev.Window)
+					if c == nil {
 						return
 					}
-					if cli.Maximized() {
+					if c.Maximized() {
 						x.unmaximizeWindow(ev.Window)
 					} else {
 						x.maximizeWindow(ev.Window)
@@ -270,51 +270,51 @@ func (x *x11WM) clientMessage(ev xproto.ClientMessageEvent) {
 
 func (x *x11WM) iconifyWindow(win xproto.Window) {
 	icccm.WmStateSet(x.x, win, &icccm.WmState{State: icccm.StateIconic})
-	cli := x.clientForWin(win)
-	if cli == nil {
+	c := x.clientForWin(win)
+	if c == nil {
 		return
 	}
-	cli.(*client).addStateHint("_NET_WM_STATE_HIDDEN")
-	xproto.ReparentWindow(x.x.Conn(), win, x.x.RootWin(), cli.(*client).fr.x, cli.(*client).fr.y)
+	c.(*client).addStateHint("_NET_WM_STATE_HIDDEN")
+	xproto.ReparentWindow(x.x.Conn(), win, x.x.RootWin(), c.(*client).f.x, c.(*client).f.y)
 	xproto.UnmapWindow(x.x.Conn(), win)
 }
 
 func (x *x11WM) uniconifyWindow(win xproto.Window) {
 	icccm.WmStateSet(x.x, win, &icccm.WmState{State: icccm.StateNormal})
-	cli := x.clientForWin(win)
-	if cli == nil {
+	c := x.clientForWin(win)
+	if c == nil {
 		return
 	}
-	cli.(*client).removeStateHint("_NET_WM_STATE_HIDDEN")
-	cli.(*client).newFrame()
+	c.(*client).removeStateHint("_NET_WM_STATE_HIDDEN")
+	c.(*client).newFrame()
 	xproto.MapWindow(x.x.Conn(), win)
 }
 
 func (x *x11WM) maximizeWindow(win xproto.Window) {
-	cli := x.clientForWin(win)
-	if cli == nil {
+	c := x.clientForWin(win)
+	if c == nil {
 		return
 	}
-	cli.(*client).addStateHint("_NET_WM_STATE_MAXIMIZED_VERT")
-	cli.(*client).addStateHint("_NET_WM_STATE_MAXIMIZED_HORZ")
-	cli.(*client).maximizeFrame()
+	c.(*client).addStateHint("_NET_WM_STATE_MAXIMIZED_VERT")
+	c.(*client).addStateHint("_NET_WM_STATE_MAXIMIZED_HORZ")
+	c.(*client).f.maximize()
 }
 
 func (x *x11WM) unmaximizeWindow(win xproto.Window) {
-	cli := x.clientForWin(win)
-	if cli == nil {
+	c := x.clientForWin(win)
+	if c == nil {
 		return
 	}
-	cli.(*client).removeStateHint("_NET_WM_STATE_MAXIMIZED_VERT")
-	cli.(*client).removeStateHint("_NET_WM_STATE_MAXIMIZED_HORZ")
-	cli.(*client).unmaximizeFrame()
+	c.(*client).removeStateHint("_NET_WM_STATE_MAXIMIZED_VERT")
+	c.(*client).removeStateHint("_NET_WM_STATE_MAXIMIZED_HORZ")
+	c.(*client).f.unmaximize()
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {
-	cli := x.clientForWin(win)
+	c := x.clientForWin(win)
 	name := windowName(x.x, win)
 
-	if cli != nil || name == x.root.Title() {
+	if c != nil || name == x.root.Title() {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
 		if err != nil {
 			fyne.LogError("Show Window Error", err)
@@ -337,34 +337,34 @@ func (x *x11WM) showWindow(win xproto.Window) {
 }
 
 func (x *x11WM) hideWindow(win xproto.Window) {
-	cli := x.clientForWin(win)
-	if cli == nil {
+	c := x.clientForWin(win)
+	if c == nil {
 		return
 	}
-	xproto.UnmapWindow(x.x.Conn(), cli.(*client).id)
+	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
 }
 
 func (x *x11WM) setupWindow(win xproto.Window) {
-	cli := x.clientForWin(win)
-	if cli != nil {
-		cli.(*client).newFrame()
+	c := x.clientForWin(win)
+	if c != nil {
+		c.(*client).newFrame()
 	} else {
-		cli = newClient(win, x)
+		c = newClient(win, x)
 	}
 
 	x.bindKeys(win)
 	if x.root != nil && windowName(x.x, win) == x.root.Title() {
 		return
 	}
-	x.AddWindow(cli)
-	x.RaiseToTop(cli)
+	x.AddWindow(c)
+	x.RaiseToTop(c)
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
 	xproto.ChangeSaveSet(x.x.Conn(), xproto.SetModeDelete, win)
-	cli := x.clientForWin(win)
-	if cli != nil {
-		x.RemoveWindow(cli)
+	c := x.clientForWin(win)
+	if c != nil {
+		x.RemoveWindow(c)
 	}
 }
 

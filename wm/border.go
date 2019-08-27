@@ -24,7 +24,7 @@ func newBorder(win desktop.Window) fyne.CanvasObject {
 	titleBar := widget.NewHBox(filler,
 		widget.NewButtonWithIcon("", theme.CancelIcon(), func() {}),
 		widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {}),
-		widget.NewButtonWithIcon("", wmTheme.MinimizeIcon, func() {}),
+		widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {}),
 		widget.NewLabel(win.Title()),
 		layout.NewSpacer())
 
