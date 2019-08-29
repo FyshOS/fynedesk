@@ -49,7 +49,7 @@ func (f *frame) unFrame() {
 func (f *frame) press(x, y int16) {
 	f.mouseX = x
 	f.mouseY = y
-	if x >= int16(f.width-f.client.wm.buttonWidth()) && y >= int16(f.height-f.client.wm.buttonWidth()) {
+	if x >= int16(f.width-f.buttonWidth()) && y >= int16(f.height-f.buttonWidth()) {
 		f.mouseResize = true
 	} else {
 		f.mouseResize = false
@@ -59,21 +59,21 @@ func (f *frame) press(x, y int16) {
 }
 
 func (f *frame) release(x, y int16) {
-	ycoord := int16(f.client.wm.borderWidth() + f.client.wm.titleHeight())
+	ycoord := int16(f.borderWidth() + f.titleHeight())
 	if y > ycoord {
 		return
 	}
-	if x > int16(f.client.wm.borderWidth()) && x < int16(f.client.wm.borderWidth()+f.client.wm.buttonWidth()) {
+	if x > int16(f.borderWidth()) && x < int16(f.borderWidth()+f.buttonWidth()) {
 		f.client.Close()
-	} else if x > int16(f.client.wm.borderWidth())+int16(theme.Padding())+int16(f.client.wm.buttonWidth()) &&
-		x < int16(f.client.wm.borderWidth())+int16(theme.Padding()*2)+int16(f.client.wm.buttonWidth()*2) {
+	} else if x > int16(f.borderWidth())+int16(theme.Padding())+int16(f.buttonWidth()) &&
+		x < int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*2) {
 		if f.client.Maximized() {
 			f.client.Unmaximize()
 		} else {
 			f.client.Maximize()
 		}
-	} else if x > int16(f.client.wm.borderWidth())+int16(theme.Padding()*2)+int16(f.client.wm.buttonWidth()*2) &&
-		x < int16(f.client.wm.borderWidth())+int16(theme.Padding()*2)+int16(f.client.wm.buttonWidth()*3) {
+	} else if x > int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*2) &&
+		x < int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*3) {
 		f.client.Iconify()
 	}
 }
@@ -89,11 +89,11 @@ func (f *frame) drag(x, y int16) {
 		f.mouseX = x
 		f.mouseY = y
 
-		borderWidth := 2 * f.client.wm.borderWidth()
+		borderWidth := 2 * f.borderWidth()
 		if f.width < uint16(f.minWidth)+borderWidth {
 			f.width = uint16(f.minWidth) + borderWidth
 		}
-		borderHeight := 2*f.client.wm.borderWidth() + f.client.wm.titleHeight()
+		borderHeight := 2*f.borderWidth() + f.titleHeight()
 		if f.height < uint16(f.minHeight)+borderHeight {
 			f.height = uint16(f.minHeight) + borderHeight
 		}
@@ -107,10 +107,10 @@ func (f *frame) drag(x, y int16) {
 
 func (f *frame) motion(x, y int16) {
 	cursor := defaultCursor
-	if x > int16(f.client.wm.borderWidth()) && x <= int16(f.client.wm.borderWidth()+f.client.wm.buttonWidth()) &&
-		y <= int16(f.client.wm.borderWidth()+f.client.wm.titleHeight()) {
+	if x > int16(f.borderWidth()) && x <= int16(f.borderWidth()+f.buttonWidth()) &&
+		y <= int16(f.borderWidth()+f.titleHeight()) {
 		cursor = closeCursor
-	} else if x >= int16(f.width-f.client.wm.buttonWidth()) && y >= int16(f.height-f.client.wm.buttonWidth()) {
+	} else if x >= int16(f.width-f.buttonWidth()) && y >= int16(f.height-f.buttonWidth()) {
 		cursor = resizeCursor
 	}
 
@@ -123,17 +123,17 @@ func (f *frame) motion(x, y int16) {
 
 func (f *frame) updateGeometry(moveOnly bool) {
 	if f.framed && !moveOnly {
-		borderWidth := 2 * f.client.wm.borderWidth()
+		borderWidth := 2 * f.borderWidth()
 		if f.width < uint16(f.minWidth)+borderWidth {
 			f.width = uint16(f.minWidth) + borderWidth
 		}
-		borderHeight := 2*f.client.wm.borderWidth() + f.client.wm.titleHeight()
+		borderHeight := 2*f.borderWidth() + f.titleHeight()
 		if f.height < uint16(f.minHeight)+borderHeight {
 			f.height = uint16(f.minHeight) + borderHeight
 		}
 		err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(f.client.wm.borderWidth()), uint32(f.client.wm.borderWidth() + f.client.wm.titleHeight()),
+			[]uint32{uint32(f.borderWidth()), uint32(f.borderWidth() + f.titleHeight()),
 				uint32(f.width - borderWidth), uint32(f.height - borderHeight)}).Check()
 		if err != nil {
 			fyne.LogError("Configure Window Error", err)
@@ -223,7 +223,6 @@ func (f *frame) applyTheme() {
 
 			i += 4
 		}
-
 	}
 
 	xproto.PutImageChecked(f.client.wm.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
@@ -243,6 +242,18 @@ func (f *frame) applyTheme() {
 	xproto.FreePixmap(f.client.wm.x.Conn(), pid)
 }
 
+func (f *frame) borderWidth() uint16 {
+	return f.client.wm.scaleToPixels(wmTheme.BorderWidth)
+}
+
+func (f *frame) buttonWidth() uint16 {
+	return f.client.wm.scaleToPixels(wmTheme.ButtonWidth)
+}
+
+func (f *frame) titleHeight() uint16 {
+	return f.client.wm.scaleToPixels(wmTheme.TitleHeight)
+}
+
 func newFrame(c *client) *frame {
 	attrs, err := xproto.GetGeometry(c.wm.x.Conn(), xproto.Drawable(c.win)).Reply()
 	if err != nil {
@@ -256,27 +267,30 @@ func newFrame(c *client) *frame {
 		return nil
 	}
 
-	scale := desktop.Instance().Root().Canvas().Scale()
+	framed := &frame{client: c, x: attrs.X, y: attrs.Y, framed: true}
 	r, g, b, _ := theme.BackgroundColor().RGBA()
 	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
 		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
 		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange}
 	err = xproto.CreateWindowChecked(c.wm.x.Conn(), c.wm.x.Screen().RootDepth, f.Id, c.wm.x.RootWin(),
-		attrs.X, attrs.Y, attrs.Width+uint16(float32(c.wm.borderWidth())/scale)*2, attrs.Height+uint16(float32(c.wm.borderWidth())/scale)*2+c.wm.titleHeight(), 0, xproto.WindowClassInputOutput,
-		c.wm.x.Screen().RootVisual, xproto.CwBackPixel|xproto.CwEventMask, values).Check()
+		attrs.X, attrs.Y, attrs.Width+uint16(framed.borderWidth()*2),
+		attrs.Height+uint16(framed.borderWidth())*2+framed.titleHeight(),
+		0, xproto.WindowClassInputOutput, c.wm.x.Screen().RootVisual,
+		xproto.CwBackPixel|xproto.CwEventMask, values).Check()
 	if err != nil {
 		fyne.LogError("Create Window Error", err)
 		return nil
 	}
 	c.id = f.Id
-	framed := &frame{client: c, x: attrs.X, y: attrs.Y, width: attrs.Width + uint16(float32(c.wm.borderWidth())*2/scale),
-		height: attrs.Height + uint16(float32(c.wm.borderWidth())/scale*2) + uint16(float32(c.wm.titleHeight())/scale), framed: true}
+
+	framed.width = attrs.Width + uint16(framed.borderWidth()*2)
+	framed.height = attrs.Height + uint16(framed.borderWidth()*2) + uint16(framed.titleHeight())
 	framed.applyTheme()
 
 	f.Map()
 	xproto.ChangeSaveSet(c.wm.x.Conn(), xproto.SetModeInsert, c.win)
-	xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(c.wm.borderWidth()-1), int16(c.wm.borderWidth()+c.wm.titleHeight()-1))
+	xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()-1), int16(framed.borderWidth()+framed.titleHeight()-1))
 	xproto.MapWindow(c.wm.x.Conn(), c.win)
 
 	return framed
