@@ -2,6 +2,7 @@ package desktop
 
 import (
 	"fmt"
+	"fyne.io/desktop/internal/settings"
 	"image/color"
 	"io/ioutil"
 	"log"
@@ -258,15 +259,16 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 			fyne.CurrentApp().Settings().SetTheme(theme.DarkTheme())
 			_ = os.Setenv("FYNE_THEME", "dark")
 		}))
+
+	settings := widget.NewButtonWithIcon("", theme.SettingsIcon(), settings.Show)
 	reload := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		os.Exit(1)
 	})
-
 	quit := widget.NewButton("Log Out", func() {
 		w.root.Close()
 	})
-	buttons := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, reload, nil),
-		reload, quit)
+	buttons := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, reload, settings),
+		reload, settings, quit)
 
 	batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
 	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
