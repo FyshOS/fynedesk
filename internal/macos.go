@@ -2,8 +2,8 @@ package internal
 
 import (
 	"bytes"
-	_ "image/jpeg"
-	"image/png"
+	_ "image/jpeg" // support JPEG images
+	"image/png"    // PNG support is required as we use it directly
 	"io/ioutil"
 	"os"
 	"os/exec"
@@ -150,6 +150,7 @@ func (m *macOSAppProvider) FindAppsMatching(pattern string) []desktop.AppData {
 	return icons
 }
 
+// NewMacOSAppProvider creates an instance of an ApplicationProvider that can find and decode macOS apps
 func NewMacOSAppProvider() desktop.ApplicationProvider {
 	return &macOSAppProvider{rootDir: "/Applications"}
 }
