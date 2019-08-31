@@ -1,7 +1,6 @@
 language: go
 go:
   - "1.11.x"
-  - "1.12.x"
 os:
   - linux
   - osx
@@ -35,5 +34,6 @@ script:
 env:
   matrix:
   - GO111MODULE=on
+  - GO111MODULE=off
   global:
   - secure: fYilSMkbYxLMVNZ9N2d4pQwRu83LaApl/vAbaUGqQRCqQzPIXXM3lAp5rePQ73JYBjCwsOiwC64no859TkNWm+bxLKNF53QCaWtorD5Ro8OSMByDWyOr8kDZlkEhiGStCqKkXLo4TEurfn65Zl/H0H1pGsriA9sFLGugx/OMEmmZgE4xQg8h9DEe7OM8EjzJVe37EDuUD1ut9uIDQTivNhbW8BiJ0WhOsSwSrJXucEWLVLTK+uhxgW/ti3ILdV+OEZFuNCROpQd9iETcN8hShN4Wc0smANgg6JxZm6IewVARppnvsbSqb/j4p2twA4dt0HjAfSuky5AhGV9yifI80AEez56nSXAXOzmKOYNlv+rBSMLAG6LKgkUzVWexNMZOPeHg7lDmdgUO5pUmXjpOuQONZ5+S/scd911I/QT4t6z7jkCRu3/nYavJ+EKT3Dlw0bpA9Ob2pgPsHSw+NRFjYEDs8n4uLqbCvCk6Erd/GKVniupAJDWK58Jf5XmR0nRT/NASyKVVrxS4NEpH194IUeThgd6/lSDoK1vaGWo4hc7UCC9RYMr21C7n3xqmQrNGEF5Da5qHgtsyscmzflqMzojm29FLq2PrT9vmFAfI8BXDbT8Fpe0Akda+Tmno/LNNoExUfazs0HSdUF47ePkfwm0qBepaEUuOdQP+Dyq2GcA=

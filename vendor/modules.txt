@@ -1,0 +1,95 @@
+# fyne.io/fyne v1.0.2-0.20190830225013-63dbbdb66f33
+fyne.io/fyne
+fyne.io/fyne/canvas
+fyne.io/fyne/driver/desktop
+fyne.io/fyne/layout
+fyne.io/fyne/theme
+fyne.io/fyne/widget
+fyne.io/fyne/app
+fyne.io/fyne/cmd/fyne_settings/settings
+fyne.io/fyne/app/util
+fyne.io/fyne/test
+fyne.io/fyne/internal
+fyne.io/fyne/internal/app
+fyne.io/fyne/internal/driver/glfw
+fyne.io/fyne/internal/painter/software
+fyne.io/fyne/internal/driver
+fyne.io/fyne/internal/painter
+fyne.io/fyne/internal/painter/gl
+# github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802
+github.com/BurntSushi/xgb/xproto
+github.com/BurntSushi/xgb
+github.com/BurntSushi/xgb/xinerama
+github.com/BurntSushi/xgb/shape
+# github.com/BurntSushi/xgbutil v0.0.0-20160919175755-f7c97cef3b4e
+github.com/BurntSushi/xgbutil
+github.com/BurntSushi/xgbutil/ewmh
+github.com/BurntSushi/xgbutil/icccm
+github.com/BurntSushi/xgbutil/motif
+github.com/BurntSushi/xgbutil/xcursor
+github.com/BurntSushi/xgbutil/xevent
+github.com/BurntSushi/xgbutil/xprop
+github.com/BurntSushi/xgbutil/xwindow
+github.com/BurntSushi/xgbutil/keybind
+github.com/BurntSushi/xgbutil/mousebind
+github.com/BurntSushi/xgbutil/xrect
+# github.com/davecgh/go-spew v1.1.0
+github.com/davecgh/go-spew/spew
+# github.com/fsnotify/fsnotify v1.4.7
+github.com/fsnotify/fsnotify
+# github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7
+github.com/go-gl/gl/v3.1/gles2
+github.com/go-gl/gl/v3.2-core/gl
+# github.com/go-gl/glfw v0.0.0-20181213070059-819e8ce5125f
+github.com/go-gl/glfw/v3.2/glfw
+# github.com/goki/freetype v0.0.0-20181231101311-fa8a33aabaff
+github.com/goki/freetype
+github.com/goki/freetype/truetype
+github.com/goki/freetype/raster
+# github.com/jackmordaunt/icns v1.0.0
+github.com/jackmordaunt/icns
+# github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
+github.com/nfnt/resize
+# github.com/pkg/errors v0.8.1
+github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
+# github.com/srwiley/oksvg v0.0.0-20190105194046-ccbc7673cdf3
+github.com/srwiley/oksvg
+# github.com/srwiley/rasterx v0.0.0-20181219215540-696f7edb7a7e
+github.com/srwiley/rasterx
+# github.com/stretchr/testify v1.4.0
+github.com/stretchr/testify/assert
+# golang.org/x/image v0.0.0-20181116024801-cd38e8056d9b
+golang.org/x/image/font
+golang.org/x/image/math/fixed
+golang.org/x/image/colornames
+golang.org/x/image/vector
+# golang.org/x/net v0.0.0-20181220203305-927f97764cc3
+golang.org/x/net/html/charset
+golang.org/x/net/html
+golang.org/x/net/html/atom
+# golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb
+golang.org/x/sys/unix
+# golang.org/x/text v0.3.2
+golang.org/x/text/encoding
+golang.org/x/text/encoding/charmap
+golang.org/x/text/encoding/htmlindex
+golang.org/x/text/transform
+golang.org/x/text/encoding/internal/identifier
+golang.org/x/text/encoding/internal
+golang.org/x/text/encoding/japanese
+golang.org/x/text/encoding/korean
+golang.org/x/text/encoding/simplifiedchinese
+golang.org/x/text/encoding/traditionalchinese
+golang.org/x/text/encoding/unicode
+golang.org/x/text/language
+golang.org/x/text/internal/utf8internal
+golang.org/x/text/runes
+golang.org/x/text/internal/language
+golang.org/x/text/internal/language/compact
+golang.org/x/text/internal/tag
+# gopkg.in/yaml.v2 v2.2.2
+gopkg.in/yaml.v2
+# howett.net/plist v0.0.0-20181124034731-591f970eefbb
+howett.net/plist
