@@ -20,13 +20,19 @@ before_script:
 - go get fyne.io/fyne
 script:
 - test -z $(gofmt -s -l .)
+# enable go modules only for 1.12.x
+- if [[ "$TRAVIS_GO_VERSION" == 1.12* ]]; then export GO111MODULE=on; fi
 - go test -v -tags ci -covermode=atomic -coverprofile=coverage.out ./...
 - go vet -tags ci ./...
 - golint -set_exit_status $(go list -tags ci)
 - export coverage=$(go tool cover -func coverage.out | tail -n 1 | awk '{ print $3 }' | cut -d \% -f 1 | cut -d \. -f 1)
 - if [ $coverage -lt 16 ]; then echo "Test coverage lowered"; exit 1; fi
-- 'if [ "$TRAVIS_PULL_REQUEST" != "false" ]; then exit; fi'
-- $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+- |
+  set -e
+  if [ "$TRAVIS_PULL_REQUEST" == "false" && -n "$COVERALLS_TOKEN" ]; then
+    go test -tags ci -covermode=atomic -coverprofile=coverage.out ./...
+    $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  fi
 
 env:
   global:
