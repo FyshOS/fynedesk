@@ -18,6 +18,8 @@ before_script:
 - go get golang.org/x/lint/golint
 - go get github.com/mattn/goveralls
 - go get fyne.io/fyne
+- cd `go env GOPATH`/src/fyne.io/fyne
+- git checkout 161b993
 script:
 - test -z $(gofmt -s -l .)
 # enable go modules only for 1.12.x
