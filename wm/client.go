@@ -26,7 +26,6 @@ type client struct {
 
 	iconic    bool
 	maximized bool
-	root      bool
 
 	restoreX, restoreY          int16
 	restoreWidth, restoreHeight uint16
