@@ -119,7 +119,7 @@ func fdoLookupApplicationByMetadata(appName string) desktop.AppData {
 }
 
 //fdoLookupApplication looks up an application by name and returns an fdoApplicationData struct
-func fdoLookupApplication(appName string, fallbackIfMissing bool) desktop.AppData {
+func fdoLookupApplication(appName string) desktop.AppData {
 	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
 		testLocation := filepath.Join(dataDir, "applications", appName+".desktop")
@@ -128,14 +128,7 @@ func fdoLookupApplication(appName string, fallbackIfMissing bool) desktop.AppDat
 		}
 	}
 	//If no match was found checking by filenames, check by file contents
-	app := fdoLookupApplicationByMetadata(appName)
-	if app != nil {
-		return app
-	}
-	if fallbackIfMissing {
-		return &fdoApplicationData{name: appName}
-	}
-	return nil
+	return fdoLookupApplicationByMetadata(appName)
 }
 
 //fdoLookupApplicationPartial looks up an application by a partial name and returns all matches in an fdoApplicationData struct slice
@@ -158,21 +151,25 @@ func fdoLookupApplicationsMatching(appName string) []desktop.AppData {
 
 //fdoLookupApplicationWinInfo looks up an application based on window info and returns an fdoApplicationData struct
 func fdoLookupApplicationWinInfo(win desktop.Window) desktop.AppData {
-	icon := fdoLookupApplication(win.Title(), false)
+	icon := fdoLookupApplication(win.Title())
 	if icon != nil {
 		return icon
 	}
 	for _, class := range win.Class() {
-		icon := fdoLookupApplication(class, false)
+		icon := fdoLookupApplication(class)
 		if icon != nil {
 			return icon
 		}
 	}
-	icon = fdoLookupApplication(win.Command(), false)
+	icon = fdoLookupApplication(win.Command())
 	if icon != nil {
 		return icon
 	}
-	return fdoLookupApplication(win.IconName(), true)
+	icon = fdoLookupApplication(win.IconName())
+	if icon != nil {
+		return icon
+	}
+	return &fdoApplicationData{name: win.Title()}
 }
 
 // lookupAnyIconSizeInThemeDir walks file inside of a directory in reverse order to make sure larger sized icons are found first
@@ -373,7 +370,7 @@ type fdoIconProvider struct {
 
 //FindAppFromName matches an icon name to a location and returns an AppData interface
 func (f *fdoIconProvider) FindAppFromName(appName string) desktop.AppData {
-	return fdoLookupApplication(appName, false)
+	return fdoLookupApplication(appName)
 }
 
 //FindIconFromPartialAppName returns a list of icons that match a partial name of an app and returns an AppData slice
