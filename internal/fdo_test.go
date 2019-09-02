@@ -56,6 +56,10 @@ func (*dummyWindow) TopWindow() bool {
 	return true
 }
 
+func (*dummyWindow) SkipTaskbar() bool {
+	return false
+}
+
 func (*dummyWindow) Focus() {
 	// no-op
 }
