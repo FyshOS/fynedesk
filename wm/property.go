@@ -97,6 +97,15 @@ func windowStateGet(x *xgbutil.XUtil, win xproto.Window) uint {
 	return state.State
 }
 
+func windowExtendedHintsGet(x *xgbutil.XUtil, win xproto.Window) []string {
+	extendedHints, err := ewmh.WmStateGet(x, win)
+	if err != nil {
+		fyne.LogError("Could not get extended hints", err)
+		return nil
+	}
+	return extendedHints
+}
+
 func windowExtendedHintsAdd(x *xgbutil.XUtil, win xproto.Window, hint string) {
 	extendedHints, err := ewmh.WmStateGet(x, win)
 	if err != nil {

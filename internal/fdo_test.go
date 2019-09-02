@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"fyne.io/desktop"
+	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
 	_ "fyne.io/fyne/test"
 )
@@ -107,14 +108,14 @@ func setTestEnv(t *testing.T) {
 //applications/app1.desktop and icons/default_theme/apps/32x32/app1.png
 func TestFdoLookupDefaultTheme(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app1")
+	data := fdoLookupApplication("app1", false)
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/com.fyne.app.desktop and icons/default_theme/apps/scalable/app2.svg
 func TestFdoFileNameMisMatchAndScalable(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app2")
+	data := fdoLookupApplication("app2", false)
 	assert.Equal(t, true, exists(data))
 }
 
@@ -128,49 +129,60 @@ func TestFdoIconNameIsPath(t *testing.T) {
 		fyne.LogError("Could not create desktop for Icon Name path example", err)
 		t.FailNow()
 	}
-	data := fdoLookupApplication("app3")
+	data := fdoLookupApplication("app3", false)
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app4.desktop and pixmaps/app4.png
 func TestFdoIconInPixmaps(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app4")
+	data := fdoLookupApplication("app4", false)
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app5.desktop and icons/hicolor/32x32/apps/app5.png
 func TestFdoIconHicolorFallback(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app5")
+	data := fdoLookupApplication("app5", false)
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app6.desktop and icons/hicolor/scalable/apps/app6.svg
 func TestFdoIconHicolorFallbackScalable(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app6")
+	data := fdoLookupApplication("app6", false)
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app7.desktop and icons/default_theme/apps/16x16/app7.png
 func TestFdoLookupDefaultThemeDifferentSize(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app7")
+	data := fdoLookupApplication("app7", false)
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app8.desktop and icons/third_theme/apps/32/app8.png
 func TestFdoLookupAnyThemeFallback(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app8")
+	data := fdoLookupApplication("app8", false)
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/xterm.desktop and icons/third_theme/emblems/16x16/app9.png
 func TestFdoLookupIconNotInApps(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("xterm")
+	data := fdoLookupApplication("xterm", false)
+	assert.Equal(t, true, exists(data))
+}
+
+//missing - not able to match
+func TestFdoLookupMissing(t *testing.T) {
+	setTestEnv(t)
+	data := fdoLookupApplication("NoMatch", true)
+	if exists(data) {
+		assert.Equal(t, "NoMatch", data.Name())
+		assert.Equal(t, wmTheme.BrokenImageIcon, data.Icon(iconTheme, iconSize))
+	}
 	assert.Equal(t, true, exists(data))
 }
 

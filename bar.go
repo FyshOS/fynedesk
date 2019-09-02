@@ -48,6 +48,9 @@ func taskbarIconTapped(win Window) {
 }
 
 func (b *bar) WindowAdded(win Window) {
+	if win.SkipTaskbar() {
+		return
+	}
 	data := b.desk.IconProvider().FindAppFromWinInfo(win)
 	if data == nil {
 		return
@@ -62,6 +65,9 @@ func (b *bar) WindowAdded(win Window) {
 }
 
 func (b *bar) WindowRemoved(win Window) {
+	if win.SkipTaskbar() {
+		return
+	}
 	for i, icon := range icons {
 		if icon.taskbarWindow == nil || win != icon.taskbarWindow {
 			continue

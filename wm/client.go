@@ -26,6 +26,7 @@ type client struct {
 
 	iconic    bool
 	maximized bool
+	root      bool
 
 	restoreX, restoreY          int16
 	restoreWidth, restoreHeight uint16
@@ -78,6 +79,19 @@ func (c *client) Maximized() bool {
 func (c *client) TopWindow() bool {
 	if c.wm.TopWindow() == c {
 		return true
+	}
+	return false
+}
+
+func (c *client) SkipTaskbar() bool {
+	extendedHints := windowExtendedHintsGet(c.wm.x, c.win)
+	if extendedHints == nil {
+		return false
+	}
+	for _, hint := range extendedHints {
+		if hint == "_NET_WM_STATE_SKIP_TASKBAR" {
+			return true
+		}
 	}
 	return false
 }
