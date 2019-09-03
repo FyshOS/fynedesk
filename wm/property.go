@@ -17,7 +17,7 @@ func windowName(x *xgbutil.XUtil, win xproto.Window) string {
 	if err != nil {
 		name, err = ewmh.WmNameGet(x, win)
 		if err != nil {
-			return "Noname"
+			return ""
 		}
 	}
 
