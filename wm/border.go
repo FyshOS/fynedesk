@@ -13,15 +13,19 @@ import (
 
 var iconSize = 32
 
-func newBorder(win desktop.Window) fyne.CanvasObject {
+func makeFiller() fyne.CanvasObject {
 	filler := canvas.NewRectangle(theme.BackgroundColor()) // make a border on the X axis only
 	filler.SetMinSize(fyne.NewSize(0, 2))                  // 0 wide forced
 
+	return filler
+}
+
+func newBorder(win desktop.Window) fyne.CanvasObject {
 	desk := desktop.Instance()
 	iconTheme := desk.Settings().IconTheme()
 	app := desk.IconProvider().FindAppFromWinInfo(win)
 	icon := app.Icon(iconTheme, iconSize)
-	titleBar := widget.NewHBox(filler,
+	titleBar := widget.NewHBox(makeFiller(),
 		widget.NewButtonWithIcon("", theme.CancelIcon(), func() {}),
 		widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {}),
 		widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {}),
@@ -29,8 +33,8 @@ func newBorder(win desktop.Window) fyne.CanvasObject {
 		layout.NewSpacer())
 
 	if icon != nil {
-		icon := fyne.NewContainerWithLayout(layout.NewCenterLayout(), widget.NewIcon(icon))
-		titleBar.Append(icon)
+		titleBar.Append(widget.NewIcon(icon))
+		titleBar.Append(makeFiller())
 	}
 
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(titleBar, nil, nil, nil),
