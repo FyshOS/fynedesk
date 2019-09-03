@@ -49,7 +49,10 @@ func (f *frame) unFrame() {
 func (f *frame) press(x, y int16) {
 	f.mouseX = x
 	f.mouseY = y
-	if x >= int16(f.width-f.buttonWidth()) && y >= int16(f.height-f.buttonWidth()) {
+
+	relX := x - f.x
+	relY := y - f.y
+	if relX >= int16(f.width-f.buttonWidth()) && relY >= int16(f.height-f.buttonWidth()) {
 		f.mouseResize = true
 	} else {
 		f.mouseResize = false
@@ -59,21 +62,23 @@ func (f *frame) press(x, y int16) {
 }
 
 func (f *frame) release(x, y int16) {
-	ycoord := int16(f.borderWidth() + f.titleHeight())
-	if y > ycoord {
+	relX := x - f.x
+	relY := y - f.y
+	barYMax := int16(f.borderWidth() + f.titleHeight())
+	if relY > barYMax {
 		return
 	}
-	if x > int16(f.borderWidth()) && x < int16(f.borderWidth()+f.buttonWidth()) {
+	if relX > int16(f.borderWidth()) && relX < int16(f.borderWidth()+f.buttonWidth()) {
 		f.client.Close()
-	} else if x > int16(f.borderWidth())+int16(theme.Padding())+int16(f.buttonWidth()) &&
-		x < int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*2) {
+	} else if relX > int16(f.borderWidth())+int16(theme.Padding())+int16(f.buttonWidth()) &&
+		relX < int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*2) {
 		if f.client.Maximized() {
 			f.client.Unmaximize()
 		} else {
 			f.client.Maximize()
 		}
-	} else if x > int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*2) &&
-		x < int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*3) {
+	} else if relX > int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*2) &&
+		relX < int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*3) {
 		f.client.Iconify()
 	}
 }
@@ -81,13 +86,16 @@ func (f *frame) release(x, y int16) {
 func (f *frame) drag(x, y int16) {
 	deltaX := x - f.mouseX
 	deltaY := y - f.mouseY
+	f.mouseX = x
+	f.mouseY = y
+	if deltaX == 0 && deltaY == 0 {
+		return
+	}
 	var moveOnly = true
 
 	if f.mouseResize {
-		f.width = f.width + uint16(deltaX)
-		f.height = f.height + uint16(deltaY)
-		f.mouseX = x
-		f.mouseY = y
+		f.width += uint16(deltaX)
+		f.height += uint16(deltaY)
 
 		borderWidth := 2 * f.borderWidth()
 		if f.width < uint16(f.minWidth)+borderWidth {
@@ -106,11 +114,13 @@ func (f *frame) drag(x, y int16) {
 }
 
 func (f *frame) motion(x, y int16) {
+	relX := x - f.x
+	relY := y - f.y
 	cursor := defaultCursor
-	if x > int16(f.borderWidth()) && x <= int16(f.borderWidth()+f.buttonWidth()) &&
-		y <= int16(f.borderWidth()+f.titleHeight()) {
+	if relX > int16(f.borderWidth()) && relX <= int16(f.borderWidth()+f.buttonWidth()) &&
+		relY <= int16(f.borderWidth()+f.titleHeight()) {
 		cursor = closeCursor
-	} else if x >= int16(f.width-f.buttonWidth()) && y >= int16(f.height-f.buttonWidth()) {
+	} else if relX >= int16(f.width-f.buttonWidth()) && relY >= int16(f.height-f.buttonWidth()) {
 		cursor = resizeCursor
 	}
 

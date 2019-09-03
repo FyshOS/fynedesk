@@ -116,22 +116,22 @@ func (x *x11WM) runLoop() {
 			case xproto.ButtonPressEvent:
 				for _, c := range x.clients {
 					if c.(*client).id == ev.Event {
-						c.(*client).frame.press(ev.EventX, ev.EventY)
+						c.(*client).frame.press(ev.RootX, ev.RootY)
 					}
 				}
 			case xproto.ButtonReleaseEvent:
 				for _, c := range x.clients {
 					if c.(*client).id == ev.Event {
-						c.(*client).frame.release(ev.EventX, ev.EventY)
+						c.(*client).frame.release(ev.RootX, ev.RootY)
 					}
 				}
 			case xproto.MotionNotifyEvent:
 				for _, c := range x.clients {
 					if c.(*client).id == ev.Event {
 						if ev.State&xproto.ButtonMask1 != 0 {
-							c.(*client).frame.drag(ev.EventX, ev.EventY)
+							c.(*client).frame.drag(ev.RootX, ev.RootY)
 						} else {
-							c.(*client).frame.motion(ev.EventX, ev.EventY)
+							c.(*client).frame.motion(ev.RootX, ev.RootY)
 						}
 					}
 				}
