@@ -82,6 +82,19 @@ func (c *client) TopWindow() bool {
 	return false
 }
 
+func (c *client) SkipTaskbar() bool {
+	extendedHints := windowExtendedHintsGet(c.wm.x, c.win)
+	if extendedHints == nil {
+		return false
+	}
+	for _, hint := range extendedHints {
+		if hint == "_NET_WM_STATE_SKIP_TASKBAR" {
+			return true
+		}
+	}
+	return false
+}
+
 func (c *client) Close() {
 	winProtos, err := icccm.WmProtocolsGet(c.wm.x, c.win)
 	if err != nil {

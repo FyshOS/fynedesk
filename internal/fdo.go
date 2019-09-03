@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"fyne.io/desktop"
+	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
 )
 
@@ -39,7 +40,7 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 	if path == "" {
 		path = fdoLookupIconPath(theme, size, data.iconName)
 		if path == "" {
-			return nil
+			return wmTheme.BrokenImageIcon
 		}
 	}
 	return loadIcon(path)
@@ -164,7 +165,11 @@ func fdoLookupApplicationWinInfo(win desktop.Window) desktop.AppData {
 	if icon != nil {
 		return icon
 	}
-	return fdoLookupApplication(win.IconName())
+	icon = fdoLookupApplication(win.IconName())
+	if icon != nil {
+		return icon
+	}
+	return &fdoApplicationData{name: win.Title()}
 }
 
 // lookupAnyIconSizeInThemeDir walks file inside of a directory in reverse order to make sure larger sized icons are found first

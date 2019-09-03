@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"fyne.io/desktop"
+	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
 	_ "fyne.io/fyne/test"
 )
@@ -53,6 +54,10 @@ func (*dummyWindow) Maximized() bool {
 
 func (*dummyWindow) TopWindow() bool {
 	return true
+}
+
+func (*dummyWindow) SkipTaskbar() bool {
+	return false
 }
 
 func (*dummyWindow) Focus() {
@@ -171,6 +176,18 @@ func TestFdoLookupAnyThemeFallback(t *testing.T) {
 func TestFdoLookupIconNotInApps(t *testing.T) {
 	setTestEnv(t)
 	data := fdoLookupApplication("xterm")
+	assert.Equal(t, true, exists(data))
+}
+
+//missing - not able to match
+func TestFdoLookupMissing(t *testing.T) {
+	setTestEnv(t)
+	win1 := &dummyWindow{title: "NoMatch"}
+	data := fdoLookupApplicationWinInfo(win1)
+	if exists(data) {
+		assert.Equal(t, "NoMatch", data.Name())
+		assert.Equal(t, wmTheme.BrokenImageIcon, data.Icon(iconTheme, iconSize))
+	}
 	assert.Equal(t, true, exists(data))
 }
 

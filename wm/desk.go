@@ -331,6 +331,10 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 }
 
 func (x *x11WM) setupWindow(win xproto.Window) {
+	if windowName(x.x, win) == "" {
+		windowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
+		windowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
+	}
 	c := x.clientForWin(win)
 	if c != nil {
 		c.(*client).newFrame()
@@ -342,6 +346,7 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	if x.root != nil && windowName(x.x, win) == x.root.Title() {
 		return
 	}
+
 	x.AddWindow(c)
 	x.RaiseToTop(c)
 }
@@ -380,7 +385,6 @@ func (x *x11WM) frameExisting() {
 		if attrs.MapState == xproto.MapStateUnmapped {
 			continue
 		}
-
 		x.setupWindow(child)
 	}
 }
