@@ -116,7 +116,7 @@ func (f *frame) drag(x, y int16) {
 		}
 		f.updateGeometry(x, f.y, width, height)
 	} else {
-		f.updateGeometry(f.x + deltaX, f.y + deltaY, f.width, f.height)
+		f.updateGeometry(f.x+deltaX, f.y+deltaY, f.width, f.height)
 	}
 }
 
