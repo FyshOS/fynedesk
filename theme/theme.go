@@ -25,5 +25,5 @@ var (
 	// ButtonWidth is the width of window buttons
 	ButtonWidth = 28
 	// TitleHeight is the height of a frame titleBar
-	TitleHeight = 24
+	TitleHeight = 28
 )

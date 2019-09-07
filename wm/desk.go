@@ -159,7 +159,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 
 	if c != nil {
 		f := c.(*client).frame
-		if f != nil {
+		if f != nil && c.(*client).win == win { // ignore requests from our frame a we must have caused it
 			f.minWidth, f.minHeight = windowMinSize(x.x, win)
 			if c.Decorated() {
 				err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|

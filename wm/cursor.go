@@ -11,9 +11,13 @@ import (
 )
 
 var (
-	defaultCursor xproto.Cursor
-	closeCursor   xproto.Cursor
-	resizeCursor  xproto.Cursor
+	defaultCursor           xproto.Cursor
+	closeCursor             xproto.Cursor
+	resizeBottomCursor      xproto.Cursor
+	resizeBottomLeftCursor  xproto.Cursor
+	resizeBottomRightCursor xproto.Cursor
+	resizeLeftCursor        xproto.Cursor
+	resizeRightCursor       xproto.Cursor
 )
 
 func createCursor(x *xgbutil.XUtil, builtin uint16) xproto.Cursor {
@@ -29,5 +33,9 @@ func createCursor(x *xgbutil.XUtil, builtin uint16) xproto.Cursor {
 func loadCursors(x *xgbutil.XUtil) {
 	defaultCursor = createCursor(x, xcursor.LeftPtr)
 	closeCursor = createCursor(x, xcursor.XCursor)
-	resizeCursor = createCursor(x, xcursor.BottomRightCorner)
+	resizeBottomCursor = createCursor(x, xcursor.BottomSide)
+	resizeBottomLeftCursor = createCursor(x, xcursor.BottomLeftCorner)
+	resizeBottomRightCursor = createCursor(x, xcursor.BottomRightCorner)
+	resizeLeftCursor = createCursor(x, xcursor.LeftSide)
+	resizeRightCursor = createCursor(x, xcursor.RightSide)
 }
