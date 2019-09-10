@@ -178,15 +178,15 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 			fyne.LogError("Configure Window Error", err)
 		}
 	}
+	if resize {
+		f.applyTheme()
+	}
+
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
-	}
-
-	if resize {
-		f.applyTheme()
 	}
 }
 
