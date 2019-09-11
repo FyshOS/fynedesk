@@ -24,6 +24,7 @@ const (
 type client struct {
 	id, win xproto.Window
 
+	full      bool
 	iconic    bool
 	maximized bool
 
@@ -65,6 +66,10 @@ func (c *client) Command() string {
 
 func (c *client) IconName() string {
 	return windowIconName(c.wm.x, c.win)
+}
+
+func (c *client) Fullscreened() bool {
+	return c.full
 }
 
 func (c *client) Iconic() bool {
@@ -137,6 +142,20 @@ func (c *client) Close() {
 	}
 }
 
+func (c *client) fullscreenMessage(action clientMessageStateAction) {
+	ewmh.WmStateReq(c.wm.x, c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
+}
+
+func (c *client) Fullscreen() {
+	c.maximizeMessage(clientMessageStateActionAdd)
+	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_FULLSCREEN")
+}
+
+func (c *client) Unfullscreen() {
+	c.maximizeMessage(clientMessageStateActionRemove)
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_FULLSCREEN")
+}
+
 func (c *client) sendStateMessage(state int) {
 	stateChangeAtom, err := xprop.Atm(c.wm.x, "WM_STATE_CHANGE")
 	if err != nil {
@@ -156,14 +175,12 @@ func (c *client) Iconify() {
 	c.sendStateMessage(icccm.StateIconic)
 	windowStateSet(c.wm.x, c.win, icccm.StateIconic)
 	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
-	c.iconic = true
 }
 
 func (c *client) Uniconify() {
 	c.sendStateMessage(icccm.StateNormal)
 	windowStateSet(c.wm.x, c.win, icccm.StateNormal)
 	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
-	c.iconic = false
 }
 
 func (c *client) maximizeMessage(action clientMessageStateAction) {
@@ -175,14 +192,12 @@ func (c *client) Maximize() {
 	c.maximizeMessage(clientMessageStateActionAdd)
 	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
 	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
-	c.maximized = true
 }
 
 func (c *client) Unmaximize() {
 	c.maximizeMessage(clientMessageStateActionRemove)
 	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
 	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
-	c.maximized = false
 }
 
 func (c *client) Focus() {
@@ -226,15 +241,7 @@ func (c *client) newFrame() {
 func newClient(win xproto.Window, wm *x11WM) *client {
 	c := &client{win: win, wm: wm}
 	c.newFrame()
-	allowedActions := []string{
-		"_NET_WM_ACTION_MOVE",
-		"_NET_WM_ACTION_RESIZE",
-		"_NET_WM_ACTION_MINIMIZE",
-		"_NET_WM_ACTION_MAXIMIZE_HORZ",
-		"_NET_WM_ACTION_MAXIMIZE_VERT",
-		"_NET_WM_ACTION_CLOSE",
-	}
-	windowAllowedActionsSet(wm.x, win, allowedActions)
+	windowAllowedActionsSet(wm.x, win, wm.allowedActions)
 
 	return c
 }

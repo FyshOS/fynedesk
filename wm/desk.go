@@ -11,6 +11,7 @@ import (
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
+	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xprop"
 )
@@ -21,6 +22,9 @@ type x11WM struct {
 	root   fyne.Window
 	rootID xproto.Window
 	loaded bool
+
+	allowedActions []string
+	supportedHints []string
 }
 
 func (x *x11WM) Close() {
@@ -66,6 +70,34 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 
 		return nil, errors.New("window manager detected, running embedded")
 	}
+
+	mgr.allowedActions = []string{
+		"_NET_WM_ACTION_MOVE",
+		"_NET_WM_ACTION_RESIZE",
+		"_NET_WM_ACTION_MINIMIZE",
+		"_NET_WM_ACTION_MAXIMIZE_HORZ",
+		"_NET_WM_ACTION_MAXIMIZE_VERT",
+		"_NET_WM_ACTION_CLOSE",
+		"_NET_WM_ACTION_FULLSCREEN",
+	}
+
+	mgr.supportedHints = append(mgr.supportedHints, mgr.allowedActions...)
+	mgr.supportedHints = append(mgr.supportedHints, "_NET_WM_STATE",
+		"_NET_WM_STATE_MAXIMIZED_VERT",
+		"_NET_WM_STATE_MAXIMIZED_HORZ",
+		"_NET_WM_STATE_SKIP_TASKBAR",
+		"_NET_WM_STATE_SKIP_PAGER",
+		"_NET_WM_STATE_HIDDEN",
+		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_WM_NAME",
+		"_NET_WM_FULLSCREEN_MONITORS",
+		"_NET_MOVERESIZE_WINDOW",
+		"_NET_SUPPORTED")
+
+	ewmh.SupportedSet(mgr.x, mgr.supportedHints)
+	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
+	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.Dummy(), mgr.x.Dummy())
+	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), "Fyne Desktop")
 
 	loadCursors(conn)
 	go mgr.runLoop()
@@ -227,6 +259,9 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		case icccm.StateNormal:
 			x.uniconifyWindow(ev.Window)
 		}
+	case "_NET_WM_FULLSCREEN_MONITORS":
+		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
+		// TO FULLSCREEN ACROSS
 	case "_NET_WM_STATE":
 		subMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[1]))
 		if err != nil {
@@ -239,6 +274,8 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 			return
 		}
 		switch subMsgAtom {
+		case "_NET_WM_STATE_FULLSCREEN":
+			x.handleStateActionRequest(ev, x.unfullscreenWindow, x.fullscreenWindow, c.Fullscreened())
 		case "_NET_WM_STATE_HIDDEN":
 			x.handleStateActionRequest(ev, x.uniconifyWindow, x.iconifyWindow, c.Iconic())
 		case "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ":
@@ -257,6 +294,26 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 	}
 }
 
+func (x *x11WM) fullscreenWindow(win xproto.Window) {
+	c := x.clientForWin(win)
+	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
+		return
+	}
+	c.(*client).full = true
+	c.(*client).frame.maximize()
+}
+
+func (x *x11WM) unfullscreenWindow(win xproto.Window) {
+	c := x.clientForWin(win)
+	if c == nil {
+		fyne.LogError("Could not retrieve client", nil)
+		return
+	}
+	c.(*client).full = false
+	c.(*client).frame.unmaximize()
+}
+
 func (x *x11WM) iconifyWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
@@ -265,6 +322,7 @@ func (x *x11WM) iconifyWindow(win xproto.Window) {
 	}
 	xproto.ReparentWindow(x.x.Conn(), win, x.x.RootWin(), c.(*client).frame.x, c.(*client).frame.y)
 	xproto.UnmapWindow(x.x.Conn(), win)
+	c.(*client).iconic = true
 }
 
 func (x *x11WM) uniconifyWindow(win xproto.Window) {
@@ -275,6 +333,7 @@ func (x *x11WM) uniconifyWindow(win xproto.Window) {
 	}
 	c.(*client).newFrame()
 	xproto.MapWindow(x.x.Conn(), win)
+	c.(*client).iconic = false
 }
 
 func (x *x11WM) maximizeWindow(win xproto.Window) {
@@ -283,7 +342,9 @@ func (x *x11WM) maximizeWindow(win xproto.Window) {
 		fyne.LogError("Could not retrieve client", nil)
 		return
 	}
+
 	c.(*client).frame.maximize()
+	c.(*client).maximized = true
 }
 
 func (x *x11WM) unmaximizeWindow(win xproto.Window) {
@@ -293,6 +354,7 @@ func (x *x11WM) unmaximizeWindow(win xproto.Window) {
 		return
 	}
 	c.(*client).frame.unmaximize()
+	c.(*client).maximized = false
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {

@@ -44,6 +44,11 @@ func (w *dummyWindow) Command() string {
 func (w *dummyWindow) IconName() string {
 	return w.iconName
 }
+
+func (*dummyWindow) Fullscreened() bool {
+	return false
+}
+
 func (*dummyWindow) Iconic() bool {
 	return false
 }
@@ -65,6 +70,14 @@ func (*dummyWindow) Focus() {
 }
 
 func (*dummyWindow) Close() {
+	// no-op
+}
+
+func (*dummyWindow) Fullscreen() {
+	// no-op
+}
+
+func (*dummyWindow) Unfullscreen() {
 	// no-op
 }
 
