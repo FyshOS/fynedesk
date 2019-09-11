@@ -4,9 +4,9 @@ package wm
 
 import (
 	"fyne.io/fyne"
-	"fyne.io/fyne/app/util"
 	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
+	"fyne.io/fyne/tools"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xwindow"
@@ -214,7 +214,7 @@ func (f *frame) applyTheme() {
 	bgColor := backR<<16 | backG<<8 | backB
 
 	if f.canvas == nil {
-		f.canvas = util.NewSoftwareCanvas()
+		f.canvas = tools.NewSoftwareCanvas()
 		f.canvas.SetPadded(false)
 	}
 	scale := desktop.Instance().Root().Canvas().Scale()
