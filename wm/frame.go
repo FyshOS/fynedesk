@@ -290,6 +290,18 @@ func (f *frame) applyTheme() {
 			fyne.LogError("Configure Window Error", err)
 		}
 	}
+
+	err = xproto.ChangeWindowAttributesChecked(f.client.wm.x.Conn(), f.client.id,
+		xproto.CwBackPixmap, []uint32{uint32(pid)}).Check()
+	if err != nil {
+		fyne.LogError("Change Attribute Error", err)
+		err = xproto.ChangeWindowAttributesChecked(f.client.wm.x.Conn(), f.client.id,
+			xproto.CwBackPixmap, []uint32{0}).Check()
+		if err != nil {
+			fyne.LogError("Change Attribute Error", err)
+		}
+	}
+
 	xproto.FreePixmap(f.client.wm.x.Conn(), pid)
 }
 
