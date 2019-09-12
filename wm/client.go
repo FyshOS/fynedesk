@@ -230,6 +230,37 @@ func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
 	}
 }
 
+func (c *client) fullscreenClient() {
+	c.full = true
+	c.frame.maximizeApply()
+}
+
+func (c *client) unfullscreenClient() {
+	c.full = false
+	c.frame.unmaximizeApply()
+}
+
+func (c *client) iconifyClient() {
+	c.frame.iconifyApply()
+	c.iconic = true
+}
+
+func (c *client) uniconifyClient() {
+	c.newFrame()
+	c.frame.uniconifyApply()
+	c.iconic = false
+}
+
+func (c *client) maximizeClient() {
+	c.maximized = true
+	c.frame.maximizeApply()
+}
+
+func (c *client) unmaximizeClient() {
+	c.maximized = false
+	c.frame.unmaximizeApply()
+}
+
 func (c *client) newFrame() {
 	if !windowBorderless(c.wm.x, c.win) {
 		c.frame = newFrame(c)

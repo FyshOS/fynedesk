@@ -151,6 +151,27 @@ func (f *frame) motion(x, y int16) {
 	}
 }
 
+func (f *frame) getInnerWindowCoordinates(x int16, y int16, w uint16, h uint16, decorated bool) (uint32, uint32, uint32, uint32) {
+	if !decorated {
+		f.width = w
+		f.height = h
+		return uint32(x), uint32(y), uint32(w), uint32(h)
+	}
+	borderWidth := 2 * f.borderWidth()
+	if w < uint16(f.minWidth)+borderWidth {
+		w = uint16(f.minWidth) + borderWidth
+	}
+	borderHeight := f.borderWidth() + f.titleHeight()
+	if h < uint16(f.minHeight)+borderHeight {
+		h = uint16(f.minHeight) + borderHeight
+	}
+	f.width = w
+	f.height = h
+
+	return uint32(f.borderWidth()), uint32(f.titleHeight()),
+		uint32(f.width - borderWidth), uint32(f.height - borderHeight)
+}
+
 func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	resize := w != f.width || h != f.height
 	move := x != f.x || y != f.y
@@ -161,31 +182,7 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	f.y = y
 	if f.framed && resize {
 		var newx, newy, neww, newh uint32
-		if !f.client.full {
-			borderWidth := 2 * f.borderWidth()
-			if w < uint16(f.minWidth)+borderWidth {
-				w = uint16(f.minWidth) + borderWidth
-			}
-			borderHeight := f.borderWidth() + f.titleHeight()
-			if h < uint16(f.minHeight)+borderHeight {
-				h = uint16(f.minHeight) + borderHeight
-			}
-			f.width = w
-			f.height = h
-
-			newx = uint32(f.borderWidth())
-			newy = uint32(f.titleHeight())
-			neww = uint32(f.width - borderWidth)
-			newh = uint32(f.height - borderHeight)
-		} else {
-			f.width = w
-			f.height = h
-
-			newx = uint32(f.x)
-			newy = uint32(f.y)
-			neww = uint32(f.width)
-			newh = uint32(f.height)
-		}
+		newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, w, h, !f.client.Fullscreened())
 		f.applyTheme()
 		err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -202,7 +199,16 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	}
 }
 
-func (f *frame) maximize() {
+func (f *frame) iconifyApply() {
+	xproto.ReparentWindow(f.client.wm.x.Conn(), f.client.win, f.client.wm.x.RootWin(), f.x, f.y)
+	xproto.UnmapWindow(f.client.wm.x.Conn(), f.client.win)
+}
+
+func (f *frame) uniconifyApply() {
+	xproto.MapWindow(f.client.wm.x.Conn(), f.client.win)
+}
+
+func (f *frame) maximizeApply() {
 	var w = f.client.wm.x.Screen().WidthInPixels
 	var h = f.client.wm.x.Screen().HeightInPixels
 	f.client.restoreWidth = f.width
@@ -212,8 +218,43 @@ func (f *frame) maximize() {
 	f.updateGeometry(0, 0, w, h)
 }
 
-func (f *frame) unmaximize() {
+func (f *frame) unmaximizeApply() {
 	f.updateGeometry(f.client.restoreX, f.client.restoreY, f.client.restoreWidth, f.client.restoreHeight)
+}
+
+func (f *frame) decorate(pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
+	if f.canvas == nil {
+		f.canvas = tools.NewSoftwareCanvas()
+		f.canvas.SetPadded(false)
+	}
+	scale := desktop.Instance().Root().Canvas().Scale()
+	f.canvas.SetScale(scale)
+	border := newBorder(f.client)
+	f.canvas.SetContent(border)
+
+	scaledSize := fyne.NewSize(int(float32(f.width)/scale), int(float32(f.height)/scale))
+	f.canvas.Resize(scaledSize)
+	border.Resize(scaledSize)
+	img := f.canvas.Capture()
+
+	// DATA is BGRx
+	width, height := uint32(f.width), uint32(f.titleHeight())
+	data := make([]byte, width*height*4)
+	i := uint32(0)
+	for y := uint32(0); y < height; y++ {
+		for x := uint32(0); x < width; x++ {
+			r, g, b, _ := img.At(int(x), int(y)).RGBA()
+
+			data[i] = byte(b)
+			data[i+1] = byte(g)
+			data[i+2] = byte(r)
+			data[i+3] = 0
+
+			i += 4
+		}
+	}
+	xproto.PutImageChecked(f.client.wm.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
+		uint16(width), uint16(height), 0, 0, 0, depth, data)
 }
 
 func (f *frame) applyTheme() {
@@ -239,39 +280,8 @@ func (f *frame) applyTheme() {
 	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
 	xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(pid), draw, []xproto.Rectangle{rect})
 
-	if !f.client.full {
-		if f.canvas == nil {
-			f.canvas = tools.NewSoftwareCanvas()
-			f.canvas.SetPadded(false)
-		}
-		scale := desktop.Instance().Root().Canvas().Scale()
-		f.canvas.SetScale(scale)
-		border := newBorder(f.client)
-		f.canvas.SetContent(border)
-
-		scaledSize := fyne.NewSize(int(float32(f.width)/scale), int(float32(f.height)/scale))
-		f.canvas.Resize(scaledSize)
-		border.Resize(scaledSize)
-		img := f.canvas.Capture()
-
-		// DATA is BGRx
-		width, height := uint32(f.width), uint32(f.titleHeight())
-		data := make([]byte, width*height*4)
-		i := uint32(0)
-		for y := uint32(0); y < height; y++ {
-			for x := uint32(0); x < width; x++ {
-				r, g, b, _ := img.At(int(x), int(y)).RGBA()
-
-				data[i] = byte(b)
-				data[i+1] = byte(g)
-				data[i+2] = byte(r)
-				data[i+3] = 0
-
-				i += 4
-			}
-		}
-		xproto.PutImageChecked(f.client.wm.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
-			uint16(width), uint16(height), 0, 0, 0, depth, data)
+	if !f.client.Fullscreened() {
+		f.decorate(pid, draw, depth)
 	} else {
 		err = xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,

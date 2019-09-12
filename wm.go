@@ -27,12 +27,12 @@ type Window interface {
 
 	Focus()            // Ask this window to get input focus
 	Close()            // Close this window and possibly the application running it
-	Fullscreen()       // Fullscreen this window
-	Unfullscreen()     // Unfullscreen this window
-	Iconify()          // Minimize this window and possibly children of this window
-	Uniconify()        // Restore this window and possibly children of this window from being minimized
-	Maximize()         // Resize this window to it's largest possible size
-	Unmaximize()       // Restore this window to its size before being maximized
+	Fullscreen()       // Request to fullscreen this window
+	Unfullscreen()     // Request to unfullscreen this window
+	Iconify()          // Request to inimize this window and possibly children of this window
+	Uniconify()        // Request to restore this window and possibly children of this window from being minimized
+	Maximize()         // Request to resize this window to it's largest possible size
+	Unmaximize()       // Request to restore this window to its size before being maximized
 	RaiseAbove(Window) // Raise this window above a given other window
 	RaiseToTop()       // Raise this window to the top of the stack
 }
