@@ -14,22 +14,25 @@ type WindowManager interface {
 // Window represents a single managed window within a window manager.
 // There may be borders or not depending on configuration.
 type Window interface {
-	Decorated() bool   // Should this window have borders drawn?
-	Title() string     // The name of this window
-	Class() []string   // The class of this window
-	Command() string   // The command of this window
-	IconName() string  // The icon name of this window
-	Iconic() bool      // Is the window Iconified?
-	Maximized() bool   // Is the window Maximized?
-	TopWindow() bool   // Is this the window on top?
-	SkipTaskbar() bool // Should this window be added to the taskbar?
+	Decorated() bool    // Should this window have borders drawn?
+	Title() string      // The name of this window
+	Class() []string    // The class of this window
+	Command() string    // The command of this window
+	IconName() string   // The icon name of this window
+	Fullscreened() bool // Is the window Fullscreen?
+	Iconic() bool       // Is the window Iconified?
+	Maximized() bool    // Is the window Maximized?
+	TopWindow() bool    // Is this the window on top?
+	SkipTaskbar() bool  // Should this window be added to the taskbar?
 
 	Focus()            // Ask this window to get input focus
 	Close()            // Close this window and possibly the application running it
-	Iconify()          // Minimize this window and possibly children of this window
-	Uniconify()        // Restore this window and possibly children of this window from being minimized
-	Maximize()         // Resize this window to it's largest possible size
-	Unmaximize()       // Restore this window to its size before being maximized
+	Fullscreen()       // Request to fullscreen this window
+	Unfullscreen()     // Request to unfullscreen this window
+	Iconify()          // Request to inimize this window and possibly children of this window
+	Uniconify()        // Request to restore this window and possibly children of this window from being minimized
+	Maximize()         // Request to resize this window to it's largest possible size
+	Unmaximize()       // Request to restore this window to its size before being maximized
 	RaiseAbove(Window) // Raise this window above a given other window
 	RaiseToTop()       // Raise this window to the top of the stack
 }

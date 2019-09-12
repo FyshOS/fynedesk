@@ -151,6 +151,27 @@ func (f *frame) motion(x, y int16) {
 	}
 }
 
+func (f *frame) getInnerWindowCoordinates(x int16, y int16, w uint16, h uint16, decorated bool) (uint32, uint32, uint32, uint32) {
+	if !decorated {
+		f.width = w
+		f.height = h
+		return uint32(x), uint32(y), uint32(w), uint32(h)
+	}
+	borderWidth := 2 * f.borderWidth()
+	if w < uint16(f.minWidth)+borderWidth {
+		w = uint16(f.minWidth) + borderWidth
+	}
+	borderHeight := f.borderWidth() + f.titleHeight()
+	if h < uint16(f.minHeight)+borderHeight {
+		h = uint16(f.minHeight) + borderHeight
+	}
+	f.width = w
+	f.height = h
+
+	return uint32(f.borderWidth()), uint32(f.titleHeight()),
+		uint32(f.width - borderWidth), uint32(f.height - borderHeight)
+}
+
 func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	resize := w != f.width || h != f.height
 	move := x != f.x || y != f.y
@@ -159,29 +180,17 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	}
 	f.x = x
 	f.y = y
-	if f.framed {
-		borderWidth := 2 * f.borderWidth()
-		if w < uint16(f.minWidth)+borderWidth {
-			w = uint16(f.minWidth) + borderWidth
-		}
-		borderHeight := f.borderWidth() + f.titleHeight()
-		if h < uint16(f.minHeight)+borderHeight {
-			h = uint16(f.minHeight) + borderHeight
-		}
-		f.width = w
-		f.height = h
+	if f.framed && resize {
+		var newx, newy, neww, newh uint32
+		newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, w, h, !f.client.Fullscreened())
+		f.applyTheme()
 		err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(f.borderWidth()), uint32(f.titleHeight()),
-				uint32(f.width - borderWidth), uint32(f.height - borderHeight)}).Check()
+			[]uint32{newx, newy, neww, newh}).Check()
 		if err != nil {
 			fyne.LogError("Configure Window Error", err)
 		}
 	}
-	if resize {
-		f.applyTheme()
-	}
-
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
@@ -190,7 +199,16 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	}
 }
 
-func (f *frame) maximize() {
+func (f *frame) iconifyApply() {
+	xproto.ReparentWindow(f.client.wm.x.Conn(), f.client.win, f.client.wm.x.RootWin(), f.x, f.y)
+	xproto.UnmapWindow(f.client.wm.x.Conn(), f.client.win)
+}
+
+func (f *frame) uniconifyApply() {
+	xproto.MapWindow(f.client.wm.x.Conn(), f.client.win)
+}
+
+func (f *frame) maximizeApply() {
 	var w = f.client.wm.x.Screen().WidthInPixels
 	var h = f.client.wm.x.Screen().HeightInPixels
 	f.client.restoreWidth = f.width
@@ -200,19 +218,11 @@ func (f *frame) maximize() {
 	f.updateGeometry(0, 0, w, h)
 }
 
-func (f *frame) unmaximize() {
+func (f *frame) unmaximizeApply() {
 	f.updateGeometry(f.client.restoreX, f.client.restoreY, f.client.restoreWidth, f.client.restoreHeight)
 }
 
-func (f *frame) applyTheme() {
-	if !f.framed {
-		return
-	}
-
-	depth := f.client.wm.x.Screen().RootDepth
-	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
-	bgColor := backR<<16 | backG<<8 | backB
-
+func (f *frame) decorate(pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
 	if f.canvas == nil {
 		f.canvas = tools.NewSoftwareCanvas()
 		f.canvas.SetPadded(false)
@@ -226,20 +236,6 @@ func (f *frame) applyTheme() {
 	f.canvas.Resize(scaledSize)
 	border.Resize(scaledSize)
 	img := f.canvas.Capture()
-
-	pid, err := xproto.NewPixmapId(f.client.wm.x.Conn())
-	if err != nil {
-		fyne.LogError("New Pixmap Error", err)
-		return
-	}
-	xproto.CreatePixmap(f.client.wm.x.Conn(), depth, pid,
-		xproto.Drawable(f.client.wm.x.Screen().Root), f.width, f.height)
-
-	draw, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
-	xproto.CreateGC(f.client.wm.x.Conn(), draw, xproto.Drawable(pid), xproto.GcForeground, []uint32{bgColor})
-
-	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
-	xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(pid), draw, []xproto.Rectangle{rect})
 
 	// DATA is BGRx
 	width, height := uint32(f.width), uint32(f.titleHeight())
@@ -257,9 +253,43 @@ func (f *frame) applyTheme() {
 			i += 4
 		}
 	}
-
 	xproto.PutImageChecked(f.client.wm.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
 		uint16(width), uint16(height), 0, 0, 0, depth, data)
+}
+
+func (f *frame) applyTheme() {
+	if !f.framed {
+		return
+	}
+
+	depth := f.client.wm.x.Screen().RootDepth
+	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
+	bgColor := backR<<16 | backG<<8 | backB
+
+	pid, err := xproto.NewPixmapId(f.client.wm.x.Conn())
+	if err != nil {
+		fyne.LogError("New Pixmap Error", err)
+		return
+	}
+	xproto.CreatePixmap(f.client.wm.x.Conn(), depth, pid,
+		xproto.Drawable(f.client.wm.x.Screen().Root), f.width, f.height)
+
+	draw, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
+	xproto.CreateGC(f.client.wm.x.Conn(), draw, xproto.Drawable(pid), xproto.GcForeground, []uint32{bgColor})
+
+	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
+	xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(pid), draw, []xproto.Rectangle{rect})
+
+	if !f.client.Fullscreened() {
+		f.decorate(pid, draw, depth)
+	} else {
+		err = xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+			[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
+		if err != nil {
+			fyne.LogError("Configure Window Error", err)
+		}
+	}
 
 	err = xproto.ChangeWindowAttributesChecked(f.client.wm.x.Conn(), f.client.id,
 		xproto.CwBackPixmap, []uint32{uint32(pid)}).Check()
