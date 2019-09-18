@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/tools"
+	"image"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xwindow"
@@ -222,7 +223,7 @@ func (f *frame) unmaximizeApply() {
 	f.updateGeometry(f.client.restoreX, f.client.restoreY, f.client.restoreWidth, f.client.restoreHeight)
 }
 
-func (f *frame) decorate(pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
+func (f *frame) drawDecoration(pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
 	if f.canvas == nil {
 		f.canvas = tools.NewSoftwareCanvas()
 		f.canvas.SetPadded(false)
@@ -237,13 +238,20 @@ func (f *frame) decorate(pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
 	border.Resize(scaledSize)
 	img := f.canvas.Capture()
 
+	// Draw in two passes so we don't overflow count usable by PutImageChecked
+	mid := uint32(f.titleHeight() / 2)
+	f.copyDecorationPixels(0, mid, img, pid, draw, depth)
+	f.copyDecorationPixels(mid, uint32(f.titleHeight())-mid, img, pid, draw, depth)
+}
+
+func (f *frame) copyDecorationPixels(yoff, height uint32, img image.Image, pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
 	// DATA is BGRx
-	width, height := uint32(f.width), uint32(f.titleHeight())
+	width, height := uint32(f.width), uint32(height)
 	data := make([]byte, width*height*4)
 	i := uint32(0)
 	for y := uint32(0); y < height; y++ {
 		for x := uint32(0); x < width; x++ {
-			r, g, b, _ := img.At(int(x), int(y)).RGBA()
+			r, g, b, _ := img.At(int(x), int(yoff+y)).RGBA()
 
 			data[i] = byte(b)
 			data[i+1] = byte(g)
@@ -253,12 +261,17 @@ func (f *frame) decorate(pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
 			i += 4
 		}
 	}
-	xproto.PutImageChecked(f.client.wm.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
-		uint16(width), uint16(height), 0, 0, 0, depth, data)
+	err := xproto.PutImageChecked(f.client.wm.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
+		uint16(width), uint16(height), 0, int16(yoff), 0, depth, data).Check()
+	if err != nil {
+		fyne.LogError("Put image error", err)
+	}
 }
 
-func (f *frame) applyTheme() {
-	if !f.framed {
+func (f *frame) decorate() {
+	pid, err := xproto.NewPixmapId(f.client.wm.x.Conn())
+	if err != nil {
+		fyne.LogError("New Pixmap Error", err)
 		return
 	}
 
@@ -266,43 +279,36 @@ func (f *frame) applyTheme() {
 	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
 	bgColor := backR<<16 | backG<<8 | backB
 
-	pid, err := xproto.NewPixmapId(f.client.wm.x.Conn())
-	if err != nil {
-		fyne.LogError("New Pixmap Error", err)
-		return
-	}
 	xproto.CreatePixmap(f.client.wm.x.Conn(), depth, pid,
 		xproto.Drawable(f.client.wm.x.Screen().Root), f.width, f.height)
-
 	draw, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
 	xproto.CreateGC(f.client.wm.x.Conn(), draw, xproto.Drawable(pid), xproto.GcForeground, []uint32{bgColor})
-
 	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
 	xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(pid), draw, []xproto.Rectangle{rect})
+	f.drawDecoration(pid, draw, depth)
+	err = xproto.ChangeWindowAttributesChecked(f.client.wm.x.Conn(), f.client.id,
+		xproto.CwBackPixmap, []uint32{uint32(pid)}).Check()
+	if err != nil {
+		fyne.LogError("Change Attribute Error", err)
+	}
+	xproto.FreePixmap(f.client.wm.x.Conn(), pid)
+}
+
+func (f *frame) applyTheme() {
+	if !f.framed {
+		return
+	}
 
 	if !f.client.Fullscreened() {
-		f.decorate(pid, draw, depth)
+		f.decorate()
 	} else {
-		err = xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 			[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
 		if err != nil {
 			fyne.LogError("Configure Window Error", err)
 		}
 	}
-
-	err = xproto.ChangeWindowAttributesChecked(f.client.wm.x.Conn(), f.client.id,
-		xproto.CwBackPixmap, []uint32{uint32(pid)}).Check()
-	if err != nil {
-		fyne.LogError("Change Attribute Error", err)
-		err = xproto.ChangeWindowAttributesChecked(f.client.wm.x.Conn(), f.client.id,
-			xproto.CwBackPixmap, []uint32{0}).Check()
-		if err != nil {
-			fyne.LogError("Change Attribute Error", err)
-		}
-	}
-
-	xproto.FreePixmap(f.client.wm.x.Conn(), pid)
 }
 
 func (f *frame) borderWidth() uint16 {
