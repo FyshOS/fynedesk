@@ -104,10 +104,7 @@ func windowExtendedHintsGet(x *xgbutil.XUtil, win xproto.Window) []string {
 }
 
 func windowExtendedHintsAdd(x *xgbutil.XUtil, win xproto.Window, hint string) {
-	extendedHints, err := ewmh.WmStateGet(x, win)
-	if err != nil {
-		return
-	}
+	extendedHints, _ := ewmh.WmStateGet(x, win) // error unimportant
 	extendedHints = append(extendedHints, hint)
 	ewmh.WmStateSet(x, win, extendedHints)
 }
