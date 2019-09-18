@@ -125,63 +125,67 @@ func (x *x11WM) runLoop() {
 			fyne.LogError("X11 Error:", err)
 			continue
 		}
+		if ev == nil { // disconnected if both are nil
+			break
+		}
 
-		if ev != nil {
-			switch ev := ev.(type) {
-			case xproto.MapRequestEvent:
-				x.showWindow(ev.Window)
-			case xproto.UnmapNotifyEvent:
-				x.hideWindow(ev.Window)
-			case xproto.ConfigureRequestEvent:
-				x.configureWindow(ev.Window, ev)
-			case xproto.DestroyNotifyEvent:
-				x.destroyWindow(ev.Window)
-			case xproto.PropertyNotifyEvent:
-				// TODO
-			case xproto.ClientMessageEvent:
-				x.handleClientMessage(ev)
-			case xproto.ExposeEvent:
-				border := x.clientForWin(ev.Window)
-				if border != nil {
-					border.(*client).frame.applyTheme()
+		switch ev := ev.(type) {
+		case xproto.MapRequestEvent:
+			x.showWindow(ev.Window)
+		case xproto.UnmapNotifyEvent:
+			x.hideWindow(ev.Window)
+		case xproto.ConfigureRequestEvent:
+			x.configureWindow(ev.Window, ev)
+		case xproto.DestroyNotifyEvent:
+			x.destroyWindow(ev.Window)
+		case xproto.PropertyNotifyEvent:
+			// TODO
+		case xproto.ClientMessageEvent:
+			x.handleClientMessage(ev)
+		case xproto.ExposeEvent:
+			border := x.clientForWin(ev.Window)
+			if border != nil {
+				border.(*client).frame.applyTheme()
+			}
+		case xproto.ButtonPressEvent:
+			for _, c := range x.clients {
+				if c.(*client).id == ev.Event {
+					c.(*client).frame.press(ev.RootX, ev.RootY)
 				}
-			case xproto.ButtonPressEvent:
-				for _, c := range x.clients {
-					if c.(*client).id == ev.Event {
-						c.(*client).frame.press(ev.RootX, ev.RootY)
+			}
+		case xproto.ButtonReleaseEvent:
+			for _, c := range x.clients {
+				if c.(*client).id == ev.Event {
+					c.(*client).frame.release(ev.RootX, ev.RootY)
+				}
+			}
+		case xproto.MotionNotifyEvent:
+			for _, c := range x.clients {
+				if c.(*client).id == ev.Event {
+					if ev.State&xproto.ButtonMask1 != 0 {
+						c.(*client).frame.drag(ev.RootX, ev.RootY)
+					} else {
+						c.(*client).frame.motion(ev.RootX, ev.RootY)
 					}
+					break
 				}
-			case xproto.ButtonReleaseEvent:
-				for _, c := range x.clients {
-					if c.(*client).id == ev.Event {
-						c.(*client).frame.release(ev.RootX, ev.RootY)
-					}
-				}
-			case xproto.MotionNotifyEvent:
-				for _, c := range x.clients {
-					if c.(*client).id == ev.Event {
-						if ev.State&xproto.ButtonMask1 != 0 {
-							c.(*client).frame.drag(ev.RootX, ev.RootY)
-						} else {
-							c.(*client).frame.motion(ev.RootX, ev.RootY)
-						}
-					}
-				}
-			case xproto.KeyPressEvent:
-				winList := x.Windows()
-				winCount := len(winList)
-				if winCount <= 1 {
-					return
-				}
+			}
+		case xproto.KeyPressEvent:
+			winList := x.Windows()
+			winCount := len(winList)
+			if winCount <= 1 {
+				return
+			}
 
-				if ev.State&xproto.ModMaskShift != 0 {
-					x.RaiseToTop(winList[winCount-1])
-				} else {
-					x.RaiseToTop(winList[1])
-				}
+			if ev.State&xproto.ModMaskShift != 0 {
+				x.RaiseToTop(winList[winCount-1])
+			} else {
+				x.RaiseToTop(winList[1])
 			}
 		}
 	}
+
+	fyne.LogError("X11 connection terminated!", nil)
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
@@ -248,7 +252,7 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 	c := x.clientForWin(ev.Window)
 	if c == nil {
-		fyne.LogError("Could not retrieve client", nil)
+		fyne.LogError("Missing client for message", nil)
 		return
 	}
 	msgAtom, err := xprop.AtomName(x.x, ev.Type)
@@ -323,7 +327,6 @@ func (x *x11WM) showWindow(win xproto.Window) {
 func (x *x11WM) hideWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
-		fyne.LogError("Could not retrieve client", nil)
 		return
 	}
 	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)

@@ -3,7 +3,6 @@
 package wm
 
 import (
-	"fyne.io/fyne"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -91,7 +90,6 @@ func windowStateSet(x *xgbutil.XUtil, win xproto.Window, state uint) {
 func windowStateGet(x *xgbutil.XUtil, win xproto.Window) uint {
 	state, err := icccm.WmStateGet(x, win)
 	if err != nil {
-		fyne.LogError("Could not retrieve window state", err)
 		return icccm.StateNormal
 	}
 	return state.State
@@ -100,7 +98,6 @@ func windowStateGet(x *xgbutil.XUtil, win xproto.Window) uint {
 func windowExtendedHintsGet(x *xgbutil.XUtil, win xproto.Window) []string {
 	extendedHints, err := ewmh.WmStateGet(x, win)
 	if err != nil {
-		fyne.LogError("Could not get extended hints", err)
 		return nil
 	}
 	return extendedHints
@@ -109,7 +106,7 @@ func windowExtendedHintsGet(x *xgbutil.XUtil, win xproto.Window) []string {
 func windowExtendedHintsAdd(x *xgbutil.XUtil, win xproto.Window, hint string) {
 	extendedHints, err := ewmh.WmStateGet(x, win)
 	if err != nil {
-		fyne.LogError("Could not get extended hints", err)
+		return
 	}
 	extendedHints = append(extendedHints, hint)
 	ewmh.WmStateSet(x, win, extendedHints)
@@ -118,7 +115,7 @@ func windowExtendedHintsAdd(x *xgbutil.XUtil, win xproto.Window, hint string) {
 func windowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string) {
 	extendedHints, err := ewmh.WmStateGet(x, win)
 	if err != nil {
-		fyne.LogError("Could not get extended hints", err)
+		return
 	}
 	for i, curHint := range extendedHints {
 		if curHint == hint {
