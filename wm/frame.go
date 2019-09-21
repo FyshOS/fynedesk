@@ -6,7 +6,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
-	"fyne.io/fyne/tools"
+	"fyne.io/fyne/tools/playground"
 	"image"
 
 	"github.com/BurntSushi/xgb/xproto"
@@ -225,7 +225,7 @@ func (f *frame) unmaximizeApply() {
 
 func (f *frame) drawDecoration(pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
 	if f.canvas == nil {
-		f.canvas = tools.NewSoftwareCanvas()
+		f.canvas = playground.NewSoftwareCanvas()
 		f.canvas.SetPadded(false)
 	}
 	scale := desktop.Instance().Root().Canvas().Scale()
