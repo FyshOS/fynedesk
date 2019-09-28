@@ -35,17 +35,18 @@ func (f *frame) unFrame() {
 		return
 	}
 
-	c := f.client.wm.clientForWin(f.client.win)
-	f.client.wm.RemoveWindow(c)
-
-	if c == nil {
+	cli := f.client.wm.clientForWin(f.client.win)
+	if cli == nil {
 		return
 	}
+	c := cli.(*client)
+	c.wm.RemoveWindow(c)
 
 	if f != nil {
-		xproto.ReparentWindow(f.client.wm.x.Conn(), f.client.win, f.client.wm.x.RootWin(), f.x, f.y)
+		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.wm.x.RootWin(), f.x, f.y)
 	}
-	xproto.UnmapWindow(f.client.wm.x.Conn(), f.client.id)
+	xproto.ChangeSaveSet(c.wm.x.Conn(), xproto.SetModeDelete, c.win)
+	xproto.UnmapWindow(c.wm.x.Conn(), c.id)
 }
 
 func (f *frame) press(x, y int16) {
@@ -323,6 +324,14 @@ func (f *frame) titleHeight() uint16 {
 	return f.client.wm.scaleToPixels(wmTheme.TitleHeight)
 }
 
+func (f *frame) show() {
+	c := f.client
+	xproto.MapWindow(c.wm.x.Conn(), c.id)
+
+	xproto.ChangeSaveSet(c.wm.x.Conn(), xproto.SetModeInsert, c.win)
+	xproto.MapWindow(c.wm.x.Conn(), c.win)
+}
+
 func newFrame(c *client) *frame {
 	attrs, err := xproto.GetGeometry(c.wm.x.Conn(), xproto.Drawable(c.win)).Reply()
 	if err != nil {
@@ -357,10 +366,8 @@ func newFrame(c *client) *frame {
 	framed.height = attrs.Height + uint16(framed.borderWidth()) + uint16(framed.titleHeight())
 	framed.applyTheme()
 
-	f.Map()
-	xproto.ChangeSaveSet(c.wm.x.Conn(), xproto.SetModeInsert, c.win)
 	xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()-1), int16(framed.titleHeight()-1))
-	xproto.MapWindow(c.wm.x.Conn(), c.win)
+	framed.show()
 
 	return framed
 }
@@ -373,5 +380,8 @@ func newFrameBorderless(c *client) *frame {
 	}
 
 	c.id = c.win
-	return &frame{client: c, x: attrs.X, y: attrs.Y, framed: false}
+	unframed := &frame{client: c, x: attrs.X, y: attrs.Y, framed: false}
+	unframed.show()
+
+	return unframed
 }

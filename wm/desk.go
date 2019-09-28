@@ -354,7 +354,6 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
-	xproto.ChangeSaveSet(x.x.Conn(), xproto.SetModeDelete, win)
 	c := x.clientForWin(win)
 	if c != nil {
 		x.RemoveWindow(c)
