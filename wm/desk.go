@@ -200,7 +200,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 			if c.Decorated() {
 				err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 					xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-					[]uint32{uint32(f.borderWidth()), uint32(f.borderWidth() + f.titleHeight()),
+					[]uint32{uint32(f.borderWidth()), uint32(f.titleHeight()),
 						uint32(width - 1), uint32(height - 1)}).Check()
 
 				if err != nil {
