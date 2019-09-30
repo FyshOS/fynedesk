@@ -33,7 +33,9 @@ func newBorder(win desktop.Window) fyne.CanvasObject {
 		layout.NewSpacer())
 
 	if icon != nil {
-		titleBar.Append(widget.NewIcon(icon))
+		appIcon := canvas.NewImageFromResource(icon)
+		appIcon.SetMinSize(fyne.NewSize(wmTheme.TitleHeight, wmTheme.TitleHeight))
+		titleBar.Append(appIcon)
 		titleBar.Append(makeFiller())
 	}
 
