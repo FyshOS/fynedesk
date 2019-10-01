@@ -157,7 +157,7 @@ func (c *client) Unfullscreen() {
 }
 
 func (c *client) sendStateMessage(state int) {
-	stateChangeAtom, err := xprop.Atm(c.wm.x, "WM_STATE_CHANGE")
+	stateChangeAtom, err := xprop.Atm(c.wm.x, "WM_CHANGE_STATE")
 	if err != nil {
 		fyne.LogError("Error getting X Atom", err)
 		return

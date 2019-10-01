@@ -356,8 +356,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		return
 	}
 	switch msgAtom {
-	//For some reason Chromium uses WM_CHANGE_STATE instead of WM_STATE_CHANGE
-	case "WM_STATE_CHANGE", "WM_CHANGE_STATE":
+	case "WM_CHANGE_STATE":
 		switch ev.Data.Bytes()[0] {
 		case icccm.StateIconic:
 			c.(*client).iconifyClient()
