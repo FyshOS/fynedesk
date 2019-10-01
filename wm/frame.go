@@ -3,11 +3,12 @@
 package wm
 
 import (
+	"image"
+
 	"fyne.io/fyne"
 	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/tools/playground"
-	"image"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xwindow"
@@ -174,6 +175,10 @@ func (f *frame) getInnerWindowCoordinates(x int16, y int16, w uint16, h uint16, 
 		uint32(f.width - borderWidth), uint32(f.height - borderHeight)
 }
 
+func (f *frame) getGeometry() (int16, int16, uint16, uint16) {
+	return f.x, f.y, f.width, f.height
+}
+
 func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	resize := w != f.width || h != f.height
 	move := x != f.x || y != f.y
@@ -192,6 +197,9 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 		if err != nil {
 			fyne.LogError("Configure Window Error", err)
 		}
+	} else {
+		f.width = w
+		f.height = h
 	}
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -380,7 +388,8 @@ func newFrameBorderless(c *client) *frame {
 	}
 
 	c.id = c.win
-	unframed := &frame{client: c, x: attrs.X, y: attrs.Y, framed: false}
+	unframed := &frame{client: c, x: attrs.X, y: attrs.Y,
+		width: attrs.Width, height: attrs.Height, framed: false}
 	unframed.show()
 
 	return unframed

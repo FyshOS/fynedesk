@@ -252,6 +252,12 @@ func (c *client) uniconifyClient() {
 }
 
 func (c *client) maximizeClient() {
+	//This is hack to make unmaximizing with Chromium work since Chromium
+	//only sends the add signal for both maximize/unmaximize
+	if c.maximized {
+		c.unmaximizeClient()
+		return
+	}
 	c.maximized = true
 	c.frame.maximizeApply()
 }
@@ -259,6 +265,14 @@ func (c *client) maximizeClient() {
 func (c *client) unmaximizeClient() {
 	c.maximized = false
 	c.frame.unmaximizeApply()
+}
+
+func (c *client) setWindowGeometry(x int16, y int16, width uint16, height uint16) {
+	c.frame.updateGeometry(x, y, width, height)
+}
+
+func (c *client) getWindowGeometry() (int16, int16, uint16, uint16) {
+	return c.frame.getGeometry()
 }
 
 func (c *client) newFrame() {

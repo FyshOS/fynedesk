@@ -18,14 +18,33 @@ import (
 
 type x11WM struct {
 	stack
-	x      *xgbutil.XUtil
-	root   fyne.Window
-	rootID xproto.Window
-	loaded bool
+	x                   *xgbutil.XUtil
+	root                fyne.Window
+	rootID              xproto.Window
+	loaded              bool
+	moveResizing        bool
+	moveResizingStartX  int16
+	moveResizingStartY  int16
+	moveResizingGravity uint32
 
 	allowedActions []string
 	supportedHints []string
 }
+
+const (
+	moveResizeTopLeft      uint32 = 0
+	moveResizeTop          uint32 = 1
+	moveResizeTopRight     uint32 = 2
+	moveResizeRight        uint32 = 3
+	moveResizeBottomRight  uint32 = 4
+	moveResizeBottom       uint32 = 5
+	moveResizeBottomLeft   uint32 = 6
+	moveResizeLeft         uint32 = 7
+	moveResizeMove         uint32 = 8
+	moveResizeKeyboard     uint32 = 9
+	moveResizeMoveKeyboard uint32 = 10
+	moveResizeCancel       uint32 = 11
+)
 
 func (x *x11WM) Close() {
 	log.Println("Disconnecting from X server")
@@ -128,7 +147,6 @@ func (x *x11WM) runLoop() {
 		if ev == nil { // disconnected if both are nil
 			break
 		}
-
 		switch ev := ev.(type) {
 		case xproto.MapRequestEvent:
 			x.showWindow(ev.Window)
@@ -156,12 +174,20 @@ func (x *x11WM) runLoop() {
 		case xproto.ButtonReleaseEvent:
 			for _, c := range x.clients {
 				if c.(*client).id == ev.Event {
+					if x.moveResizing {
+						x.moveResizeEnd()
+						break
+					}
 					c.(*client).frame.release(ev.RootX, ev.RootY)
 				}
 			}
 		case xproto.MotionNotifyEvent:
 			for _, c := range x.clients {
 				if c.(*client).id == ev.Event {
+					if x.moveResizing {
+						x.moveResize(ev.RootX, ev.RootY, c.(*client))
+						break
+					}
 					if ev.State&xproto.ButtonMask1 != 0 {
 						c.(*client).frame.drag(ev.RootX, ev.RootY)
 					} else {
@@ -234,6 +260,75 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 }
 
+func (x *x11WM) moveResizeEnd() {
+	x.moveResizing = false
+	xproto.UngrabPointer(x.x.Conn(), xproto.TimeCurrentTime)
+	xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
+}
+
+func (x *x11WM) moveResize(moveX, moveY int16, c *client) {
+	xcoord, ycoord, w, h := c.getWindowGeometry()
+	deltaW := moveX - x.moveResizingStartX
+	deltaH := moveY - x.moveResizingStartY
+
+	switch x.moveResizingGravity {
+	case moveResizeTopLeft:
+		//Move both X,Y coords and resize both W,H
+		xcoord += deltaW
+		ycoord += deltaH
+		w -= uint16(deltaW)
+		h -= uint16(deltaH)
+	case moveResizeTop:
+		//Move Y coord and resize H
+		ycoord += deltaH
+		h -= uint16(deltaH)
+	case moveResizeTopRight:
+		//Move Y coord and resize both W,H
+		ycoord += deltaH
+		w += uint16(deltaW)
+		h -= uint16(deltaH)
+	case moveResizeRight:
+		//Keep X coord and resize W
+		w += uint16(deltaW)
+	case moveResizeBottomRight, moveResizeKeyboard:
+		//Keep both X,Y coords and resize both W,H
+		w += uint16(deltaW)
+		h += uint16(deltaH)
+	case moveResizeBottom:
+		//Keep Y coord and resize H
+		h += uint16(deltaH)
+	case moveResizeBottomLeft:
+		//Move X coord and resize both W,H
+		xcoord += deltaW
+		w -= uint16(deltaW)
+		h += uint16(deltaH)
+	case moveResizeLeft:
+		//Move X coord and resize W
+		xcoord += deltaW
+		w -= uint16(deltaW)
+	case moveResizeMove, moveResizeMoveKeyboard:
+		//Move both X,Y coords and no resize
+		xcoord += deltaW
+		ycoord += deltaH
+	case moveResizeCancel:
+		x.moveResizeEnd()
+	}
+	x.moveResizingStartX = moveX
+	x.moveResizingStartY = moveY
+	c.setWindowGeometry(xcoord, ycoord, w, h)
+}
+
+func (x *x11WM) handleMoveResize(ev xproto.ClientMessageEvent, c *client) {
+	x.moveResizing = true
+	x.moveResizingStartX = int16(ev.Data.Data32[0])
+	x.moveResizingStartY = int16(ev.Data.Data32[1])
+	x.moveResizingGravity = ev.Data.Data32[2]
+	xproto.GrabPointer(x.x.Conn(), true, c.win,
+		xproto.EventMaskButtonPress|xproto.EventMaskButtonRelease|xproto.EventMaskPointerMotion,
+		xproto.GrabModeAsync, xproto.GrabModeAsync, x.x.RootWin(), xproto.CursorNone, xproto.TimeCurrentTime)
+	xproto.GrabKeyboard(x.x.Conn(), true, c.win, xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
+}
+
 func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeState func(), addState func(), toggleCheck bool) {
 	switch clientMessageStateAction(ev.Data.Data32[0]) {
 	case clientMessageStateActionRemove:
@@ -261,7 +356,8 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		return
 	}
 	switch msgAtom {
-	case "WM_STATE_CHANGE":
+	//For some reason Chromium uses WM_CHANGE_STATE instead of WM_STATE_CHANGE
+	case "WM_STATE_CHANGE", "WM_CHANGE_STATE":
 		switch ev.Data.Bytes()[0] {
 		case icccm.StateIconic:
 			c.(*client).iconifyClient()
@@ -271,6 +367,8 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 	case "_NET_WM_FULLSCREEN_MONITORS":
 		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
 		// TO FULLSCREEN ACROSS
+	case "_NET_WM_MOVERESIZE":
+		x.handleMoveResize(ev, c.(*client))
 	case "_NET_WM_STATE":
 		subMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[1]))
 		if err != nil {
