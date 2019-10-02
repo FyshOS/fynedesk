@@ -157,7 +157,7 @@ func (c *client) Unfullscreen() {
 }
 
 func (c *client) sendStateMessage(state int) {
-	stateChangeAtom, err := xprop.Atm(c.wm.x, "WM_STATE_CHANGE")
+	stateChangeAtom, err := xprop.Atm(c.wm.x, "WM_CHANGE_STATE")
 	if err != nil {
 		fyne.LogError("Error getting X Atom", err)
 		return
@@ -174,13 +174,11 @@ func (c *client) sendStateMessage(state int) {
 func (c *client) Iconify() {
 	c.sendStateMessage(icccm.StateIconic)
 	windowStateSet(c.wm.x, c.win, icccm.StateIconic)
-	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
 }
 
 func (c *client) Uniconify() {
 	c.sendStateMessage(icccm.StateNormal)
 	windowStateSet(c.wm.x, c.win, icccm.StateNormal)
-	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
 }
 
 func (c *client) maximizeMessage(action clientMessageStateAction) {
@@ -190,14 +188,10 @@ func (c *client) maximizeMessage(action clientMessageStateAction) {
 
 func (c *client) Maximize() {
 	c.maximizeMessage(clientMessageStateActionAdd)
-	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
-	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 }
 
 func (c *client) Unmaximize() {
 	c.maximizeMessage(clientMessageStateActionRemove)
-	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
-	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 }
 
 func (c *client) Focus() {
@@ -243,22 +237,36 @@ func (c *client) unfullscreenClient() {
 func (c *client) iconifyClient() {
 	c.frame.iconifyApply()
 	c.iconic = true
+	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
 }
 
 func (c *client) uniconifyClient() {
 	c.newFrame()
 	c.frame.uniconifyApply()
 	c.iconic = false
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
 }
 
 func (c *client) maximizeClient() {
 	c.maximized = true
 	c.frame.maximizeApply()
+	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
+	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 }
 
 func (c *client) unmaximizeClient() {
 	c.maximized = false
 	c.frame.unmaximizeApply()
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
+}
+
+func (c *client) setWindowGeometry(x int16, y int16, width uint16, height uint16) {
+	c.frame.updateGeometry(x, y, width, height)
+}
+
+func (c *client) getWindowGeometry() (int16, int16, uint16, uint16) {
+	return c.frame.getGeometry()
 }
 
 func (c *client) newFrame() {
