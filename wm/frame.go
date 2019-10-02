@@ -236,15 +236,16 @@ func (f *frame) drawDecoration(pid xproto.Pixmap, draw xproto.Gcontext, depth by
 	if f.canvas == nil {
 		f.canvas = playground.NewSoftwareCanvas()
 		f.canvas.SetPadded(false)
+
+		border := newBorder(f.client)
+		f.canvas.SetContent(border)
 	}
+
 	scale := desktop.Instance().Root().Canvas().Scale()
 	f.canvas.SetScale(scale)
-	border := newBorder(f.client)
-	f.canvas.SetContent(border)
 
 	scaledSize := fyne.NewSize(int(float32(f.width)/scale), int(float32(f.height)/scale))
 	f.canvas.Resize(scaledSize)
-	border.Resize(scaledSize)
 	img := f.canvas.Capture()
 
 	// Draw in two passes so we don't overflow count usable by PutImageChecked
