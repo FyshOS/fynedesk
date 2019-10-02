@@ -18,32 +18,34 @@ import (
 
 type x11WM struct {
 	stack
-	x                   *xgbutil.XUtil
-	root                fyne.Window
-	rootID              xproto.Window
-	loaded              bool
-	moveResizing        bool
-	moveResizingStartX  int16
-	moveResizingStartY  int16
-	moveResizingGravity uint32
+	x                 *xgbutil.XUtil
+	root              fyne.Window
+	rootID            xproto.Window
+	loaded            bool
+	moveResizing      bool
+	moveResizingLastX int16
+	moveResizingLastY int16
+	moveResizingType  moveResizeType
 
 	allowedActions []string
 	supportedHints []string
 }
 
+type moveResizeType uint32
+
 const (
-	moveResizeTopLeft      uint32 = 0
-	moveResizeTop          uint32 = 1
-	moveResizeTopRight     uint32 = 2
-	moveResizeRight        uint32 = 3
-	moveResizeBottomRight  uint32 = 4
-	moveResizeBottom       uint32 = 5
-	moveResizeBottomLeft   uint32 = 6
-	moveResizeLeft         uint32 = 7
-	moveResizeMove         uint32 = 8
-	moveResizeKeyboard     uint32 = 9
-	moveResizeMoveKeyboard uint32 = 10
-	moveResizeCancel       uint32 = 11
+	moveResizeTopLeft      moveResizeType = 0
+	moveResizeTop          moveResizeType = 1
+	moveResizeTopRight     moveResizeType = 2
+	moveResizeRight        moveResizeType = 3
+	moveResizeBottomRight  moveResizeType = 4
+	moveResizeBottom       moveResizeType = 5
+	moveResizeBottomLeft   moveResizeType = 6
+	moveResizeLeft         moveResizeType = 7
+	moveResizeMove         moveResizeType = 8
+	moveResizeKeyboard     moveResizeType = 9
+	moveResizeMoveKeyboard moveResizeType = 10
+	moveResizeCancel       moveResizeType = 11
 )
 
 func (x *x11WM) Close() {
@@ -157,7 +159,7 @@ func (x *x11WM) runLoop() {
 		case xproto.DestroyNotifyEvent:
 			x.destroyWindow(ev.Window)
 		case xproto.PropertyNotifyEvent:
-			// TODO
+			// TODO - Especially for updating borderless status
 		case xproto.ClientMessageEvent:
 			x.handleClientMessage(ev)
 		case xproto.ExposeEvent:
@@ -267,45 +269,47 @@ func (x *x11WM) moveResizeEnd() {
 }
 
 func (x *x11WM) moveResize(moveX, moveY int16, c *client) {
-	xcoord, ycoord, w, h := c.getWindowGeometry()
-	deltaW := moveX - x.moveResizingStartX
-	deltaH := moveY - x.moveResizingStartY
+	xcoord, ycoord, width, height := c.getWindowGeometry()
+	w := int16(width)
+	h := int16(height)
+	deltaW := moveX - x.moveResizingLastX
+	deltaH := moveY - x.moveResizingLastY
 
-	switch x.moveResizingGravity {
+	switch x.moveResizingType {
 	case moveResizeTopLeft:
 		//Move both X,Y coords and resize both W,H
 		xcoord += deltaW
 		ycoord += deltaH
-		w -= uint16(deltaW)
-		h -= uint16(deltaH)
+		w -= deltaW
+		h -= deltaH
 	case moveResizeTop:
 		//Move Y coord and resize H
 		ycoord += deltaH
-		h -= uint16(deltaH)
+		h -= deltaH
 	case moveResizeTopRight:
 		//Move Y coord and resize both W,H
 		ycoord += deltaH
-		w += uint16(deltaW)
-		h -= uint16(deltaH)
+		w += deltaW
+		h -= deltaH
 	case moveResizeRight:
 		//Keep X coord and resize W
-		w += uint16(deltaW)
+		w += deltaW
 	case moveResizeBottomRight, moveResizeKeyboard:
 		//Keep both X,Y coords and resize both W,H
-		w += uint16(deltaW)
-		h += uint16(deltaH)
+		w += deltaW
+		h += deltaH
 	case moveResizeBottom:
 		//Keep Y coord and resize H
-		h += uint16(deltaH)
+		h += deltaH
 	case moveResizeBottomLeft:
 		//Move X coord and resize both W,H
 		xcoord += deltaW
-		w -= uint16(deltaW)
-		h += uint16(deltaH)
+		w -= deltaW
+		h += deltaH
 	case moveResizeLeft:
 		//Move X coord and resize W
 		xcoord += deltaW
-		w -= uint16(deltaW)
+		w -= deltaW
 	case moveResizeMove, moveResizeMoveKeyboard:
 		//Move both X,Y coords and no resize
 		xcoord += deltaW
@@ -313,16 +317,16 @@ func (x *x11WM) moveResize(moveX, moveY int16, c *client) {
 	case moveResizeCancel:
 		x.moveResizeEnd()
 	}
-	x.moveResizingStartX = moveX
-	x.moveResizingStartY = moveY
-	c.setWindowGeometry(xcoord, ycoord, w, h)
+	x.moveResizingLastX = moveX
+	x.moveResizingLastY = moveY
+	c.setWindowGeometry(xcoord, ycoord, uint16(w), uint16(h))
 }
 
 func (x *x11WM) handleMoveResize(ev xproto.ClientMessageEvent, c *client) {
 	x.moveResizing = true
-	x.moveResizingStartX = int16(ev.Data.Data32[0])
-	x.moveResizingStartY = int16(ev.Data.Data32[1])
-	x.moveResizingGravity = ev.Data.Data32[2]
+	x.moveResizingLastX = int16(ev.Data.Data32[0])
+	x.moveResizingLastY = int16(ev.Data.Data32[1])
+	x.moveResizingType = moveResizeType(ev.Data.Data32[2])
 	xproto.GrabPointer(x.x.Conn(), true, c.win,
 		xproto.EventMaskButtonPress|xproto.EventMaskButtonRelease|xproto.EventMaskPointerMotion,
 		xproto.GrabModeAsync, xproto.GrabModeAsync, x.x.RootWin(), xproto.CursorNone, xproto.TimeCurrentTime)
