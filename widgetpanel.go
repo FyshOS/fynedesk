@@ -45,8 +45,11 @@ func (w *widgetRenderer) ApplyTheme() {
 }
 
 func (w *widgetRenderer) BackgroundColor() color.Color {
-	r, g, b, _ := theme.BackgroundColor().RGBA()
-	return &color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 0x99}
+	r, _, _, _ := theme.BackgroundColor().RGBA()
+	if uint8(r) > 0x99 {
+		return wmtheme.WidgetPanelBackgroundLight
+	}
+	return wmtheme.WidgetPanelBackgroundDark
 }
 
 func (w *widgetRenderer) Objects() []fyne.CanvasObject {

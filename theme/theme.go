@@ -1,6 +1,9 @@
 package theme // import "fyne.io/desktop/theme"
 
-import "fyne.io/fyne/theme"
+import (
+	"fyne.io/fyne/theme"
+	"image/color"
+)
 
 var (
 	// PointerDefault is the standard pointer resource
@@ -26,4 +29,9 @@ var (
 	ButtonWidth = 28
 	// TitleHeight is the height of a frame titleBar
 	TitleHeight = 28
+
+	// WidgetPanelBackgroundDark is the semi-transparent background matching the dark theme
+	WidgetPanelBackgroundDark = color.RGBA{0x42, 0x42, 0x42, 0x99}
+	// WidgetPanelBackgroundLight is the semi-transparent background matching the light theme
+	WidgetPanelBackgroundLight = color.RGBA{0xaa, 0xaa, 0xaa, 0xaa}
 )
