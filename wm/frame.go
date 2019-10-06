@@ -6,7 +6,6 @@ import (
 	"image"
 
 	"fyne.io/fyne"
-	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/tools/playground"
 
@@ -25,10 +24,10 @@ type frame struct {
 	resizeLeft, resizeRight bool
 	framed                  bool
 
-	minWidth, minHeight uint
+	minWidth, minHeight       uint
+	borderTop, borderTopRight xproto.Pixmap
 
 	client *client
-	canvas test.WindowlessCanvas
 }
 
 func (f *frame) unFrame() {
@@ -93,6 +92,10 @@ func (f *frame) release(x, y int16) {
 		relX < int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*3) {
 		f.client.Iconify()
 	}
+	f.resizeBottom = false
+	f.resizeLeft = false
+	f.resizeRight = false
+	f.updateGeometry(f.x, f.y, f.width, f.height)
 }
 
 func (f *frame) drag(x, y int16) {
@@ -171,7 +174,7 @@ func (f *frame) getInnerWindowCoordinates(x int16, y int16, w uint16, h uint16, 
 	f.width = w
 	f.height = h
 
-	return uint32(f.borderWidth()), uint32(f.titleHeight()),
+	return uint32(f.borderWidth()) - 1, uint32(f.titleHeight()) - 1,
 		uint32(f.width - borderWidth), uint32(f.height - borderHeight)
 }
 
@@ -187,7 +190,7 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	}
 	f.x = x
 	f.y = y
-	if f.framed && resize {
+	if f.framed {
 		var newx, newy, neww, newh uint32
 		newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, w, h, !f.client.Fullscreened())
 		f.applyTheme()
@@ -232,36 +235,35 @@ func (f *frame) unmaximizeApply() {
 	f.updateGeometry(f.client.restoreX, f.client.restoreY, f.client.restoreWidth, f.client.restoreHeight)
 }
 
-func (f *frame) drawDecoration(pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
-	if f.canvas == nil {
-		f.canvas = playground.NewSoftwareCanvas()
-		f.canvas.SetPadded(false)
-
-		border := newBorder(f.client)
-		f.canvas.SetContent(border)
-	}
+func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pidTopRight xproto.Pixmap, drawTopRight xproto.Gcontext, depth byte) {
+	canvas := playground.NewSoftwareCanvas()
+	canvas.SetPadded(false)
+	canvas.SetContent(newBorder(f.client))
 
 	scale := desktop.Instance().Root().Canvas().Scale()
-	f.canvas.SetScale(scale)
+	canvas.SetScale(scale)
 
-	scaledSize := fyne.NewSize(int(float32(f.width)/scale), int(float32(f.height)/scale))
-	f.canvas.Resize(scaledSize)
-	img := f.canvas.Capture()
+	iconSize := wmTheme.TitleHeight
+	iconAndBorderSize := iconSize + wmTheme.BorderWidth
+	canvas.Resize(fyne.NewSize(int(float32(f.width)/scale), iconSize))
+	img := canvas.Capture()
 
+	// TODO reduce more to the label minSize
 	// Draw in two passes so we don't overflow count usable by PutImageChecked
 	mid := uint32(f.titleHeight() / 2)
-	f.copyDecorationPixels(0, mid, img, pid, draw, depth)
-	f.copyDecorationPixels(mid, uint32(f.titleHeight())-mid, img, pid, draw, depth)
+	f.copyDecorationPixels(uint32(int(f.width)-iconAndBorderSize), mid, 0, 0, img, pidTop, drawTop, depth)
+	f.copyDecorationPixels(uint32(int(f.width)-iconAndBorderSize), uint32(f.titleHeight())-mid, 0, mid, img, pidTop, drawTop, depth)
+
+	f.copyDecorationPixels(uint32(iconAndBorderSize), uint32(iconSize), uint32(int(f.width)-iconAndBorderSize), 0, img, pidTopRight, drawTopRight, depth)
 }
 
-func (f *frame) copyDecorationPixels(yoff, height uint32, img image.Image, pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
+func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image.Image, pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
 	// DATA is BGRx
-	width, height := uint32(f.width), uint32(height)
 	data := make([]byte, width*height*4)
 	i := uint32(0)
 	for y := uint32(0); y < height; y++ {
 		for x := uint32(0); x < width; x++ {
-			r, g, b, _ := img.At(int(x), int(yoff+y)).RGBA()
+			r, g, b, _ := img.At(int(xoff+x), int(yoff+y)).RGBA()
 
 			data[i] = byte(b)
 			data[i+1] = byte(g)
@@ -278,30 +280,57 @@ func (f *frame) copyDecorationPixels(yoff, height uint32, img image.Image, pid x
 	}
 }
 
-func (f *frame) decorate() {
+func (f *frame) createPixmaps(depth byte) error {
 	pid, err := xproto.NewPixmapId(f.client.wm.x.Conn())
 	if err != nil {
-		fyne.LogError("New Pixmap Error", err)
-		return
+		return err
 	}
-
-	depth := f.client.wm.x.Screen().RootDepth
-	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
-	bgColor := backR<<16 | backG<<8 | backB
 
 	xproto.CreatePixmap(f.client.wm.x.Conn(), depth, pid,
 		xproto.Drawable(f.client.wm.x.Screen().Root), f.width, f.height)
-	draw, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
-	xproto.CreateGC(f.client.wm.x.Conn(), draw, xproto.Drawable(pid), xproto.GcForeground, []uint32{bgColor})
-	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
-	xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(pid), draw, []xproto.Rectangle{rect})
-	f.drawDecoration(pid, draw, depth)
-	err = xproto.ChangeWindowAttributesChecked(f.client.wm.x.Conn(), f.client.id,
-		xproto.CwBackPixmap, []uint32{uint32(pid)}).Check()
+	f.borderTop = pid
+
+	pid, err = xproto.NewPixmapId(f.client.wm.x.Conn())
 	if err != nil {
-		fyne.LogError("Change Attribute Error", err)
+		return err
 	}
-	xproto.FreePixmap(f.client.wm.x.Conn(), pid)
+
+	xproto.CreatePixmap(f.client.wm.x.Conn(), depth, pid,
+		xproto.Drawable(f.client.wm.x.Screen().Root), f.height, f.height)
+	f.borderTopRight = pid
+
+	return nil
+}
+
+func (f *frame) decorate() {
+	depth := f.client.wm.x.Screen().RootDepth
+	refresh := false
+	if f.borderTop == 0 {
+		err := f.createPixmaps(depth)
+		if err != nil {
+			fyne.LogError("New Pixmap Error", err)
+			return
+		}
+		refresh = true
+	}
+
+	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
+	bgColor := backR<<16 | backG<<8 | backB
+
+	drawTop, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
+	xproto.CreateGC(f.client.wm.x.Conn(), drawTop, xproto.Drawable(f.borderTop), xproto.GcForeground, []uint32{bgColor})
+	drawTopRight, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
+	xproto.CreateGC(f.client.wm.x.Conn(), drawTopRight, xproto.Drawable(f.borderTopRight), xproto.GcForeground, []uint32{bgColor})
+	if refresh {
+		f.drawDecoration(f.borderTop, drawTop, f.borderTopRight, drawTopRight, depth)
+	}
+
+	iconSize := wmTheme.TitleHeight
+	iconAndBorderSize := iconSize + wmTheme.BorderWidth
+	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), drawTop,
+		0, 0, 0, 0, uint16(int(f.width)-iconAndBorderSize), uint16(iconSize))
+	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), drawTopRight,
+		0, 0, int16(int(f.width)-iconAndBorderSize), 0, uint16(iconAndBorderSize), uint16(iconSize))
 }
 
 func (f *frame) applyTheme() {
@@ -373,10 +402,10 @@ func newFrame(c *client) *frame {
 
 	framed.width = attrs.Width + uint16(framed.borderWidth()*2)
 	framed.height = attrs.Height + uint16(framed.borderWidth()) + uint16(framed.titleHeight())
-	framed.applyTheme()
 
 	xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()-1), int16(framed.titleHeight()-1))
 	framed.show()
+	framed.applyTheme()
 
 	return framed
 }
