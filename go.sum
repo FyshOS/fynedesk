@@ -1,5 +1,5 @@
-fyne.io/fyne v1.0.2-0.20190911213135-6c4b4c144135 h1:yjo42HKdTmMYtGCspUXKKw8KH9C1qIbDT0FlQ48WSeg=
-fyne.io/fyne v1.0.2-0.20190911213135-6c4b4c144135/go.mod h1:33kcuZDAiuenHBiyYh0t9k/d75hFGQ1KXbD5RJaMpTE=
+fyne.io/fyne v1.1.2-0.20190930211700-9a7b711ce678 h1:WjqTJs0kI0cDwQX8vgEbOAF3fKorcnd4GiQwerozQRE=
+fyne.io/fyne v1.1.2-0.20190930211700-9a7b711ce678/go.mod h1:L72ifOnzeBSqBzX7Jr0zhl2iCbEYqt3rHungdC3zRVI=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802 h1:1BDTz0u9nC3//pOCMdNH+CiXJVYJh5UQNCOBG7jbELc=
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/BurntSushi/xgbutil v0.0.0-20160919175755-f7c97cef3b4e h1:4ZrkT/RzpnROylmoQL57iVUL57wGKTR5O6KpVnbm2tA=
@@ -35,8 +35,8 @@ github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZb
 github.com/pmezard/go-difflib v1.0.0/go.mod h1:iKH77koFhYxTK1pcRnkKkqfTogsbg7gZNVY4sRDYZ/4=
 github.com/spf13/afero v1.1.2/go.mod h1:j4pytiNVoe2o6bmDsKpLACNPDBIoEAkihy7loJ1B0CQ=
 github.com/spf13/pflag v1.0.3/go.mod h1:DYY7MBk1bdzusC3SYhjObp+wFpr4gzcvqqNjLnInEg4=
-github.com/srwiley/oksvg v0.0.0-20190105194046-ccbc7673cdf3 h1:8REQ/vZZIZFaZedUSHd7TVkK0CF4heqGtmyz30gCxm8=
-github.com/srwiley/oksvg v0.0.0-20190105194046-ccbc7673cdf3/go.mod h1:afMbS0qvv1m5tfENCwnOdZGOF8RGR/FsZ7bvBxQGZG4=
+github.com/srwiley/oksvg v0.0.0-20190829233741-58e08c8fe40e h1:LJUrNHytcMXWKxnULIHPe5SCb1jDpO9o672VB1x2EuQ=
+github.com/srwiley/oksvg v0.0.0-20190829233741-58e08c8fe40e/go.mod h1:afMbS0qvv1m5tfENCwnOdZGOF8RGR/FsZ7bvBxQGZG4=
 github.com/srwiley/rasterx v0.0.0-20181219215540-696f7edb7a7e h1:FFotfUvew9Eg02LYRl8YybAnm0HCwjjfY5JlOI1oB00=
 github.com/srwiley/rasterx v0.0.0-20181219215540-696f7edb7a7e/go.mod h1:mvWM0+15UqyrFKqdRjY6LuAVJR0HOVhJlEgZ5JWtSWU=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
