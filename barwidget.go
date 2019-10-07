@@ -18,6 +18,10 @@ type bar struct {
 	children      []fyne.CanvasObject // Icons that are laid out by the bar
 	mouseInside   bool                // Is the mouse inside of the bar?
 	mousePosition fyne.Position       // The current coordinates of the mouse cursor
+
+	iconSize  int
+	iconScale float32
+	icons     []*barIcon
 }
 
 //MouseIn alerts the widget that the mouse has entered
@@ -99,12 +103,14 @@ func (b *bar) removeFromTaskbar(object fyne.CanvasObject) {
 
 //CreateRenderer creates the renderer that will be responsible for painting the widget
 func (b *bar) CreateRenderer() fyne.WidgetRenderer {
-	return &barRenderer{objects: b.children, layout: newBarLayout(), appBar: b}
+	return &barRenderer{objects: b.children, layout: newBarLayout(b), appBar: b}
 }
 
 //newAppBar returns a horizontal list of icons for an icon launcher
 func newAppBar(desk Desktop, children ...fyne.CanvasObject) *bar {
 	bar := &bar{desk: desk, children: children}
+	bar.iconSize = 64
+	bar.iconScale = 2.0
 	widget.Renderer(bar).Layout(bar.MinSize())
 	return bar
 }

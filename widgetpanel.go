@@ -99,7 +99,7 @@ func appExecPopUpListMatches(w *widgetPanel, win fyne.Window, appList *fyne.Cont
 	iconTheme := w.desk.Settings().IconTheme()
 	dataRange := w.desk.IconProvider().FindAppsMatching(input)
 	for _, data := range dataRange {
-		icon := data.Icon(iconTheme, iconSize)
+		icon := data.Icon(iconTheme, 32) // TODO match theme but FDO needs power of 2 theme.IconInlineSize())
 		app := widget.NewButtonWithIcon(data.Name(), icon, func() {
 			err := data.Run()
 			if err != nil {
@@ -135,8 +135,8 @@ func appExecPopUp(w *widgetPanel) fyne.Window {
 	content := fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, cancel, nil, nil), entry, appScroller, cancel)
 
 	win.SetContent(content)
-	win.Resize(fyne.NewSize(int(300*w.root.Canvas().Scale()),
-		(iconSize+theme.Padding()*2)*3+cancel.MinSize().Height+entry.MinSize().Height))
+	win.Resize(fyne.NewSize(300,
+		cancel.MinSize().Height*4+theme.Padding()*6+entry.MinSize().Height))
 	win.CenterOnScreen()
 	win.Canvas().Focus(entry)
 	return win

@@ -5,10 +5,7 @@ import (
 )
 
 var (
-	appBar    *bar
-	iconSize  = 32
-	iconScale = 2.0
-	icons     []*barIcon
+	appBar *bar
 )
 
 func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
@@ -16,7 +13,7 @@ func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
 	if data == nil {
 		return nil
 	}
-	iconRes := data.Icon(iconTheme, int(float64(iconSize)*iconScale))
+	iconRes := data.Icon(iconTheme, int(float32(b.iconSize)*b.iconScale))
 	if iconRes == nil {
 		return nil
 	}
@@ -31,7 +28,7 @@ func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
 	} else {
 		icon.taskbarWindow = win
 	}
-	icons = append(icons, icon)
+	b.icons = append(b.icons, icon)
 	return icon
 }
 
@@ -68,13 +65,13 @@ func (b *bar) WindowRemoved(win Window) {
 	if win.SkipTaskbar() {
 		return
 	}
-	for i, icon := range icons {
+	for i, icon := range b.icons {
 		if icon.taskbarWindow == nil || win != icon.taskbarWindow {
 			continue
 		}
 		if !win.Iconic() {
 			appBar.removeFromTaskbar(icon)
-			icons = append(icons[:i], icons[i+1:]...)
+			b.icons = append(b.icons[:i], b.icons[i+1:]...)
 		}
 	}
 }
