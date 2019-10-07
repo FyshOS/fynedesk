@@ -26,6 +26,7 @@ type frame struct {
 
 	minWidth, minHeight       uint
 	borderTop, borderTopRight xproto.Pixmap
+	borderTopWidth            uint16
 
 	client *client
 }
@@ -243,18 +244,18 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	scale := desktop.Instance().Root().Canvas().Scale()
 	canvas.SetScale(scale)
 
-	iconSize := wmTheme.TitleHeight
-	iconAndBorderSize := iconSize + wmTheme.BorderWidth
-	canvas.Resize(fyne.NewSize(int(float32(f.width)/scale), iconSize))
+	heightPix := f.titleHeight()
+	iconBorderPixWidth := heightPix + f.borderWidth()
+	canvas.Resize(fyne.NewSize(int(float32(f.width)/scale), wmTheme.TitleHeight))
 	img := canvas.Capture()
 
 	// TODO reduce more to the label minSize
 	// Draw in two passes so we don't overflow count usable by PutImageChecked
-	mid := uint32(f.titleHeight() / 2)
-	f.copyDecorationPixels(uint32(int(f.width)-iconAndBorderSize), mid, 0, 0, img, pidTop, drawTop, depth)
-	f.copyDecorationPixels(uint32(int(f.width)-iconAndBorderSize), uint32(f.titleHeight())-mid, 0, mid, img, pidTop, drawTop, depth)
+	mid := uint32(heightPix / 2)
+	f.copyDecorationPixels(uint32(f.borderTopWidth), mid, 0, 0, img, pidTop, drawTop, depth)
+	f.copyDecorationPixels(uint32(f.borderTopWidth), uint32(heightPix)-mid, 0, mid, img, pidTop, drawTop, depth)
 
-	f.copyDecorationPixels(uint32(iconAndBorderSize), uint32(iconSize), uint32(int(f.width)-iconAndBorderSize), 0, img, pidTopRight, drawTopRight, depth)
+	f.copyDecorationPixels(uint32(iconBorderPixWidth), uint32(heightPix), uint32(f.borderTopWidth), 0, img, pidTopRight, drawTopRight, depth)
 }
 
 func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image.Image, pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
@@ -281,13 +282,17 @@ func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image
 }
 
 func (f *frame) createPixmaps(depth byte) error {
+	iconPix := f.titleHeight()
+	iconAndBorderPix := iconPix + f.borderWidth()
+	f.borderTopWidth = f.width - iconAndBorderPix
+
 	pid, err := xproto.NewPixmapId(f.client.wm.x.Conn())
 	if err != nil {
 		return err
 	}
 
 	xproto.CreatePixmap(f.client.wm.x.Conn(), depth, pid,
-		xproto.Drawable(f.client.wm.x.Screen().Root), f.width, f.height)
+		xproto.Drawable(f.client.wm.x.Screen().Root), f.borderTopWidth, iconPix)
 	f.borderTop = pid
 
 	pid, err = xproto.NewPixmapId(f.client.wm.x.Conn())
@@ -296,7 +301,7 @@ func (f *frame) createPixmaps(depth byte) error {
 	}
 
 	xproto.CreatePixmap(f.client.wm.x.Conn(), depth, pid,
-		xproto.Drawable(f.client.wm.x.Screen().Root), f.height, f.height)
+		xproto.Drawable(f.client.wm.x.Screen().Root), iconAndBorderPix, iconPix)
 	f.borderTopRight = pid
 
 	return nil
@@ -325,12 +330,12 @@ func (f *frame) decorate() {
 		f.drawDecoration(f.borderTop, drawTop, f.borderTopRight, drawTopRight, depth)
 	}
 
-	iconSize := wmTheme.TitleHeight
-	iconAndBorderSize := iconSize + wmTheme.BorderWidth
+	iconSizePix := f.titleHeight()
+	iconAndBorderSizePix := iconSizePix + f.borderWidth()
 	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), drawTop,
-		0, 0, 0, 0, uint16(int(f.width)-iconAndBorderSize), uint16(iconSize))
+		0, 0, 0, 0, f.borderTopWidth, uint16(iconSizePix))
 	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), drawTopRight,
-		0, 0, int16(int(f.width)-iconAndBorderSize), 0, uint16(iconAndBorderSize), uint16(iconSize))
+		0, 0, int16(f.width-iconAndBorderSizePix), 0, uint16(iconAndBorderSizePix), uint16(iconSizePix))
 }
 
 func (f *frame) applyTheme() {
