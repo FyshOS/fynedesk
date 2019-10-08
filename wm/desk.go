@@ -129,7 +129,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		for {
 			<-listener
 			for _, c := range mgr.clients {
-				c.(*client).frame.applyTheme()
+				c.(*client).frame.applyTheme(true)
 			}
 		}
 	}()
@@ -165,7 +165,7 @@ func (x *x11WM) runLoop() {
 		case xproto.ExposeEvent:
 			border := x.clientForWin(ev.Window)
 			if border != nil {
-				border.(*client).frame.applyTheme()
+				border.(*client).frame.applyTheme(false)
 			}
 		case xproto.ButtonPressEvent:
 			for _, c := range x.clients {

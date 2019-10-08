@@ -194,7 +194,7 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	if f.framed {
 		var newx, newy, neww, newh uint32
 		newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, w, h, !f.client.Fullscreened())
-		f.applyTheme()
+		f.applyTheme(false)
 		err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 			[]uint32{newx, newy, neww, newh}).Check()
@@ -245,8 +245,9 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	canvas.SetScale(scale)
 
 	heightPix := f.titleHeight()
-	iconBorderPixWidth := heightPix + f.borderWidth()
-	canvas.Resize(fyne.NewSize(int(float32(f.width)/scale), wmTheme.TitleHeight))
+	iconBorderPixWidth := heightPix + f.borderWidth()*2
+	widthPix := f.borderTopWidth + iconBorderPixWidth
+	canvas.Resize(fyne.NewSize(int(float32(widthPix)/scale), wmTheme.TitleHeight))
 	img := canvas.Capture()
 
 	// TODO reduce more to the label minSize
@@ -283,7 +284,7 @@ func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image
 
 func (f *frame) createPixmaps(depth byte) error {
 	iconPix := f.titleHeight()
-	iconAndBorderPix := iconPix + f.borderWidth()
+	iconAndBorderPix := iconPix + f.borderWidth()*2
 	f.borderTopWidth = f.width - iconAndBorderPix
 
 	pid, err := xproto.NewPixmapId(f.client.wm.x.Conn())
@@ -307,9 +308,9 @@ func (f *frame) createPixmaps(depth byte) error {
 	return nil
 }
 
-func (f *frame) decorate() {
+func (f *frame) decorate(force bool) {
 	depth := f.client.wm.x.Screen().RootDepth
-	refresh := false
+	refresh := force
 	if f.borderTop == 0 {
 		err := f.createPixmaps(depth)
 		if err != nil {
@@ -330,21 +331,26 @@ func (f *frame) decorate() {
 		f.drawDecoration(f.borderTop, drawTop, f.borderTopRight, drawTopRight, depth)
 	}
 
+	draw, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
+	xproto.CreateGC(f.client.wm.x.Conn(), draw, xproto.Drawable(f.client.id), xproto.GcForeground, []uint32{bgColor})
+	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
+	xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
+
 	iconSizePix := f.titleHeight()
-	iconAndBorderSizePix := iconSizePix + f.borderWidth()
+	iconAndBorderSizePix := iconSizePix + f.borderWidth()*2
 	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), drawTop,
 		0, 0, 0, 0, f.borderTopWidth, uint16(iconSizePix))
 	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), drawTopRight,
 		0, 0, int16(f.width-iconAndBorderSizePix), 0, uint16(iconAndBorderSizePix), uint16(iconSizePix))
 }
 
-func (f *frame) applyTheme() {
+func (f *frame) applyTheme(force bool) {
 	if !f.framed {
 		return
 	}
 
 	if !f.client.Fullscreened() {
-		f.decorate()
+		f.decorate(force)
 	} else {
 		err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -389,8 +395,7 @@ func newFrame(c *client) *frame {
 	}
 
 	framed := &frame{client: c, x: attrs.X, y: attrs.Y, framed: true}
-	r, g, b, _ := theme.BackgroundColor().RGBA()
-	values := []uint32{r<<16 | g<<8 | b, xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
+	values := []uint32{xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
 		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
 		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange}
@@ -398,7 +403,7 @@ func newFrame(c *client) *frame {
 		attrs.X, attrs.Y, attrs.Width+uint16(framed.borderWidth()*2),
 		attrs.Height+uint16(framed.borderWidth())+framed.titleHeight(),
 		0, xproto.WindowClassInputOutput, c.wm.x.Screen().RootVisual,
-		xproto.CwBackPixel|xproto.CwEventMask, values).Check()
+		xproto.CwEventMask, values).Check()
 	if err != nil {
 		fyne.LogError("Create Window Error", err)
 		return nil
@@ -410,7 +415,7 @@ func newFrame(c *client) *frame {
 
 	xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()-1), int16(framed.titleHeight()-1))
 	framed.show()
-	framed.applyTheme()
+	framed.applyTheme(true)
 
 	return framed
 }
