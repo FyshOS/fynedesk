@@ -405,7 +405,7 @@ func appendAppIfExists(apps []desktop.AppData, app desktop.AppData) []desktop.Ap
 func (f *fdoIconProvider) DefaultApps() []desktop.AppData {
 	apps := []desktop.AppData{}
 
-	apps = appendAppIfExists(apps, findOneAppFromNames(f, "gnome-terminal", "xterm"))
+	apps = appendAppIfExists(apps, findOneAppFromNames(f, "xfce4-terminal", "gnome-terminal", "xterm"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "chromium", "google-chrome", "firefox"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "sylpheed", "thunderbird", "evolution"))
 	apps = appendAppIfExists(apps, f.FindAppFromName("gimp"))
