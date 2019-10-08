@@ -109,7 +109,7 @@ func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 //newAppBar returns a horizontal list of icons for an icon launcher
 func newAppBar(desk Desktop, children ...fyne.CanvasObject) *bar {
 	bar := &bar{desk: desk, children: children}
-	bar.iconSize = 64
+	bar.iconSize = 32
 	bar.iconScale = 2.0
 	widget.Renderer(bar).Layout(bar.MinSize())
 	return bar
