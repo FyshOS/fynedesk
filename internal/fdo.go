@@ -61,13 +61,17 @@ func extractArgs(args []string) []string {
 
 //Run executes the command for this fdo app
 func (data *fdoApplicationData) Run() error {
-	command := strings.Split(data.exec, " ")
-	if len(command) == 1 {
-		return exec.Command(command[0]).Start()
+	commands := strings.Split(data.exec, " ")
+	command := commands[0]
+	if command[0] == '"' {
+		command = command[1 : len(command)-1]
+	}
+	if len(commands) == 1 {
+		return exec.Command(command).Start()
 	}
 
-	args := extractArgs(command[1:])
-	return exec.Command(command[0], args...).Start()
+	args := extractArgs(commands[1:])
+	return exec.Command(command, args...).Start()
 }
 
 func loadIcon(path string) fyne.Resource {
