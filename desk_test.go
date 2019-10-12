@@ -24,6 +24,10 @@ func (*testDesk) Settings() DeskSettings {
 	return &testSettings{}
 }
 
+func (*testDesk) ContentSize() fyne.Size {
+	return fyne.NewSize(320, 240)
+}
+
 func (*testDesk) IconProvider() ApplicationProvider {
 	return nil
 }

@@ -223,13 +223,13 @@ func (f *frame) uniconifyApply() {
 }
 
 func (f *frame) maximizeApply() {
-	var w = f.client.wm.x.Screen().WidthInPixels
-	var h = f.client.wm.x.Screen().HeightInPixels
 	f.client.restoreWidth = f.width
 	f.client.restoreHeight = f.height
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
-	f.updateGeometry(0, 0, w, h)
+
+	maxSize := desktop.Instance().ContentSize()
+	f.updateGeometry(0, 0, f.client.wm.scaleToPixels(maxSize.Width), f.client.wm.scaleToPixels(maxSize.Height))
 }
 
 func (f *frame) unmaximizeApply() {

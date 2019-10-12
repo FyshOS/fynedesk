@@ -12,6 +12,7 @@ type Desktop interface {
 	Root() fyne.Window
 	Run()
 	Settings() DeskSettings
+	ContentSize() fyne.Size
 
 	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
@@ -97,6 +98,10 @@ func (l *deskLayout) Run() {
 
 func (l *deskLayout) Settings() DeskSettings {
 	return l.settings
+}
+
+func (l *deskLayout) ContentSize() fyne.Size {
+	return l.background.Size().Subtract(fyne.NewSize(l.widgets.Size().Width, 0))
 }
 
 func (l *deskLayout) IconProvider() ApplicationProvider {
