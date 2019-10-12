@@ -245,3 +245,11 @@ func TestFdoIconProvider_DefaultApps(t *testing.T) {
 	defaults := NewFDOIconProvider().DefaultApps()
 	assert.True(t, len(defaults) > 0)
 }
+
+func TestFdoExtractArgs(t *testing.T) {
+	params := []string{"-u", "thing", "%U"}
+
+	extracted := extractArgs(params)
+
+	assert.Equal(t, []string{"-u", "thing"}, extracted)
+}

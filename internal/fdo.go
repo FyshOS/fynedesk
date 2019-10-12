@@ -46,6 +46,19 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 	return loadIcon(path)
 }
 
+//extractArgs sanitises argument parameters from an Exec configuration
+func extractArgs(args []string) []string {
+	var ret []string
+	for _, arg := range args {
+		if len(arg) >= 2 && arg[0] == '%' {
+			continue
+		}
+		ret = append(ret, arg)
+	}
+
+	return ret
+}
+
 //Run executes the command for this fdo app
 func (data *fdoApplicationData) Run() error {
 	command := strings.Split(data.exec, " ")
@@ -53,8 +66,8 @@ func (data *fdoApplicationData) Run() error {
 		return exec.Command(command[0]).Start()
 	}
 
-	args := fmt.Sprintf("%s", command[1:])
-	return exec.Command(command[0], args).Start()
+	args := extractArgs(command[1:])
+	return exec.Command(command[0], args...).Start()
 }
 
 func loadIcon(path string) fyne.Resource {
