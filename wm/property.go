@@ -95,6 +95,18 @@ func windowStateGet(x *xgbutil.XUtil, win xproto.Window) uint {
 	return state.State
 }
 
+func windowActiveReq(x *xgbutil.XUtil, win xproto.Window) {
+	ewmh.ActiveWindowReq(x, win)
+}
+
+func windowActiveSet(x *xgbutil.XUtil, win xproto.Window) {
+	ewmh.ActiveWindowSet(x, win)
+}
+
+func windowActiveGet(x *xgbutil.XUtil) (xproto.Window, error) {
+	return ewmh.ActiveWindowGet(x)
+}
+
 func windowExtendedHintsGet(x *xgbutil.XUtil, win xproto.Window) []string {
 	extendedHints, err := ewmh.WmStateGet(x, win)
 	if err != nil {

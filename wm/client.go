@@ -195,7 +195,7 @@ func (c *client) Unmaximize() {
 }
 
 func (c *client) Focus() {
-	xproto.SetInputFocus(c.wm.x.Conn(), 0, c.win, 0)
+	windowActiveReq(c.wm.x, c.win)
 }
 
 func (c *client) RaiseToTop() {

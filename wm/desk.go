@@ -159,7 +159,7 @@ func (x *x11WM) runLoop() {
 		case xproto.DestroyNotifyEvent:
 			x.destroyWindow(ev.Window)
 		case xproto.PropertyNotifyEvent:
-			// TODO - Especially for updating borderless status
+			//TODO For hotswapping borders, updating win titles, and more
 		case xproto.ClientMessageEvent:
 			x.handleClientMessage(ev)
 		case xproto.ExposeEvent:
@@ -350,13 +350,17 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 
 func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 	c := x.clientForWin(ev.Window)
-	if c == nil {
-		fyne.LogError("Missing client for message", nil)
-		return
-	}
 	msgAtom, err := xprop.AtomName(x.x, ev.Type)
 	if err != nil {
 		fyne.LogError("Error getting event", err)
+		return
+	}
+	if c == nil {
+		// A missing client for _NET_ACTIVE_WINDOW is normal - i.e. the window is not in the stack.
+		// Therefore, there is no need to print noise everytime this happens (possible on iconfications, destructions)
+		if msgAtom != "_NET_ACTIVE_WINDOW" {
+			fyne.LogError("Missing client for message", nil)
+		}
 		return
 	}
 	switch msgAtom {
@@ -367,6 +371,9 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		case icccm.StateNormal:
 			c.(*client).uniconifyClient()
 		}
+	case "_NET_ACTIVE_WINDOW":
+		xproto.SetInputFocus(x.x.Conn(), 0, ev.Window, 0)
+		windowActiveSet(x.x, ev.Window)
 	case "_NET_WM_FULLSCREEN_MONITORS":
 		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
 		// TO FULLSCREEN ACROSS
@@ -456,9 +463,10 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
 	c := x.clientForWin(win)
-	if c != nil {
-		x.RemoveWindow(c)
+	if c == nil {
+		return
 	}
+	x.RemoveWindow(c)
 }
 
 func (x *x11WM) bindKeys(win xproto.Window) {
