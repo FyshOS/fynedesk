@@ -452,7 +452,7 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	}
 
 	x.AddWindow(c)
-	x.RaiseToTop(c)
+	c.Focus()
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
