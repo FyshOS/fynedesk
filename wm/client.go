@@ -235,15 +235,15 @@ func (c *client) unfullscreenClient() {
 }
 
 func (c *client) iconifyClient() {
-	c.frame.iconifyApply()
+	c.frame.hide()
 	c.iconic = true
 	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
 }
 
 func (c *client) uniconifyClient() {
 	c.newFrame()
-	c.frame.uniconifyApply()
 	c.iconic = false
+	c.frame.show()
 	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
 }
 

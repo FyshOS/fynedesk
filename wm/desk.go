@@ -407,19 +407,13 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {
-	c := x.clientForWin(win)
 	name := windowName(x.x, win)
 
-	if c != nil || name == x.root.Title() {
+	if name == x.root.Title() {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
 		if err != nil {
 			fyne.LogError("Show Window Error", err)
 		}
-
-		if name != x.root.Title() {
-			return
-		}
-
 		x.bindKeys(win)
 		go x.frameExisting()
 

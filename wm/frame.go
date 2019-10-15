@@ -213,15 +213,6 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16) {
 	}
 }
 
-func (f *frame) iconifyApply() {
-	xproto.ReparentWindow(f.client.wm.x.Conn(), f.client.win, f.client.wm.x.RootWin(), f.x, f.y)
-	xproto.UnmapWindow(f.client.wm.x.Conn(), f.client.win)
-}
-
-func (f *frame) uniconifyApply() {
-	xproto.MapWindow(f.client.wm.x.Conn(), f.client.win)
-}
-
 func (f *frame) maximizeApply() {
 	f.client.restoreWidth = f.width
 	f.client.restoreHeight = f.height
@@ -379,6 +370,11 @@ func (f *frame) show() {
 
 	xproto.ChangeSaveSet(c.wm.x.Conn(), xproto.SetModeInsert, c.win)
 	xproto.MapWindow(c.wm.x.Conn(), c.win)
+}
+
+func (f *frame) hide() {
+	xproto.ReparentWindow(f.client.wm.x.Conn(), f.client.win, f.client.wm.x.RootWin(), f.x, f.y)
+	xproto.UnmapWindow(f.client.wm.x.Conn(), f.client.win)
 }
 
 func newFrame(c *client) *frame {
