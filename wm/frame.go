@@ -241,11 +241,11 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	canvas.Resize(fyne.NewSize(int(float32(widthPix)/scale), wmTheme.TitleHeight))
 	img := canvas.Capture()
 
-	// TODO reduce more to the label minSize
-	// Draw in two passes so we don't overflow count usable by PutImageChecked
-	mid := uint32(heightPix / 2)
-	f.copyDecorationPixels(uint32(f.borderTopWidth), mid, 0, 0, img, pidTop, drawTop, depth)
-	f.copyDecorationPixels(uint32(f.borderTopWidth), uint32(heightPix)-mid, 0, mid, img, pidTop, drawTop, depth)
+	// TODO just copy the label minSize - smallest possible but maybe bigger than window width
+	// Draw in pixel rows so we don't overflow count usable by PutImageChecked
+	for i := uint16(0); i < heightPix; i++ {
+		f.copyDecorationPixels(uint32(f.borderTopWidth), 1, 0, uint32(i), img, pidTop, drawTop, depth)
+	}
 
 	f.copyDecorationPixels(uint32(iconBorderPixWidth), uint32(heightPix), uint32(f.borderTopWidth), 0, img, pidTopRight, drawTopRight, depth)
 }
