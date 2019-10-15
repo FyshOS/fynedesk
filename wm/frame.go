@@ -175,7 +175,7 @@ func (f *frame) getInnerWindowCoordinates(x int16, y int16, w uint16, h uint16, 
 	f.width = w
 	f.height = h
 
-	return uint32(f.borderWidth()) - 1, uint32(f.titleHeight()) - 1,
+	return uint32(f.borderWidth()), uint32(f.titleHeight()),
 		uint32(f.width - borderWidth), uint32(f.height - borderHeight)
 }
 
@@ -228,8 +228,8 @@ func (f *frame) maximizeApply() {
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
 
-	maxSize := desktop.Instance().ContentSize()
-	f.updateGeometry(0, 0, f.client.wm.scaleToPixels(maxSize.Width), f.client.wm.scaleToPixels(maxSize.Height))
+	maxWidth, maxHeight := desktop.Instance().ContentSizePixels()
+	f.updateGeometry(0, 0, uint16(maxWidth), uint16(maxHeight))
 }
 
 func (f *frame) unmaximizeApply() {
@@ -413,7 +413,7 @@ func newFrame(c *client) *frame {
 	framed.width = attrs.Width + uint16(framed.borderWidth()*2)
 	framed.height = attrs.Height + uint16(framed.borderWidth()) + uint16(framed.titleHeight())
 
-	xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()-1), int16(framed.titleHeight()-1))
+	xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()), int16(framed.titleHeight()))
 	framed.show()
 	framed.applyTheme(true)
 
