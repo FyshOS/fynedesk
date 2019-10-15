@@ -11,8 +11,11 @@
 
 # About
 
-This project is very early stages and is not yet usable as a desktop environment.
-However it is available for anyone to test, play with or contribute to.
+This project is at an early test stage and may not be suitable for a daily
+desktop environment. It requires the develop branch of Fyne to operate and
+will do so until the 1.2 Fyne release completes in November.
+That said we use this regularly and would be happy for anyone to test,
+play with or contribute to this project and prepare it for a first release.
 
 # Prerequisites
 
