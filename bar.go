@@ -73,6 +73,7 @@ func (b *bar) WindowRemoved(win Window) {
 			appBar.removeFromTaskbar(icon)
 			b.icons = append(b.icons[:i], b.icons[i+1:]...)
 		}
+		break
 	}
 }
 

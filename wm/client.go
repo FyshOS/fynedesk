@@ -242,6 +242,10 @@ func (c *client) iconifyClient() {
 
 func (c *client) uniconifyClient() {
 	c.newFrame()
+	if c.frame == nil {
+		return
+	}
+
 	c.iconic = false
 	c.frame.show()
 	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
