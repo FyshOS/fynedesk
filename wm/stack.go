@@ -69,7 +69,7 @@ func (s *stack) RaiseToTop(win desktop.Window) {
 	if win.Iconic() {
 		return
 	}
-	if len(s.clients) == 0 {
+	if len(s.clients) <= 1 {
 		return
 	}
 	win.RaiseAbove(s.clients[0])

@@ -202,7 +202,7 @@ func (x *x11WM) runLoop() {
 			winList := x.Windows()
 			winCount := len(winList)
 			if winCount <= 1 {
-				return
+				break
 			}
 
 			if ev.State&xproto.ModMaskShift != 0 {
