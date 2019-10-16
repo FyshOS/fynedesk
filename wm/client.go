@@ -279,6 +279,14 @@ func (c *client) newFrame() {
 	} else {
 		c.frame = newFrameBorderless(c)
 	}
+	initialHints := windowExtendedHintsGet(c.wm.x, c.win)
+	for _, hint := range initialHints {
+		switch hint {
+		case "_NET_WM_STATE_FULLSCREEN":
+			c.fullscreenClient()
+		}
+		// TODO Handle more of these possible hints
+	}
 }
 
 func newClient(win xproto.Window, wm *x11WM) *client {
