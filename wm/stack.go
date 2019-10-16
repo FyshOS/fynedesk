@@ -4,12 +4,17 @@ import "fyne.io/desktop"
 
 type stack struct {
 	clients []desktop.Window
+	top     desktop.Window
 
 	listeners []desktop.StackListener
 }
 
 func (s *stack) addToStack(win desktop.Window) {
 	s.clients = append([]desktop.Window{win}, s.clients...)
+}
+
+func (s *stack) addToStackBottom(win desktop.Window) {
+	s.clients = append(s.clients, win)
 }
 
 func (s *stack) removeFromStack(win desktop.Window) {
@@ -53,10 +58,8 @@ func (s *stack) TopWindow() desktop.Window {
 	if len(s.clients) == 0 {
 		return nil
 	}
-	for _, cli := range s.clients {
-		if !cli.Iconic() {
-			return cli
-		}
+	if s.top != nil {
+		return s.top
 	}
 	return s.clients[0]
 }
@@ -70,7 +73,12 @@ func (s *stack) RaiseToTop(win desktop.Window) {
 		return
 	}
 	if len(s.clients) > 1 {
-		win.RaiseAbove(s.clients[0])
+		if s.top == nil {
+			s.top = s.clients[0]
+		}
+
+		win.RaiseAbove(s.top)
+		s.top = win
 	}
 
 	s.removeFromStack(win)

@@ -27,6 +27,9 @@ type x11WM struct {
 	moveResizingLastY int16
 	moveResizingType  moveResizeType
 
+	altTabList  []desktop.Window
+	altTabIndex int
+
 	allowedActions []string
 	supportedHints []string
 }
@@ -46,6 +49,9 @@ const (
 	moveResizeKeyboard     moveResizeType = 9
 	moveResizeMoveKeyboard moveResizeType = 10
 	moveResizeCancel       moveResizeType = 11
+
+	keyCodeTab = 23
+	keyCodeAlt = 64
 )
 
 func (x *x11WM) Close() {
@@ -199,16 +205,38 @@ func (x *x11WM) runLoop() {
 				}
 			}
 		case xproto.KeyPressEvent:
-			winList := x.Windows()
-			winCount := len(winList)
-			if winCount <= 1 {
+			if ev.Detail == keyCodeAlt {
+				x.altTabList = []desktop.Window{}
+				for _, win := range x.Windows() {
+					x.altTabList = append(x.altTabList, win)
+				}
+				x.altTabIndex = 0
 				break
 			}
 
+			if ev.Detail != keyCodeTab {
+				break
+			}
+			winCount := len(x.altTabList)
+			if winCount <= 1 {
+				break
+			}
 			if ev.State&xproto.ModMaskShift != 0 {
-				x.RaiseToTop(winList[winCount-1])
+				x.altTabIndex--
+				if x.altTabIndex < 0 {
+					x.altTabIndex = winCount - 1
+				}
 			} else {
-				x.RaiseToTop(winList[1])
+				x.altTabIndex++
+				if x.altTabIndex == winCount {
+					x.altTabIndex = 0
+				}
+			}
+
+			x.RaiseToTop(x.altTabList[x.altTabIndex])
+		case xproto.KeyReleaseEvent:
+			if ev.Detail == keyCodeAlt {
+				x.altTabList = nil
 			}
 		}
 	}
@@ -478,8 +506,11 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 }
 
 func (x *x11WM) bindKeys(win xproto.Window) {
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, 23, xproto.GrabModeAsync, xproto.GrabModeAsync)
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1, 23, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
+
+	xproto.GrabKey(x.x.Conn(), true, win, 0, keyCodeAlt, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift, keyCodeAlt, xproto.GrabModeAsync, xproto.GrabModeAsync)
 }
 
 func (x *x11WM) frameExisting() {
