@@ -220,6 +220,10 @@ func (f *frame) maximizeApply() {
 	f.client.restoreY = f.y
 
 	maxWidth, maxHeight := desktop.Instance().ContentSizePixels()
+	if f.client.full {
+		maxWidth = uint32(f.client.wm.x.Screen().WidthInPixels)
+		maxHeight = uint32(f.client.wm.x.Screen().HeightInPixels)
+	}
 	f.updateGeometry(0, 0, uint16(maxWidth), uint16(maxHeight))
 }
 
