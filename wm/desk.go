@@ -348,6 +348,15 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 	}
 }
 
+func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
+	switch clientMessageStateAction(ev.Data.Data32[0]) {
+	case clientMessageStateActionRemove:
+		windowExtendedHintsRemove(x.x, ev.Window, hint)
+	case clientMessageStateActionAdd:
+		windowExtendedHintsAdd(x.x, ev.Window, hint)
+	}
+}
+
 func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 	c := x.clientForWin(ev.Window)
 	msgAtom, err := xprop.AtomName(x.x, ev.Type)
@@ -355,16 +364,11 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		fyne.LogError("Error getting event", err)
 		return
 	}
-	if c == nil {
-		// A missing client for _NET_ACTIVE_WINDOW is normal - i.e. the window is not in the stack.
-		// Therefore, there is no need to print noise everytime this happens (possible on iconfications, destructions)
-		if msgAtom != "_NET_ACTIVE_WINDOW" {
-			fyne.LogError("Missing client for message", nil)
-		}
-		return
-	}
 	switch msgAtom {
 	case "WM_CHANGE_STATE":
+		if c == nil {
+			return
+		}
 		switch ev.Data.Bytes()[0] {
 		case icccm.StateIconic:
 			c.(*client).iconifyClient()
@@ -372,17 +376,27 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 			c.(*client).uniconifyClient()
 		}
 	case "_NET_ACTIVE_WINDOW":
+		if c == nil {
+			return
+		}
 		xproto.SetInputFocus(x.x.Conn(), 0, ev.Window, 0)
 		windowActiveSet(x.x, ev.Window)
 	case "_NET_WM_FULLSCREEN_MONITORS":
 		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
 		// TO FULLSCREEN ACROSS
 	case "_NET_WM_MOVERESIZE":
+		if c == nil {
+			return
+		}
 		x.handleMoveResize(ev, c.(*client))
 	case "_NET_WM_STATE":
 		subMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[1]))
 		if err != nil {
 			fyne.LogError("Error getting event", err)
+			return
+		}
+		if c == nil {
+			x.handleInitialHints(ev, subMsgAtom)
 			return
 		}
 		switch subMsgAtom {
