@@ -161,7 +161,6 @@ func (w *widgetPanel) batteryTick() {
 	go func() {
 		for {
 			w.battery.SetValue(battery())
-			w.brightness.SetValue(brightness())
 			<-tick.C
 		}
 	}()
@@ -303,10 +302,15 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		layout.NewSpacer(),
 		appExecButton,
 		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, w.battery),
-		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright),
-		themes,
-		buttons,
 	}
+
+	if _, err := exec.LookPath("xbacklight"); err == nil {
+		objects = append(objects,
+			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright))
+	}
+	objects = append(objects,
+		themes,
+		buttons)
 
 	return &widgetRenderer{
 		panel:   w,
