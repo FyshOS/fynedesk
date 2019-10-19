@@ -55,3 +55,20 @@ an operating system that does not support window managers (Windows or
 macOS) then the app will start in UI test mode.
 When loaded in this way you can run all of the features except the
 controlling of windows - they will load on your main desktop.
+
+# Runner
+
+A desktop needs to be rock solid and, whilst we are working hard to get there,
+any alpha or beta software can run in to unexpected issues. 
+For that reason we have included a `fynedesk_runner` utility that can help
+manage unexpected events. If you start the desktop using the runner then
+if a crash occurs it will normally recover where it left off with no loss
+of data in your applications.
+
+Using standard go tools you can install the runner using:
+
+    go get github.com/fyne-io/desktop/cmd/fynedesk_runner
+
+From then on execute that instead of the `fynedesk` command for a more 
+resillient desktop when testing out pre-release builds.
+
