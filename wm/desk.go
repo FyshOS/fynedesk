@@ -473,8 +473,6 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 	if c == nil {
 		return
 	}
-
-	x.RemoveWindow(c)
 	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
 }
 
@@ -504,6 +502,7 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 	if c == nil {
 		return
 	}
+	x.RemoveWindow(c)
 }
 
 func (x *x11WM) bindKeys(win xproto.Window) {
