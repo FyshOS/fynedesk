@@ -4,7 +4,6 @@ import "fyne.io/desktop"
 
 type stack struct {
 	clients []desktop.Window
-	top     desktop.Window
 
 	listeners []desktop.StackListener
 }
@@ -58,9 +57,6 @@ func (s *stack) TopWindow() desktop.Window {
 	if len(s.clients) == 0 {
 		return nil
 	}
-	if s.top != nil {
-		return s.top
-	}
 	return s.clients[0]
 }
 
@@ -73,12 +69,7 @@ func (s *stack) RaiseToTop(win desktop.Window) {
 		return
 	}
 	if len(s.clients) > 1 {
-		if s.top == nil {
-			s.top = s.clients[0]
-		}
-
-		win.RaiseAbove(s.top)
-		s.top = win
+		win.RaiseAbove(s.TopWindow())
 	}
 
 	s.removeFromStack(win)
