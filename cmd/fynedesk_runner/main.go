@@ -12,6 +12,7 @@ const runCmd = "fynedesk"
 func main() {
 	for {
 		exe := exec.Command(runCmd)
+		exe.Env = append(os.Environ(), "FYNE_DESK_RUNNER=1")
 		exe.Stdout = os.Stdout
 		exe.Stderr = os.Stderr
 		err := exe.Run()

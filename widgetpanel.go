@@ -267,6 +267,9 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	reload := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
 		os.Exit(1)
 	})
+	if os.Getenv("FYNE_DESK_RUNNER") == "" {
+		reload.Disable()
+	}
 	quit := widget.NewButton("Log Out", func() {
 		w.root.Close()
 	})
