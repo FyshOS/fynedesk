@@ -307,6 +307,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	if _, err := exec.LookPath("xbacklight"); err == nil {
 		objects = append(objects,
 			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright))
+		go w.setBrightness(0)
 	}
 	objects = append(objects,
 		themes,
