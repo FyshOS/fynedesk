@@ -20,6 +20,10 @@ func (*testDesk) Root() fyne.Window {
 func (*testDesk) Run() {
 }
 
+func (*testDesk) RunApp(app AppData) error {
+	return app.Run([]string{}) // no added env
+}
+
 func (*testDesk) Settings() DeskSettings {
 	return &testSettings{}
 }
@@ -57,4 +61,12 @@ func TestDeskLayout_Layout(t *testing.T) {
 	assert.Equal(t, l.widgets.Size().Height, deskSize.Height)
 	assert.Equal(t, l.bar.Size().Width, deskSize.Width)
 	assert.Equal(t, l.bar.Position().Y+l.bar.Size().Height, deskSize.Height)
+}
+
+func TestScaleVars(t *testing.T) {
+	l := &deskLayout{}
+	env := l.scaleVars(1.8)
+	assert.Contains(t, env, "QT_SCALE_FACTOR=1.8")
+	assert.Contains(t, env, "GDK_SCALE=2")
+	assert.Contains(t, env, "ELM_SCALE=1.8")
 }

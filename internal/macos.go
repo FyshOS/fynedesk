@@ -50,7 +50,8 @@ func (m *macOSAppBundle) Icon(_ string, _ int) fyne.Resource {
 	return fyne.NewStaticResource(strings.Replace(iconName, ".icns", ".png", 1), data.Bytes())
 }
 
-func (m *macOSAppBundle) Run() error {
+func (m *macOSAppBundle) Run([]string) error {
+	// in macOS test mode we ignore the wm env flags
 	return exec.Command("open", "-a", m.runPath).Start()
 }
 

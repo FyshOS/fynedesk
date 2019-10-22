@@ -104,7 +104,7 @@ func (d *dummyIcon) Icon(theme string, size int) fyne.Resource {
 	return fyne.NewStaticResource("test.png", []byte{})
 }
 
-func (d *dummyIcon) Run() error {
+func (d *dummyIcon) Run([]string) error {
 	// no-op
 	return nil
 }

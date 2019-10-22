@@ -20,7 +20,7 @@ func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
 	icon := newBarIcon(iconRes)
 	if taskbar == false {
 		icon.onTapped = func() {
-			err := data.Run()
+			err := b.desk.RunApp(data)
 			if err != nil {
 				fyne.LogError("Failed to start app", err)
 			}

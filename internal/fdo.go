@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -60,18 +61,25 @@ func extractArgs(args []string) []string {
 }
 
 //Run executes the command for this fdo app
-func (data *fdoApplicationData) Run() error {
+func (data *fdoApplicationData) Run(env []string) error {
+	vars := os.Environ()
+	for _, e := range env {
+		vars = append(vars, e)
+	}
 	commands := strings.Split(data.exec, " ")
 	command := commands[0]
 	if command[0] == '"' {
 		command = command[1 : len(command)-1]
 	}
-	if len(commands) == 1 {
-		return exec.Command(command).Start()
+
+	cmd := exec.Command(command)
+	if len(commands) > 1 {
+		cmd.Args = extractArgs(commands[1:])
 	}
 
-	args := extractArgs(commands[1:])
-	return exec.Command(command, args...).Start()
+	cmd.Env = vars
+	log.Println("env", vars)
+	return cmd.Start()
 }
 
 func loadIcon(path string) fyne.Resource {

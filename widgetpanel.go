@@ -101,7 +101,7 @@ func appExecPopUpListMatches(w *widgetPanel, win fyne.Window, appList *fyne.Cont
 	for _, data := range dataRange {
 		icon := data.Icon(iconTheme, 32) // TODO match theme but FDO needs power of 2 theme.IconInlineSize())
 		app := widget.NewButtonWithIcon(data.Name(), icon, func() {
-			err := data.Run()
+			err := w.desk.RunApp(data)
 			if err != nil {
 				fyne.LogError("Failed to start app", err)
 				return

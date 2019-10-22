@@ -4,8 +4,8 @@ import "fyne.io/fyne"
 
 // AppData is an interface for accessing information about application icons
 type AppData interface {
-	Name() string //Name is the name of the app usually
-	Run() error   //Run is the command to run the app
+	Name() string       // Name is the name of the app usually
+	Run([]string) error // Run is the command to run the app, passing any environment variables to be set
 
 	Icon(theme string, size int) fyne.Resource // Icon returns an icon for the app in the requested theme and size
 }
