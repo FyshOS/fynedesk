@@ -162,6 +162,13 @@ func (x *x11WM) runLoop() {
 			x.hideWindow(ev.Window)
 		case xproto.ConfigureRequestEvent:
 			x.configureWindow(ev.Window, ev)
+		case xproto.ConfigureNotifyEvent:
+			if ev.Window != x.x.RootWin() {
+				break
+			}
+			xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
+				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+				[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width), uint32(ev.Height)}).Check()
 		case xproto.DestroyNotifyEvent:
 			x.destroyWindow(ev.Window)
 		case xproto.PropertyNotifyEvent:
