@@ -212,13 +212,14 @@ func (x *x11WM) runLoop() {
 				}
 			}
 		case xproto.KeyPressEvent:
-			if ev.Detail == keyCodeAlt {
+			if x.altTabList == nil {
 				x.altTabList = []desktop.Window{}
 				for _, win := range x.Windows() {
 					x.altTabList = append(x.altTabList, win)
 				}
 				x.altTabIndex = 0
-				break
+
+				xproto.GrabKeyboard(x.x.Conn(), true, x.rootID, xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
 			}
 
 			if ev.Detail != keyCodeTab {
@@ -244,6 +245,7 @@ func (x *x11WM) runLoop() {
 		case xproto.KeyReleaseEvent:
 			if ev.Detail == keyCodeAlt {
 				x.altTabList = nil
+				xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
 			}
 		}
 	}
@@ -515,9 +517,6 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 func (x *x11WM) bindKeys(win xproto.Window) {
 	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
 	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
-
-	xproto.GrabKey(x.x.Conn(), true, win, 0, keyCodeAlt, xproto.GrabModeAsync, xproto.GrabModeAsync)
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift, keyCodeAlt, xproto.GrabModeAsync, xproto.GrabModeAsync)
 }
 
 func (x *x11WM) frameExisting() {
