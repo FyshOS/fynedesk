@@ -17,13 +17,6 @@ will do so until the 1.2 Fyne release completes in November.
 That said we use this regularly and would be happy for anyone to test,
 play with or contribute to this project and prepare it for a first release.
 
-# Prerequisites
-
-You will need the fyne toolkit installed which can be downloaded by the
-standard go tools:
-
-    go get -u fyne.io/fyne
-
 # Dependencies
 
 For a full desktop experience you will also need the following external tools installed:
