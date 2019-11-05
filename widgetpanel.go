@@ -8,6 +8,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -252,30 +253,36 @@ func (w *widgetPanel) createClock() {
 	go w.clockTick()
 }
 
-func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
-	themes := fyne.NewContainerWithLayout(layout.NewGridLayout(2),
-		widget.NewButton("Light", func() {
-			fyne.CurrentApp().Settings().SetTheme(theme.LightTheme())
-			_ = os.Setenv("FYNE_THEME", "light")
-		}),
-		widget.NewButton("Dark", func() {
-			fyne.CurrentApp().Settings().SetTheme(theme.DarkTheme())
-			_ = os.Setenv("FYNE_THEME", "dark")
+func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
+	items := []*fyne.MenuItem{fyne.NewMenuItem("Settings", settings.Show)}
+	if os.Getenv("FYNE_DESK_RUNNER") != "" {
+		items = append(items, fyne.NewMenuItem("Reload", func() {
+			os.Exit(1)
+		}))
+	}
+	items = append(items, fyne.NewMenuItem("Log Out", func() {
+			Instance().Root().Close()
 		}))
 
-	settings := widget.NewButtonWithIcon("", theme.SettingsIcon(), settings.Show)
-	reload := widget.NewButtonWithIcon("", theme.ViewRefreshIcon(), func() {
-		os.Exit(1)
-	})
-	if os.Getenv("FYNE_DESK_RUNNER") == "" {
-		reload.Disable()
-	}
-	quit := widget.NewButton("Log Out", func() {
-		w.root.Close()
-	})
-	buttons := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, reload, settings),
-		reload, settings, quit)
+	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), Instance().Root().Canvas())
 
+	bottomLeft := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
+	popup.Move(bottomLeft.Subtract(fyne.NewPos(0, popup.MinSize().Height)))
+	popup.Resize(fyne.NewSize(from.Size().Width, popup.Content.MinSize().Height))
+}
+
+func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
+	accountLabel := "Account"
+	homedir, err := os.UserHomeDir()
+	if err == nil {
+		accountLabel = path.Base(homedir)
+	} else {
+		fyne.LogError("Unable to look up user", err)
+	}
+	var account *widget.Button
+	account = widget.NewButtonWithIcon(accountLabel, wmtheme.UserIcon, func() {
+		w.showAccountMenu(account)
+	})
 	batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
 	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
@@ -311,8 +318,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		go w.setBrightness(0)
 	}
 	objects = append(objects,
-		themes,
-		buttons)
+		account)
 
 	return &widgetRenderer{
 		panel:   w,

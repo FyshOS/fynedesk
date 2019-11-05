@@ -16,6 +16,8 @@ var (
 	BatteryIcon = theme.NewThemedResource(batteryIcon, nil)
 	// BrightnessIcon is the material design icon for brightness in light and dark theme
 	BrightnessIcon = theme.NewThemedResource(brightnessIcon, nil)
+	// UserIcon is the material design icon for a user in light and dark theme
+	UserIcon = theme.NewThemedResource(personIcon, nil)
 	// DisplayIcon is the material design icon for computer displays in light and dark theme
 	DisplayIcon = theme.NewThemedResource(displayIcon, nil)
 	// BrokenImageIcon is the material design icon for a broken image
