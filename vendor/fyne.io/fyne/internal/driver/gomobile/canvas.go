@@ -13,6 +13,7 @@ import (
 
 type canvas struct {
 	content, overlay fyne.CanvasObject
+	windowHead       fyne.CanvasObject
 	painter          gl.Painter
 	scale            float32
 	size             fyne.Size
@@ -20,9 +21,9 @@ type canvas struct {
 	focused fyne.Focusable
 	padded  bool
 
-	typedRune func(rune)
-	typedKey  func(event *fyne.KeyEvent)
-	shortcut  fyne.ShortcutHandler
+	onTypedRune func(rune)
+	onTypedKey  func(event *fyne.KeyEvent)
+	shortcut    fyne.ShortcutHandler
 
 	inited, dirty  bool
 	lastTapDown    int64
@@ -38,7 +39,7 @@ func (c *canvas) Content() fyne.CanvasObject {
 func (c *canvas) SetContent(content fyne.CanvasObject) {
 	c.content = content
 
-	c.sizeContent(c.Size())
+	c.sizeContent(c.Size().Union(content.MinSize()))
 }
 
 func (c *canvas) Refresh(obj fyne.CanvasObject) {
@@ -52,9 +53,16 @@ func (c *canvas) Refresh(obj fyne.CanvasObject) {
 }
 
 func (c *canvas) sizeContent(size fyne.Size) {
+	offset := fyne.NewPos(0, 0)
+	if c.windowHead != nil {
+		topHeight := c.windowHead.MinSize().Height
+		offset = fyne.NewPos(0, topHeight)
+		c.windowHead.Resize(fyne.NewSize(size.Width, topHeight))
+	}
+
 	devicePadTopLeft, devicePadBottomRight := devicePadding()
 	innerSize := size.Subtract(devicePadTopLeft).Subtract(devicePadBottomRight)
-	topLeft := fyne.NewPos(devicePadTopLeft.Width, devicePadTopLeft.Height)
+	topLeft := offset.Add(fyne.NewPos(devicePadTopLeft.Width, devicePadTopLeft.Height))
 
 	c.size = size
 	if c.padded {
@@ -71,7 +79,7 @@ func (c *canvas) sizeContent(size fyne.Size) {
 	}
 }
 
-func (c *canvas) Resize(size fyne.Size) {
+func (c *canvas) resize(size fyne.Size) {
 	if size == c.size {
 		return
 	}
@@ -110,7 +118,13 @@ func (c *canvas) Scale() float32 {
 }
 
 func (c *canvas) SetScale(scale float32) {
-	c.scale = scale
+	if scale == fyne.SettingsScaleAuto {
+		c.scale = deviceScale()
+	} else if scale == 0 { // not set in the config
+		return
+	} else {
+		c.scale = scale
+	}
 }
 
 func (c *canvas) Overlay() fyne.CanvasObject {
@@ -126,19 +140,19 @@ func (c *canvas) SetOverlay(overlay fyne.CanvasObject) {
 }
 
 func (c *canvas) OnTypedRune() func(rune) {
-	return c.typedRune
+	return c.onTypedRune
 }
 
 func (c *canvas) SetOnTypedRune(typed func(rune)) {
-	c.typedRune = typed
+	c.onTypedRune = typed
 }
 
 func (c *canvas) OnTypedKey() func(*fyne.KeyEvent) {
-	return c.typedKey
+	return c.onTypedKey
 }
 
 func (c *canvas) SetOnTypedKey(typed func(*fyne.KeyEvent)) {
-	c.typedKey = typed
+	c.onTypedKey = typed
 }
 
 func (c *canvas) AddShortcut(shortcut fyne.Shortcut, handler func(shortcut fyne.Shortcut)) {
@@ -160,12 +174,36 @@ func (c *canvas) walkTree(
 	if c.overlay != nil {
 		driver.WalkVisibleObjectTree(c.overlay, beforeChildren, afterChildren)
 	}
+	if c.windowHead != nil {
+		driver.WalkVisibleObjectTree(c.windowHead, beforeChildren, afterChildren)
+	}
 }
 
 func (c *canvas) tapDown(pos fyne.Position) {
 	c.lastTapDown = time.Now().UnixNano()
 	c.lastTapDownPos = pos
 	c.dragging = nil
+
+	co, _ := driver.FindObjectAtPositionMatching(pos, func(object fyne.CanvasObject) bool {
+		if _, ok := object.(fyne.Focusable); ok {
+			return true
+		}
+
+		return false
+	}, c.overlay, c.content, c.windowHead)
+
+	needsFocus := true
+	wid := c.Focused()
+	if wid != nil {
+		if wid.(fyne.CanvasObject) != co {
+			c.Unfocus()
+		} else {
+			needsFocus = false
+		}
+	}
+	if wid, ok := co.(fyne.Focusable); ok && needsFocus {
+		c.Focus(wid)
+	}
 }
 
 func (c *canvas) tapMove(pos fyne.Position,
@@ -184,7 +222,7 @@ func (c *canvas) tapMove(pos fyne.Position,
 			}
 
 			return false
-		}, c.overlay, c.content)
+		}, c.overlay, c.content, c.windowHead)
 
 		if drag, ok := co.(fyne.Draggable); ok {
 			c.dragging = drag
@@ -223,7 +261,7 @@ func (c *canvas) tapUp(pos fyne.Position,
 		}
 
 		return false
-	}, c.overlay, c.content)
+	}, c.overlay, c.content, c.windowHead)
 
 	ev := new(fyne.PointEvent)
 	ev.Position = objPos

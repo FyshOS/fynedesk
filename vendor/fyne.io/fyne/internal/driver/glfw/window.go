@@ -1,5 +1,6 @@
 package glfw
 
+import "C"
 import (
 	"bytes"
 	"image"
@@ -60,6 +61,7 @@ type window struct {
 	mouseDragged       fyne.Draggable
 	mouseDraggedOffset fyne.Position
 	mouseDragPos       fyne.Position
+	mouseDragStarted   bool
 	mouseButton        desktop.MouseButton
 	mouseOver          desktop.Hoverable
 	mouseClickTime     time.Time
@@ -402,8 +404,8 @@ func (w *window) Canvas() fyne.Canvas {
 func (w *window) closed(viewport *glfw.Window) {
 	viewport.SetShouldClose(true)
 
-	driver.WalkCompleteObjectTree(w.canvas.content, nil, func(obj, _ fyne.CanvasObject) {
-		switch co := obj.(type) {
+	w.canvas.walkTrees(nil, func(node *renderCacheNode) {
+		switch co := node.obj.(type) {
 		case fyne.Widget:
 			widget.DestroyRenderer(co)
 		}
@@ -457,7 +459,7 @@ func (w *window) resized(viewport *glfw.Window, width, height int) {
 }
 
 func (w *window) frameSized(viewport *glfw.Window, width, height int) {
-	if !w.visible || width == 0 || height == 0 {
+	if width == 0 || height == 0 {
 		return
 	}
 
@@ -528,6 +530,7 @@ func (w *window) mouseMoved(viewport *glfw.Window, xpos float64, ypos float64) {
 			wd := w.mouseDragged
 			w.queueEvent(func() { wd.Dragged(ev) })
 
+			w.mouseDragStarted = true
 			w.mouseDragPos = w.mousePos
 		}
 	}
@@ -559,7 +562,7 @@ func (w *window) mouseOut() {
 	})
 }
 
-func (w *window) mouseClicked(viewport *glfw.Window, button glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
+func (w *window) mouseClicked(viewport *glfw.Window, btn glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
 	co, pos := w.findObjectAtPositionMatching(w.canvas, w.mousePos, func(object fyne.CanvasObject) bool {
 		if _, ok := object.(fyne.Tappable); ok {
 			return true
@@ -585,11 +588,12 @@ func (w *window) mouseClicked(viewport *glfw.Window, button glfw.MouseButton, ac
 		ev.Position = w.mousePos.Subtract(w.mouseDraggedOffset).Subtract(co.Position())
 	}
 
+	button, modifiers := convertMouseButton(btn, mods)
 	if wid, ok := co.(desktop.Mouseable); ok {
 		mev := new(desktop.MouseEvent)
 		mev.Position = ev.Position
-		mev.Button = convertMouseButton(button)
-		mev.Modifier = desktopModifier(mods)
+		mev.Button = button
+		mev.Modifier = modifiers
 		if action == glfw.Press {
 			w.queueEvent(func() { wid.MouseDown(mev) })
 		} else if action == glfw.Release {
@@ -600,29 +604,27 @@ func (w *window) mouseClicked(viewport *glfw.Window, button glfw.MouseButton, ac
 	needsfocus := true
 	wid := w.canvas.Focused()
 	if wid != nil {
-		needsfocus = false
 		if wid.(fyne.CanvasObject) != co {
 			w.canvas.Unfocus()
-			needsfocus = true
+		} else {
+			needsfocus = false
 		}
 	}
 
 	if action == glfw.Press {
-		w.mouseButton = convertMouseButton(button)
+		w.mouseButton = button
 	} else if action == glfw.Release {
 		w.mouseButton = 0
 	}
 
 	// we cannot switch here as objects may respond to multiple cases
-	if wid, ok := co.(fyne.Focusable); ok {
-		if needsfocus == true {
-			w.canvas.Focus(wid)
-		}
+	if wid, ok := co.(fyne.Focusable); ok && needsfocus {
+		w.canvas.Focus(wid)
 	}
 
 	// Check for double click/tap
 	doubleTapped := false
-	if action == glfw.Release && button == glfw.MouseButtonLeft {
+	if action == glfw.Release && button == desktop.LeftMouseButton {
 		now := time.Now()
 		// we can safely subtract the first "zero" time as it'll be much larger than doubleClickDelay
 		if now.Sub(w.mouseClickTime).Nanoseconds()/1e6 <= doubleClickDelay {
@@ -641,7 +643,7 @@ func (w *window) mouseClicked(viewport *glfw.Window, button glfw.MouseButton, ac
 		} else if action == glfw.Release {
 			if wid == w.mousePressed {
 				switch button {
-				case glfw.MouseButtonRight:
+				case desktop.RightMouseButton:
 					w.queueEvent(func() { wid.TappedSecondary(ev) })
 				default:
 					w.queueEvent(func() { wid.Tapped(ev) })
@@ -658,7 +660,10 @@ func (w *window) mouseClicked(viewport *glfw.Window, button glfw.MouseButton, ac
 		}
 	}
 	if action == glfw.Release && w.mouseDragged != nil {
-		w.mouseDragged.DragEnd()
+		if w.mouseDragStarted {
+			w.queueEvent(w.mouseDragged.DragEnd)
+			w.mouseDragStarted = false
+		}
 		if w.objIsDragged(w.mouseOver) && !w.objIsDragged(coMouse) {
 			w.mouseOut()
 		}
@@ -681,15 +686,31 @@ func (w *window) mouseScrolled(viewport *glfw.Window, xoff float64, yoff float64
 	}
 }
 
-func convertMouseButton(button glfw.MouseButton) desktop.MouseButton {
-	switch button {
-	case glfw.MouseButton1:
-		return desktop.LeftMouseButton
-	case glfw.MouseButton2:
-		return desktop.RightMouseButton
-	default:
-		return 0
+func convertMouseButton(btn glfw.MouseButton, mods glfw.ModifierKey) (desktop.MouseButton, desktop.Modifier) {
+	modifier := desktopModifier(mods)
+	var button desktop.MouseButton
+	rightClick := false
+	if runtime.GOOS == "darwin" {
+		if modifier&desktop.ControlModifier != 0 {
+			rightClick = true
+			modifier &^= desktop.ControlModifier
+		}
+		if modifier&desktop.SuperModifier != 0 {
+			modifier |= desktop.ControlModifier
+			modifier &^= desktop.SuperModifier
+		}
 	}
+	switch btn {
+	case glfw.MouseButton1:
+		if rightClick {
+			button = desktop.RightMouseButton
+		} else {
+			button = desktop.LeftMouseButton
+		}
+	case glfw.MouseButton2:
+		button = desktop.RightMouseButton
+	}
+	return button, modifier
 }
 
 func keyToName(key glfw.Key) fyne.KeyName {
@@ -753,6 +774,44 @@ func keyToName(key glfw.Key) fyne.KeyName {
 		return fyne.KeyEnter
 
 	// printable
+	case glfw.KeySpace:
+		return fyne.KeySpace
+	case glfw.KeyApostrophe:
+		return fyne.KeyApostrophe
+	case glfw.KeyComma:
+		return fyne.KeyComma
+	case glfw.KeyMinus:
+		return fyne.KeyMinus
+	case glfw.KeyPeriod:
+		return fyne.KeyPeriod
+	case glfw.KeySlash:
+		return fyne.KeySlash
+
+	case glfw.Key0:
+		return fyne.Key0
+	case glfw.Key1:
+		return fyne.Key1
+	case glfw.Key2:
+		return fyne.Key2
+	case glfw.Key3:
+		return fyne.Key3
+	case glfw.Key4:
+		return fyne.Key4
+	case glfw.Key5:
+		return fyne.Key5
+	case glfw.Key6:
+		return fyne.Key6
+	case glfw.Key7:
+		return fyne.Key7
+	case glfw.Key8:
+		return fyne.Key8
+	case glfw.Key9:
+		return fyne.Key9
+	case glfw.KeySemicolon:
+		return fyne.KeySemicolon
+	case glfw.KeyEqual:
+		return fyne.KeyEqual
+
 	case glfw.KeyA:
 		return fyne.KeyA
 	case glfw.KeyB:
@@ -805,26 +864,13 @@ func keyToName(key glfw.Key) fyne.KeyName {
 		return fyne.KeyY
 	case glfw.KeyZ:
 		return fyne.KeyZ
-	case glfw.Key0:
-		return fyne.Key0
-	case glfw.Key1:
-		return fyne.Key1
-	case glfw.Key2:
-		return fyne.Key2
-	case glfw.Key3:
-		return fyne.Key3
-	case glfw.Key4:
-		return fyne.Key4
-	case glfw.Key5:
-		return fyne.Key5
-	case glfw.Key6:
-		return fyne.Key6
-	case glfw.Key7:
-		return fyne.Key7
-	case glfw.Key8:
-		return fyne.Key8
-	case glfw.Key9:
-		return fyne.Key9
+
+	case glfw.KeyLeftBracket:
+		return fyne.KeyLeftBracket
+	case glfw.KeyBackslash:
+		return fyne.KeyBackslash
+	case glfw.KeyRightBracket:
+		return fyne.KeyRightBracket
 
 	// desktop
 	case glfw.KeyLeftShift:
