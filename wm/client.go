@@ -265,6 +265,13 @@ func (c *client) unmaximizeClient() {
 	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 }
 
+func (c *client) updateTitle() {
+	if c.frame == nil {
+		return
+	}
+	c.frame.setTitle()
+}
+
 func (c *client) setWindowGeometry(x int16, y int16, width uint16, height uint16) {
 	c.frame.updateGeometry(x, y, width, height)
 }
@@ -279,20 +286,24 @@ func (c *client) newFrame() {
 	} else {
 		c.frame = newFrameBorderless(c)
 	}
-	initialHints := windowExtendedHintsGet(c.wm.x, c.win)
-	for _, hint := range initialHints {
-		switch hint {
-		case "_NET_WM_STATE_FULLSCREEN":
-			c.fullscreenClient()
-		}
-		// TODO Handle more of these possible hints
-	}
 }
 
 func newClient(win xproto.Window, wm *x11WM) *client {
 	c := &client{win: win, wm: wm}
-	c.newFrame()
+	err := xproto.ChangeWindowAttributesChecked(wm.x.Conn(), win, xproto.CwEventMask, []uint32{xproto.EventMaskPropertyChange}).Check()
+	if err != nil {
+		fyne.LogError("Could not change window attributes", err)
+	}
 	windowAllowedActionsSet(wm.x, win, wm.allowedActions)
+	initialHints := windowExtendedHintsGet(c.wm.x, c.win)
+	for _, hint := range initialHints {
+		switch hint {
+		case "_NET_WM_STATE_FULLSCREEN":
+			c.full = true
+		}
+		// TODO Handle more of these possible hints
+	}
+	c.newFrame()
 
 	return c
 }

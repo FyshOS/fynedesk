@@ -173,6 +173,7 @@ func (x *x11WM) runLoop() {
 			x.destroyWindow(ev.Window)
 		case xproto.PropertyNotifyEvent:
 			//TODO For hotswapping borders, updating win titles, and more
+			x.handlePropertyChange(ev)
 		case xproto.ClientMessageEvent:
 			x.handleClientMessage(ev)
 		case xproto.ExposeEvent:
@@ -296,6 +297,24 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		}
 		x.rootID = win
 		x.loaded = true
+	}
+}
+
+func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
+	c := x.clientForWin(ev.Window)
+	if c == nil {
+		return
+	}
+	propAtom, err := xprop.AtomName(x.x, ev.Atom)
+	if err != nil {
+		fyne.LogError("Error getting event", err)
+		return
+	}
+	switch propAtom {
+	case "_NET_WM_NAME":
+		c.(*client).updateTitle()
+	case "WM_NAME":
+		c.(*client).updateTitle()
 	}
 }
 
