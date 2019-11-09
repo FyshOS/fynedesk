@@ -359,8 +359,7 @@ func (f *frame) applyTheme(force bool) {
 	}
 }
 
-func (f *frame) setTitle() {
-	//Should we somehow just be changing the label rather than forcing a theme apply?
+func (f *frame) updateTitle() {
 	f.applyTheme(true)
 }
 

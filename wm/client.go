@@ -269,7 +269,7 @@ func (c *client) updateTitle() {
 	if c.frame == nil {
 		return
 	}
-	c.frame.setTitle()
+	c.frame.updateTitle()
 }
 
 func (c *client) setWindowGeometry(x int16, y int16, width uint16, height uint16) {
