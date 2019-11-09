@@ -12,9 +12,10 @@ import (
 )
 
 func windowName(x *xgbutil.XUtil, win xproto.Window) string {
-	name, err := icccm.WmNameGet(x, win)
+	//Spec says _NET_WM_NAME is preferred to WM_NAME
+	name, err := ewmh.WmNameGet(x, win)
 	if err != nil {
-		name, err = ewmh.WmNameGet(x, win)
+		name, err = icccm.WmNameGet(x, win)
 		if err != nil {
 			return ""
 		}
