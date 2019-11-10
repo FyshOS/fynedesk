@@ -261,8 +261,8 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		}))
 	}
 	items = append(items, fyne.NewMenuItem("Log Out", func() {
-			Instance().Root().Close()
-		}))
+		Instance().Root().Close()
+	}))
 
 	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), Instance().Root().Canvas())
 
