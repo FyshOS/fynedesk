@@ -116,6 +116,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		"_NET_WM_STATE_SKIP_PAGER",
 		"_NET_WM_STATE_HIDDEN",
 		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_FRAME_EXTENTS",
 		"_NET_WM_NAME",
 		"_NET_WM_FULLSCREEN_MONITORS",
 		"_NET_MOVERESIZE_WINDOW",
@@ -172,7 +173,6 @@ func (x *x11WM) runLoop() {
 		case xproto.DestroyNotifyEvent:
 			x.destroyWindow(ev.Window)
 		case xproto.PropertyNotifyEvent:
-			//TODO For hotswapping borders, updating win titles, and more
 			x.handlePropertyChange(ev)
 		case xproto.ClientMessageEvent:
 			x.handleClientMessage(ev)
@@ -315,6 +315,8 @@ func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
 		c.(*client).updateTitle()
 	case "WM_NAME":
 		c.(*client).updateTitle()
+	case "_MOTIF_WM_HINTS":
+		c.(*client).changeBorder()
 	}
 }
 
@@ -383,10 +385,10 @@ func (x *x11WM) handleMoveResize(ev xproto.ClientMessageEvent, c *client) {
 	x.moveResizingLastX = int16(ev.Data.Data32[0])
 	x.moveResizingLastY = int16(ev.Data.Data32[1])
 	x.moveResizingType = moveResizeType(ev.Data.Data32[2])
-	xproto.GrabPointer(x.x.Conn(), true, c.win,
+	xproto.GrabPointer(x.x.Conn(), true, c.id,
 		xproto.EventMaskButtonPress|xproto.EventMaskButtonRelease|xproto.EventMaskPointerMotion,
 		xproto.GrabModeAsync, xproto.GrabModeAsync, x.x.RootWin(), xproto.CursorNone, xproto.TimeCurrentTime)
-	xproto.GrabKeyboard(x.x.Conn(), true, c.win, xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKeyboard(x.x.Conn(), true, c.id, xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
 }
 
 func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeState func(), addState func(), toggleCheck bool) {
@@ -459,7 +461,8 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		case "_NET_WM_STATE_FULLSCREEN":
 			x.handleStateActionRequest(ev, c.(*client).unfullscreenClient, c.(*client).fullscreenClient, c.Fullscreened())
 		case "_NET_WM_STATE_HIDDEN":
-			x.handleStateActionRequest(ev, c.(*client).uniconifyClient, c.(*client).iconifyClient, c.Iconic())
+			fyne.LogError("Extended Window Manager Hints says to ignore the HIDDEN state.", nil)
+		//	x.handleStateActionRequest(ev, c.(*client).uniconifyClient, c.(*client).iconifyClient, c.Iconic())
 		case "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ":
 			extraMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[2]))
 			if err != nil {

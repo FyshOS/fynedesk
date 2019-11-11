@@ -2,6 +2,7 @@
 
 package wm
 
+import "C"
 import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -46,10 +47,7 @@ func (s *stack) clientForWin(id xproto.Window) desktop.Window {
 }
 
 func (c *client) Decorated() bool {
-	if c.frame != nil {
-		return c.frame.framed
-	}
-	return false
+	return !windowBorderless(c.wm.x, c.win)
 }
 
 func (c *client) Title() string {
@@ -226,11 +224,13 @@ func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
 
 func (c *client) fullscreenClient() {
 	c.full = true
+	c.frame.changeBorder()
 	c.frame.maximizeApply()
 }
 
 func (c *client) unfullscreenClient() {
 	c.full = false
+	c.frame.changeBorder()
 	c.frame.unmaximizeApply()
 }
 
@@ -273,19 +273,19 @@ func (c *client) updateTitle() {
 }
 
 func (c *client) setWindowGeometry(x int16, y int16, width uint16, height uint16) {
-	c.frame.updateGeometry(x, y, width, height)
+	c.frame.updateGeometry(x, y, width, height, true)
 }
 
 func (c *client) getWindowGeometry() (int16, int16, uint16, uint16) {
 	return c.frame.getGeometry()
 }
 
+func (c *client) changeBorder() {
+	c.frame.changeBorder()
+}
+
 func (c *client) newFrame() {
-	if !windowBorderless(c.wm.x, c.win) {
-		c.frame = newFrame(c)
-	} else {
-		c.frame = newFrameBorderless(c)
-	}
+	c.frame = newFrame(c)
 }
 
 func newClient(win xproto.Window, wm *x11WM) *client {
