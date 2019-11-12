@@ -316,7 +316,7 @@ func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
 	case "WM_NAME":
 		c.(*client).updateTitle()
 	case "_MOTIF_WM_HINTS":
-		c.(*client).changeBorder()
+		c.(*client).setupBorder()
 	}
 }
 

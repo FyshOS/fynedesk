@@ -224,13 +224,11 @@ func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
 
 func (c *client) fullscreenClient() {
 	c.full = true
-	c.frame.changeBorder()
 	c.frame.maximizeApply()
 }
 
 func (c *client) unfullscreenClient() {
 	c.full = false
-	c.frame.changeBorder()
 	c.frame.unmaximizeApply()
 }
 
@@ -280,8 +278,12 @@ func (c *client) getWindowGeometry() (int16, int16, uint16, uint16) {
 	return c.frame.getGeometry()
 }
 
-func (c *client) changeBorder() {
-	c.frame.changeBorder()
+func (c *client) setupBorder() {
+	if c.Decorated() {
+		c.frame.addBorder()
+	} else {
+		c.frame.removeBorder()
+	}
 }
 
 func (c *client) newFrame() {
