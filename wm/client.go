@@ -2,7 +2,6 @@
 
 package wm
 
-import "C"
 import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
