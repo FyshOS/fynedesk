@@ -450,7 +450,7 @@ func newFrame(c *client) *frame {
 		y = 0
 		w = c.wm.x.Screen().WidthInPixels
 		h = c.wm.x.Screen().HeightInPixels
-	} else if !decorated{
+	} else if !decorated {
 		x = attrs.X
 		y = attrs.Y
 		w = attrs.Width
