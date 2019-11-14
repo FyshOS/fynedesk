@@ -2,6 +2,7 @@ package desktop
 
 import (
 	"fyne.io/fyne"
+	wmTheme "fyne.io/desktop/theme"
 )
 
 var (
@@ -14,10 +15,10 @@ func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
 		return nil
 	}
 	iconRes := data.Icon(iconTheme, int(float32(b.iconSize)*b.iconScale))
-	if iconRes == nil {
+	if iconRes == nil || iconRes == wmTheme.BrokenImageIcon {
 		iconRes = win.Icon()
 		if iconRes == nil {
-			return nil
+			iconRes = wmTheme.BrokenImageIcon
 		}
 	}
 	icon := newBarIcon(iconRes)
