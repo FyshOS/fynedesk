@@ -24,6 +24,7 @@ type Window interface {
 	Maximized() bool    // Is the window Maximized?
 	TopWindow() bool    // Is this the window on top?
 	SkipTaskbar() bool  // Should this window be added to the taskbar?
+	Focused() bool		// Is this the currently focused window?
 
 	Focus()            // Ask this window to get input focus
 	Close()            // Close this window and possibly the application running it

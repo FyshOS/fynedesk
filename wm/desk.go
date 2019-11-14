@@ -4,6 +4,7 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
+	"github.com/BurntSushi/xgbutil/xevent"
 	"log"
 
 	"fyne.io/desktop"
@@ -187,6 +188,7 @@ func (x *x11WM) runLoop() {
 					c.(*client).frame.press(ev.RootX, ev.RootY)
 				}
 			}
+			xevent.ReplayPointer(x.x)
 		case xproto.ButtonReleaseEvent:
 			for _, c := range x.clients {
 				if c.(*client).id == ev.Event {
@@ -520,6 +522,9 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	}
 
 	x.bindKeys(win)
+	xproto.GrabButton(x.x.Conn(), true, c.(*client).id,
+		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
+		x.x.RootWin(),  xproto.CursorNone, xproto.ButtonIndexAny, xproto.ModMaskAny)
 	if x.root != nil && windowName(x.x, win) == x.root.Title() {
 		return
 	}

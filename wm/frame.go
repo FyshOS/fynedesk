@@ -47,6 +47,11 @@ func (f *frame) unFrame() {
 }
 
 func (f *frame) press(x, y int16) {
+	if !f.client.Focused() {
+		f.client.RaiseToTop()
+		f.client.Focus()
+		return
+	}
 	f.mouseX = x
 	f.mouseY = y
 

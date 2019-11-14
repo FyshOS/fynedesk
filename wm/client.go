@@ -84,6 +84,18 @@ func (c *client) TopWindow() bool {
 	return false
 }
 
+func (c *client) Focused() bool {
+	focusedWin, err := windowActiveGet(c.wm.x)
+	if err != nil {
+		fyne.LogError("Could not determine focused window", err)
+		return false
+	}
+	if focusedWin == c.win {
+		return true
+	}
+	return false
+}
+
 func (c *client) SkipTaskbar() bool {
 	extendedHints := windowExtendedHintsGet(c.wm.x, c.win)
 	if extendedHints == nil {
