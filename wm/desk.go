@@ -524,7 +524,7 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	x.bindKeys(win)
 	xproto.GrabButton(x.x.Conn(), true, c.(*client).id,
 		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
-		x.x.RootWin(),  xproto.CursorNone, xproto.ButtonIndexAny, xproto.ModMaskAny)
+		x.x.RootWin(), xproto.CursorNone, xproto.ButtonIndexAny, xproto.ModMaskAny)
 	if x.root != nil && windowName(x.x, win) == x.root.Title() {
 		return
 	}
