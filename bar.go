@@ -9,11 +9,17 @@ var (
 )
 
 func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
-	iconTheme := b.desk.Settings().IconTheme()
-	if data == nil {
-		return nil
+	var iconRes fyne.Resource = nil
+	if taskbar == true {
+		iconRes = win.Icon()
 	}
-	iconRes := data.Icon(iconTheme, int(float32(b.iconSize)*b.iconScale))
+	if iconRes == nil {
+		iconTheme := b.desk.Settings().IconTheme()
+		if data == nil {
+			return nil
+		}
+		iconRes = data.Icon(iconTheme, int(float32(b.iconSize)*b.iconScale))
+	}
 	if iconRes == nil {
 		return nil
 	}

@@ -45,6 +45,10 @@ func (w *dummyWindow) IconName() string {
 	return w.iconName
 }
 
+func (w *dummyWindow) Icon() fyne.Resource {
+	return nil
+}
+
 func (*dummyWindow) Fullscreened() bool {
 	return false
 }

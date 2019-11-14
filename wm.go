@@ -14,17 +14,18 @@ type WindowManager interface {
 // Window represents a single managed window within a window manager.
 // There may be borders or not depending on configuration.
 type Window interface {
-	Decorated() bool    // Should this window have borders drawn?
-	Title() string      // The name of this window
-	Class() []string    // The class of this window
-	Command() string    // The command of this window
-	IconName() string   // The icon name of this window
-	Fullscreened() bool // Is the window Fullscreen?
-	Iconic() bool       // Is the window Iconified?
-	Maximized() bool    // Is the window Maximized?
-	TopWindow() bool    // Is this the window on top?
-	SkipTaskbar() bool  // Should this window be added to the taskbar?
-	Focused() bool      // Is this the currently focused window?
+	Decorated() bool     // Should this window have borders drawn?
+	Title() string       // The name of this window
+	Class() []string     // The class of this window
+	Command() string     // The command of this window
+	IconName() string    // The icon name of this window
+	Icon() fyne.Resource // The icon of this window
+	Fullscreened() bool  // Is the window Fullscreen?
+	Iconic() bool        // Is the window Iconified?
+	Maximized() bool     // Is the window Maximized?
+	TopWindow() bool     // Is this the window on top?
+	SkipTaskbar() bool   // Should this window be added to the taskbar?
+	Focused() bool       // Is this the currently focused window?
 
 	Focus()            // Ask this window to get input focus
 	Close()            // Close this window and possibly the application running it

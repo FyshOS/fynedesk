@@ -65,6 +65,15 @@ func (c *client) IconName() string {
 	return windowIconName(c.wm.x, c.win)
 }
 
+func (c *client) Icon() fyne.Resource {
+	var icon fyne.Resource = nil
+	xIcon := windowIcon(c.wm.x, c.win, iconSize, iconSize)
+	if xIcon.Bytes() != nil {
+		icon = fyne.NewStaticResource(c.Title(), xIcon.Bytes())
+	}
+	return icon
+}
+
 func (c *client) Fullscreened() bool {
 	return c.full
 }

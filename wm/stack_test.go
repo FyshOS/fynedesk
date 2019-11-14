@@ -1,6 +1,7 @@
 package wm
 
 import (
+	"fyne.io/fyne"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -29,6 +30,10 @@ func (*dummyWindow) Command() string {
 
 func (*dummyWindow) IconName() string {
 	return "DummyIcon"
+}
+
+func (*dummyWindow) Icon() fyne.Resource {
+	return nil
 }
 
 func (*dummyWindow) Fullscreened() bool {

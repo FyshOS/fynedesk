@@ -33,6 +33,10 @@ func (*dummyWindow) IconName() string {
 	return "xterm"
 }
 
+func (*dummyWindow) Icon() fyne.Resource {
+	return nil
+}
+
 func (*dummyWindow) Fullscreened() bool {
 	return false
 }

@@ -3,11 +3,13 @@
 package wm
 
 import (
+	"bytes"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/motif"
+	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
 )
 
@@ -60,6 +62,16 @@ func windowIconName(x *xgbutil.XUtil, win xproto.Window) string {
 	}
 
 	return icon
+}
+
+func windowIcon(x *xgbutil.XUtil, win xproto.Window, width int, height int) bytes.Buffer {
+	var w bytes.Buffer
+	img, err := xgraphics.FindIcon(x, win, width, height)
+	if err != nil {
+		return w
+	}
+	err = img.WritePng(&w)
+	return w
 }
 
 func windowBorderless(x *xgbutil.XUtil, win xproto.Window) bool {
