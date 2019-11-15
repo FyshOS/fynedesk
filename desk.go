@@ -92,7 +92,9 @@ func (l *deskLayout) Run() {
 	defer func() {
 		if r := recover(); r != nil {
 			log.Println("Crashed!!!")
-			l.wm.Close() // attempt to close cleanly to leave X server running
+			if l.wm != nil {
+				l.wm.Close() // attempt to close cleanly to leave X server running
+			}
 		}
 	}()
 
