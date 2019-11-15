@@ -1,8 +1,8 @@
 package desktop
 
 import (
-	"fyne.io/fyne"
 	wmTheme "fyne.io/desktop/theme"
+	"fyne.io/fyne"
 )
 
 var (
