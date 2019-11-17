@@ -2,13 +2,12 @@ package wm
 
 import (
 	"fyne.io/desktop"
+	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-
-	wmTheme "fyne.io/desktop/theme"
 )
 
 var iconSize = 32
@@ -20,11 +19,15 @@ func makeFiller() fyne.CanvasObject {
 	return filler
 }
 
-func newBorder(win desktop.Window) fyne.CanvasObject {
+func newBorder(win desktop.Window, icon fyne.Resource) fyne.CanvasObject {
 	desk := desktop.Instance()
-	iconTheme := desk.Settings().IconTheme()
-	app := desk.IconProvider().FindAppFromWinInfo(win)
-	icon := app.Icon(iconTheme, iconSize)
+
+	if icon == nil {
+		iconTheme := desk.Settings().IconTheme()
+		app := desk.IconProvider().FindAppFromWinInfo(win)
+		icon = app.Icon(iconTheme, iconSize)
+	}
+
 	titleBar := widget.NewHBox(makeFiller(),
 		widget.NewButtonWithIcon("", theme.CancelIcon(), func() {}),
 		widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {}),
