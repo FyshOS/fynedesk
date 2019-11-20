@@ -5,7 +5,7 @@ import (
 )
 
 func main() {
-	a := app.New()
+	a := app.NewWithID("io.fyne.desktop")
 	desk := setupDesktop(a)
 
 	desk.Run()

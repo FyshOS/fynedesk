@@ -47,6 +47,10 @@ func (*testSettings) IconTheme() string {
 	return "testTheme"
 }
 
+func (*testSettings) Background() string {
+	return ""
+}
+
 func TestDeskLayout_Layout(t *testing.T) {
 	l := &deskLayout{}
 	l.background = canvas.NewRectangle(color.White)

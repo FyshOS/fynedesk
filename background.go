@@ -10,7 +10,7 @@ import (
 )
 
 func wallpaperPath() string {
-	pathEnv := os.Getenv("FYNE_DESKTOP")
+	pathEnv := Instance().Settings().Background()
 	if pathEnv == "" {
 		return ""
 	}
