@@ -311,18 +311,28 @@ func (c *client) newFrame() {
 
 func newClient(win xproto.Window, wm *x11WM) *client {
 	c := &client{win: win, wm: wm}
-	err := xproto.ChangeWindowAttributesChecked(wm.x.Conn(), win, xproto.CwEventMask, []uint32{xproto.EventMaskPropertyChange}).Check()
+	err := xproto.ChangeWindowAttributesChecked(wm.x.Conn(), win, xproto.CwEventMask,
+		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow}).Check()
 	if err != nil {
 		fyne.LogError("Could not change window attributes", err)
 	}
 	windowAllowedActionsSet(wm.x, win, wm.allowedActions)
 	initialHints := windowExtendedHintsGet(c.wm.x, c.win)
+	removeHints := wm.pendingRemoveHints[win]
 	for _, hint := range initialHints {
 		switch hint {
 		case "_NET_WM_STATE_FULLSCREEN":
 			c.full = true
 		}
 		// TODO Handle more of these possible hints
+	}
+	for _, hint := range removeHints {
+		switch hint {
+		case "_NET_WM_STATE_HIDDEN":
+			c.uniconifyClient()
+		}
+		windowExtendedHintsRemove(wm.x, win, hint)
+		delete(wm.pendingRemoveHints, win)
 	}
 	c.newFrame()
 

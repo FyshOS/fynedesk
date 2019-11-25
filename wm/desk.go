@@ -4,8 +4,9 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
-	"github.com/BurntSushi/xgbutil/xevent"
 	"log"
+
+	"github.com/BurntSushi/xgbutil/xevent"
 
 	"fyne.io/desktop"
 	"fyne.io/fyne"
@@ -19,17 +20,17 @@ import (
 
 type x11WM struct {
 	stack
-	x                 *xgbutil.XUtil
-	root              fyne.Window
-	rootID            xproto.Window
-	loaded            bool
-	moveResizing      bool
-	moveResizingLastX int16
-	moveResizingLastY int16
-	moveResizingType  moveResizeType
-
-	altTabList  []desktop.Window
-	altTabIndex int
+	x                  *xgbutil.XUtil
+	root               fyne.Window
+	rootID             xproto.Window
+	loaded             bool
+	moveResizing       bool
+	moveResizingLastX  int16
+	moveResizingLastY  int16
+	moveResizingType   moveResizeType
+	pendingRemoveHints map[xproto.Window][]string
+	altTabList         []desktop.Window
+	altTabIndex        int
 
 	allowedActions []string
 	supportedHints []string
@@ -82,6 +83,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
+	mgr.pendingRemoveHints = make(map[xproto.Window][]string)
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -214,6 +216,12 @@ func (x *x11WM) runLoop() {
 					break
 				}
 			}
+		case xproto.EnterNotifyEvent:
+			err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Event, xproto.CwCursor,
+				[]uint32{uint32(defaultCursor)}).Check()
+			if err != nil {
+				fyne.LogError("Set Cursor Error", err)
+			}
 		case xproto.KeyPressEvent:
 			if x.altTabList == nil {
 				x.altTabList = []desktop.Window{}
@@ -274,6 +282,12 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 				if err != nil {
 					fyne.LogError("Configure Frame Error", err)
 				}
+			} else {
+				if ev.X == 0 && ev.Y == 0 {
+					ev.X = f.x
+					ev.Y = f.y
+				}
+				c.(*client).setWindowGeometry(ev.X, ev.Y, ev.Width, ev.Height)
 			}
 		}
 		return
@@ -411,7 +425,8 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 	switch clientMessageStateAction(ev.Data.Data32[0]) {
 	case clientMessageStateActionRemove:
-		windowExtendedHintsRemove(x.x, ev.Window, hint)
+		hints := x.pendingRemoveHints[ev.Window]
+		hints = append(hints, hint)
 	case clientMessageStateActionAdd:
 		windowExtendedHintsAdd(x.x, ev.Window, hint)
 	}
@@ -524,7 +539,7 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	x.bindKeys(win)
 	xproto.GrabButton(x.x.Conn(), true, c.(*client).id,
 		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
-		x.x.RootWin(), xproto.CursorNone, xproto.ButtonIndexAny, xproto.ModMaskAny)
+		x.x.RootWin(), xproto.CursorNone, xproto.ButtonIndex1, xproto.ModMaskAny)
 	if x.root != nil && windowName(x.x, win) == x.root.Title() {
 		return
 	}
