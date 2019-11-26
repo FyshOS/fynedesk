@@ -221,12 +221,32 @@ func (f *frame) maximizeApply() {
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
 
-	maxWidth, maxHeight := desktop.Instance().ContentSizePixels()
-	if f.client.Fullscreened() {
-		maxWidth = uint32(f.client.wm.x.Screen().WidthInPixels)
-		maxHeight = uint32(f.client.wm.x.Screen().HeightInPixels)
+	var headIndex, startX, startY int = 0, 0, 0
+	if f.client.wm.numberOfHeads > 1 {
+		for i := 0; i < f.client.wm.numberOfHeads; i++ {
+			x, y, w, h := f.client.wm.heads[i].Pieces()
+			if int(f.x) >= x && int(f.y) >= y &&
+				int(f.x) <= x+w && int(f.y) <= y+h {
+				headIndex = i
+				startX = x
+				startY = y
+				break
+			}
+		}
 	}
-	f.updateGeometry(0, 0, uint16(maxWidth), uint16(maxHeight), true)
+
+	maxWidth, maxHeight := desktop.Instance().ContentSizePixels(headIndex)
+	if f.client.Fullscreened() {
+		if f.client.wm.numberOfHeads > 1 {
+			_, _, w, h := getHeadGeometry(f.client.wm.activeHead, f.client.wm.heads)
+			maxWidth = uint32(w)
+			maxHeight = uint32(h)
+		} else {
+			maxWidth = uint32(f.client.wm.x.Screen().WidthInPixels)
+			maxHeight = uint32(f.client.wm.x.Screen().HeightInPixels)
+		}
+	}
+	f.updateGeometry(int16(startX), int16(startY), uint16(maxWidth), uint16(maxHeight), true)
 }
 
 func (f *frame) unmaximizeApply() {
@@ -451,10 +471,14 @@ func newFrame(c *client) *frame {
 	full := c.Fullscreened()
 	decorated := c.Decorated()
 	if full {
-		x = 0
-		y = 0
-		w = c.wm.x.Screen().WidthInPixels
-		h = c.wm.x.Screen().HeightInPixels
+		if c.wm.numberOfHeads > 1 {
+			x, y, w, h = getHeadGeometry(c.wm.activeHead, c.wm.heads)
+		} else {
+			x = 0
+			y = 0
+			w = c.wm.x.Screen().WidthInPixels
+			h = c.wm.x.Screen().HeightInPixels
+		}
 	} else if !decorated {
 		x = attrs.X
 		y = attrs.Y

@@ -2,6 +2,7 @@ package desktop // import "fyne.io/desktop"
 
 import (
 	"fmt"
+	"github.com/BurntSushi/xgbutil/xinerama"
 	"log"
 	"math"
 	"runtime/debug"
@@ -15,7 +16,7 @@ type Desktop interface {
 	Run()
 	RunApp(AppData) error
 	Settings() DeskSettings
-	ContentSizePixels() (uint32, uint32)
+	ContentSizePixels(headIndex int) (uint32, uint32)
 
 	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
@@ -30,19 +31,33 @@ type deskLayout struct {
 	icons    ApplicationProvider
 	settings DeskSettings
 
-	background, bar, widgets, mouse fyne.CanvasObject
+	heads xinerama.Heads
+
+	background          []fyne.CanvasObject
+	bar, widgets, mouse fyne.CanvasObject
 }
 
 func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
+	var x, y, w, h int = 0, 0, 0, 0
+	if l.heads != nil && len(l.heads) > 1 && len(l.background) > 1 {
+		x, y, w, h = l.heads[0].Pieces()
+		size.Width = w
+		size.Height = h
+		for i := 1; i < len(l.heads); i++ {
+			xx, yy, ww, hh := l.heads[i].Pieces()
+			l.background[i].Move(fyne.NewPos(xx, yy))
+			l.background[i].Resize(fyne.NewSize(ww, hh))
+		}
+	}
 	barHeight := l.bar.MinSize().Height
 	l.bar.Resize(fyne.NewSize(size.Width, barHeight))
-	l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
+	l.bar.Move(fyne.NewPos(x, size.Height-barHeight))
 
 	widgetsWidth := l.widgets.MinSize().Width
 	l.widgets.Resize(fyne.NewSize(widgetsWidth, size.Height))
-	l.widgets.Move(fyne.NewPos(size.Width-widgetsWidth, 0))
+	l.widgets.Move(fyne.NewPos(size.Width-widgetsWidth, y))
 
-	l.background.Resize(size)
+	l.background[0].Resize(size)
 }
 
 func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
@@ -63,18 +78,23 @@ func (l *deskLayout) newDesktopWindow() fyne.Window {
 func (l *deskLayout) Root() fyne.Window {
 	if l.win == nil {
 		l.win = l.newDesktopWindow()
-
-		l.background = newBackground()
+		l.background = append(l.background, newBackground())
 		l.bar = newBar(l)
 		l.widgets = newWidgetPanel(l)
 		l.mouse = newMouse()
-		l.win.SetContent(fyne.NewContainerWithLayout(l,
-			l.background,
+		container := fyne.NewContainerWithLayout(l,
+			l.background[0],
 			l.bar,
 			l.widgets,
-			mouse,
-		))
-
+			l.mouse,
+		)
+		if l.heads != nil && len(l.heads) > 1 {
+			for i := 1; i < len(l.heads); i++ {
+				l.background = append(l.background, newBackground())
+				container.AddObject(l.background[i])
+			}
+		}
+		l.win.SetContent(container)
 		l.mouse.Hide() // temporarily we do not handle mouse (using X default)
 		if l.wm != nil {
 			l.win.SetOnClosed(func() {
@@ -110,10 +130,16 @@ func (l *deskLayout) Settings() DeskSettings {
 	return l.settings
 }
 
-func (l *deskLayout) ContentSizePixels() (uint32, uint32) {
-	screenW := uint32(float32(l.background.Size().Width) * l.Root().Canvas().Scale())
-	screenH := uint32(float32(l.background.Size().Height) * l.Root().Canvas().Scale())
-	return screenW - uint32(float32(l.widgets.Size().Width)*l.Root().Canvas().Scale()), screenH
+func (l *deskLayout) ContentSizePixels(headIndex int) (uint32, uint32) {
+	if l.background[headIndex] != nil {
+		screenW := uint32(float32(l.background[headIndex].Size().Width) * l.Root().Canvas().Scale())
+		screenH := uint32(float32(l.background[headIndex].Size().Height) * l.Root().Canvas().Scale())
+		if headIndex == 0 {
+			return screenW - uint32(float32(l.widgets.Size().Width)*l.Root().Canvas().Scale()), screenH
+		}
+		return screenW, screenH
+	}
+	return 0, 0
 }
 
 func (l *deskLayout) IconProvider() ApplicationProvider {
@@ -142,8 +168,9 @@ func Instance() Desktop {
 // NewDesktop creates a new desktop in fullscreen for main usage.
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An ApplicationProvider is used to lookup application icons from the operating system.
-func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider) Desktop {
-	instance = &deskLayout{app: app, wm: wm, icons: icons, settings: NewDeskSettings()}
+func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider, heads xinerama.Heads) Desktop {
+	instance = &deskLayout{app: app, wm: wm, icons: icons, settings: NewDeskSettings(), heads: heads}
+
 	return instance
 }
 

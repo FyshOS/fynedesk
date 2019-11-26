@@ -4,6 +4,9 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
+	"fmt"
+	"github.com/BurntSushi/xgbutil/xinerama"
+	"github.com/BurntSushi/xgbutil/xwindow"
 	"log"
 
 	"github.com/BurntSushi/xgbutil/xevent"
@@ -20,17 +23,24 @@ import (
 
 type x11WM struct {
 	stack
-	x                  *xgbutil.XUtil
-	root               fyne.Window
-	rootID             xproto.Window
-	loaded             bool
-	moveResizing       bool
-	moveResizingLastX  int16
-	moveResizingLastY  int16
-	moveResizingType   moveResizeType
+	x      *xgbutil.XUtil
+	root   fyne.Window
+	rootID xproto.Window
+	loaded bool
+
+	moveResizing      bool
+	moveResizingLastX int16
+	moveResizingLastY int16
+	moveResizingType  moveResizeType
+
 	pendingRemoveHints map[xproto.Window][]string
-	altTabList         []desktop.Window
-	altTabIndex        int
+
+	altTabList  []desktop.Window
+	altTabIndex int
+
+	activeHead    int
+	heads         xinerama.Heads
+	numberOfHeads int
 
 	allowedActions []string
 	supportedHints []string
@@ -75,7 +85,7 @@ func (x *x11WM) SetRoot(win fyne.Window) {
 }
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
-func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
+func NewX11WindowManager(a fyne.App, icons desktop.ApplicationProvider) (desktop.Desktop, error) {
 	conn, err := xgbutil.NewConn()
 	if err != nil {
 		fyne.LogError("Failed to connect to the XServer", err)
@@ -83,6 +93,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
+
 	mgr.pendingRemoveHints = make(map[xproto.Window][]string)
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
@@ -129,6 +140,8 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.Dummy(), mgr.x.Dummy())
 	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), "Fyne Desktop")
+	ewmh.DesktopGeometrySet(mgr.x, &ewmh.DesktopGeometry{Width: xwindow.RootGeometry(mgr.x).Width(),
+		Height: xwindow.RootGeometry(mgr.x).Height()})
 
 	loadCursors(conn)
 	go mgr.runLoop()
@@ -144,7 +157,28 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		}
 	}()
 
-	return mgr, nil
+	mgr.heads = getHeads(mgr.x)
+	mgr.numberOfHeads = len(mgr.heads)
+	var desk desktop.Desktop
+	if mgr.numberOfHeads > 1 {
+		ewmh.NumberOfDesktopsSet(mgr.x, uint(mgr.numberOfHeads))
+		desks := make([]uint, uint(mgr.numberOfHeads))
+		deskNames := make([]string, uint(mgr.numberOfHeads))
+		for i := 0; i < mgr.numberOfHeads; i++ {
+			desks[i] = uint(i)
+			deskNames[i] = fmt.Sprintf("Screen%d", i)
+		}
+		ewmh.VisibleDesktopsSet(mgr.x, desks)
+		ewmh.DesktopNamesSet(mgr.x, deskNames)
+		mgr.activeHead = 0
+		desk = desktop.NewDesktop(a, mgr, icons, mgr.heads)
+		mgr.SetRoot(desk.Root())
+	} else {
+		desk = desktop.NewDesktop(a, mgr, icons, nil)
+		mgr.SetRoot(desk.Root())
+	}
+
+	return desk, nil
 }
 
 func (x *x11WM) runLoop() {

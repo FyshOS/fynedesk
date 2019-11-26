@@ -14,13 +14,10 @@ import (
 
 func setupDesktop(a fyne.App) desktop.Desktop {
 	icons := internal.NewFDOIconProvider()
-	mgr, err := wm.NewX11WindowManager(a)
+	desk, err := wm.NewX11WindowManager(a, icons)
 	if err != nil {
 		log.Println("Could not create window manager:", err)
 		return desktop.NewEmbeddedDesktop(a, icons)
 	}
-
-	desk := desktop.NewDesktop(a, mgr, icons)
-	mgr.SetRoot(desk.Root())
 	return desk
 }
