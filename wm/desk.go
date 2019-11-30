@@ -5,6 +5,8 @@ package wm // import "fyne.io/desktop/wm"
 import (
 	"errors"
 	"log"
+	"os"
+	"os/exec"
 
 	"github.com/BurntSushi/xgbutil/xevent"
 
@@ -72,6 +74,10 @@ func (x *x11WM) AddStackListener(l desktop.StackListener) {
 
 func (x *x11WM) SetRoot(win fyne.Window) {
 	x.root = win
+}
+
+func (x *x11WM) Blank() {
+	exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
 }
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.

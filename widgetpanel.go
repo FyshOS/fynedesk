@@ -254,7 +254,10 @@ func (w *widgetPanel) createClock() {
 }
 
 func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
-	items := []*fyne.MenuItem{fyne.NewMenuItem("Settings", settings.Show)}
+	items := []*fyne.MenuItem{
+		fyne.NewMenuItem("Settings", settings.Show),
+		fyne.NewMenuItem("Blank Screen", w.desk.wm.Blank),
+	}
 	if os.Getenv("FYNE_DESK_RUNNER") != "" {
 		items = append(items, fyne.NewMenuItem("Reload", func() {
 			os.Exit(1)
