@@ -32,10 +32,6 @@ func (bi *barIconRenderer) Objects() []fyne.CanvasObject {
 	return bi.objects
 }
 
-func (bi *barIconRenderer) ApplyTheme() {
-	bi.Refresh()
-}
-
 func (bi *barIconRenderer) BackgroundColor() color.Color {
 	return color.Transparent
 }
@@ -47,7 +43,7 @@ func (bi *barIconRenderer) Refresh() {
 		raster := canvas.NewImageFromResource(bi.image.resource)
 		raster.FillMode = canvas.ImageFillContain
 
-		bi.objects = append(bi.objects, raster)
+		bi.objects = []fyne.CanvasObject{raster}
 	}
 	bi.Layout(bi.image.Size())
 
@@ -59,7 +55,7 @@ func (bi *barIconRenderer) Destroy() {
 
 // barIcon widget is a basic image component that load's its resource to match the theme.
 type barIcon struct {
-	baseWidget
+	widget.BaseWidget
 
 	onTapped      func()        // The function that will be called when the icon is clicked
 	resource      fyne.Resource // The image data of the image that the icon uses
@@ -75,45 +71,17 @@ func (bi *barIcon) Tapped(*fyne.PointEvent) {
 func (bi *barIcon) TappedSecondary(*fyne.PointEvent) {
 }
 
-// Resize sets a new size for a widget.
-// Note this should not be used if the widget is being managed by a Layout within a Container.
-func (bi *barIcon) Resize(size fyne.Size) {
-	bi.resize(size, bi)
-}
-
-// Move the widget to a new position, relative to its parent.
-// Note this should not be used if the widget is being managed by a Layout within a Container.
-func (bi *barIcon) Move(pos fyne.Position) {
-	bi.move(pos, bi)
-}
-
-// MinSize returns the smallest size this widget can shrink to
-func (bi *barIcon) MinSize() fyne.Size {
-	return bi.minSize(bi)
-}
-
-// Show this widget, if it was previously hidden
-func (bi *barIcon) Show() {
-	bi.show(bi)
-}
-
-// Hide this widget, if it was previously visible
-func (bi *barIcon) Hide() {
-	bi.hide(bi)
-}
-
 // CreateRenderer is a private method to fyne which links this widget to its renderer
 func (bi *barIcon) CreateRenderer() fyne.WidgetRenderer {
 	render := &barIconRenderer{image: bi}
-
-	render.objects = []fyne.CanvasObject{}
+	render.Refresh()
 
 	return render
 }
 
 func newBarIcon(res fyne.Resource) *barIcon {
 	barIcon := &barIcon{resource: res}
+	barIcon.ExtendBaseWidget(barIcon)
 
-	widget.Refresh(barIcon)
 	return barIcon
 }

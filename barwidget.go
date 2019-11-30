@@ -12,7 +12,7 @@ import (
 
 //bar is the main widget housing the icon launcher
 type bar struct {
-	baseWidget
+	widget.BaseWidget
 
 	desk          Desktop             // The desktop instance we are holding icons for
 	children      []fyne.CanvasObject // Icons that are laid out by the bar
@@ -27,43 +27,19 @@ type bar struct {
 //MouseIn alerts the widget that the mouse has entered
 func (b *bar) MouseIn(*desktop.MouseEvent) {
 	b.mouseInside = true
+	b.Refresh()
 }
 
 //MouseOut alerts the widget that the mouse has left
 func (b *bar) MouseOut() {
 	b.mouseInside = false
-	widget.Renderer(b).Layout(b.Size())
+	b.Refresh()
 }
 
 //MouseMoved alerts the widget that the mouse has changed position
 func (b *bar) MouseMoved(event *desktop.MouseEvent) {
 	b.mousePosition = event.Position
-	widget.Renderer(b).Layout(b.Size())
-}
-
-//Resize resizes the widget to the provided size
-func (b *bar) Resize(size fyne.Size) {
-	b.resize(size, b)
-}
-
-//Move moves the widget to the provide position
-func (b *bar) Move(pos fyne.Position) {
-	b.move(pos, b)
-}
-
-//MinSize returns the minimum size of the widget
-func (b *bar) MinSize() fyne.Size {
-	return b.minSize(b)
-}
-
-//Show makes the widget visible
-func (b *bar) Show() {
-	b.show(b)
-}
-
-//Hide makes the widget hidden
-func (b *bar) Hide() {
-	b.hide(b)
+	b.Refresh()
 }
 
 //append adds an object to the end of the widget
@@ -73,18 +49,13 @@ func (b *bar) append(object fyne.CanvasObject) {
 	}
 	b.children = append(b.children, object)
 
-	widget.Refresh(b)
+	b.Refresh()
 }
 
 //appendSeparator adds a separator between the default icons and the taskbar
 func (b *bar) appendSeparator() {
-	object := canvas.NewRectangle(theme.TextColor())
-	if b.Hidden && object.Visible() {
-		object.Hide()
-	}
-	b.children = append(b.children, object)
-
-	widget.Refresh(b)
+	line := canvas.NewRectangle(theme.TextColor())
+	b.append(line)
 }
 
 //removeFromTaskbar removes an object from the taskbar area of the widget
@@ -98,7 +69,7 @@ func (b *bar) removeFromTaskbar(object fyne.CanvasObject) {
 		}
 	}
 
-	widget.Refresh(b)
+	b.Refresh()
 }
 
 //CreateRenderer creates the renderer that will be responsible for painting the widget
@@ -109,9 +80,10 @@ func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 //newAppBar returns a horizontal list of icons for an icon launcher
 func newAppBar(desk Desktop, children ...fyne.CanvasObject) *bar {
 	bar := &bar{desk: desk, children: children}
+	bar.ExtendBaseWidget(bar)
 	bar.iconSize = 32
 	bar.iconScale = 2.0
-	widget.Renderer(bar).Layout(bar.MinSize())
+
 	return bar
 }
 
@@ -133,10 +105,6 @@ func (b *barRenderer) Layout(size fyne.Size) {
 	b.layout.setPointerInside(b.appBar.mouseInside)
 	b.layout.setPointerPosition(b.appBar.mousePosition)
 	b.layout.Layout(b.objects, size)
-}
-
-//ApplyTheme sets the theme object on the widget
-func (b *barRenderer) ApplyTheme() {
 }
 
 //BackgroundColor returns the background color of the widget

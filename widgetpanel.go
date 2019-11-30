@@ -38,9 +38,6 @@ func (w *widgetRenderer) Layout(size fyne.Size) {
 }
 
 func (w *widgetRenderer) Refresh() {
-}
-
-func (w *widgetRenderer) ApplyTheme() {
 	w.panel.clock.Color = theme.TextColor()
 	canvas.Refresh(w.panel.clock)
 }
@@ -61,7 +58,7 @@ func (w *widgetRenderer) Destroy() {
 }
 
 type widgetPanel struct {
-	baseWidget
+	widget.BaseWidget
 
 	desk       *deskLayout
 	root       fyne.Window
@@ -70,30 +67,6 @@ type widgetPanel struct {
 	clock               *canvas.Text
 	date                *widget.Label
 	battery, brightness *widget.ProgressBar
-}
-
-func (w *widgetPanel) Hide() {
-	w.hide(w)
-}
-
-func (w *widgetPanel) MinSize() fyne.Size {
-	return widget.Renderer(w).MinSize()
-}
-
-func (w *widgetPanel) Move(pos fyne.Position) {
-	w.move(pos, w)
-}
-
-func (w *widgetPanel) Position() fyne.Position {
-	return w.position
-}
-
-func (w *widgetPanel) Resize(size fyne.Size) {
-	w.resize(size, w)
-}
-
-func (w *widgetPanel) Show() {
-	w.show(w)
 }
 
 func appExecPopUpListMatches(w *widgetPanel, win fyne.Window, appList *fyne.Container, input string) {
@@ -336,6 +309,7 @@ func newWidgetPanel(rootDesk *deskLayout) *widgetPanel {
 		root:       rootDesk.win,
 		appExecWin: nil,
 	}
+	w.ExtendBaseWidget(w)
 	w.createClock()
 	w.createBattery()
 
