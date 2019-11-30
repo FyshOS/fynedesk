@@ -2,6 +2,7 @@ package gomobile
 
 import (
 	"fyne.io/fyne"
+	"fyne.io/fyne/internal/cache"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
@@ -14,8 +15,9 @@ type window struct {
 	isChild  bool
 
 	clipboard fyne.Clipboard
-	canvas    *canvas
+	canvas    *mobileCanvas
 	icon      fyne.Resource
+	menu      *fyne.MainMenu
 }
 
 func (w *window) Title() string {
@@ -35,7 +37,7 @@ func (w *window) SetFullScreen(bool) {
 }
 
 func (w *window) Resize(size fyne.Size) {
-	w.Canvas().(*canvas).resize(size)
+	w.Canvas().(*mobileCanvas).resize(size)
 }
 
 func (w *window) RequestFocus() {
@@ -79,12 +81,11 @@ func (w *window) SetMaster() {
 }
 
 func (w *window) MainMenu() *fyne.MainMenu {
-	// TODO add mainmenu support for mobile (burger and sidebar?)
-	return nil
+	return w.menu
 }
 
-func (w *window) SetMainMenu(*fyne.MainMenu) {
-	// TODO add mainmenu support for mobile (burger and sidebar?)
+func (w *window) SetMainMenu(menu *fyne.MainMenu) {
+	w.menu = menu
 }
 
 func (w *window) SetOnClosed(callback func()) {
@@ -92,16 +93,26 @@ func (w *window) SetOnClosed(callback func()) {
 }
 
 func (w *window) Show() {
+	menu := fyne.CurrentApp().Driver().(*mobileDriver).findMenu(w)
+	menuButton := widget.NewButtonWithIcon("", theme.MenuIcon(), func() {
+		w.canvas.showMenu(menu)
+	})
+	if menu == nil {
+		menuButton.Hide()
+	}
+
 	if w.isChild {
 		exit := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
 			w.Close()
 		})
 		title := widget.NewLabel(w.title)
 		title.Alignment = fyne.TextAlignCenter
-		w.canvas.windowHead = widget.NewHBox(exit,
-			layout.NewSpacer(), title, layout.NewSpacer())
+		w.canvas.windowHead = widget.NewHBox(menuButton,
+			layout.NewSpacer(), title, layout.NewSpacer(), exit)
 
 		w.canvas.resize(w.canvas.size)
+	} else {
+		w.canvas.windowHead = widget.NewHBox(menuButton)
 	}
 	w.visible = true
 
@@ -133,7 +144,7 @@ func (w *window) Close() {
 	w.canvas.walkTree(nil, func(obj, _ fyne.CanvasObject) {
 		switch co := obj.(type) {
 		case fyne.Widget:
-			widget.DestroyRenderer(co)
+			cache.DestroyRenderer(co)
 		}
 	})
 
@@ -160,10 +171,9 @@ func (w *window) Canvas() fyne.Canvas {
 }
 
 func (w *window) Clipboard() fyne.Clipboard {
-	//if w.clipboard == nil {
-	//	w.clipboard = &mobileClipboard{window: w.viewport}
-	//}
-	// TODO add clipboard support
+	if w.clipboard == nil {
+		w.clipboard = &mobileClipboard{}
+	}
 	return w.clipboard
 }
 

@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/internal/app"
+	"fyne.io/fyne/internal/cache"
 	"fyne.io/fyne/internal/driver"
 	"fyne.io/fyne/internal/painter/gl"
 	"fyne.io/fyne/theme"
@@ -102,9 +103,6 @@ func (c *glCanvas) SetOverlay(overlay fyne.CanvasObject) {
 	c.overlayTree = &renderCacheTree{root: &renderCacheNode{obj: c.overlay}}
 	c.Unlock()
 
-	if overlay != nil {
-		c.overlay.Resize(c.Size())
-	}
 	c.setDirty(true)
 }
 
@@ -155,10 +153,8 @@ func (c *glCanvas) Resize(size fyne.Size) {
 	c.content.Resize(c.contentSize(size))
 	c.content.Move(c.contentPos())
 
-	if c.overlay != nil {
-		c.overlay.Resize(size)
-	}
 	if c.menu != nil {
+		c.menu.Refresh()
 		c.menu.Resize(fyne.NewSize(size.Width, c.menu.MinSize().Height))
 	}
 	c.Refresh(c.content)
@@ -271,7 +267,7 @@ func (c *glCanvas) ensureMinSize() bool {
 					cont.Layout.Layout(cont.Objects, cont.Size())
 				}
 			case fyne.Widget:
-				widget.Renderer(cont).Layout(cont.Size())
+				cache.Renderer(cont).Layout(cont.Size())
 			default:
 				fmt.Printf("implementation error - unknown container type: %T\n", cont)
 			}
