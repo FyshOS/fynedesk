@@ -9,6 +9,7 @@ type WindowManager interface {
 
 	Close()
 	SetRoot(fyne.Window)
+	Blank()
 }
 
 // Window represents a single managed window within a window manager.

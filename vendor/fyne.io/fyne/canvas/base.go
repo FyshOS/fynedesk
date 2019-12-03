@@ -3,9 +3,6 @@ package canvas // import "fyne.io/fyne/canvas"
 
 import "fyne.io/fyne"
 
-// Declare conformity with CanvasObject interface
-var _ fyne.CanvasObject = (*baseObject)(nil)
-
 type baseObject struct {
 	size     fyne.Size     // The current size of the Rectangle
 	position fyne.Position // The current position of the Rectangle
@@ -65,6 +62,10 @@ func (r *baseObject) Hide() {
 
 // Refresh instructs the containing canvas to refresh the specified obj.
 func Refresh(obj fyne.CanvasObject) {
+	if fyne.CurrentApp() == nil || fyne.CurrentApp().Driver() == nil {
+		return
+	}
+
 	c := fyne.CurrentApp().Driver().CanvasForObject(obj)
 	if c != nil {
 		c.Refresh(obj)

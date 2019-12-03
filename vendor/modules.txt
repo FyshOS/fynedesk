@@ -1,4 +1,4 @@
-# fyne.io/fyne v1.1.3-0.20191105154505-de8e5fc7ff7b
+# fyne.io/fyne v1.2.0-beta1
 fyne.io/fyne
 fyne.io/fyne/app
 fyne.io/fyne/canvas
@@ -6,6 +6,7 @@ fyne.io/fyne/cmd/fyne_settings/settings
 fyne.io/fyne/driver/desktop
 fyne.io/fyne/internal
 fyne.io/fyne/internal/app
+fyne.io/fyne/internal/cache
 fyne.io/fyne/internal/driver
 fyne.io/fyne/internal/driver/glfw
 fyne.io/fyne/internal/driver/gomobile
@@ -17,6 +18,14 @@ fyne.io/fyne/test
 fyne.io/fyne/theme
 fyne.io/fyne/tools/playground
 fyne.io/fyne/widget
+# github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298
+github.com/BurntSushi/freetype-go/freetype
+github.com/BurntSushi/freetype-go/freetype/raster
+github.com/BurntSushi/freetype-go/freetype/truetype
+# github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966
+github.com/BurntSushi/graphics-go/graphics
+github.com/BurntSushi/graphics-go/graphics/convolve
+github.com/BurntSushi/graphics-go/graphics/interp
 # github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802
 github.com/BurntSushi/xgb
 github.com/BurntSushi/xgb/shape
@@ -31,6 +40,8 @@ github.com/BurntSushi/xgbutil/motif
 github.com/BurntSushi/xgbutil/mousebind
 github.com/BurntSushi/xgbutil/xcursor
 github.com/BurntSushi/xgbutil/xevent
+github.com/BurntSushi/xgbutil/xgraphics
+github.com/BurntSushi/xgbutil/xinerama
 github.com/BurntSushi/xgbutil/xprop
 github.com/BurntSushi/xgbutil/xrect
 github.com/BurntSushi/xgbutil/xwindow

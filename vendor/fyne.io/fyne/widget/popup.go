@@ -13,7 +13,7 @@ import (
 // It wraps any standard elements with padding and a shadow.
 // If it is modal then the shadow will cover the entire canvas it hovers over and block interactions.
 type PopUp struct {
-	baseWidget
+	BaseWidget
 
 	Content fyne.CanvasObject
 	Canvas  fyne.Canvas
@@ -23,13 +23,8 @@ type PopUp struct {
 
 // Hide this widget, if it was previously visible
 func (p *PopUp) Hide() {
-	p.hide(p)
+	p.BaseWidget.Hide()
 	p.Canvas.SetOverlay(nil)
-}
-
-// MinSize returns the smallest size this widget can shrink to
-func (p *PopUp) MinSize() fyne.Size {
-	return p.minSize(p)
 }
 
 // Move the widget to a new position. A PopUp position is absolute to the top, left of its canvas.
@@ -39,35 +34,36 @@ func (p *PopUp) Move(pos fyne.Position) {
 		return
 	}
 
-	if pos.X+p.Content.Size().Width > p.Canvas.Size().Width-theme.Padding()*2 {
-		pos.X = p.Canvas.Size().Width - p.Content.Size().Width - theme.Padding()*2
+	innerSize := p.Content.MinSize().Union(p.Content.Size())
+	if pos.X+innerSize.Width > p.Canvas.Size().Width-theme.Padding()*2 {
+		pos.X = p.Canvas.Size().Width - innerSize.Width - theme.Padding()*2
 		if pos.X < 0 {
 			pos.X = 0 // TODO here we may need a scroller as it's wider than our canvas
 		}
 	}
 
-	if pos.Y+p.Content.Size().Height > p.Canvas.Size().Height-theme.Padding()*2 {
-		pos.Y = p.Canvas.Size().Height - p.Content.Size().Height - theme.Padding()*2
+	if pos.Y+innerSize.Height > p.Canvas.Size().Height-theme.Padding()*2 {
+		pos.Y = p.Canvas.Size().Height - innerSize.Height - theme.Padding()*2
 		if pos.Y < 0 {
 			pos.Y = 0 // TODO here we may need a scroller as it's longer than our canvas
 		}
 	}
 
 	p.Content.Move(pos.Add(fyne.NewPos(theme.Padding(), theme.Padding())))
-	Renderer(p).Layout(p.Size())
+	p.Refresh()
 }
 
 // Resize sets a new size for a widget. Most PopUp widgets are shown at MinSize.
 func (p *PopUp) Resize(size fyne.Size) {
-	p.resize(p.Canvas.Size(), p)
+	p.BaseWidget.Resize(p.Canvas.Size())
 
 	p.Content.Resize(size.Subtract(fyne.NewSize(theme.Padding()*2, theme.Padding()*2)))
-	Renderer(p).Layout(p.Size())
+	p.Refresh()
 }
 
 // Show this widget, if it was previously hidden
 func (p *PopUp) Show() {
-	p.show(p)
+	p.BaseWidget.Show()
 	p.Canvas.SetOverlay(p)
 }
 
@@ -85,8 +81,15 @@ func (p *PopUp) TappedSecondary(_ *fyne.PointEvent) {
 	}
 }
 
+// MinSize returns the size that this widget should not shrink below
+func (p *PopUp) MinSize() fyne.Size {
+	p.ExtendBaseWidget(p)
+	return p.BaseWidget.MinSize()
+}
+
 // CreateRenderer is a private method to Fyne which links this widget to its renderer
 func (p *PopUp) CreateRenderer() fyne.WidgetRenderer {
+	p.ExtendBaseWidget(p)
 	if p.modal {
 		bg := canvas.NewRectangle(theme.BackgroundColor())
 		return &modalPopUpRenderer{center: layout.NewCenterLayout(), popUp: p, bg: bg,
@@ -99,17 +102,29 @@ func (p *PopUp) CreateRenderer() fyne.WidgetRenderer {
 	return &popUpRenderer{popUp: p, shadow: shadow, bg: bg, objects: objects}
 }
 
-// NewPopUp creates a new popUp for the specified content and displays it on the passed canvas.
-func NewPopUp(content fyne.CanvasObject, canvas fyne.Canvas) *PopUp {
+// NewPopUpAtPosition creates a new popUp for the specified content at the specified absolute position.
+// It will then display the popup it on the passed canvas.
+func NewPopUpAtPosition(content fyne.CanvasObject, canvas fyne.Canvas, pos fyne.Position) *PopUp {
 	ret := &PopUp{Content: content, Canvas: canvas, modal: false}
+	ret.ExtendBaseWidget(ret)
+	ret.Move(pos)
+
+	ret.Resize(ret.Content.MinSize())
 	ret.Show()
 	return ret
+}
+
+// NewPopUp creates a new popUp for the specified content and displays it on the passed canvas.
+func NewPopUp(content fyne.CanvasObject, canvas fyne.Canvas) *PopUp {
+	return NewPopUpAtPosition(content, canvas, fyne.NewPos(0, 0))
 }
 
 // NewModalPopUp creates a new popUp for the specified content and displays it on the passed canvas.
 // A modal PopUp blocks interactions with underlying elements, covered with a semi-transparent overlay.
 func NewModalPopUp(content fyne.CanvasObject, canvas fyne.Canvas) *PopUp {
 	ret := &PopUp{Content: content, Canvas: canvas, modal: true}
+	ret.ExtendBaseWidget(ret)
+	ret.Resize(ret.MinSize())
 	ret.Show()
 	return ret
 }
@@ -139,9 +154,6 @@ func (r *popUpRenderer) MinSize() fyne.Size {
 }
 
 func (r *popUpRenderer) Refresh() {
-}
-
-func (r *popUpRenderer) ApplyTheme() {
 	r.bg.FillColor = theme.BackgroundColor()
 }
 
@@ -175,9 +187,6 @@ func (r *modalPopUpRenderer) MinSize() fyne.Size {
 }
 
 func (r *modalPopUpRenderer) Refresh() {
-}
-
-func (r *modalPopUpRenderer) ApplyTheme() {
 	r.bg.FillColor = theme.BackgroundColor()
 }
 

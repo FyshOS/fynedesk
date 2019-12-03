@@ -5,9 +5,11 @@ package wm // import "fyne.io/desktop/wm"
 import (
 	"errors"
 	"fmt"
-	"github.com/BurntSushi/xgbutil/xinerama"
+	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgbutil/xwindow"
 	"log"
+	"os"
+	"os/exec"
 
 	"github.com/BurntSushi/xgbutil/xevent"
 
@@ -23,24 +25,19 @@ import (
 
 type x11WM struct {
 	stack
-	x      *xgbutil.XUtil
-	root   fyne.Window
-	rootID xproto.Window
-	loaded bool
-
+	x                 *xgbutil.XUtil
+	root              fyne.Window
+	rootID            xproto.Window
+	loaded            bool
 	moveResizing      bool
 	moveResizingLastX int16
 	moveResizingLastY int16
 	moveResizingType  moveResizeType
-
-	pendingRemoveHints map[xproto.Window][]string
-
-	altTabList  []desktop.Window
-	altTabIndex int
-
-	activeHead    int
-	heads         xinerama.Heads
-	numberOfHeads int
+	altTabList        []desktop.Window
+	altTabIndex       int
+	screens           []desktop.Screen
+	active            int
+	primary           int
 
 	allowedActions []string
 	supportedHints []string
@@ -84,8 +81,24 @@ func (x *x11WM) SetRoot(win fyne.Window) {
 	x.root = win
 }
 
+func (x *x11WM) Blank() {
+	exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
+}
+
+func (x *x11WM) Screens() []desktop.Screen {
+	return x.screens
+}
+
+func (x *x11WM) Active() int {
+	return x.active
+}
+
+func (x *x11WM) Primary() int {
+	return x.primary
+}
+
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
-func NewX11WindowManager(a fyne.App, icons desktop.ApplicationProvider) (desktop.Desktop, error) {
+func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	conn, err := xgbutil.NewConn()
 	if err != nil {
 		fyne.LogError("Failed to connect to the XServer", err)
@@ -93,8 +106,6 @@ func NewX11WindowManager(a fyne.App, icons desktop.ApplicationProvider) (desktop
 	}
 
 	mgr := &x11WM{x: conn}
-
-	mgr.pendingRemoveHints = make(map[xproto.Window][]string)
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -143,6 +154,63 @@ func NewX11WindowManager(a fyne.App, icons desktop.ApplicationProvider) (desktop
 	ewmh.DesktopGeometrySet(mgr.x, &ewmh.DesktopGeometry{Width: xwindow.RootGeometry(mgr.x).Width(),
 		Height: xwindow.RootGeometry(mgr.x).Height()})
 
+	err = randr.Init(mgr.x.Conn())
+	if err != nil {
+		fyne.LogError("Could not initialize randr", err)
+	} else {
+		root := xproto.Setup(mgr.x.Conn()).DefaultScreen(mgr.x.Conn()).Root
+		resources, err := randr.GetScreenResources(mgr.x.Conn(), root).Reply()
+		if err != nil {
+			fyne.LogError("Could not get randr screen resources", err)
+		} else {
+			primary, err := randr.GetOutputPrimary(mgr.x.Conn(),
+				xproto.Setup(mgr.x.Conn()).DefaultScreen(mgr.x.Conn()).Root).Reply()
+			if err != nil {
+				fyne.LogError("Could not determine randr primary output", err)
+			}
+			primaryInfo, err := randr.GetOutputInfo(mgr.x.Conn(), primary.Output, 0).Reply()
+			if err != nil {
+				fyne.LogError("Could not determine randr primary output information", err)
+			}
+			i := 0
+			for _, output := range resources.Outputs {
+				outputInfo, err := randr.GetOutputInfo(mgr.x.Conn(), output, 0).Reply()
+				if err != nil {
+					fyne.LogError("Could not get randr output", err)
+					continue
+				}
+				if outputInfo.Crtc == 0 || outputInfo.Connection == randr.ConnectionDisconnected {
+					continue
+				}
+				crtcInfo, err := randr.GetCrtcInfo(mgr.x.Conn(), outputInfo.Crtc, 0).Reply()
+				if err != nil {
+					fyne.LogError("Could not get randr crtcs", err)
+					continue
+				}
+
+				scale := a.Settings().Scale()
+				mgr.screens = append(mgr.screens, desktop.Screen{Name: string(outputInfo.Name), Index: i,
+					X: int(float32(crtcInfo.X) * scale), Y: int(float32(crtcInfo.Y) * scale),
+					Width: int(float32(crtcInfo.Width) * scale), Height: int(float32(crtcInfo.Height) * scale)})
+				if primaryInfo != nil {
+					if string(primaryInfo.Name) == string(outputInfo.Name) {
+						mgr.primary = i
+						mgr.active = i
+					}
+				}
+				i++
+			}
+		}
+	}
+	if len(mgr.screens) == 0 {
+		ewmh.NumberOfDesktopsSet(mgr.x, uint(1))
+		mgr.screens = append(mgr.screens, desktop.Screen{Name: "Screen0", Index: 0,
+			X: xwindow.RootGeometry(mgr.x).X(), Y: xwindow.RootGeometry(mgr.x).Y(),
+			Width: xwindow.RootGeometry(mgr.x).Width(), Height: xwindow.RootGeometry(mgr.x).Height()})
+		mgr.primary = 0
+		mgr.active = 0
+	}
+
 	loadCursors(conn)
 	go mgr.runLoop()
 
@@ -157,28 +225,7 @@ func NewX11WindowManager(a fyne.App, icons desktop.ApplicationProvider) (desktop
 		}
 	}()
 
-	mgr.heads = getHeads(mgr.x)
-	mgr.numberOfHeads = len(mgr.heads)
-	var desk desktop.Desktop
-	if mgr.numberOfHeads > 1 {
-		ewmh.NumberOfDesktopsSet(mgr.x, uint(mgr.numberOfHeads))
-		desks := make([]uint, uint(mgr.numberOfHeads))
-		deskNames := make([]string, uint(mgr.numberOfHeads))
-		for i := 0; i < mgr.numberOfHeads; i++ {
-			desks[i] = uint(i)
-			deskNames[i] = fmt.Sprintf("Screen%d", i)
-		}
-		ewmh.VisibleDesktopsSet(mgr.x, desks)
-		ewmh.DesktopNamesSet(mgr.x, deskNames)
-		mgr.activeHead = 0
-		desk = desktop.NewDesktop(a, mgr, icons, mgr.heads)
-		mgr.SetRoot(desk.Root())
-	} else {
-		desk = desktop.NewDesktop(a, mgr, icons, nil)
-		mgr.SetRoot(desk.Root())
-	}
-
-	return desk, nil
+	return mgr, nil
 }
 
 func (x *x11WM) runLoop() {
@@ -457,10 +504,11 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 }
 
 func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
+	fmt.Println(ev.Window)
 	switch clientMessageStateAction(ev.Data.Data32[0]) {
 	case clientMessageStateActionRemove:
-		hints := x.pendingRemoveHints[ev.Window]
-		hints = append(hints, hint)
+		windowExtendedHintsRemove(x.x, ev.Window, hint)
+		x.showWindow(ev.Window)
 	case clientMessageStateActionAdd:
 		windowExtendedHintsAdd(x.x, ev.Window, hint)
 	}
@@ -473,6 +521,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		fyne.LogError("Error getting event", err)
 		return
 	}
+	fmt.Println(msgAtom)
 	switch msgAtom {
 	case "WM_CHANGE_STATE":
 		if c == nil {
@@ -504,6 +553,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 			fyne.LogError("Error getting event", err)
 			return
 		}
+		fmt.Println(subMsgAtom)
 		if c == nil {
 			x.handleInitialHints(ev, subMsgAtom)
 			return
@@ -530,7 +580,22 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 	}
 }
 
+func (x *x11WM) isHidden(win xproto.Window) bool {
+	hints := windowExtendedHintsGet(x.x, win)
+	for _, hint := range hints {
+		switch hint {
+		case "_NET_WM_STATE_HIDDEN":
+			return true
+		}
+	}
+	return false
+}
+
 func (x *x11WM) showWindow(win xproto.Window) {
+	if x.isHidden(win) {
+		return
+	}
+
 	name := windowName(x.x, win)
 
 	if name == x.root.Title() {

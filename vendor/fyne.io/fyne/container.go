@@ -28,6 +28,10 @@ func (c *Container) Size() Size {
 
 // Resize sets a new size for the Container.
 func (c *Container) Resize(size Size) {
+	if c.size == size {
+		return
+	}
+
 	c.size = size
 	c.layout()
 }
@@ -85,6 +89,15 @@ func (c *Container) Hide() {
 func (c *Container) AddObject(o CanvasObject) {
 	c.Objects = append(c.Objects, o)
 	c.layout()
+}
+
+// Refresh causes this object to be redrawn in it's current state
+func (c *Container) Refresh() {
+	c.layout()
+
+	for _, child := range c.Objects {
+		child.Refresh()
+	}
 }
 
 // NewContainer returns a new Container instance holding the specified CanvasObjects.

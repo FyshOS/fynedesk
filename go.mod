@@ -3,7 +3,7 @@ module fyne.io/desktop
 go 1.12
 
 require (
-	fyne.io/fyne v1.1.3-0.20191105154505-de8e5fc7ff7b
+	fyne.io/fyne v1.2.0-beta1
 	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 

@@ -28,7 +28,7 @@ func (*testDesk) Settings() DeskSettings {
 	return &testSettings{}
 }
 
-func (*testDesk) ContentSizePixels(headIndex int) (uint32, uint32) {
+func (*testDesk) ContentSizePixels(screenIndex int) (uint32, uint32) {
 	return uint32(320), uint32(240)
 }
 
@@ -53,14 +53,15 @@ func (*testSettings) Background() string {
 
 func TestDeskLayout_Layout(t *testing.T) {
 	l := &deskLayout{}
-	l.background = append(l.background, canvas.NewRectangle(color.White))
+	l.screens = l
+	l.backgrounds = append(l.backgrounds, canvas.NewRectangle(color.White))
 	l.bar = canvas.NewRectangle(color.Black)
 	l.widgets = canvas.NewRectangle(color.Black)
 	deskSize := fyne.NewSize(2000, 1000)
 
-	l.Layout([]fyne.CanvasObject{l.background[0], l.bar, l.widgets}, deskSize)
+	l.Layout([]fyne.CanvasObject{l.backgrounds[0], l.bar, l.widgets}, deskSize)
 
-	assert.Equal(t, l.background[0].Size(), deskSize)
+	assert.Equal(t, l.backgrounds[0].Size(), deskSize)
 	assert.Equal(t, l.widgets.Position().X+l.widgets.Size().Width, deskSize.Width)
 	assert.Equal(t, l.widgets.Size().Height, deskSize.Height)
 	assert.Equal(t, l.bar.Size().Width, deskSize.Width)
@@ -69,6 +70,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 
 func TestScaleVars(t *testing.T) {
 	l := &deskLayout{}
+	l.screens = l
 	env := l.scaleVars(1.8)
 	assert.Contains(t, env, "QT_SCALE_FACTOR=1.8")
 	assert.Contains(t, env, "GDK_SCALE=2")

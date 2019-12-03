@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/internal"
+	"fyne.io/fyne/internal/cache"
 	"fyne.io/fyne/internal/driver"
 	"fyne.io/fyne/internal/painter/gl"
 	"fyne.io/fyne/widget"
@@ -407,7 +408,7 @@ func (w *window) closed(viewport *glfw.Window) {
 	w.canvas.walkTrees(nil, func(node *renderCacheNode) {
 		switch co := node.obj.(type) {
 		case fyne.Widget:
-			widget.DestroyRenderer(co)
+			cache.DestroyRenderer(co)
 		}
 	})
 
@@ -491,7 +492,7 @@ func (w *window) mouseMoved(viewport *glfw.Window, xpos float64, ypos float64) {
 	cursor := defaultCursor
 	obj, pos := w.findObjectAtPositionMatching(w.canvas, w.mousePos, func(object fyne.CanvasObject) bool {
 		if wid, ok := object.(*widget.Entry); ok {
-			if !wid.ReadOnly {
+			if !wid.Disabled() {
 				cursor = entryCursor
 			}
 		} else if _, ok := object.(*widget.Hyperlink); ok {
@@ -580,6 +581,7 @@ func (w *window) mouseClicked(viewport *glfw.Window, btn glfw.MouseButton, actio
 	})
 	ev := new(fyne.PointEvent)
 	ev.Position = pos
+	ev.AbsolutePosition = w.mousePos
 
 	coMouse := co
 	// Switch the mouse target to the dragging object if one is set
@@ -676,7 +678,6 @@ func (w *window) mouseScrolled(viewport *glfw.Window, xoff float64, yoff float64
 		_, ok := object.(fyne.Scrollable)
 		return ok
 	})
-
 	switch wid := co.(type) {
 	case fyne.Scrollable:
 		ev := &fyne.ScrollEvent{}
@@ -1107,7 +1108,7 @@ func (d *gLDriver) CreateWindow(title string) fyne.Window {
 		ret.canvas.context = ret
 		ret.canvas.detectedScale = ret.detectScale()
 		ret.canvas.scale = ret.selectScale()
-		ret.SetIcon(ret.icon) // if this is nil we will get the app icon
+		ret.SetIcon(ret.icon)
 		d.windows = append(d.windows, ret)
 
 		win.SetCloseCallback(ret.closed)
