@@ -201,15 +201,15 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, w, h)
 	f.applyTheme(false)
 
-	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(newx), uint32(newy), neww, newh}).Check()
+		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
-	err = xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	err = xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
+		[]uint32{newx, newy, neww, newh}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
@@ -221,12 +221,26 @@ func (f *frame) maximizeApply() {
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
 
-	maxWidth, maxHeight := desktop.Instance().ContentSizePixels()
-	if f.client.Fullscreened() {
-		maxWidth = uint32(f.client.wm.x.Screen().WidthInPixels)
-		maxHeight = uint32(f.client.wm.x.Screen().HeightInPixels)
+	var screenIndex, startX, startY int = 0, 0, 0
+	screens := f.client.wm.Screens()
+	if len(screens) > 1 {
+		for i := 0; i < len(screens); i++ {
+			x, y, w, h := screens[i].X, screens[i].Y, screens[i].Width, screens[i].Height
+			if int(f.x) >= x && int(f.y) >= y &&
+				int(f.x) <= x+w && int(f.y) <= y+h {
+				screenIndex = i
+				startX = x
+				startY = y
+				break
+			}
+		}
 	}
-	f.updateGeometry(0, 0, uint16(maxWidth), uint16(maxHeight), true)
+	maxWidth, maxHeight := desktop.Instance().ContentSizePixels(screenIndex)
+	if f.client.Fullscreened() {
+		maxWidth = uint32(screens[screenIndex].Width)
+		maxHeight = uint32(screens[screenIndex].Height)
+	}
+	f.updateGeometry(int16(startX), int16(startY), uint16(maxWidth), uint16(maxHeight), true)
 }
 
 func (f *frame) unmaximizeApply() {
@@ -353,12 +367,9 @@ func (f *frame) applyBorderlessTheme() {
 		rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
 		xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 	}
-	if !f.client.Fullscreened() {
-		return
-	}
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
+		[]uint32{uint32(0), uint32(0), uint32(f.width), uint32(f.height)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
@@ -451,10 +462,10 @@ func newFrame(c *client) *frame {
 	full := c.Fullscreened()
 	decorated := c.Decorated()
 	if full {
-		x = 0
-		y = 0
-		w = c.wm.x.Screen().WidthInPixels
-		h = c.wm.x.Screen().HeightInPixels
+		x = int16(c.wm.Screens()[c.wm.Active()].X)
+		y = int16(c.wm.Screens()[c.wm.Active()].Y)
+		w = uint16(c.wm.Screens()[c.wm.Active()].Width)
+		h = uint16(c.wm.Screens()[c.wm.Active()].Height)
 	} else if !decorated {
 		x = attrs.X
 		y = attrs.Y
@@ -486,7 +497,8 @@ func newFrame(c *client) *frame {
 		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()), int16(framed.titleHeight()))
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: int(framed.borderWidth()), Right: int(framed.borderWidth()), Top: int(framed.titleHeight()), Bottom: int(framed.borderWidth())})
 	} else {
-		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, 0, 0)
+		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id,
+			int16(c.wm.Screens()[c.wm.Active()].X), int16(c.wm.Screens()[c.wm.Active()].Y))
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
 	}
 	framed.show()

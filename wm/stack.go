@@ -1,19 +1,25 @@
 package wm
 
-import "fyne.io/desktop"
+import (
+	"fyne.io/desktop"
+	"github.com/BurntSushi/xgb/xproto"
+)
 
 type stack struct {
-	clients []desktop.Window
+	clients      []desktop.Window
+	mappingOrder []desktop.Window
 
 	listeners []desktop.StackListener
 }
 
 func (s *stack) addToStack(win desktop.Window) {
 	s.clients = append([]desktop.Window{win}, s.clients...)
+	s.mappingOrder = append(s.mappingOrder, win)
 }
 
 func (s *stack) addToStackBottom(win desktop.Window) {
 	s.clients = append(s.clients, win)
+	s.mappingOrder = append(s.mappingOrder, win)
 }
 
 func (s *stack) removeFromStack(win desktop.Window) {
@@ -28,6 +34,29 @@ func (s *stack) removeFromStack(win desktop.Window) {
 		return
 	}
 	s.clients = append(s.clients[:pos], s.clients[pos+1:]...)
+
+	pos = -1
+	for i, w := range s.mappingOrder {
+		if w == win {
+			pos = i
+		}
+	}
+	if pos == -1 {
+		return
+	}
+	s.mappingOrder = append(s.mappingOrder[:pos], s.mappingOrder[pos+1:]...)
+}
+
+func (s *stack) getMappingOrder() []xproto.Window {
+	return s.getWindowsFromClients(s.mappingOrder)
+}
+
+func (s *stack) getWindowsFromClients(clients []desktop.Window) []xproto.Window {
+	var wins []xproto.Window
+	for _, cli := range clients {
+		wins = append(wins, cli.(*client).id)
+	}
+	return wins
 }
 
 func (s *stack) AddWindow(win desktop.Window) {

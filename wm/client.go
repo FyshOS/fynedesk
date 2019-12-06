@@ -217,6 +217,7 @@ func (c *client) Focus() {
 
 func (c *client) RaiseToTop() {
 	c.wm.RaiseToTop(c)
+	windowClientListStackingSet(c.wm.x, c.wm.getWindowsFromClients(c.wm.clients))
 }
 
 func (c *client) RaiseAbove(win desktop.Window) {
@@ -318,7 +319,6 @@ func newClient(win xproto.Window, wm *x11WM) *client {
 	}
 	windowAllowedActionsSet(wm.x, win, wm.allowedActions)
 	initialHints := windowExtendedHintsGet(c.wm.x, c.win)
-	removeHints := wm.pendingRemoveHints[win]
 	for _, hint := range initialHints {
 		switch hint {
 		case "_NET_WM_STATE_FULLSCREEN":
@@ -326,14 +326,7 @@ func newClient(win xproto.Window, wm *x11WM) *client {
 		}
 		// TODO Handle more of these possible hints
 	}
-	for _, hint := range removeHints {
-		switch hint {
-		case "_NET_WM_STATE_HIDDEN":
-			c.uniconifyClient()
-		}
-		windowExtendedHintsRemove(wm.x, win, hint)
-		delete(wm.pendingRemoveHints, win)
-	}
+
 	c.newFrame()
 
 	return c

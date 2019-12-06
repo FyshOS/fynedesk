@@ -158,3 +158,11 @@ func windowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string)
 		}
 	}
 }
+
+func windowClientListSet(x *xgbutil.XUtil, wins []xproto.Window) {
+	ewmh.ClientListSet(x, wins)
+}
+
+func windowClientListStackingSet(x *xgbutil.XUtil, wins []xproto.Window) {
+	ewmh.ClientListStackingSet(x, wins)
+}
