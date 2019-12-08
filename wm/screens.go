@@ -37,7 +37,6 @@ func getScale(widthPx uint16, widthMm uint32) float32 {
 			return setting
 		}
 	}
-
 	dpi := float32(widthPx) / (float32(widthMm) / 25.4)
 	if dpi > 1000 || dpi < 10 {
 		dpi = 96
@@ -65,7 +64,6 @@ func (x *x11WM) setupScreens() {
 				fyne.LogError("Could not determine randr primary output information", err)
 			}
 			primaryFound := false
-			var scale float32 = 1.0
 			var firstFoundMmWidth uint32 = 0
 			var firstFoundWidth uint16 = 0
 			i := 0
@@ -87,37 +85,38 @@ func (x *x11WM) setupScreens() {
 					firstFoundMmWidth = outputInfo.MmWidth
 					firstFoundWidth = crtcInfo.Width
 				}
-				x.screens = append(x.screens, desktop.Screen{Name: string(outputInfo.Name), Index: i,
+				x.screens = append(x.screens, &desktop.Screen{Name: string(outputInfo.Name), Index: i,
 					X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height)})
 				if primaryInfo != nil {
 					if string(primaryInfo.Name) == string(outputInfo.Name) {
 						primaryFound = true
-						x.primary = i
-						x.active = i
-						scale = getScale(crtcInfo.Width, outputInfo.MmWidth)
+						x.primary = x.screens[i]
+						x.active = x.screens[i]
+						x.scale = getScale(crtcInfo.Width, outputInfo.MmWidth)
 					}
 				}
 				i++
 			}
 			if !primaryFound {
-				scale = getScale(firstFoundWidth, firstFoundMmWidth)
+				x.primary = x.screens[0]
+				x.active = x.screens[0]
+				x.scale = getScale(firstFoundWidth, firstFoundMmWidth)
 			}
-			for j, screen := range x.screens {
-				screen.ScaledX = int(float32(screen.X) / scale)
-				screen.ScaledY = int(float32(screen.Y) / scale)
-				screen.ScaledWidth = int(float32(screen.Width) / scale)
-				screen.ScaledHeight = int(float32(screen.Height) / scale)
-				x.screens[j] = screen
+			for _, screen := range x.screens {
+				screen.ScaledX = int(float32(screen.X) / x. scale)
+				screen.ScaledY = int(float32(screen.Y) / x.scale)
+				screen.ScaledWidth = int(float32(screen.Width) / x.scale)
+				screen.ScaledHeight = int(float32(screen.Height) / x.scale)
 			}
 		}
 	}
 	if len(x.screens) == 0 {
-		x.screens = append(x.screens, desktop.Screen{Name: "Screen0", Index: 0,
+		x.screens = append(x.screens, &desktop.Screen{Name: "Screen0", Index: 0,
 			X: xwindow.RootGeometry(x.x).X(), Y: xwindow.RootGeometry(x.x).Y(),
 			Width: xwindow.RootGeometry(x.x).Width(), Height: xwindow.RootGeometry(x.x).Height(),
 			ScaledX: xwindow.RootGeometry(x.x).X(), ScaledY: xwindow.RootGeometry(x.x).Y(),
 			ScaledWidth: xwindow.RootGeometry(x.x).Width(), ScaledHeight: xwindow.RootGeometry(x.x).Height()})
-		x.primary = 0
-		x.active = 0
+		x.primary = x.screens[0]
+		x.active = x.screens[0]
 	}
 }

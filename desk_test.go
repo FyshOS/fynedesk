@@ -28,7 +28,7 @@ func (*testDesk) Settings() DeskSettings {
 	return &testSettings{}
 }
 
-func (*testDesk) ContentSizePixels(screenIndex int) (uint32, uint32) {
+func (*testDesk) ContentSizePixels(screen *Screen) (uint32, uint32) {
 	return uint32(320), uint32(240)
 }
 

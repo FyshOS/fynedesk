@@ -2,9 +2,10 @@ package desktop
 
 // Screens provides information about available physical screens for Fyne desktop
 type Screens interface {
-	Screens() []Screen // Screens returns a Screen type slice of each available physical screen
-	Active() int       // Active returns the screen index of the currently active screen
-	Primary() int      // Primary returns the screen index of the primary screen
+	Screens() []*Screen // Screens returns a Screen type slice of each available physical screen
+	Active()  *Screen    // Active returns the screen index of the currently active screen
+	Primary() *Screen    // Primary returns the screen index of the primary screen
+	Scale()   float32    // Return the scale calculated for use across screens
 }
 
 // Screen provides relative information about a single physical screen

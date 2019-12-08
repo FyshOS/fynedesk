@@ -52,6 +52,9 @@ func (f *frame) press(x, y int16) {
 		f.client.Focus()
 		return
 	}
+	if f.client.Maximized() || f.client.Fullscreened() {
+		return
+	}
 	f.mouseX = x
 	f.mouseY = y
 
@@ -83,7 +86,8 @@ func (f *frame) release(x, y int16) {
 	}
 	if relX >= int16(f.borderWidth()) && relX < int16(f.borderWidth()+f.buttonWidth()) {
 		f.client.Close()
-	} else if relX >= int16(f.borderWidth())+int16(theme.Padding())+int16(f.buttonWidth()) &&
+	}
+	if relX >= int16(f.borderWidth())+int16(theme.Padding())+int16(f.buttonWidth()) &&
 		relX < int16(f.borderWidth())+int16(theme.Padding()*2)+int16(f.buttonWidth()*2) {
 		if f.client.Maximized() {
 			f.client.Unmaximize()
@@ -102,6 +106,9 @@ func (f *frame) release(x, y int16) {
 }
 
 func (f *frame) drag(x, y int16) {
+	if f.client.Maximized() || f.client.Fullscreened() {
+		return
+	}
 	deltaX := x - f.mouseX
 	deltaY := y - f.mouseY
 	f.mouseX = x
@@ -137,7 +144,17 @@ func (f *frame) motion(x, y int16) {
 		if relX > int16(f.borderWidth()) && relX <= int16(f.borderWidth()+f.buttonWidth()) {
 			cursor = closeCursor
 		}
-	} else if relY >= int16(f.height-f.buttonWidth()) { // bottom
+		err := xproto.ChangeWindowAttributesChecked(f.client.wm.x.Conn(), f.client.id, xproto.CwCursor,
+			[]uint32{uint32(cursor)}).Check()
+		if err != nil {
+			fyne.LogError("Set Cursor Error", err)
+		}
+		return
+	}
+	if f.client.Maximized() || f.client.Fullscreened() {
+		return
+	}
+	if relY >= int16(f.height-f.buttonWidth()) { // bottom
 		if relX < int16(f.buttonWidth()) {
 			cursor = resizeBottomLeftCursor
 		} else if relX >= int16(f.width-f.buttonWidth()) {
@@ -221,24 +238,25 @@ func (f *frame) maximizeApply() {
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
 
-	var screenIndex, startX, startY int = 0, 0, 0
+	var startX, startY int = 0, 0
+	var screen *desktop.Screen
 	screens := f.client.wm.Screens()
 	if len(screens) > 1 {
 		for i := 0; i < len(screens); i++ {
 			x, y, w, h := screens[i].X, screens[i].Y, screens[i].Width, screens[i].Height
 			if int(f.x) >= x && int(f.y) >= y &&
 				int(f.x) <= x+w && int(f.y) <= y+h {
-				screenIndex = i
+				screen = screens[i]
 				startX = x
 				startY = y
 				break
 			}
 		}
 	}
-	maxWidth, maxHeight := desktop.Instance().ContentSizePixels(screenIndex)
+	maxWidth, maxHeight := desktop.Instance().ContentSizePixels(screen)
 	if f.client.Fullscreened() {
-		maxWidth = uint32(screens[screenIndex].Width)
-		maxHeight = uint32(screens[screenIndex].Height)
+		maxWidth = uint32(screen.Width)
+		maxHeight = uint32(screen.Height)
 	}
 	f.updateGeometry(int16(startX), int16(startY), uint16(maxWidth), uint16(maxHeight), true)
 }
@@ -462,10 +480,10 @@ func newFrame(c *client) *frame {
 	full := c.Fullscreened()
 	decorated := c.Decorated()
 	if full {
-		x = int16(c.wm.Screens()[c.wm.Active()].X)
-		y = int16(c.wm.Screens()[c.wm.Active()].Y)
-		w = uint16(c.wm.Screens()[c.wm.Active()].Width)
-		h = uint16(c.wm.Screens()[c.wm.Active()].Height)
+		x = int16(c.wm.Active().X)
+		y = int16(c.wm.Active().Y)
+		w = uint16(c.wm.Active().Width)
+		h = uint16(c.wm.Active().Height)
 	} else if !decorated {
 		x = attrs.X
 		y = attrs.Y
@@ -498,9 +516,10 @@ func newFrame(c *client) *frame {
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: int(framed.borderWidth()), Right: int(framed.borderWidth()), Top: int(framed.titleHeight()), Bottom: int(framed.borderWidth())})
 	} else {
 		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id,
-			int16(c.wm.Screens()[c.wm.Active()].X), int16(c.wm.Screens()[c.wm.Active()].Y))
+			int16(c.wm.Active().X), int16(c.wm.Active().Y))
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
 	}
+
 	framed.show()
 	framed.applyTheme(true)
 

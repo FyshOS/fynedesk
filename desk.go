@@ -15,7 +15,7 @@ type Desktop interface {
 	Run()
 	RunApp(AppData) error
 	Settings() DeskSettings
-	ContentSizePixels(screenIndex int) (uint32, uint32)
+	ContentSizePixels(screen *Screen) (uint32, uint32)
 
 	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
@@ -34,27 +34,31 @@ type deskLayout struct {
 	backgrounds         []fyne.CanvasObject
 	bar, widgets, mouse fyne.CanvasObject
 	container           *fyne.Container
+	screenBackgroundMap map[*Screen]fyne.CanvasObject
 }
 
 func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
-	var x, y, w, h, index int = 0, 0, 0, 0, 0
-
-	if l.screens.Screens() != nil && len(l.screens.Screens()) > 1 && len(l.backgrounds) > 1 {
-		screens := l.screens.Screens()
-		index = l.screens.Primary()
-		x, y, w, h = screens[index].ScaledX, screens[index].ScaledY,
-			screens[index].ScaledWidth, screens[index].ScaledHeight
-		size.Width = w
-		size.Height = h
-
+	var x, y, w, h int = 0, 0, 0, 0
+	screens := l.screens.Screens()
+	primary := l.screens.Primary()
+	if l.Root().Canvas().Scale() != l.screens.Scale() {
+		l.Root().Canvas().SetScale(l.screens.Scale())
+	}
+	x, y, w, h = primary.ScaledX, primary.ScaledY,
+		primary.ScaledWidth, primary.ScaledHeight
+	size.Width = w
+	size.Height = h
+	if screens != nil && len(screens) > 1 && len(l.backgrounds) > 1 {
 		for i := 0; i < len(screens); i++ {
-			if i == index {
+			if screens[i] == primary {
 				continue
 			}
 			xx, yy, ww, hh := screens[i].ScaledX, screens[i].ScaledY, screens[i].ScaledWidth, screens[i].ScaledHeight
-
-			l.backgrounds[i].Move(fyne.NewPos(xx, yy))
-			l.backgrounds[i].Resize(fyne.NewSize(ww, hh))
+			background := l.screenBackgroundMap[screens[i]]
+			if background != nil {
+				background.Move(fyne.NewPos(xx, yy))
+				background.Resize(fyne.NewSize(ww, hh))
+			}
 		}
 	}
 
@@ -66,8 +70,11 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 	l.widgets.Resize(fyne.NewSize(widgetsWidth, size.Height))
 	l.widgets.Move(fyne.NewPos(x+size.Width-widgetsWidth, y))
 
-	l.backgrounds[index].Move(fyne.NewPos(x, y))
-	l.backgrounds[index].Resize(size)
+	background := l.screenBackgroundMap[primary]
+	if background != nil {
+		background.Move(fyne.NewPos(x, y))
+		background.Resize(size)
+	}
 }
 
 func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
@@ -90,6 +97,7 @@ func (l *deskLayout) Root() fyne.Window {
 		l.win = l.newDesktopWindow()
 
 		l.backgrounds = append(l.backgrounds, newBackground())
+		l.screenBackgroundMap[l.screens.Screens()[0]] = l.backgrounds[0]
 		l.bar = newBar(l)
 		l.widgets = newWidgetPanel(l)
 		l.mouse = newMouse()
@@ -97,6 +105,7 @@ func (l *deskLayout) Root() fyne.Window {
 		if l.screens.Screens() != nil && len(l.screens.Screens()) > 1 {
 			for i := 1; i < len(l.screens.Screens()); i++ {
 				l.backgrounds = append(l.backgrounds, newBackground())
+				l.screenBackgroundMap[l.screens.Screens()[i]] = l.backgrounds[i]
 				l.container.AddObject(l.backgrounds[i])
 			}
 		}
@@ -140,16 +149,13 @@ func (l *deskLayout) Settings() DeskSettings {
 	return l.settings
 }
 
-func (l *deskLayout) ContentSizePixels(screenIndex int) (uint32, uint32) {
-	if l.backgrounds[screenIndex] != nil {
-		screenW := uint32(l.backgrounds[screenIndex].Size().Width)
-		screenH := uint32(l.backgrounds[screenIndex].Size().Height)
-		if l.screens.Primary() == screenIndex {
-			return screenW - uint32(float32(l.widgets.Size().Width)*l.Root().Canvas().Scale()), screenH
-		}
-		return screenW, screenH
+func (l *deskLayout) ContentSizePixels(screen *Screen) (uint32, uint32) {
+	screenW := uint32(screen.Width)
+	screenH := uint32(screen.Height)
+	if l.screens.Primary() == screen {
+		return screenW - uint32(float32(l.widgets.Size().Width)*l.Root().Canvas().Scale()), screenH
 	}
-	return 0, 0
+	return screenW, screenH
 }
 
 func (l *deskLayout) IconProvider() ApplicationProvider {
@@ -170,22 +176,26 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 	}
 }
 
-func (l *deskLayout) Screens() []Screen {
+func (l *deskLayout) Screens() []*Screen {
 	if l.app == nil {
 		return nil
 	}
-	return []Screen{{"Screen0", 0, 0, 0,
+	return []*Screen{{"Screen0", 0, 0, 0,
 		int(l.Root().Canvas().Size().Width), int(l.Root().Canvas().Size().Height),
 		0, 0, int(float32(l.Root().Canvas().Size().Width) * l.Root().Canvas().Scale()),
 		int(float32(l.Root().Canvas().Size().Height) * l.Root().Canvas().Scale())}}
 }
 
-func (l *deskLayout) Active() int {
-	return 0
+func (l *deskLayout) Active() *Screen {
+	return l.Screens()[0]
 }
 
-func (l *deskLayout) Primary() int {
-	return 0
+func (l *deskLayout) Primary() *Screen {
+	return l.Screens()[0]
+}
+
+func (l *deskLayout) Scale() float32 {
+	return l.Root().Canvas().Scale()
 }
 
 // Instance returns the current desktop environment and provides access to injected functionality.
@@ -198,6 +208,7 @@ func Instance() Desktop {
 // An ApplicationProvider is used to lookup application icons from the operating system.
 func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider, screens Screens) Desktop {
 	instance = &deskLayout{app: app, wm: wm, icons: icons, screens: screens, settings: NewDeskSettings()}
+	instance.(*deskLayout).screenBackgroundMap = make(map[*Screen]fyne.CanvasObject)
 	return instance
 }
 
@@ -208,5 +219,6 @@ func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider, scree
 func NewEmbeddedDesktop(app fyne.App, icons ApplicationProvider) Desktop {
 	instance = &deskLayout{app: app, icons: icons, settings: NewDeskSettings()}
 	instance.(*deskLayout).screens = instance.(*deskLayout)
+	instance.(*deskLayout).screenBackgroundMap = make(map[*Screen]fyne.CanvasObject)
 	return instance
 }

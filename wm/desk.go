@@ -32,9 +32,10 @@ type x11WM struct {
 	moveResizingType  moveResizeType
 	altTabList        []desktop.Window
 	altTabIndex       int
-	screens           []desktop.Screen
-	active            int
-	primary           int
+	screens           []*desktop.Screen
+	active            *desktop.Screen
+	primary           *desktop.Screen
+	scale             float32
 
 	allowedActions []string
 	supportedHints []string
@@ -82,16 +83,20 @@ func (x *x11WM) Blank() {
 	exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
 }
 
-func (x *x11WM) Screens() []desktop.Screen {
+func (x *x11WM) Screens() []*desktop.Screen {
 	return x.screens
 }
 
-func (x *x11WM) Active() int {
+func (x *x11WM) Active() *desktop.Screen {
 	return x.active
 }
 
-func (x *x11WM) Primary() int {
+func (x *x11WM) Primary() *desktop.Screen {
 	return x.primary
+}
+
+func (x *x11WM) Scale() float32 {
+	return x.scale
 }
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
@@ -488,6 +493,9 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		if c == nil {
 			return
 		}
+		if c.Maximized() || c.Fullscreened() {
+			return
+		}
 		x.handleMoveResize(ev, c.(*client))
 	case "_NET_WM_STATE":
 		subMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[1]))
@@ -583,7 +591,7 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 
 	x.AddWindow(c)
 	c.Focus()
-	windowClientListSet(x.x, x.getMappingOrder())
+	windowClientListSet(x.x, x.getWindowsFromClients(x.getMappingOrder()))
 	windowClientListStackingSet(x.x, x.getWindowsFromClients(x.clients))
 }
 
@@ -593,7 +601,7 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 		return
 	}
 	x.RemoveWindow(c)
-	windowClientListSet(x.x, x.getMappingOrder())
+	windowClientListSet(x.x, x.getWindowsFromClients(x.getMappingOrder()))
 	windowClientListStackingSet(x.x, x.getWindowsFromClients(x.clients))
 }
 
