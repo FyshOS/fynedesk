@@ -225,7 +225,7 @@ func (c *client) Focus() {
 
 func (c *client) RaiseToTop() {
 	c.wm.RaiseToTop(c)
-	windowClientListStackingSet(c.wm.x, c.wm.getWindowsFromClients(c.wm.clients))
+	windowClientListStackingUpdate(c.wm)
 }
 
 func (c *client) RaiseAbove(win desktop.Window) {

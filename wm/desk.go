@@ -32,9 +32,9 @@ type x11WM struct {
 	moveResizingType  moveResizeType
 	altTabList        []desktop.Window
 	altTabIndex       int
-	screens           []*desktop.Screen
-	active            *desktop.Screen
-	primary           *desktop.Screen
+	screens           []*desktop.Head
+	active            *desktop.Head
+	primary           *desktop.Head
 	scale             float32
 
 	allowedActions []string
@@ -83,20 +83,33 @@ func (x *x11WM) Blank() {
 	exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
 }
 
-func (x *x11WM) Screens() []*desktop.Screen {
+func (x *x11WM) Screens() []*desktop.Head {
 	return x.screens
 }
 
-func (x *x11WM) Active() *desktop.Screen {
+func (x *x11WM) Active() *desktop.Head {
 	return x.active
 }
 
-func (x *x11WM) Primary() *desktop.Screen {
+func (x *x11WM) Primary() *desktop.Head {
 	return x.primary
 }
 
 func (x *x11WM) Scale() float32 {
 	return x.scale
+}
+
+func (x *x11WM) ScreenForWindow(windowX int, windowY int) *desktop.Head {
+	if len(x.screens) > 1 {
+		for i := 0; i < len(x.screens); i++ {
+			xx, yy, ww, hh := x.screens[i].X, x.screens[i].Y, x.screens[i].Width, x.screens[i].Height
+			if windowX >= xx && windowY >= yy &&
+				windowX <= xx+ww && windowY <= yy+hh {
+				return x.screens[i]
+			}
+		}
+	}
+	return x.screens[0]
 }
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
@@ -282,7 +295,7 @@ func (x *x11WM) runLoop() {
 			}
 
 			x.RaiseToTop(x.altTabList[x.altTabIndex])
-			windowClientListStackingSet(x.x, x.getWindowsFromClients(x.clients))
+			windowClientListStackingUpdate(x)
 		case xproto.KeyReleaseEvent:
 			if ev.Detail == keyCodeAlt {
 				x.altTabList = nil
@@ -548,10 +561,8 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	hints, err := icccm.WmHintsGet(x.x, win)
 	if err != nil {
 		fyne.LogError("Could not get initial hints for client", err)
-	} else {
-		if (hints.Flags & xproto.CwOverrideRedirect) != 0 {
-			return
-		}
+	} else if (hints.Flags & xproto.CwOverrideRedirect) != 0 {
+		return
 	}
 	transient, err := icccm.WmTransientForGet(x.x, win)
 	if transient != 0 {
@@ -591,8 +602,8 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 
 	x.AddWindow(c)
 	c.Focus()
-	windowClientListSet(x.x, x.getWindowsFromClients(x.getMappingOrder()))
-	windowClientListStackingSet(x.x, x.getWindowsFromClients(x.clients))
+	windowClientListUpdate(x)
+	windowClientListStackingUpdate(x)
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
@@ -601,8 +612,8 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 		return
 	}
 	x.RemoveWindow(c)
-	windowClientListSet(x.x, x.getWindowsFromClients(x.getMappingOrder()))
-	windowClientListStackingSet(x.x, x.getWindowsFromClients(x.clients))
+	windowClientListUpdate(x)
+	windowClientListStackingUpdate(x)
 }
 
 func (x *x11WM) bindKeys(win xproto.Window) {

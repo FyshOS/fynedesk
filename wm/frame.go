@@ -238,27 +238,13 @@ func (f *frame) maximizeApply() {
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
 
-	var startX, startY int = 0, 0
-	var screen *desktop.Screen
-	screens := f.client.wm.Screens()
-	if len(screens) > 1 {
-		for i := 0; i < len(screens); i++ {
-			x, y, w, h := screens[i].X, screens[i].Y, screens[i].Width, screens[i].Height
-			if int(f.x) >= x && int(f.y) >= y &&
-				int(f.x) <= x+w && int(f.y) <= y+h {
-				screen = screens[i]
-				startX = x
-				startY = y
-				break
-			}
-		}
-	}
-	maxWidth, maxHeight := desktop.Instance().ContentSizePixels(screen)
+	head := f.client.wm.ScreenForWindow(int(f.x), int(f.y))
+	maxWidth, maxHeight := desktop.Instance().ContentSizePixels(head)
 	if f.client.Fullscreened() {
-		maxWidth = uint32(screen.Width)
-		maxHeight = uint32(screen.Height)
+		maxWidth = uint32(head.Width)
+		maxHeight = uint32(head.Height)
 	}
-	f.updateGeometry(int16(startX), int16(startY), uint16(maxWidth), uint16(maxHeight), true)
+	f.updateGeometry(int16(head.X), int16(head.Y), uint16(maxWidth), uint16(maxHeight), true)
 }
 
 func (f *frame) unmaximizeApply() {
@@ -480,10 +466,11 @@ func newFrame(c *client) *frame {
 	full := c.Fullscreened()
 	decorated := c.Decorated()
 	if full {
-		x = int16(c.wm.Active().X)
-		y = int16(c.wm.Active().Y)
-		w = uint16(c.wm.Active().Width)
-		h = uint16(c.wm.Active().Height)
+		activeHead := c.wm.Active()
+		x = int16(activeHead.X)
+		y = int16(activeHead.Y)
+		w = uint16(activeHead.Width)
+		h = uint16(activeHead.Height)
 	} else if !decorated {
 		x = attrs.X
 		y = attrs.Y

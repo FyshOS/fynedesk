@@ -85,7 +85,7 @@ func (x *x11WM) setupScreens() {
 					firstFoundMmWidth = outputInfo.MmWidth
 					firstFoundWidth = crtcInfo.Width
 				}
-				x.screens = append(x.screens, &desktop.Screen{Name: string(outputInfo.Name), Index: i,
+				x.screens = append(x.screens, &desktop.Head{Name: string(outputInfo.Name),
 					X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height)})
 				if primaryInfo != nil {
 					if string(primaryInfo.Name) == string(outputInfo.Name) {
@@ -102,16 +102,16 @@ func (x *x11WM) setupScreens() {
 				x.active = x.screens[0]
 				x.scale = getScale(firstFoundWidth, firstFoundMmWidth)
 			}
-			for _, screen := range x.screens {
-				screen.ScaledX = int(float32(screen.X) / x. scale)
-				screen.ScaledY = int(float32(screen.Y) / x.scale)
-				screen.ScaledWidth = int(float32(screen.Width) / x.scale)
-				screen.ScaledHeight = int(float32(screen.Height) / x.scale)
+			for _, head := range x.screens {
+				head.ScaledX = int(math.Round(float64(head.X) / float64(x.scale)))
+				head.ScaledY = int(math.Round(float64(head.Y) / float64(x.scale)))
+				head.ScaledWidth = int(math.Round(float64(head.Width) / float64(x.scale)))
+				head.ScaledHeight = int(math.Round(float64(head.Height) / float64(x.scale)))
 			}
 		}
 	}
 	if len(x.screens) == 0 {
-		x.screens = append(x.screens, &desktop.Screen{Name: "Screen0", Index: 0,
+		x.screens = append(x.screens, &desktop.Head{Name: "Screen0",
 			X: xwindow.RootGeometry(x.x).X(), Y: xwindow.RootGeometry(x.x).Y(),
 			Width: xwindow.RootGeometry(x.x).Width(), Height: xwindow.RootGeometry(x.x).Height(),
 			ScaledX: xwindow.RootGeometry(x.x).X(), ScaledY: xwindow.RootGeometry(x.x).Y(),
