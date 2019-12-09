@@ -32,16 +32,23 @@ type x11WM struct {
 	moveResizingType  moveResizeType
 	altTabList        []desktop.Window
 	altTabIndex       int
-	screens           []*desktop.Head
-	active            *desktop.Head
-	primary           *desktop.Head
+	screens           []*desktop.Screen
+	active            *desktop.Screen
+	primary           *desktop.Screen
 	scale             float32
 
 	allowedActions []string
 	supportedHints []string
+
+	screensProvider desktop.ScreenList
+}
+
+type x11ScreensProvider struct {
 }
 
 type moveResizeType uint32
+
+var instance *x11WM
 
 const (
 	moveResizeTopLeft      moveResizeType = 0
@@ -83,44 +90,52 @@ func (x *x11WM) Blank() {
 	exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
 }
 
-func (x *x11WM) Screens() []*desktop.Head {
-	return x.screens
+func (xsp *x11ScreensProvider) Screens() []*desktop.Screen {
+	return instance.screens
 }
 
-func (x *x11WM) Active() *desktop.Head {
-	return x.active
+func (xsp *x11ScreensProvider) Active() *desktop.Screen {
+	return instance.active
 }
 
-func (x *x11WM) Primary() *desktop.Head {
-	return x.primary
+func (xsp *x11ScreensProvider) Primary() *desktop.Screen {
+	return instance.primary
 }
 
-func (x *x11WM) Scale() float32 {
-	return x.scale
+func (xsp *x11ScreensProvider) Scale() float32 {
+	return instance.scale
 }
 
-func (x *x11WM) ScreenForWindow(windowX int, windowY int) *desktop.Head {
-	if len(x.screens) > 1 {
-		for i := 0; i < len(x.screens); i++ {
-			xx, yy, ww, hh := x.screens[i].X, x.screens[i].Y, x.screens[i].Width, x.screens[i].Height
+func (xsp *x11ScreensProvider) ScreenForWindow(windowX int, windowY int) *desktop.Screen {
+	if len(instance.screens) > 1 {
+		for i := 0; i < len(instance.screens); i++ {
+			xx, yy, ww, hh := instance.screens[i].X, instance.screens[i].Y,
+				instance.screens[i].Width, instance.screens[i].Height
 			if windowX >= xx && windowY >= yy &&
 				windowX <= xx+ww && windowY <= yy+hh {
-				return x.screens[i]
+				return instance.screens[i]
 			}
 		}
 	}
-	return x.screens[0]
+	return instance.screens[0]
+}
+
+// NewX11ScreensProvider returns a screen provider for use in x11 desktop mode
+func NewX11ScreensProvider() desktop.ScreenList {
+	return &x11ScreensProvider{}
 }
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
-func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
+func NewX11WindowManager(a fyne.App) (desktop.WindowManager, desktop.ScreenList, error) {
 	conn, err := xgbutil.NewConn()
 	if err != nil {
 		fyne.LogError("Failed to connect to the XServer", err)
-		return nil, err
+		return nil, nil, err
 	}
 
 	mgr := &x11WM{x: conn}
+	mgr.screensProvider = NewX11ScreensProvider()
+	instance = mgr
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -135,7 +150,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		[]uint32{uint32(eventMask)}).Check(); err != nil {
 		conn.Conn().Close()
 
-		return nil, errors.New("window manager detected, running embedded")
+		return nil, nil, errors.New("window manager detected, running embedded")
 	}
 
 	mgr.allowedActions = []string{
@@ -186,7 +201,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		}
 	}()
 
-	return mgr, nil
+	return mgr, mgr.screensProvider, nil
 }
 
 func (x *x11WM) runLoop() {

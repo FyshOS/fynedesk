@@ -85,7 +85,7 @@ func (x *x11WM) setupScreens() {
 					firstFoundMmWidth = outputInfo.MmWidth
 					firstFoundWidth = crtcInfo.Width
 				}
-				x.screens = append(x.screens, &desktop.Head{Name: string(outputInfo.Name),
+				x.screens = append(x.screens, &desktop.Screen{Name: string(outputInfo.Name),
 					X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height)})
 				if primaryInfo != nil {
 					if string(primaryInfo.Name) == string(outputInfo.Name) {
@@ -111,7 +111,7 @@ func (x *x11WM) setupScreens() {
 		}
 	}
 	if len(x.screens) == 0 {
-		x.screens = append(x.screens, &desktop.Head{Name: "Screen0",
+		x.screens = append(x.screens, &desktop.Screen{Name: "Screen0",
 			X: xwindow.RootGeometry(x.x).X(), Y: xwindow.RootGeometry(x.x).Y(),
 			Width: xwindow.RootGeometry(x.x).Width(), Height: xwindow.RootGeometry(x.x).Height(),
 			ScaledX: xwindow.RootGeometry(x.x).X(), ScaledY: xwindow.RootGeometry(x.x).Y(),
