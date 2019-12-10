@@ -74,7 +74,12 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 	l.widgets.Resize(fyne.NewSize(widgetsWidth, size.Height))
 	l.widgets.Move(fyne.NewPos(x+size.Width-widgetsWidth, y))
 
-	background := l.screenBackgroundMap[primary]
+	var background fyne.CanvasObject
+	if len(screens) > 1 {
+		background = l.screenBackgroundMap[primary]
+	} else {
+		background = l.backgrounds[0]
+	}
 	if background != nil {
 		background.Move(fyne.NewPos(x, y))
 		background.Resize(size)
@@ -191,7 +196,7 @@ func (esp embeddedScreensProvider) Screens() []*Screen {
 		return nil
 	}
 	return []*Screen{{"Screen0", 0, 0,
-		int(instance.Root().Canvas().Size().Width), int(l.Root().Canvas().Size().Height),
+		int(l.Root().Canvas().Size().Width), int(l.Root().Canvas().Size().Height),
 		0, 0, int(float32(l.Root().Canvas().Size().Width) * l.Root().Canvas().Scale()),
 		int(float32(l.Root().Canvas().Size().Height) * l.Root().Canvas().Scale())}}
 }
