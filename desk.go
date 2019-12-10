@@ -47,6 +47,11 @@ func applyScale(coord int, scale float32) int {
 	return newCoord
 }
 
+func removeScale(coord int, scale float32) int {
+	newCoord := int(math.Round(float64(coord) * float64(scale)))
+	return newCoord
+}
+
 func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 	screens := l.screens.Screens()
 	primary := l.screens.Primary()
@@ -205,7 +210,8 @@ func (esp embeddedScreensProvider) Screens() []*Screen {
 	l := Instance().(*deskLayout)
 	if esp.screens == nil {
 		esp.screens = []*Screen{{"Screen0", 0, 0,
-			int(l.Root().Canvas().Size().Width), int(l.Root().Canvas().Size().Height)}}
+			removeScale(int(l.Root().Canvas().Size().Width), esp.Scale()),
+			removeScale(int(l.Root().Canvas().Size().Height), esp.Scale())}}
 	}
 	return esp.screens
 }
