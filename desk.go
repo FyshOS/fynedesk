@@ -16,6 +16,7 @@ type Desktop interface {
 	RunApp(AppData) error
 	Settings() DeskSettings
 	ContentSizePixels(screen *Screen) (uint32, uint32)
+	Screens() ScreenList
 
 	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
@@ -179,6 +180,11 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 	}
 }
 
+// Screens returns the screens provider of the current desktop environment for access to screen functionality.
+func (l *deskLayout) Screens() ScreenList {
+	return l.screens
+}
+
 func (esp embeddedScreensProvider) Screens() []*Screen {
 	l := instance.(*deskLayout)
 	if l.app == nil {
@@ -202,7 +208,7 @@ func (esp embeddedScreensProvider) Scale() float32 {
 	return instance.(*deskLayout).Root().Canvas().Scale()
 }
 
-func (esp embeddedScreensProvider) ScreenForWindow(windwoX int, windowY int) *Screen {
+func (esp embeddedScreensProvider) ScreenForWindow(win Window) *Screen {
 	return esp.Screens()[0]
 }
 

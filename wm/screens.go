@@ -1,4 +1,6 @@
-package wm
+// +build linux,!ci
+
+package wm // import "fyne.io/desktop/wm"
 
 import (
 	"math"
@@ -11,6 +13,55 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xwindow"
 )
+
+type x11ScreensProvider struct {
+	screens []*desktop.Screen
+	active  *desktop.Screen
+	primary *desktop.Screen
+	scale   float32
+}
+
+// NewX11ScreensProvider returns a screen provider for use in x11 desktop mode
+func NewX11ScreensProvider(mgr desktop.WindowManager) desktop.ScreenList {
+	screensProvider := &x11ScreensProvider{}
+	x := mgr.(*x11WM)
+	screensProvider.setupScreens(x)
+	return screensProvider
+}
+
+func (xsp *x11ScreensProvider) Screens() []*desktop.Screen {
+	return xsp.screens
+}
+
+func (xsp *x11ScreensProvider) Active() *desktop.Screen {
+	return xsp.active
+}
+
+func (xsp *x11ScreensProvider) Primary() *desktop.Screen {
+	return xsp.primary
+}
+
+func (xsp *x11ScreensProvider) Scale() float32 {
+	return xsp.scale
+}
+
+func (xsp *x11ScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
+	if len(xsp.screens) > 1 {
+		for i := 0; i < len(xsp.screens); i++ {
+			xx, yy, ww, hh := xsp.screens[i].X, xsp.screens[i].Y,
+				xsp.screens[i].Width, xsp.screens[i].Height
+			middleW := int(win.(*client).frame.width / 2)
+			middleH := int(win.(*client).frame.height / 2)
+			middleW += int(win.(*client).frame.x)
+			middleH += int(win.(*client).frame.y)
+			if middleW >= xx && middleH >= yy &&
+				middleW <= xx+ww && middleH <= yy+hh {
+				return xsp.screens[i]
+			}
+		}
+	}
+	return xsp.screens[0]
+}
 
 func getScale(widthPx uint16, widthMm uint32) float32 {
 	env := os.Getenv("FYNE_SCALE")
@@ -44,7 +95,7 @@ func getScale(widthPx uint16, widthMm uint32) float32 {
 	return float32(math.Round(float64(dpi)/144.0*10.0)) / 10.0
 }
 
-func (x *x11WM) setupScreens() {
+func (xsp *x11ScreensProvider) setupScreens(x *x11WM) {
 	err := randr.Init(x.x.Conn())
 	if err != nil {
 		fyne.LogError("Could not initialize randr", err)
@@ -85,38 +136,38 @@ func (x *x11WM) setupScreens() {
 					firstFoundMmWidth = outputInfo.MmWidth
 					firstFoundWidth = crtcInfo.Width
 				}
-				x.screens = append(x.screens, &desktop.Screen{Name: string(outputInfo.Name),
+				xsp.screens = append(xsp.screens, &desktop.Screen{Name: string(outputInfo.Name),
 					X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height)})
 				if primaryInfo != nil {
 					if string(primaryInfo.Name) == string(outputInfo.Name) {
 						primaryFound = true
-						x.primary = x.screens[i]
-						x.active = x.screens[i]
-						x.scale = getScale(crtcInfo.Width, outputInfo.MmWidth)
+						xsp.primary = xsp.screens[i]
+						xsp.active = xsp.screens[i]
+						xsp.scale = getScale(crtcInfo.Width, outputInfo.MmWidth)
 					}
 				}
 				i++
 			}
 			if !primaryFound {
-				x.primary = x.screens[0]
-				x.active = x.screens[0]
-				x.scale = getScale(firstFoundWidth, firstFoundMmWidth)
+				xsp.primary = xsp.screens[0]
+				xsp.active = xsp.screens[0]
+				xsp.scale = getScale(firstFoundWidth, firstFoundMmWidth)
 			}
-			for _, head := range x.screens {
-				head.ScaledX = int(math.Round(float64(head.X) / float64(x.scale)))
-				head.ScaledY = int(math.Round(float64(head.Y) / float64(x.scale)))
-				head.ScaledWidth = int(math.Round(float64(head.Width) / float64(x.scale)))
-				head.ScaledHeight = int(math.Round(float64(head.Height) / float64(x.scale)))
+			for _, head := range xsp.screens {
+				head.ScaledX = int(math.Round(float64(head.X) / float64(xsp.scale)))
+				head.ScaledY = int(math.Round(float64(head.Y) / float64(xsp.scale)))
+				head.ScaledWidth = int(math.Round(float64(head.Width) / float64(xsp.scale)))
+				head.ScaledHeight = int(math.Round(float64(head.Height) / float64(xsp.scale)))
 			}
 		}
 	}
-	if len(x.screens) == 0 {
-		x.screens = append(x.screens, &desktop.Screen{Name: "Screen0",
+	if len(xsp.screens) == 0 {
+		xsp.screens = append(xsp.screens, &desktop.Screen{Name: "Screen0",
 			X: xwindow.RootGeometry(x.x).X(), Y: xwindow.RootGeometry(x.x).Y(),
 			Width: xwindow.RootGeometry(x.x).Width(), Height: xwindow.RootGeometry(x.x).Height(),
 			ScaledX: xwindow.RootGeometry(x.x).X(), ScaledY: xwindow.RootGeometry(x.x).Y(),
 			ScaledWidth: xwindow.RootGeometry(x.x).Width(), ScaledHeight: xwindow.RootGeometry(x.x).Height()})
-		x.primary = x.screens[0]
-		x.active = x.screens[0]
+		xsp.primary = xsp.screens[0]
+		xsp.active = xsp.screens[0]
 	}
 }

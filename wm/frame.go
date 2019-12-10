@@ -238,7 +238,7 @@ func (f *frame) maximizeApply() {
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
 
-	head := f.client.wm.screensProvider.ScreenForWindow(int(f.x), int(f.y))
+	head := desktop.Instance().Screens().ScreenForWindow(f.client)
 	maxWidth, maxHeight := desktop.Instance().ContentSizePixels(head)
 	if f.client.Fullscreened() {
 		maxWidth = uint32(head.Width)
@@ -249,7 +249,7 @@ func (f *frame) maximizeApply() {
 
 func (f *frame) unmaximizeApply() {
 	if f.client.restoreWidth == 0 && f.client.restoreHeight == 0 {
-		screen := f.client.wm.screensProvider.ScreenForWindow(int(f.client.restoreX), int(f.client.restoreY))
+		screen := desktop.Instance().Screens().ScreenForWindow(f.client)
 		f.client.restoreWidth = uint16(screen.Width / 2)
 		f.client.restoreHeight = uint16(screen.Height / 2)
 	}
@@ -471,7 +471,7 @@ func newFrame(c *client) *frame {
 	full := c.Fullscreened()
 	decorated := c.Decorated()
 	if full {
-		activeHead := c.wm.screensProvider.Active()
+		activeHead := desktop.Instance().Screens().Active()
 		x = int16(activeHead.X)
 		y = int16(activeHead.Y)
 		w = uint16(activeHead.Width)
@@ -508,7 +508,7 @@ func newFrame(c *client) *frame {
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: int(framed.borderWidth()), Right: int(framed.borderWidth()), Top: int(framed.titleHeight()), Bottom: int(framed.borderWidth())})
 	} else {
 		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id,
-			int16(c.wm.screensProvider.Active().X), int16(c.wm.screensProvider.Active().Y))
+			int16(desktop.Instance().Screens().Active().X), int16(desktop.Instance().Screens().Active().Y))
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
 	}
 
