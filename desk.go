@@ -42,12 +42,18 @@ type embeddedScreensProvider struct {
 	screens []*Screen
 }
 
+func applyScale(coord int, scale float32) int {
+	newCoord := int(math.Round(float64(coord) / float64(scale)))
+	return newCoord
+}
+
 func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
-	var x, y, w, h int = 0, 0, 0, 0
 	screens := l.screens.Screens()
 	primary := l.screens.Primary()
-	x, y, w, h = primary.ScaledX, primary.ScaledY,
-		primary.ScaledWidth, primary.ScaledHeight
+	x := applyScale(primary.X, l.screens.Scale())
+	y := applyScale(primary.Y, l.screens.Scale())
+	w := applyScale(primary.Width, l.screens.Scale())
+	h := applyScale(primary.Height, l.screens.Scale())
 	size.Width = w
 	size.Height = h
 	if screens != nil && len(screens) > 1 && len(l.backgrounds) > 1 {
@@ -55,7 +61,10 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 			if screens[i] == primary {
 				continue
 			}
-			xx, yy, ww, hh := screens[i].ScaledX, screens[i].ScaledY, screens[i].ScaledWidth, screens[i].ScaledHeight
+			xx := applyScale(screens[i].X, l.screens.Scale())
+			yy := applyScale(screens[i].Y, l.screens.Scale())
+			ww := applyScale(screens[i].Width, l.screens.Scale())
+			hh := applyScale(screens[i].Height, l.screens.Scale())
 			background := l.screenBackgroundMap[screens[i]]
 			if background != nil {
 				background.Move(fyne.NewPos(xx, yy))
@@ -196,9 +205,7 @@ func (esp embeddedScreensProvider) Screens() []*Screen {
 	l := Instance().(*deskLayout)
 	if esp.screens == nil {
 		esp.screens = []*Screen{{"Screen0", 0, 0,
-			int(l.Root().Canvas().Size().Width), int(l.Root().Canvas().Size().Height),
-			0, 0, int(float32(l.Root().Canvas().Size().Width) * l.Root().Canvas().Scale()),
-			int(float32(l.Root().Canvas().Size().Height) * l.Root().Canvas().Scale())}}
+			int(l.Root().Canvas().Size().Width), int(l.Root().Canvas().Size().Height)}}
 	}
 	return esp.screens
 }

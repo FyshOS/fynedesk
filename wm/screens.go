@@ -153,20 +153,12 @@ func (xsp *x11ScreensProvider) setupScreens(x *x11WM) {
 				xsp.active = xsp.screens[0]
 				xsp.scale = getScale(firstFoundWidth, firstFoundMmWidth)
 			}
-			for _, head := range xsp.screens {
-				head.ScaledX = int(math.Round(float64(head.X) / float64(xsp.scale)))
-				head.ScaledY = int(math.Round(float64(head.Y) / float64(xsp.scale)))
-				head.ScaledWidth = int(math.Round(float64(head.Width) / float64(xsp.scale)))
-				head.ScaledHeight = int(math.Round(float64(head.Height) / float64(xsp.scale)))
-			}
 		}
 	}
 	if len(xsp.screens) == 0 {
 		xsp.screens = append(xsp.screens, &desktop.Screen{Name: "Screen0",
 			X: xwindow.RootGeometry(x.x).X(), Y: xwindow.RootGeometry(x.x).Y(),
-			Width: xwindow.RootGeometry(x.x).Width(), Height: xwindow.RootGeometry(x.x).Height(),
-			ScaledX: xwindow.RootGeometry(x.x).X(), ScaledY: xwindow.RootGeometry(x.x).Y(),
-			ScaledWidth: xwindow.RootGeometry(x.x).Width(), ScaledHeight: xwindow.RootGeometry(x.x).Height()})
+			Width: xwindow.RootGeometry(x.x).Width(), Height: xwindow.RootGeometry(x.x).Height()})
 		xsp.primary = xsp.screens[0]
 		xsp.active = xsp.screens[0]
 	}

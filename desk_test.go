@@ -61,7 +61,7 @@ type testScreensProvider struct {
 
 func (tsp testScreensProvider) Screens() []*Screen {
 	if tsp.screens == nil {
-		tsp.screens = []*Screen{{"Screen0", 0, 0, 2000, 1000, 0, 0, 2000, 1000}}
+		tsp.screens = []*Screen{{"Screen0", 0, 0, 2000, 1000}}
 	}
 	return tsp.screens
 }

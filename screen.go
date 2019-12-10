@@ -11,8 +11,6 @@ type ScreenList interface {
 
 // Screen provides relative information about a single physical screen
 type Screen struct {
-	Name                      string // Name is the randr provided name of the screen
-	X, Y, Width, Height       int    // Geometry of the screen
-	ScaledX, ScaledY          int    // Scaled position of the screen
-	ScaledWidth, ScaledHeight int    // Scaled size of the screen
+	Name                string // Name is the randr provided name of the screen
+	X, Y, Width, Height int    // Geometry of the screen
 }
