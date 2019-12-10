@@ -1,19 +1,24 @@
 package wm
 
-import "fyne.io/desktop"
+import (
+	"fyne.io/desktop"
+)
 
 type stack struct {
-	clients []desktop.Window
+	clients      []desktop.Window
+	mappingOrder []desktop.Window
 
 	listeners []desktop.StackListener
 }
 
 func (s *stack) addToStack(win desktop.Window) {
 	s.clients = append([]desktop.Window{win}, s.clients...)
+	s.mappingOrder = append(s.mappingOrder, win)
 }
 
 func (s *stack) addToStackBottom(win desktop.Window) {
 	s.clients = append(s.clients, win)
+	s.mappingOrder = append(s.mappingOrder, win)
 }
 
 func (s *stack) removeFromStack(win desktop.Window) {
@@ -28,6 +33,25 @@ func (s *stack) removeFromStack(win desktop.Window) {
 		return
 	}
 	s.clients = append(s.clients[:pos], s.clients[pos+1:]...)
+
+	pos = -1
+	for i, w := range s.mappingOrder {
+		if w == win {
+			pos = i
+		}
+	}
+	if pos == -1 {
+		return
+	}
+	s.mappingOrder = append(s.mappingOrder[:pos], s.mappingOrder[pos+1:]...)
+}
+
+func (s *stack) getMappingOrder() []desktop.Window {
+	return s.mappingOrder
+}
+
+func (s *stack) getClients(clients []desktop.Window) []desktop.Window {
+	return s.clients
 }
 
 func (s *stack) AddWindow(win desktop.Window) {

@@ -19,8 +19,7 @@ func setupDesktop(a fyne.App) desktop.Desktop {
 		log.Println("Could not create window manager:", err)
 		return desktop.NewEmbeddedDesktop(a, icons)
 	}
-
-	desk := desktop.NewDesktop(a, mgr, icons)
+	desk := desktop.NewDesktop(a, mgr, icons, wm.NewX11ScreensProvider(mgr))
 	mgr.SetRoot(desk.Root())
 	return desk
 }

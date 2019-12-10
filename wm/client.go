@@ -35,6 +35,14 @@ type client struct {
 	wm    *x11WM
 }
 
+func (s *stack) getWindowsFromClients(clients []desktop.Window) []xproto.Window {
+	var wins []xproto.Window
+	for _, cli := range clients {
+		wins = append(wins, cli.(*client).id)
+	}
+	return wins
+}
+
 func (s *stack) clientForWin(id xproto.Window) desktop.Window {
 	for _, w := range s.clients {
 		if w.(*client).id == id || w.(*client).win == id {
@@ -217,6 +225,7 @@ func (c *client) Focus() {
 
 func (c *client) RaiseToTop() {
 	c.wm.RaiseToTop(c)
+	windowClientListStackingUpdate(c.wm)
 }
 
 func (c *client) RaiseAbove(win desktop.Window) {
@@ -317,23 +326,18 @@ func newClient(win xproto.Window, wm *x11WM) *client {
 		fyne.LogError("Could not change window attributes", err)
 	}
 	windowAllowedActionsSet(wm.x, win, wm.allowedActions)
+
 	initialHints := windowExtendedHintsGet(c.wm.x, c.win)
-	removeHints := wm.pendingRemoveHints[win]
 	for _, hint := range initialHints {
 		switch hint {
 		case "_NET_WM_STATE_FULLSCREEN":
 			c.full = true
+		case "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ":
+			c.maximized = true
+			// TODO Handle more of these possible hints
 		}
-		// TODO Handle more of these possible hints
 	}
-	for _, hint := range removeHints {
-		switch hint {
-		case "_NET_WM_STATE_HIDDEN":
-			c.uniconifyClient()
-		}
-		windowExtendedHintsRemove(wm.x, win, hint)
-		delete(wm.pendingRemoveHints, win)
-	}
+
 	c.newFrame()
 
 	return c

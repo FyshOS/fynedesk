@@ -22,23 +22,24 @@ import (
 
 type x11WM struct {
 	stack
-	x                  *xgbutil.XUtil
-	root               fyne.Window
-	rootID             xproto.Window
-	loaded             bool
-	moveResizing       bool
-	moveResizingLastX  int16
-	moveResizingLastY  int16
-	moveResizingType   moveResizeType
-	pendingRemoveHints map[xproto.Window][]string
-	altTabList         []desktop.Window
-	altTabIndex        int
+	x                 *xgbutil.XUtil
+	root              fyne.Window
+	rootID            xproto.Window
+	loaded            bool
+	moveResizing      bool
+	moveResizingLastX int16
+	moveResizingLastY int16
+	moveResizingType  moveResizeType
+	altTabList        []desktop.Window
+	altTabIndex       int
 
 	allowedActions []string
 	supportedHints []string
 }
 
 type moveResizeType uint32
+
+var instance *x11WM
 
 const (
 	moveResizeTopLeft      moveResizeType = 0
@@ -89,7 +90,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
-	mgr.pendingRemoveHints = make(map[xproto.Window][]string)
+	instance = mgr
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -118,7 +119,10 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr.supportedHints = append(mgr.supportedHints, mgr.allowedActions...)
-	mgr.supportedHints = append(mgr.supportedHints, "_NET_WM_STATE",
+	mgr.supportedHints = append(mgr.supportedHints, "_NET_SUPPORTED",
+		"_NET_CLIENT_LIST",
+		"_NET_CLIENT_LIST_STACKING",
+		"_NET_WM_STATE",
 		"_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_MAXIMIZED_HORZ",
 		"_NET_WM_STATE_SKIP_TASKBAR",
@@ -126,10 +130,10 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		"_NET_WM_STATE_HIDDEN",
 		"_NET_WM_STATE_FULLSCREEN",
 		"_NET_FRAME_EXTENTS",
+		"_NET_WM_MOVERESIZE",
 		"_NET_WM_NAME",
 		"_NET_WM_FULLSCREEN_MONITORS",
-		"_NET_MOVERESIZE_WINDOW",
-		"_NET_SUPPORTED")
+		"_NET_MOVERESIZE_WINDOW")
 
 	ewmh.SupportedSet(mgr.x, mgr.supportedHints)
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
@@ -259,6 +263,7 @@ func (x *x11WM) runLoop() {
 			}
 
 			x.RaiseToTop(x.altTabList[x.altTabIndex])
+			windowClientListStackingUpdate(x)
 		case xproto.KeyReleaseEvent:
 			if ev.Detail == keyCodeAlt {
 				x.altTabList = nil
@@ -277,7 +282,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 
 	if c != nil {
 		f := c.(*client).frame
-		if f != nil && c.(*client).win == win { // ignore requests from our frame a we must have caused it
+		if f != nil && c.(*client).win == win { // ignore requests from our frame as we must have caused it
 			f.minWidth, f.minHeight = windowMinSize(x.x, win)
 			if c.Decorated() {
 				err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
@@ -431,8 +436,8 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 	switch clientMessageStateAction(ev.Data.Data32[0]) {
 	case clientMessageStateActionRemove:
-		hints := x.pendingRemoveHints[ev.Window]
-		hints = append(hints, hint)
+		windowExtendedHintsRemove(x.x, ev.Window, hint)
+		x.showWindow(ev.Window)
 	case clientMessageStateActionAdd:
 		windowExtendedHintsAdd(x.x, ev.Window, hint)
 	}
@@ -467,6 +472,9 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		// TO FULLSCREEN ACROSS
 	case "_NET_WM_MOVERESIZE":
 		if c == nil {
+			return
+		}
+		if c.Maximized() || c.Fullscreened() {
 			return
 		}
 		x.handleMoveResize(ev, c.(*client))
@@ -518,6 +526,16 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	if x.rootID == 0 {
 		return
 	}
+	hints, err := icccm.WmHintsGet(x.x, win)
+	if err != nil {
+		fyne.LogError("Could not get initial hints for client", err)
+	} else if (hints.Flags & xproto.CwOverrideRedirect) != 0 {
+		return
+	}
+	transient, err := icccm.WmTransientForGet(x.x, win)
+	if transient != 0 {
+		return
+	}
 
 	x.setupWindow(win)
 }
@@ -527,6 +545,7 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 	if c == nil {
 		return
 	}
+
 	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
 }
 
@@ -537,10 +556,9 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	}
 	c := x.clientForWin(win)
 	if c != nil {
-		c.(*client).newFrame()
-	} else {
-		c = newClient(win, x)
+		return
 	}
+	c = newClient(win, x)
 
 	x.bindKeys(win)
 	xproto.GrabButton(x.x.Conn(), true, c.(*client).id,
@@ -552,6 +570,8 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 
 	x.AddWindow(c)
 	c.Focus()
+	windowClientListUpdate(x)
+	windowClientListStackingUpdate(x)
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
@@ -560,6 +580,8 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 		return
 	}
 	x.RemoveWindow(c)
+	windowClientListUpdate(x)
+	windowClientListStackingUpdate(x)
 }
 
 func (x *x11WM) bindKeys(win xproto.Window) {
