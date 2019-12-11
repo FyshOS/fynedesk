@@ -5,6 +5,7 @@ package wm
 import (
 	"bytes"
 	"image/color"
+	"math"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/theme"
@@ -101,6 +102,34 @@ func windowMinSize(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
 	}
 
 	return 0, 0
+}
+
+func windowApplyIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, height uint16) (uint16, uint16) {
+	nh, err := icccm.WmNormalHintsGet(x, win)
+	if err != nil {
+		fyne.LogError("Could not apply requested increment", err)
+		return width, height
+	}
+	if (nh.Flags & icccm.SizeHintPResizeInc) > 0 {
+		var baseWidth, baseHeight uint16
+		if nh.BaseWidth > 0 {
+			baseWidth = uint16(nh.BaseWidth)
+		} else {
+			baseWidth = uint16(nh.MinWidth)
+		}
+		if nh.BaseHeight > 0 {
+			baseHeight = uint16(nh.BaseHeight)
+		} else {
+			baseHeight = uint16(nh.MinHeight)
+		}
+		if nh.WidthInc > 0 {
+			width = baseWidth + (uint16(math.Round((float64(width-baseWidth) / float64(nh.WidthInc)) * float64(nh.WidthInc))))
+		}
+		if nh.HeightInc > 0 {
+			height = baseHeight + (uint16(math.Round((float64(height-baseHeight) / float64(nh.HeightInc)) * float64(nh.HeightInc))))
+		}
+	}
+	return width, height
 }
 
 func windowAllowedActionsSet(x *xgbutil.XUtil, win xproto.Window, actions []string) {

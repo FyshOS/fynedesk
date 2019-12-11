@@ -3,8 +3,9 @@
 package wm
 
 import (
-	"github.com/BurntSushi/xgbutil/ewmh"
 	"image"
+
+	"github.com/BurntSushi/xgbutil/ewmh"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/theme"
@@ -214,8 +215,10 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	f.x = x
 	f.y = y
 
+	adjustedW, adjustedH := windowApplyIncrement(f.client.wm.x, f.client.win, w, h)
+
 	var newx, newy, neww, newh uint32
-	newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, w, h)
+	newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, adjustedW, adjustedH)
 	f.applyTheme(false)
 
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
@@ -230,6 +233,9 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
+	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
+		X: int16(newx), Y: int16(newy), Width: uint16(neww), Height: uint16(newh), BorderWidth: 0, OverrideRedirect: false}
+	xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 }
 
 func (f *frame) maximizeApply() {
@@ -514,6 +520,10 @@ func newFrame(c *client) *frame {
 
 	framed.show()
 	framed.applyTheme(true)
+
+	ev := xproto.ConfigureNotifyEvent{Event: c.win, Window: c.win, AboveSibling: 0,
+		X: int16(attrs.X), Y: int16(attrs.Y), Width: uint16(attrs.Width), Height: uint16(attrs.Height), BorderWidth: 0, OverrideRedirect: false}
+	xproto.SendEvent(c.wm.x.Conn(), false, c.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 
 	return framed
 }
