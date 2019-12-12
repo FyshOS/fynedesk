@@ -104,7 +104,7 @@ func windowMinSize(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
 	return 0, 0
 }
 
-func windowApplyIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, height uint16) (uint16, uint16) {
+func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, height uint16) (uint16, uint16) {
 	nh, err := icccm.WmNormalHintsGet(x, win)
 	if err != nil {
 		fyne.LogError("Could not apply requested increment", err)

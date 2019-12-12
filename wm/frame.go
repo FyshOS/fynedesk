@@ -21,6 +21,7 @@ import (
 type frame struct {
 	x, y                    int16
 	width, height           uint16
+	childWidth, childHeight uint16
 	mouseX, mouseY          int16
 	resizeBottom            bool
 	resizeLeft, resizeRight bool
@@ -204,9 +205,10 @@ func (f *frame) getGeometry() (int16, int16, uint16, uint16) {
 }
 
 func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
+	var move, resize bool
 	if !force {
-		resize := w != f.width || h != f.height
-		move := x != f.x || y != f.y
+		resize = w != f.width || h != f.height
+		move = x != f.x || y != f.y
 		if !move && !resize {
 			return
 		}
@@ -215,10 +217,11 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	f.x = x
 	f.y = y
 
-	adjustedW, adjustedH := windowApplyIncrement(f.client.wm.x, f.client.win, w, h)
-
 	var newx, newy, neww, newh uint32
-	newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, adjustedW, adjustedH)
+	newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, w, h)
+
+	adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.x, f.client.win, uint16(neww), uint16(newh))
+
 	f.applyTheme(false)
 
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
@@ -229,13 +232,18 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	}
 	err = xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{newx, newy, neww, newh}).Check()
+		[]uint32{newx, newy, uint32(adjustedW), uint32(adjustedH)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
-	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
-		X: int16(newx), Y: int16(newy), Width: uint16(neww), Height: uint16(newh), BorderWidth: 0, OverrideRedirect: false}
-	xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+	if move && !resize {
+		ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
+			X: int16(f.x + int16(newx)), Y: int16(f.y + int16(newy)), Width: uint16(f.childWidth), Height: uint16(f.childHeight),
+			BorderWidth: f.borderWidth(), OverrideRedirect: false}
+		xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+	}
+	f.childWidth = adjustedW
+	f.childHeight = adjustedH
 }
 
 func (f *frame) maximizeApply() {
@@ -403,7 +411,10 @@ func (f *frame) updateTitle() {
 }
 
 func (f *frame) borderWidth() uint16 {
-	return f.client.wm.scaleToPixels(wmTheme.BorderWidth)
+	if f.client.Decorated() {
+		return f.client.wm.scaleToPixels(wmTheme.BorderWidth)
+	}
+	return 0
 }
 
 func (f *frame) buttonWidth() uint16 {
@@ -428,14 +439,26 @@ func (f *frame) hide() {
 }
 
 func (f *frame) addBorder() {
-	f.applyTheme(true)
+
 	x := int16(f.borderWidth())
 	y := int16(f.titleHeight())
-	w := f.width + uint16(f.borderWidth()*2)
-	h := f.height + uint16(f.borderWidth()) + f.titleHeight()
+	w := f.childWidth + uint16(f.borderWidth()*2)
+	h := f.childHeight + uint16(f.borderWidth()) + f.titleHeight()
+	f.x -= x
+	f.y -= y
+	if f.x < 0 {
+		f.x = 0
+	}
+	if f.y < 0 {
+		f.y = 0
+	}
+	f.width = w
+	f.height = h
+	f.applyTheme(true)
+
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(x), uint32(y), uint32(f.width), uint32(f.height)}).Check()
+		[]uint32{uint32(x), uint32(y), uint32(f.childWidth), uint32(f.childHeight)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
@@ -445,20 +468,36 @@ func (f *frame) addBorder() {
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
-	f.width = w
-	f.height = h
+
 	ewmh.FrameExtentsSet(f.client.wm.x, f.client.win, &ewmh.FrameExtents{Left: int(f.borderWidth()), Right: int(f.borderWidth()), Top: int(f.titleHeight()), Bottom: int(f.borderWidth())})
+
+	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
+		X: int16(f.x), Y: int16(f.y), Width: uint16(f.childWidth), Height: uint16(f.childHeight),
+		BorderWidth: f.borderWidth(), OverrideRedirect: false}
+	xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 }
 
 func (f *frame) removeBorder() {
+	f.x += int16(f.borderWidth())
+	f.y += int16(f.titleHeight())
 	f.applyTheme(true)
-	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+
+	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{0, 0, uint32(f.width), uint32(f.height)}).Check()
+		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
-	ewmh.FrameExtentsSet(f.client.wm.x, f.client.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
+	err = xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+		[]uint32{0, 0, uint32(f.childWidth), uint32(f.childHeight)}).Check()
+	if err != nil {
+		fyne.LogError("Configure Window Error", err)
+	}
+	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
+		X: int16(f.x), Y: int16(f.y), Width: uint16(f.childWidth), Height: uint16(f.childHeight),
+		BorderWidth: f.borderWidth(), OverrideRedirect: false}
+	xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 }
 
 func newFrame(c *client) *frame {
@@ -490,6 +529,14 @@ func newFrame(c *client) *frame {
 	}
 	framed := &frame{client: c, x: attrs.X, y: attrs.Y}
 	if !full && decorated {
+		x -= int16(framed.borderWidth())
+		y -= int16(framed.titleHeight())
+		if x < 0 {
+			x = 0
+		}
+		if y < 0 {
+			y = 0
+		}
 		w = attrs.Width + uint16(framed.borderWidth()*2)
 		h = attrs.Height + uint16(framed.borderWidth()) + framed.titleHeight()
 	}
@@ -509,7 +556,13 @@ func newFrame(c *client) *frame {
 
 	framed.width = w
 	framed.height = h
+	framed.childWidth = attrs.Width
+	framed.childHeight = attrs.Height
+
+	var offsetX, offsetY int16 = 0, 0
 	if !full && decorated {
+		offsetX = int16(framed.borderWidth())
+		offsetY = int16(framed.titleHeight())
 		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()), int16(framed.titleHeight()))
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: int(framed.borderWidth()), Right: int(framed.borderWidth()), Top: int(framed.titleHeight()), Bottom: int(framed.borderWidth())})
 	} else {
@@ -522,7 +575,8 @@ func newFrame(c *client) *frame {
 	framed.applyTheme(true)
 
 	ev := xproto.ConfigureNotifyEvent{Event: c.win, Window: c.win, AboveSibling: 0,
-		X: int16(attrs.X), Y: int16(attrs.Y), Width: uint16(attrs.Width), Height: uint16(attrs.Height), BorderWidth: 0, OverrideRedirect: false}
+		X: int16(x + offsetX), Y: int16(y + offsetY), Width: uint16(framed.childWidth), Height: uint16(framed.childHeight),
+		BorderWidth: framed.borderWidth(), OverrideRedirect: false}
 	xproto.SendEvent(c.wm.x.Conn(), false, c.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 
 	return framed
