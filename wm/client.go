@@ -337,8 +337,12 @@ func newClient(win xproto.Window, wm *x11WM) *client {
 			// TODO Handle more of these possible hints
 		}
 	}
-
-	c.newFrame()
+	if windowStateGet(wm.x, win) == icccm.StateIconic {
+		c.iconic = true
+		xproto.UnmapWindow(wm.x.Conn(), win)
+	} else {
+		c.newFrame()
+	}
 
 	return c
 }

@@ -148,6 +148,24 @@ func windowStateGet(x *xgbutil.XUtil, win xproto.Window) uint {
 	return state.State
 }
 
+func windowTransientForGet(x *xgbutil.XUtil, win xproto.Window) xproto.Window {
+	transient, err := icccm.WmTransientForGet(x, win)
+	if err != nil {
+		return 0
+	}
+	return transient
+}
+
+func windowOverrideGet(x *xgbutil.XUtil, win xproto.Window) bool {
+	hints, err := icccm.WmHintsGet(x, win)
+	if err != nil {
+		return false
+	} else if (hints.Flags & xproto.CwOverrideRedirect) != 0 {
+		return true
+	}
+	return false
+}
+
 func windowActiveReq(x *xgbutil.XUtil, win xproto.Window) {
 	ewmh.ActiveWindowReq(x, win)
 }
@@ -186,6 +204,14 @@ func windowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string)
 			return
 		}
 	}
+}
+
+func windowTypeGet(x *xgbutil.XUtil, win xproto.Window) []string {
+	winType, err := ewmh.WmWindowTypeGet(x, win)
+	if err != nil {
+		return []string{"_NET_WM_WINDOW_TYPE_NORMAL"}
+	}
+	return winType
 }
 
 func windowClientListUpdate(wm *x11WM) {

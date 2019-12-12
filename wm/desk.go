@@ -526,15 +526,15 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	if x.rootID == 0 {
 		return
 	}
-	hints, err := icccm.WmHintsGet(x.x, win)
-	if err != nil {
-		fyne.LogError("Could not get initial hints for client", err)
-	} else if (hints.Flags & xproto.CwOverrideRedirect) != 0 {
-		return
-	}
-	transient, err := icccm.WmTransientForGet(x.x, win)
+	transient := windowTransientForGet(x.x, win)
 	if transient != 0 {
-		return
+		winType := windowTypeGet(x.x, win)
+		switch winType[0] {
+		case "_NET_WM_WINDOW_TYPE_UTILITY", "_NET_WM_WINDOW_TYPE_DIALOG", "_NET_WM_WINDOW_TYPE_NORMAL":
+			break
+		default:
+			return
+		}
 	}
 
 	x.setupWindow(win)
@@ -601,7 +601,6 @@ func (x *x11WM) frameExisting() {
 		if x.root != nil && name == x.root.Title() {
 			continue
 		}
-
 		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
 		if err != nil {
 			fyne.LogError("Get Window Attributes Error", err)
