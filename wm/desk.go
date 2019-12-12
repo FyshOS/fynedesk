@@ -288,7 +288,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 				err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 					xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 					[]uint32{uint32(f.borderWidth()), uint32(f.titleHeight()),
-						uint32(width - 1), uint32(height - 1)}).Check()
+						uint32(width), uint32(height)}).Check()
 
 				if err != nil {
 					fyne.LogError("Configure Frame Error", err)
