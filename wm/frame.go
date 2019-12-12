@@ -411,10 +411,10 @@ func (f *frame) updateTitle() {
 }
 
 func (f *frame) borderWidth() uint16 {
-	if f.client.Decorated() {
-		return f.client.wm.scaleToPixels(wmTheme.BorderWidth)
+	if !f.client.Decorated() {
+		return 0
 	}
-	return 0
+	return f.client.wm.scaleToPixels(wmTheme.BorderWidth)
 }
 
 func (f *frame) buttonWidth() uint16 {
@@ -527,7 +527,7 @@ func newFrame(c *client) *frame {
 		w = attrs.Width
 		h = attrs.Height
 	}
-	framed := &frame{client: c, x: attrs.X, y: attrs.Y}
+	framed := &frame{client: c}
 	if !full && decorated {
 		x -= int16(framed.borderWidth())
 		y -= int16(framed.titleHeight())
@@ -540,6 +540,8 @@ func newFrame(c *client) *frame {
 		w = attrs.Width + uint16(framed.borderWidth()*2)
 		h = attrs.Height + uint16(framed.borderWidth()) + framed.titleHeight()
 	}
+	framed.x = x
+	framed.y = y
 	values := []uint32{xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
 		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
