@@ -53,19 +53,14 @@ func (w *BaseWidget) Position() fyne.Position {
 // Note this should not be used if the widget is being managed by a Layout within a Container.
 func (w *BaseWidget) Move(pos fyne.Position) {
 	w.position = pos
-
-	if w.impl == nil {
-		return
-	}
-	canvas.Refresh(w.impl)
 }
 
 // MinSize for the widget - it should never be resized below this value.
 func (w *BaseWidget) MinSize() fyne.Size {
-	if w.impl == nil || Renderer(w.impl) == nil {
+	if w.impl == nil || cache.Renderer(w.impl) == nil {
 		return fyne.NewSize(0, 0)
 	}
-	return Renderer(w.impl).MinSize()
+	return cache.Renderer(w.impl).MinSize()
 }
 
 // CreateRenderer of BaseWidget does nothing, it must be overridden
@@ -102,7 +97,7 @@ func (w *BaseWidget) Hide() {
 	if w.impl == nil {
 		return
 	}
-	w.impl.Refresh()
+	canvas.Refresh(w.impl)
 }
 
 // Refresh causes this widget to be redrawn in it's current state
@@ -117,7 +112,6 @@ func (w *BaseWidget) Refresh() {
 func (w *BaseWidget) refresh(wid fyne.Widget) {
 	render := cache.Renderer(wid)
 	render.Refresh()
-	render.Layout(w.impl.Size())
 }
 
 func (w *BaseWidget) super() fyne.Widget {

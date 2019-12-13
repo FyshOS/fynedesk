@@ -98,12 +98,17 @@ func (c *mobileCanvas) Focus(obj fyne.Focusable) {
 	c.focused = obj
 	if obj != nil {
 		obj.FocusGained()
+
+		if _, ok := obj.(*widget.Entry); ok {
+			showVirtualKeyboard()
+		}
 	}
 }
 
 func (c *mobileCanvas) Unfocus() {
 	if c.focused != nil {
 		c.focused.FocusLost()
+		hideVirtualKeyboard()
 	}
 	c.focused = nil
 }
@@ -211,7 +216,9 @@ func (c *mobileCanvas) tapDown(pos fyne.Position) {
 		}
 	}
 	if wid, ok := co.(fyne.Focusable); ok && needsFocus {
-		c.Focus(wid)
+		if dis, ok := wid.(fyne.Disableable); !ok || !dis.Disabled() {
+			c.Focus(wid)
+		}
 	}
 }
 

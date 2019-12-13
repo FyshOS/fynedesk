@@ -259,6 +259,7 @@ func (f *frame) maximizeApply() {
 		maxHeight = uint32(head.Height)
 	}
 	f.updateGeometry(int16(head.X), int16(head.Y), uint16(maxWidth), uint16(maxHeight), true)
+	f.applyTheme(true)
 }
 
 func (f *frame) unmaximizeApply() {
@@ -268,6 +269,7 @@ func (f *frame) unmaximizeApply() {
 		f.client.restoreHeight = uint16(screen.Height / 2)
 	}
 	f.updateGeometry(f.client.restoreX, f.client.restoreY, f.client.restoreWidth, f.client.restoreHeight, true)
+	f.applyTheme(true)
 }
 
 func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pidTopRight xproto.Pixmap, drawTopRight xproto.Gcontext, depth byte) {
