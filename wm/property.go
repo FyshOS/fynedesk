@@ -18,6 +18,23 @@ import (
 	"github.com/BurntSushi/xgbutil/xprop"
 )
 
+const (
+	windowTypeDesktop      = "_NET_WM_WINDOW_TYPE_DESKTOP"
+	windowTypeDock         = "_NET_WM_WINDOW_TYPE_DOCK"
+	windowTypeToolbar      = "_NET_WM_WINDOW_TYPE_TOOLBAR"
+	windowTypeMenu         = "_NET_WM_WINDOW_TYPE_MENU"
+	windowTypeUtility      = "_NET_WM_WINDOW_TYPE_UTILITY"
+	windowTypeSplash       = "_NET_WM_WINDOW_TYPE_SPLASH"
+	windowTypeDialog       = "_NET_WM_WINDOW_TYPE_DIALOG"
+	windowTypeDropdownMenu = "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU"
+	windowTypePopupMenu    = "_NET_WM_WINDOW_TYPE_POPUP_MENU"
+	windowTypeTooltip      = "_NET_WM_WINDOW_TYPE_TOOLTIP"
+	windowTypeNotification = "_NET_WM_WINDOW_TYPE_NOTIFICATION"
+	windowTypeCombo        = "_NET_WM_WINDOW_TYPE_COMBO"
+	windowTypeDND          = "_NET_WM_WINDOW_TYPE_DND"
+	windowTypeNormal       = "_NET_WM_WINDOW_TYPE_NORMAL"
+)
+
 func windowName(x *xgbutil.XUtil, win xproto.Window) string {
 	//Spec says _NET_WM_NAME is preferred to WM_NAME
 	name, err := ewmh.WmNameGet(x, win)
@@ -148,6 +165,24 @@ func windowStateGet(x *xgbutil.XUtil, win xproto.Window) uint {
 	return state.State
 }
 
+func windowTransientForGet(x *xgbutil.XUtil, win xproto.Window) xproto.Window {
+	transient, err := icccm.WmTransientForGet(x, win)
+	if err != nil {
+		return 0
+	}
+	return transient
+}
+
+func windowOverrideGet(x *xgbutil.XUtil, win xproto.Window) bool {
+	hints, err := icccm.WmHintsGet(x, win)
+	if err != nil {
+		return false
+	} else if (hints.Flags & xproto.CwOverrideRedirect) != 0 {
+		return true
+	}
+	return false
+}
+
 func windowActiveReq(x *xgbutil.XUtil, win xproto.Window) {
 	ewmh.ActiveWindowReq(x, win)
 }
@@ -186,6 +221,14 @@ func windowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string)
 			return
 		}
 	}
+}
+
+func windowTypeGet(x *xgbutil.XUtil, win xproto.Window) []string {
+	winType, err := ewmh.WmWindowTypeGet(x, win)
+	if err != nil || len(winType) == 0 {
+		return []string{windowTypeNormal}
+	}
+	return winType
 }
 
 func windowClientListUpdate(wm *x11WM) {

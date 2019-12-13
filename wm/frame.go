@@ -496,6 +496,9 @@ func (f *frame) removeBorder() {
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
+
+	ewmh.FrameExtentsSet(f.client.wm.x, f.client.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
+
 	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
 		X: int16(f.x), Y: int16(f.y), Width: uint16(f.childWidth), Height: uint16(f.childHeight),
 		BorderWidth: f.borderWidth(), OverrideRedirect: false}

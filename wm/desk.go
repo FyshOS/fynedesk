@@ -39,8 +39,6 @@ type x11WM struct {
 
 type moveResizeType uint32
 
-var instance *x11WM
-
 const (
 	moveResizeTopLeft      moveResizeType = 0
 	moveResizeTop          moveResizeType = 1
@@ -90,7 +88,6 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
-	instance = mgr
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -526,15 +523,19 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	if x.rootID == 0 {
 		return
 	}
-	hints, err := icccm.WmHintsGet(x.x, win)
-	if err != nil {
-		fyne.LogError("Could not get initial hints for client", err)
-	} else if (hints.Flags & xproto.CwOverrideRedirect) != 0 {
+	override := windowOverrideGet(x.x, win)
+	if override {
 		return
 	}
-	transient, err := icccm.WmTransientForGet(x.x, win)
+	transient := windowTransientForGet(x.x, win)
 	if transient != 0 {
-		return
+		winType := windowTypeGet(x.x, win)
+		switch winType[0] {
+		case windowTypeUtility, windowTypeDialog, windowTypeNormal:
+			break
+		default:
+			return
+		}
 	}
 
 	x.setupWindow(win)
@@ -601,7 +602,6 @@ func (x *x11WM) frameExisting() {
 		if x.root != nil && name == x.root.Title() {
 			continue
 		}
-
 		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
 		if err != nil {
 			fyne.LogError("Get Window Attributes Error", err)
