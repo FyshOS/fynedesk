@@ -30,9 +30,13 @@ func newBorder(win desktop.Window, icon fyne.Resource) fyne.CanvasObject {
 
 	exit := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {})
 	exit.Style = widget.PrimaryButton
+	max := widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {})
+	if win.Maximized() {
+		max.Icon = theme.ViewRestoreIcon()
+	}
 	titleBar := widget.NewHBox(makeFiller(),
 		exit,
-		widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {}),
+		max,
 		widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {}),
 		widget.NewLabel(win.Title()),
 		layout.NewSpacer())
