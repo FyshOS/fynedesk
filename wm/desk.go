@@ -530,7 +530,7 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	transient := windowTransientForGet(x.x, win)
 	if transient != 0 {
 		winType := windowTypeGet(x.x, win)
-		switch winType {
+		switch winType[0] {
 		case windowTypeUtility, windowTypeDialog, windowTypeNormal:
 			break
 		default:
