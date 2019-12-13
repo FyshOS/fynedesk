@@ -18,6 +18,25 @@ import (
 	"github.com/BurntSushi/xgbutil/xprop"
 )
 
+type windowType int
+
+const (
+	windowTypeDesktop      windowType = 0
+	windowTypeDock         windowType = iota
+	windowTypeToolbar      windowType = iota
+	windowTypeMenu         windowType = iota
+	windowTypeUtility      windowType = iota
+	windowTypeSplash       windowType = iota
+	windowTypeDialog       windowType = iota
+	windowTypeDropdownMenu windowType = iota
+	windowTypePopupMenu    windowType = iota
+	windowTypeTooltip      windowType = iota
+	windowTypeNotification windowType = iota
+	windowTypeCombo        windowType = iota
+	windowTypeDND          windowType = iota
+	windowTypeNormal       windowType = iota
+)
+
 func windowName(x *xgbutil.XUtil, win xproto.Window) string {
 	//Spec says _NET_WM_NAME is preferred to WM_NAME
 	name, err := ewmh.WmNameGet(x, win)
@@ -206,12 +225,41 @@ func windowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string)
 	}
 }
 
-func windowTypeGet(x *xgbutil.XUtil, win xproto.Window) []string {
+func windowTypeGet(x *xgbutil.XUtil, win xproto.Window) windowType {
 	winType, err := ewmh.WmWindowTypeGet(x, win)
 	if err != nil {
-		return []string{"_NET_WM_WINDOW_TYPE_NORMAL"}
+		return windowTypeNormal
 	}
-	return winType
+	switch winType[0] {
+	case "_NET_WM_WINDOW_TYPE_DESKTOP":
+		return windowTypeDesktop
+	case "_NET_WM_WINDOW_TYPE_DOCK":
+		return windowTypeDock
+	case "_NET_WM_WINDOW_TYPE_TOOLBAR":
+		return windowTypeToolbar
+	case "_NET_WM_WINDOW_TYPE_MENU":
+		return windowTypeMenu
+	case "_NET_WM_WINDOW_TYPE_UTILITY":
+		return windowTypeUtility
+	case "_NET_WM_WINDOW_TYPE_SPLASH":
+		return windowTypeSplash
+	case "_NET_WM_WINDOW_TYPE_DIALOG":
+		return windowTypeDialog
+	case "_NET_WM_WINDOW_TYPE_DROPDOWN_MENU":
+		return windowTypeDropdownMenu
+	case "_NET_WM_WINDOW_TYPE_POPUP_MENU":
+		return windowTypePopupMenu
+	case "_NET_WM_WINDOW_TYPE_TOOLTIP":
+		return windowTypeTooltip
+	case "_NET_WM_WINDOW_TYPE_NOTIFICATION":
+		return windowTypeNotification
+	case "_NET_WM_WINDOW_TYPE_COMBO":
+		return windowTypeNotification
+	case "_NET_WM_WINDOW_TYPE_DND":
+		return windowTypeDND
+	default:
+		return windowTypeNormal
+	}
 }
 
 func windowClientListUpdate(wm *x11WM) {

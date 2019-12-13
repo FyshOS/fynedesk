@@ -39,8 +39,6 @@ type x11WM struct {
 
 type moveResizeType uint32
 
-var instance *x11WM
-
 const (
 	moveResizeTopLeft      moveResizeType = 0
 	moveResizeTop          moveResizeType = 1
@@ -90,7 +88,6 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
-	instance = mgr
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -526,11 +523,15 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	if x.rootID == 0 {
 		return
 	}
+	override := windowOverrideGet(x.x, win)
+	if override {
+		return
+	}
 	transient := windowTransientForGet(x.x, win)
 	if transient != 0 {
 		winType := windowTypeGet(x.x, win)
-		switch winType[0] {
-		case "_NET_WM_WINDOW_TYPE_UTILITY", "_NET_WM_WINDOW_TYPE_DIALOG", "_NET_WM_WINDOW_TYPE_NORMAL":
+		switch winType {
+		case windowTypeUtility, windowTypeDialog, windowTypeNormal:
 			break
 		default:
 			return
