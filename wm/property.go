@@ -225,7 +225,7 @@ func windowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string)
 
 func windowTypeGet(x *xgbutil.XUtil, win xproto.Window) []string {
 	winType, err := ewmh.WmWindowTypeGet(x, win)
-	if err != nil {
+	if err != nil || len(winType) == 0 {
 		return []string{windowTypeNormal}
 	}
 	return winType
