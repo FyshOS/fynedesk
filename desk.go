@@ -246,7 +246,8 @@ func Instance() Desktop {
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An ApplicationProvider is used to lookup application icons from the operating system.
 func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider, screenProvider ScreenList) Desktop {
-	instance = &deskLayout{app: app, wm: wm, icons: icons, screens: screenProvider, settings: NewDeskSettings()}
+	instance = &deskLayout{app: app, wm: wm, icons: icons, screens: screenProvider}
+	instance.(*deskLayout).settings = NewDeskSettings()
 	instance.(*deskLayout).screenBackgroundMap = make(map[*Screen]fyne.CanvasObject)
 	return instance
 }
@@ -256,7 +257,8 @@ func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider, scree
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
 func NewEmbeddedDesktop(app fyne.App, icons ApplicationProvider) Desktop {
-	instance = &deskLayout{app: app, icons: icons, screens: NewEmbeddedScreensProvider(), settings: NewDeskSettings()}
+	instance = &deskLayout{app: app, icons: icons, screens: NewEmbeddedScreensProvider()}
+	instance.(*deskLayout).settings = NewDeskSettings()
 	instance.(*deskLayout).screenBackgroundMap = make(map[*Screen]fyne.CanvasObject)
 	return instance
 }

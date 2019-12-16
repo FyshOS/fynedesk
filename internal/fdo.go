@@ -174,6 +174,18 @@ func fdoLookupApplicationsMatching(appName string) []desktop.AppData {
 	return icons
 }
 
+func fdoLookupApplicationAll() []desktop.AppData {
+	var icons []desktop.AppData
+	fdoForEachApplicationFile(func(icon desktop.AppData) bool {
+		if icon == nil {
+			return false
+		}
+		icons = append(icons, icon)
+		return false
+	})
+	return icons
+}
+
 //fdoLookupApplicationWinInfo looks up an application based on window info and returns an fdoApplicationData struct
 func fdoLookupApplicationWinInfo(win desktop.Window) desktop.AppData {
 	icon := fdoLookupApplication(win.Title())
@@ -349,6 +361,26 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 	return ""
 }
 
+func fdoLookupAvailableThemes() []string {
+	var themes []string
+	locationLookup := fdoLookupXdgDataDirs()
+	for _, dataDir := range locationLookup {
+		files, err := ioutil.ReadDir(filepath.Join(dataDir, "icons"))
+		if err != nil {
+			continue
+		}
+		//Enter icon theme
+		for _, f := range files {
+			if strings.HasPrefix(f.Name(), ".") || !f.IsDir() {
+				continue
+			}
+			//Example is /usr/share/icons/gnome
+			themes = append(themes, f.Name())
+		}
+	}
+	return themes
+}
+
 //newFdoIconData creates and returns a struct that contains needed fields from a .desktop file
 func newFdoIconData(desktopPath string) desktop.AppData {
 	file, err := os.Open(desktopPath)
@@ -391,6 +423,16 @@ func newFdoIconData(desktopPath string) desktop.AppData {
 }
 
 type fdoIconProvider struct {
+}
+
+//AllApplications returns all of the available applications in a AppData slice
+func (f *fdoIconProvider) AllApps() []desktop.AppData {
+	return fdoLookupApplicationAll()
+}
+
+//AvailableThemes returns all available icon themes in a string slice
+func (f *fdoIconProvider) AvailableThemes() []string {
+	return fdoLookupAvailableThemes()
 }
 
 //FindAppFromName matches an icon name to a location and returns an AppData interface

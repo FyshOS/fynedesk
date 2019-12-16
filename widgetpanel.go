@@ -2,7 +2,6 @@ package desktop
 
 import (
 	"fmt"
-	"fyne.io/desktop/internal/settings"
 	"image/color"
 	"io/ioutil"
 	"log"
@@ -228,7 +227,9 @@ func (w *widgetPanel) createClock() {
 
 func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 	items := []*fyne.MenuItem{
-		fyne.NewMenuItem("Settings", settings.Show),
+		fyne.NewMenuItem("Settings", func() {
+			showSettings(w.desk.settings.(*deskSettings))
+		}),
 		fyne.NewMenuItem("Blank Screen", w.desk.wm.Blank),
 	}
 	if os.Getenv("FYNE_DESK_RUNNER") != "" {

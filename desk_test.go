@@ -55,6 +55,10 @@ func (*testSettings) Background() string {
 	return ""
 }
 
+func (*testSettings) DefaultApps() string {
+	return ""
+}
+
 type testScreensProvider struct {
 	screens []*Screen
 }
