@@ -135,7 +135,8 @@ func (w *widgetPanel) batteryTick() {
 	tick := time.NewTicker(time.Second * 10)
 	go func() {
 		for {
-			w.battery.SetValue(battery())
+			value, _ := battery()
+			w.battery.SetValue(value)
 			<-tick.C
 		}
 	}()
@@ -149,48 +150,53 @@ func formattedDate() string {
 	return time.Now().Format("2 January")
 }
 
-func battery() float64 {
+func battery() (float64, error) {
 	nowStr, err1 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_now")
 	fullStr, err2 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_full")
 	if err1 != nil || err2 != nil {
 		log.Println("Error reading battery info", err1)
-		return 0
+		return 0, err1
 	}
 
 	now, err1 := strconv.Atoi(strings.TrimSpace(string(nowStr)))
 	full, err2 := strconv.Atoi(strings.TrimSpace(string(fullStr)))
 	if err1 != nil || err2 != nil {
 		log.Println("Error converting battery info", err1)
-		return 0
+		return 0, err1
 	}
 
-	return float64(now) / float64(full)
+	return float64(now) / float64(full), nil
 }
 
 func (w *widgetPanel) createBattery() {
-	w.battery = widget.NewProgressBar()
-	w.brightness = widget.NewProgressBar()
-
+	if _, err := battery(); err != nil {
+		w.battery = widget.NewProgressBar()
+		go w.batteryTick()
+	}
+	if _, err := battery(); err != nil {
+		w.brightness = widget.NewProgressBar()
+	}
 	go w.batteryTick()
 }
 
-func brightness() float64 {
+func brightness() (float64, error) {
 	out, err := exec.Command("xbacklight").Output()
 	if err != nil {
 		log.Println("Error running xbacklight", err)
+		return 0, err
 	} else {
 		ret, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
 		if err != nil {
 			log.Println("Error reading brightness info", err)
-			return 0
+			return 0, err
 		}
-		return float64(ret) / 100
+		return float64(ret) / 100, nil
 	}
-	return 0
 }
 
 func (w *widgetPanel) setBrightness(diff int) {
-	value := int(brightness()*100) + diff
+	floatVal, _ := brightness()
+	value := int(floatVal*100) + diff
 
 	if value < 5 {
 		value = 5
@@ -202,7 +208,7 @@ func (w *widgetPanel) setBrightness(diff int) {
 	if err != nil {
 		log.Println("Error running xbacklight", err)
 	} else {
-		w.brightness.SetValue(brightness())
+		w.brightness.SetValue(floatVal)
 	}
 }
 
@@ -259,16 +265,21 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	account = widget.NewButtonWithIcon(accountLabel, wmtheme.UserIcon, func() {
 		w.showAccountMenu(account)
 	})
-	batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
-	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
-	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-		w.setBrightness(-5)
-	})
-	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		w.setBrightness(5)
-	})
-	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
-		less, w.brightness, more)
+	var brightnessIcon, bright, batteryIcon fyne.CanvasObject
+	if _, err := battery(); err == nil {
+		batteryIcon = widget.NewIcon(wmtheme.BatteryIcon)
+	}
+	if _, err := brightness(); err == nil {
+		brightnessIcon = widget.NewIcon(wmtheme.BrightnessIcon)
+		less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
+			w.setBrightness(-5)
+		})
+		more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+			w.setBrightness(5)
+		})
+		bright = fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
+			less, w.brightness, more)
+	}
 	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), func() {
 		if w.appExecWin != nil {
 			w.appExecWin.Close()
@@ -285,10 +296,12 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		w.date,
 		layout.NewSpacer(),
 		appExecButton,
-		fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, w.battery),
 	}
-
-	if _, err := exec.LookPath("xbacklight"); err == nil {
+	if _, err := battery(); err == nil {
+		objects = append(objects,
+			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, w.battery))
+	}
+	if _, err := brightness(); err == nil {
 		objects = append(objects,
 			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright))
 		go w.setBrightness(0)
