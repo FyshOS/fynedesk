@@ -82,6 +82,10 @@ func (tsp testScreensProvider) ScreenForWindow(win Window) *Screen {
 	return tsp.Screens()[0]
 }
 
+func (tsp testScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *Screen {
+	return tsp.Screens()[0]
+}
+
 func newTestScreensProvider() ScreenList {
 	return &testScreensProvider{}
 }

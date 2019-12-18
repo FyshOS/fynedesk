@@ -63,6 +63,24 @@ func (xsp *x11ScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Scre
 	return xsp.screens[0]
 }
 
+func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *desktop.Screen {
+	if len(xsp.screens) > 1 {
+		for i := 0; i < len(xsp.screens); i++ {
+			xx, yy, ww, hh := xsp.screens[i].X, xsp.screens[i].Y,
+				xsp.screens[i].Width, xsp.screens[i].Height
+			middleW := width / 2
+			middleH := height / 2
+			middleW += x
+			middleH += y
+			if middleW >= xx && middleH >= yy &&
+				middleW <= xx+ww && middleH <= yy+hh {
+				return xsp.screens[i]
+			}
+		}
+	}
+	return xsp.screens[0]
+}
+
 func getScale(widthPx uint16, widthMm uint32) float32 {
 	env := os.Getenv("FYNE_SCALE")
 
