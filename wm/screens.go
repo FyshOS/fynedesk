@@ -46,36 +46,38 @@ func (xsp *x11ScreensProvider) Scale() float32 {
 }
 
 func (xsp *x11ScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
-	if len(xsp.screens) > 1 {
-		for i := 0; i < len(xsp.screens); i++ {
-			xx, yy, ww, hh := xsp.screens[i].X, xsp.screens[i].Y,
-				xsp.screens[i].Width, xsp.screens[i].Height
-			middleW := int(win.(*client).frame.width / 2)
-			middleH := int(win.(*client).frame.height / 2)
-			middleW += int(win.(*client).frame.x)
-			middleH += int(win.(*client).frame.y)
-			if middleW >= xx && middleH >= yy &&
-				middleW <= xx+ww && middleH <= yy+hh {
-				return xsp.screens[i]
-			}
+	if len(xsp.screens) <= 1 {
+		return xsp.screens[0]
+	}
+	for i := 0; i < len(xsp.screens); i++ {
+		xx, yy, ww, hh := xsp.screens[i].X, xsp.screens[i].Y,
+			xsp.screens[i].Width, xsp.screens[i].Height
+		middleW := int(win.(*client).frame.width / 2)
+		middleH := int(win.(*client).frame.height / 2)
+		middleW += int(win.(*client).frame.x)
+		middleH += int(win.(*client).frame.y)
+		if middleW >= xx && middleH >= yy &&
+			middleW <= xx+ww && middleH <= yy+hh {
+			return xsp.screens[i]
 		}
 	}
 	return xsp.screens[0]
 }
 
 func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *desktop.Screen {
-	if len(xsp.screens) > 1 {
-		for i := 0; i < len(xsp.screens); i++ {
-			xx, yy, ww, hh := xsp.screens[i].X, xsp.screens[i].Y,
-				xsp.screens[i].Width, xsp.screens[i].Height
-			middleW := width / 2
-			middleH := height / 2
-			middleW += x
-			middleH += y
-			if middleW >= xx && middleH >= yy &&
-				middleW <= xx+ww && middleH <= yy+hh {
-				return xsp.screens[i]
-			}
+	if len(xsp.screens) <= 1 {
+		return xsp.screens[0]
+	}
+	for i := 0; i < len(xsp.screens); i++ {
+		xx, yy, ww, hh := xsp.screens[i].X, xsp.screens[i].Y,
+			xsp.screens[i].Width, xsp.screens[i].Height
+		middleW := width / 2
+		middleH := height / 2
+		middleW += x
+		middleH += y
+		if middleW >= xx && middleH >= yy &&
+			middleW <= xx+ww && middleH <= yy+hh {
+			return xsp.screens[i]
 		}
 	}
 	return xsp.screens[0]
