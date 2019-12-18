@@ -17,6 +17,7 @@ type Desktop interface {
 	Settings() DeskSettings
 	ContentSizePixels(screen *Screen) (uint32, uint32)
 	Screens() ScreenList
+	MouseOutNotify()
 
 	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
@@ -199,6 +200,10 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 		fmt.Sprintf("GDK_SCALE=%d", intScale),
 		fmt.Sprintf("ELM_SCALE=%1.1f", scale),
 	}
+}
+
+func (l *deskLayout) MouseOutNotify() {
+	l.bar.(*bar).MouseOut()
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
