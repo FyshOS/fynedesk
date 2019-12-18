@@ -183,14 +183,13 @@ func brightness() (float64, error) {
 	if err != nil {
 		log.Println("Error running xbacklight", err)
 		return 0, err
-	} else {
-		ret, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
-		if err != nil {
-			log.Println("Error reading brightness info", err)
-			return 0, err
-		}
-		return float64(ret) / 100, nil
 	}
+	ret, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
+	if err != nil {
+		log.Println("Error reading brightness info", err)
+		return 0, err
+	}
+	return float64(ret) / 100, nil
 }
 
 func (w *widgetPanel) setBrightness(diff int) {
