@@ -169,14 +169,13 @@ func battery() (float64, error) {
 }
 
 func (w *widgetPanel) createBattery() {
-	if _, err := battery(); err != nil {
+	if _, err := battery(); err == nil {
 		w.battery = widget.NewProgressBar()
 		go w.batteryTick()
 	}
-	if _, err := battery(); err != nil {
+	if _, err := battery(); err == nil {
 		w.brightness = widget.NewProgressBar()
 	}
-	go w.batteryTick()
 }
 
 func brightness() (float64, error) {
