@@ -213,8 +213,8 @@ func (l *deskLayout) startSettingsChangeListener(listener chan DeskSettings) {
 	for {
 		_ = <-listener
 		l.updateBackgrounds(l.Settings().Background())
-		l.bar.(*bar).updateIcons()
-		l.bar.(*bar).updateIconOrder()
+		appBar.updateIcons()
+		appBar.updateIconOrder()
 
 	}
 }
