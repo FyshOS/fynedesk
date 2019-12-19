@@ -43,17 +43,20 @@ func (d *deskSettings) DefaultApps() []string {
 func (d *deskSettings) setBackground(name string) {
 	d.background = name
 	fyne.CurrentApp().Preferences().SetString("background", d.background)
+	go Instance().(*deskLayout).updateBackgrounds()
 }
 
 func (d *deskSettings) setIconTheme(name string) {
 	d.iconTheme = name
 	fyne.CurrentApp().Preferences().SetString("icontheme", d.iconTheme)
+	go Instance().(*deskLayout).updateIconTheme()
 }
 
 func (d *deskSettings) setDefaultApps(defaultApps []string) {
 	newDefaultApps := strings.Join(defaultApps, "|")
 	d.defaultApps = defaultApps
 	fyne.CurrentApp().Preferences().SetString("defaultapps", newDefaultApps)
+	go Instance().(*deskLayout).updateIconOrder()
 }
 
 func (d *deskSettings) load() {
@@ -71,7 +74,7 @@ func (d *deskSettings) load() {
 		d.iconTheme = fyne.CurrentApp().Preferences().String("icontheme")
 	}
 	if d.iconTheme == "" {
-		d.setIconTheme("hicolor")
+		d.iconTheme = "hicolor"
 	}
 
 	d.defaultApps = strings.SplitN(fyne.CurrentApp().Preferences().String("defaultapps"), "|", -1)
@@ -208,6 +211,7 @@ func (d *deskSettings) populateOrderList(list *fyne.Container) {
 		hbox := widget.NewHBox(upButton, downButton, icon, label)
 		list.AddObject(hbox)
 	}
+	list.Refresh()
 }
 
 func (d *deskSettings) loadBarScreen() fyne.CanvasObject {

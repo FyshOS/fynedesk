@@ -3,6 +3,7 @@ package desktop
 import (
 	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
 )
 
 var (
@@ -23,7 +24,7 @@ func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
 			}
 		}
 	}
-	icon := newBarIcon(iconRes)
+	icon := newBarIcon(iconRes, data)
 	if taskbar == false {
 		icon.onTapped = func() {
 			err := b.desk.RunApp(data)
@@ -83,14 +84,49 @@ func (b *bar) WindowRemoved(win Window) {
 	}
 }
 
-func newBar(desk Desktop) fyne.CanvasObject {
-	appBar = newAppBar(desk)
-
-	if desk.WindowManager() != nil {
-		desk.WindowManager().AddStackListener(appBar)
+func (b *bar) updateIconOrder() {
+	var index = -1
+	for i, obj := range b.children {
+		if _, ok := obj.(*canvas.Rectangle); ok {
+			index = i
+			break
+		}
 	}
-	for _, name := range desk.Settings().DefaultApps() {
-		app := desk.IconProvider().FindAppFromName(name)
+	if index == -1 {
+		return
+	}
+	var taskbarIcons = b.icons[index:]
+
+	b.icons = nil
+	b.children = nil
+	b.appendDefaultIcons()
+
+	b.icons = append(b.icons, taskbarIcons...)
+	for _, obj := range taskbarIcons {
+		appBar.append(obj)
+	}
+}
+
+func (b *bar) updateIcons() {
+	iconTheme := b.desk.Settings().IconTheme()
+	for _, icon := range b.icons {
+		iconRes := icon.appData.Icon(iconTheme, int(float32(b.iconSize)*b.iconScale))
+		if iconRes == nil || iconRes == wmTheme.BrokenImageIcon {
+			if icon.taskbarWindow != nil {
+				iconRes = icon.taskbarWindow.Icon()
+				if iconRes == nil {
+					iconRes = wmTheme.BrokenImageIcon
+				}
+			}
+		}
+		icon.resource = iconRes
+		icon.Refresh()
+	}
+}
+
+func (b *bar) appendDefaultIcons() {
+	for _, name := range b.desk.Settings().DefaultApps() {
+		app := b.desk.IconProvider().FindAppFromName(name)
 		if app == nil {
 			continue
 		}
@@ -100,6 +136,15 @@ func newBar(desk Desktop) fyne.CanvasObject {
 		}
 	}
 	appBar.appendSeparator()
+}
+
+func newBar(desk Desktop) fyne.CanvasObject {
+	appBar = newAppBar(desk)
+
+	if desk.WindowManager() != nil {
+		desk.WindowManager().AddStackListener(appBar)
+	}
+	appBar.appendDefaultIcons()
 
 	return appBar
 }

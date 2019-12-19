@@ -2,6 +2,7 @@ package desktop // import "fyne.io/desktop"
 
 import (
 	"fmt"
+	"fyne.io/fyne/canvas"
 	"log"
 	"math"
 	"runtime/debug"
@@ -111,6 +112,21 @@ func (l *deskLayout) newDesktopWindow() fyne.Window {
 	}
 
 	return desk
+}
+
+func (l *deskLayout) updateIconOrder() {
+	l.bar.(*bar).updateIconOrder()
+}
+
+func (l *deskLayout) updateIconTheme() {
+	l.bar.(*bar).updateIcons()
+}
+
+func (l *deskLayout) updateBackgrounds() {
+	for _, background := range l.backgrounds {
+		updateBackgroundPath(background.(*canvas.Image))
+		canvas.Refresh(background)
+	}
 }
 
 func (l *deskLayout) Root() fyne.Window {
