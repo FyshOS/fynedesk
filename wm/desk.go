@@ -180,6 +180,12 @@ func (x *x11WM) runLoop() {
 			xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 				[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width), uint32(ev.Height)}).Check()
+		case xproto.CreateNotifyEvent:
+			err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Window, xproto.CwCursor,
+				[]uint32{uint32(defaultCursor)}).Check()
+			if err != nil {
+				fyne.LogError("Set Cursor Error", err)
+			}
 		case xproto.DestroyNotifyEvent:
 			x.destroyWindow(ev.Window)
 		case xproto.PropertyNotifyEvent:
