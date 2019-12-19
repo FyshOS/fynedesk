@@ -441,7 +441,6 @@ func (f *frame) hide() {
 }
 
 func (f *frame) addBorder() {
-
 	x := int16(f.borderWidth())
 	y := int16(f.titleHeight())
 	w := f.childWidth + uint16(f.borderWidth()*2)
@@ -520,12 +519,19 @@ func newFrame(c *client) *frame {
 	x, y, w, h := attrs.X, attrs.Y, attrs.Width, attrs.Height
 	full := c.Fullscreened()
 	decorated := c.Decorated()
-	if full {
-		activeHead := desktop.Instance().Screens().Active()
+	maximized := c.Maximized()
+	if full || maximized {
+		activeHead := desktop.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
 		x = int16(activeHead.X)
 		y = int16(activeHead.Y)
-		w = uint16(activeHead.Width)
-		h = uint16(activeHead.Height)
+		if full {
+			w = uint16(activeHead.Width)
+			h = uint16(activeHead.Height)
+		} else {
+			maxWidth, maxHeight := desktop.Instance().ContentSizePixels(activeHead)
+			w = uint16(maxWidth)
+			h = uint16(maxHeight)
+		}
 	} else if !decorated {
 		x = attrs.X
 		y = attrs.Y
@@ -542,8 +548,10 @@ func newFrame(c *client) *frame {
 		if y < 0 {
 			y = 0
 		}
-		w = attrs.Width + uint16(framed.borderWidth()*2)
-		h = attrs.Height + uint16(framed.borderWidth()) + framed.titleHeight()
+		if !maximized {
+			w = attrs.Width + uint16(framed.borderWidth()*2)
+			h = attrs.Height + uint16(framed.borderWidth()) + framed.titleHeight()
+		}
 	}
 	framed.x = x
 	framed.y = y
@@ -563,9 +571,13 @@ func newFrame(c *client) *frame {
 
 	framed.width = w
 	framed.height = h
-	framed.childWidth = attrs.Width
-	framed.childHeight = attrs.Height
-
+	if full || !decorated {
+		framed.childWidth = w
+		framed.childHeight = h
+	} else {
+		framed.childWidth = w - uint16(framed.borderWidth()*2)
+		framed.childHeight = h - uint16(framed.borderWidth()) - framed.titleHeight()
+	}
 	var offsetX, offsetY int16 = 0, 0
 	if !full && decorated {
 		offsetX = int16(framed.borderWidth())
@@ -576,6 +588,15 @@ func newFrame(c *client) *frame {
 		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id,
 			int16(desktop.Instance().Screens().Active().X), int16(desktop.Instance().Screens().Active().Y))
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
+	}
+
+	if full || maximized {
+		err = xproto.ConfigureWindowChecked(c.wm.x.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+			[]uint32{uint32(offsetX), uint32(offsetY), uint32(framed.childWidth), uint32(framed.childHeight)}).Check()
+		if err != nil {
+			fyne.LogError("Configure Window Error", err)
+		}
 	}
 
 	framed.show()

@@ -237,6 +237,10 @@ func (esp embeddedScreensProvider) ScreenForWindow(win Window) *Screen {
 	return esp.Screens()[0]
 }
 
+func (esp embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *Screen {
+	return esp.Screens()[0]
+}
+
 // NewEmbeddedScreensProvider returns a screen provider for use in embedded desktop mode
 func NewEmbeddedScreensProvider() ScreenList {
 	return &embeddedScreensProvider{}
