@@ -231,7 +231,7 @@ func (l *deskLayout) Screens() ScreenList {
 }
 
 func (esp embeddedScreensProvider) Screens() []*Screen {
-	l := Instance().(*deskLayout)
+	l := instance.(*deskLayout)
 	if esp.screens == nil {
 		esp.screens = []*Screen{{"Screen0", 0, 0,
 			removeScale(int(l.Root().Canvas().Size().Width), esp.Scale()),
