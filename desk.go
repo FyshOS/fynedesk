@@ -124,7 +124,7 @@ func (l *deskLayout) updateIconTheme() {
 
 func (l *deskLayout) updateBackgrounds(path string) {
 	for _, background := range l.backgrounds {
-		updateWallpaperPath(background.(*canvas.Image), path)
+		updateBackgroundPath(background.(*canvas.Image), path)
 		canvas.Refresh(background)
 	}
 }

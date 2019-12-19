@@ -11,19 +11,10 @@ var (
 )
 
 func barCreateIcon(b *bar, taskbar bool, data AppData, win Window) *barIcon {
-	iconTheme := b.desk.Settings().IconTheme()
 	if data == nil {
 		return nil
 	}
-	iconRes := data.Icon(iconTheme, int(float32(b.iconSize)*b.iconScale))
-	if iconRes == nil || iconRes == wmTheme.BrokenImageIcon {
-		if win != nil {
-			iconRes = win.Icon()
-			if iconRes == nil {
-				iconRes = wmTheme.BrokenImageIcon
-			}
-		}
-	}
+	iconRes := b.getIconResource(data, win)
 	icon := newBarIcon(iconRes, data)
 	if taskbar == false {
 		icon.onTapped = func() {
@@ -108,20 +99,23 @@ func (b *bar) updateIconOrder() {
 }
 
 func (b *bar) updateIcons() {
-	iconTheme := b.desk.Settings().IconTheme()
 	for _, icon := range b.icons {
-		iconRes := icon.appData.Icon(iconTheme, int(float32(b.iconSize)*b.iconScale))
-		if iconRes == nil || iconRes == wmTheme.BrokenImageIcon {
-			if icon.taskbarWindow != nil {
-				iconRes = icon.taskbarWindow.Icon()
-				if iconRes == nil {
-					iconRes = wmTheme.BrokenImageIcon
-				}
-			}
-		}
-		icon.resource = iconRes
+		icon.resource = b.getIconResource(icon.appData, icon.taskbarWindow)
 		icon.Refresh()
 	}
+}
+
+func (b *bar) getIconResource(data AppData, win Window) fyne.Resource {
+	iconRes := data.Icon(b.desk.Settings().IconTheme(), int(float32(b.iconSize)*b.iconScale))
+	if iconRes == nil || iconRes == wmTheme.BrokenImageIcon {
+		if win != nil {
+			iconRes = win.Icon()
+			if iconRes == nil {
+				iconRes = wmTheme.BrokenImageIcon
+			}
+		}
+	}
+	return iconRes
 }
 
 func (b *bar) appendDefaultIcons() {
