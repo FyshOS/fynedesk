@@ -139,8 +139,8 @@ func (m *macOSAppProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppDat
 	return m.FindAppFromName(win.Title())
 }
 
-func (m *macOSAppProvider) DefaultApps() []desktop.AppData {
-	var apps []desktop.AppData
+func (m *macOSAppProvider) DefaultApps() []string {
+	var apps []string
 
 	apps = appendAppIfExists(apps, findOneAppFromNames(m, "Terminal", "iTerm"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(m, "Google Chrome", "Firefox", "Safari"))

@@ -461,16 +461,16 @@ func findOneAppFromNames(f desktop.ApplicationProvider, names ...string) desktop
 	return nil
 }
 
-func appendAppIfExists(apps []desktop.AppData, app desktop.AppData) []desktop.AppData {
+func appendAppIfExists(apps []string, app desktop.AppData) []string {
 	if app == nil {
 		return apps
 	}
 
-	return append(apps, app)
+	return append(apps, app.Name())
 }
 
-func (f *fdoIconProvider) DefaultApps() []desktop.AppData {
-	apps := []desktop.AppData{}
+func (f *fdoIconProvider) DefaultApps() []string {
+	var apps []string
 
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "xfce4-terminal", "gnome-terminal", "xterm"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "chromium", "google-chrome", "firefox"))

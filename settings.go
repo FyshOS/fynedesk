@@ -1,7 +1,6 @@
 package desktop
 
 import (
-	"fmt"
 	wmtheme "fyne.io/desktop/theme"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/cmd/fyne_settings/settings"
@@ -19,13 +18,13 @@ import (
 type DeskSettings interface {
 	Background() string
 	IconTheme() string
-	DefaultApps() string
+	DefaultApps() []string
 }
 
 type deskSettings struct {
 	background  string
 	iconTheme   string
-	defaultApps string
+	defaultApps []string
 }
 
 const randrHelper = "arandr"
@@ -38,7 +37,7 @@ func (d *deskSettings) IconTheme() string {
 	return d.iconTheme
 }
 
-func (d *deskSettings) DefaultApps() string {
+func (d *deskSettings) DefaultApps() []string {
 	return d.defaultApps
 }
 
@@ -55,15 +54,7 @@ func (d *deskSettings) setIconTheme(name string) {
 }
 
 func (d *deskSettings) setDefaultApps(defaultApps []string) {
-	var newDefaultApps string
-	for i, app := range defaultApps {
-		fmt.Println(app)
-		if i == 0 {
-			newDefaultApps = app
-		} else {
-			newDefaultApps += "|" + app
-		}
-	}
+	newDefaultApps := strings.Join(defaultApps, "|")
 	fyne.CurrentApp().Preferences().SetString("defaultapps", newDefaultApps)
 }
 
@@ -82,16 +73,10 @@ func (d *deskSettings) load() {
 		d.iconTheme = fyne.CurrentApp().Preferences().String("icontheme")
 	}
 
-	d.defaultApps = fyne.CurrentApp().Preferences().String("defaultapps")
+	d.defaultApps = strings.SplitN(fyne.CurrentApp().Preferences().String("defaultapps"), "|", -1)
 
-	if d.defaultApps == "" {
-		for i, app := range Instance().IconProvider().DefaultApps() {
-			if i == 0 {
-				d.defaultApps = app.Name()
-			} else {
-				d.defaultApps += "|" + app.Name()
-			}
-		}
+	if len(d.defaultApps) == 0 {
+		d.defaultApps = Instance().IconProvider().DefaultApps()
 	}
 }
 
@@ -118,7 +103,7 @@ func (d *deskSettings) loadAppearanceScreen() fyne.CanvasObject {
 
 func (d *deskSettings) listAppMatches(list *fyne.Container, input string) {
 	dataRange := Instance().IconProvider().FindAppsMatching(input)
-	defaultApps := strings.SplitN(Instance().Settings().DefaultApps(), "|", -1)
+	defaultApps := Instance().Settings().DefaultApps()
 	for _, data := range dataRange {
 		appData := data
 		if appData.Name() == "" {

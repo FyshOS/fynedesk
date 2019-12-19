@@ -55,8 +55,8 @@ func (*testSettings) Background() string {
 	return ""
 }
 
-func (*testSettings) DefaultApps() string {
-	return ""
+func (*testSettings) DefaultApps() []string {
+	return []string{}
 }
 
 type testScreensProvider struct {

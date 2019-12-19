@@ -3,7 +3,6 @@ package desktop
 import (
 	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
-	"strings"
 )
 
 var (
@@ -90,7 +89,7 @@ func newBar(desk Desktop) fyne.CanvasObject {
 	if desk.WindowManager() != nil {
 		desk.WindowManager().AddStackListener(appBar)
 	}
-	for _, name := range strings.SplitN(appBar.desk.Settings().DefaultApps(), "|", -1) {
+	for _, name := range Instance().Settings().DefaultApps() {
 		app := appBar.desk.IconProvider().FindAppFromName(name)
 		icon := barCreateIcon(appBar, false, app, nil)
 		if icon != nil {
