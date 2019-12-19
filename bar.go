@@ -90,7 +90,7 @@ func (b *bar) updateIconOrder() {
 
 	b.icons = nil
 	b.children = nil
-	b.appendDefaultIcons()
+	b.appendLauncherIcons()
 
 	b.icons = append(b.icons, taskbarIcons...)
 	for _, obj := range taskbarIcons {
@@ -118,8 +118,8 @@ func (b *bar) getIconResource(data AppData, win Window) fyne.Resource {
 	return iconRes
 }
 
-func (b *bar) appendDefaultIcons() {
-	for _, name := range b.desk.Settings().DefaultApps() {
+func (b *bar) appendLauncherIcons() {
+	for _, name := range b.desk.Settings().LauncherIcons() {
 		app := b.desk.IconProvider().FindAppFromName(name)
 		if app == nil {
 			continue
@@ -138,7 +138,7 @@ func newBar(desk Desktop) fyne.CanvasObject {
 	if desk.WindowManager() != nil {
 		desk.WindowManager().AddStackListener(appBar)
 	}
-	appBar.appendDefaultIcons()
+	appBar.appendLauncherIcons()
 
 	return appBar
 }

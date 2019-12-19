@@ -55,7 +55,7 @@ func (*testSettings) Background() string {
 	return ""
 }
 
-func (*testSettings) DefaultApps() []string {
+func (*testSettings) LauncherIcons() []string {
 	return []string{}
 }
 
