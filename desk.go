@@ -114,14 +114,6 @@ func (l *deskLayout) newDesktopWindow() fyne.Window {
 	return desk
 }
 
-func (l *deskLayout) updateIconOrder() {
-	l.bar.(*bar).updateIconOrder()
-}
-
-func (l *deskLayout) updateIconTheme() {
-	l.bar.(*bar).updateIcons()
-}
-
 func (l *deskLayout) updateBackgrounds(path string) {
 	for _, background := range l.backgrounds {
 		updateBackgroundPath(background.(*canvas.Image), path)
@@ -221,8 +213,9 @@ func (l *deskLayout) startSettingsChangeListener(listener chan DeskSettings) {
 	for {
 		_ = <-listener
 		l.updateBackgrounds(l.Settings().Background())
-		l.updateIconTheme()
-		l.updateIconOrder()
+		l.bar.(*bar).updateIcons()
+		l.bar.(*bar).updateIconOrder()
+
 	}
 }
 
