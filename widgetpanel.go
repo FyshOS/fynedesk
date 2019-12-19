@@ -173,7 +173,7 @@ func (w *widgetPanel) createBattery() {
 		w.battery = widget.NewProgressBar()
 		go w.batteryTick()
 	}
-	if _, err := battery(); err == nil {
+	if _, err := brightness(); err == nil {
 		w.brightness = widget.NewProgressBar()
 	}
 }
@@ -263,21 +263,6 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	account = widget.NewButtonWithIcon(accountLabel, wmtheme.UserIcon, func() {
 		w.showAccountMenu(account)
 	})
-	var brightnessIcon, bright, batteryIcon fyne.CanvasObject
-	if _, err := battery(); err == nil {
-		batteryIcon = widget.NewIcon(wmtheme.BatteryIcon)
-	}
-	if _, err := brightness(); err == nil {
-		brightnessIcon = widget.NewIcon(wmtheme.BrightnessIcon)
-		less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-			w.setBrightness(-5)
-		})
-		more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-			w.setBrightness(5)
-		})
-		bright = fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
-			less, w.brightness, more)
-	}
 	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), func() {
 		if w.appExecWin != nil {
 			w.appExecWin.Close()
@@ -296,10 +281,20 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		appExecButton,
 	}
 	if _, err := battery(); err == nil {
+		batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
 		objects = append(objects,
 			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, w.battery))
 	}
 	if _, err := brightness(); err == nil {
+		brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
+		less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
+			w.setBrightness(-5)
+		})
+		more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+			w.setBrightness(5)
+		})
+		bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
+			less, w.brightness, more)
 		objects = append(objects,
 			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright))
 		go w.setBrightness(0)
