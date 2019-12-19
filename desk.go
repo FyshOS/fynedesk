@@ -17,7 +17,6 @@ type Desktop interface {
 	Settings() DeskSettings
 	ContentSizePixels(screen *Screen) (uint32, uint32)
 	Screens() ScreenList
-	MouseOutNotify()
 
 	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
@@ -202,10 +201,6 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 	}
 }
 
-func (l *deskLayout) MouseOutNotify() {
-	l.bar.(*bar).MouseOut()
-}
-
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
 func (l *deskLayout) Screens() ScreenList {
 	return l.screens
@@ -249,6 +244,23 @@ func NewEmbeddedScreensProvider() ScreenList {
 // Instance returns the current desktop environment and provides access to injected functionality.
 func Instance() Desktop {
 	return instance
+}
+
+// MouseInNotify can be called by the window manager to alert the desktop that the cursor has entered the canvas
+func MouseInNotify(x int16, y int16) {
+
+	barX, barY := int16(appBar.Position().X), int16(appBar.Position().Y)
+	barWidth, barHeight := int16(appBar.Size().Width), int16(appBar.Size().Height)
+	if x >= barX && x <= barX+barWidth {
+		if y >= barY && y <= barY+barHeight {
+			appBar.MouseIn(nil)
+		}
+	}
+}
+
+// MouseOutNotify can be called by the window manager to alert the desktop that the cursor has left the canvas
+func MouseOutNotify() {
+	appBar.MouseOut()
 }
 
 // NewDesktop creates a new desktop in fullscreen for main usage.

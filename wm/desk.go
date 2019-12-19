@@ -235,7 +235,9 @@ func (x *x11WM) runLoop() {
 			if err != nil {
 				fyne.LogError("Set Cursor Error", err)
 			}
-			desktop.Instance().MouseOutNotify()
+			desktop.MouseOutNotify()
+		case xproto.LeaveNotifyEvent:
+			desktop.MouseInNotify(ev.RootX, ev.RootY)
 		case xproto.KeyPressEvent:
 			if x.altTabList == nil {
 				x.altTabList = []desktop.Window{}
