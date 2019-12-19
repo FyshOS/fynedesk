@@ -206,7 +206,8 @@ func (w *widgetPanel) setBrightness(diff int) {
 	if err != nil {
 		log.Println("Error running xbacklight", err)
 	} else {
-		w.brightness.SetValue(floatVal)
+		newVal, _ := brightness()
+		w.brightness.SetValue(newVal)
 	}
 }
 
