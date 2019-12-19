@@ -9,11 +9,10 @@ import (
 	wmtheme "fyne.io/desktop/theme"
 )
 
-func updateBackgroundPath(background *canvas.Image) {
-	imagePath := wallpaperPath()
-	if imagePath != "" {
+func updateWallpaperPath(background *canvas.Image, path string) {
+	if path != "" {
 		background.Resource = nil
-		background.File = imagePath
+		background.File = path
 		return
 	}
 	background.Resource = wmtheme.Background

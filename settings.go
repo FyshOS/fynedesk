@@ -4,6 +4,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 
 	wmtheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
@@ -18,12 +19,16 @@ type DeskSettings interface {
 	Background() string
 	IconTheme() string
 	DefaultApps() []string
+	AddChangeListener(listener chan DeskSettings)
 }
 
 type deskSettings struct {
 	background  string
 	iconTheme   string
 	defaultApps []string
+
+	listenerLock    sync.Mutex
+	changeListeners []chan DeskSettings
 }
 
 const randrHelper = "arandr"
@@ -40,23 +45,43 @@ func (d *deskSettings) DefaultApps() []string {
 	return d.defaultApps
 }
 
+func (d *deskSettings) AddChangeListener(listener chan DeskSettings) {
+	d.listenerLock.Lock()
+	defer d.listenerLock.Unlock()
+	d.changeListeners = append(d.changeListeners, listener)
+}
+
+func (d *deskSettings) apply() {
+	d.listenerLock.Lock()
+	defer d.listenerLock.Unlock()
+
+	for _, listener := range d.changeListeners {
+		select {
+		case listener <- d:
+		default:
+			l := listener
+			go func() { l <- d }()
+		}
+	}
+}
+
 func (d *deskSettings) setBackground(name string) {
 	d.background = name
 	fyne.CurrentApp().Preferences().SetString("background", d.background)
-	go Instance().(*deskLayout).updateBackgrounds()
+	d.apply()
 }
 
 func (d *deskSettings) setIconTheme(name string) {
 	d.iconTheme = name
 	fyne.CurrentApp().Preferences().SetString("icontheme", d.iconTheme)
-	go Instance().(*deskLayout).updateIconTheme()
+	d.apply()
 }
 
 func (d *deskSettings) setDefaultApps(defaultApps []string) {
 	newDefaultApps := strings.Join(defaultApps, "|")
 	d.defaultApps = defaultApps
 	fyne.CurrentApp().Preferences().SetString("defaultapps", newDefaultApps)
-	go Instance().(*deskLayout).updateIconOrder()
+	d.apply()
 }
 
 func (d *deskSettings) load() {

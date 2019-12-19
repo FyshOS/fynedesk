@@ -59,6 +59,10 @@ func (*testSettings) DefaultApps() []string {
 	return []string{}
 }
 
+func (*testSettings) AddChangeListener(listener chan DeskSettings) {
+	return
+}
+
 type testScreensProvider struct {
 	screens []*Screen
 }

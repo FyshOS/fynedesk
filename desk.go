@@ -122,9 +122,9 @@ func (l *deskLayout) updateIconTheme() {
 	l.bar.(*bar).updateIcons()
 }
 
-func (l *deskLayout) updateBackgrounds() {
+func (l *deskLayout) updateBackgrounds(path string) {
 	for _, background := range l.backgrounds {
-		updateBackgroundPath(background.(*canvas.Image))
+		updateWallpaperPath(background.(*canvas.Image), path)
 		canvas.Refresh(background)
 	}
 }
@@ -217,6 +217,21 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 	}
 }
 
+func (l *deskLayout) startSettingsChangeListener(listener chan DeskSettings) {
+	for {
+		_ = <-listener
+		l.updateBackgrounds(l.Settings().Background())
+		l.updateIconTheme()
+		l.updateIconOrder()
+	}
+}
+
+func (l *deskLayout) addSettingsChangeListener() {
+	listener := make(chan DeskSettings)
+	l.Settings().AddChangeListener(listener)
+	go l.startSettingsChangeListener(listener)
+}
+
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
 func (l *deskLayout) Screens() ScreenList {
 	return l.screens
@@ -264,6 +279,7 @@ func Instance() Desktop {
 func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider, screenProvider ScreenList) Desktop {
 	instance = &deskLayout{app: app, wm: wm, icons: icons, screens: screenProvider}
 	instance.(*deskLayout).settings = NewDeskSettings()
+	instance.(*deskLayout).addSettingsChangeListener()
 	instance.(*deskLayout).screenBackgroundMap = make(map[*Screen]fyne.CanvasObject)
 	return instance
 }
@@ -275,6 +291,7 @@ func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider, scree
 func NewEmbeddedDesktop(app fyne.App, icons ApplicationProvider) Desktop {
 	instance = &deskLayout{app: app, icons: icons, screens: NewEmbeddedScreensProvider()}
 	instance.(*deskLayout).settings = NewDeskSettings()
+	instance.(*deskLayout).addSettingsChangeListener()
 	instance.(*deskLayout).screenBackgroundMap = make(map[*Screen]fyne.CanvasObject)
 	return instance
 }
