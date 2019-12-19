@@ -12,10 +12,10 @@ type AppData interface {
 
 // ApplicationProvider describes a type that can locate icons and applications for the current system
 type ApplicationProvider interface {
-	AllApps() []AppData
+	AvailableApps() []AppData
 	AvailableThemes() []string
 	FindAppFromName(appName string) AppData
 	FindAppFromWinInfo(win Window) AppData
 	FindAppsMatching(pattern string) []AppData
-	DefaultApps() []string
+	DefaultApps() []AppData
 }

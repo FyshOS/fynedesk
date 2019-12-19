@@ -89,8 +89,11 @@ func newBar(desk Desktop) fyne.CanvasObject {
 	if desk.WindowManager() != nil {
 		desk.WindowManager().AddStackListener(appBar)
 	}
-	for _, name := range Instance().Settings().DefaultApps() {
-		app := appBar.desk.IconProvider().FindAppFromName(name)
+	for _, name := range desk.Settings().DefaultApps() {
+		app := desk.IconProvider().FindAppFromName(name)
+		if app == nil {
+			continue
+		}
 		icon := barCreateIcon(appBar, false, app, nil)
 		if icon != nil {
 			appBar.append(icon)

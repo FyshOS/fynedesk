@@ -174,7 +174,7 @@ func fdoLookupApplicationsMatching(appName string) []desktop.AppData {
 	return icons
 }
 
-func fdoLookupApplicationAll() []desktop.AppData {
+func fdoLookupApplications() []desktop.AppData {
 	var icons []desktop.AppData
 	fdoForEachApplicationFile(func(icon desktop.AppData) bool {
 		if icon == nil {
@@ -426,8 +426,8 @@ type fdoIconProvider struct {
 }
 
 //AllApplications returns all of the available applications in a AppData slice
-func (f *fdoIconProvider) AllApps() []desktop.AppData {
-	return fdoLookupApplicationAll()
+func (f *fdoIconProvider) AvailableApps() []desktop.AppData {
+	return fdoLookupApplications()
 }
 
 //AvailableThemes returns all available icon themes in a string slice
@@ -461,16 +461,16 @@ func findOneAppFromNames(f desktop.ApplicationProvider, names ...string) desktop
 	return nil
 }
 
-func appendAppIfExists(apps []string, app desktop.AppData) []string {
+func appendAppIfExists(apps []desktop.AppData, app desktop.AppData) []desktop.AppData {
 	if app == nil {
 		return apps
 	}
 
-	return append(apps, app.Name())
+	return append(apps, app)
 }
 
-func (f *fdoIconProvider) DefaultApps() []string {
-	var apps []string
+func (f *fdoIconProvider) DefaultApps() []desktop.AppData {
+	var apps []desktop.AppData
 
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "xfce4-terminal", "gnome-terminal", "xterm"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "chromium", "google-chrome", "firefox"))

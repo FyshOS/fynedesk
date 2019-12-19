@@ -102,7 +102,7 @@ func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
 	}
 }
 
-func (m *macOSAppProvider) AllApps() []desktop.AppData {
+func (m *macOSAppProvider) AvailableApps() []desktop.AppData {
 	var icons []desktop.AppData
 	m.forEachApplication(func(name, path string) bool {
 		app := loadAppBundle(name, path)
@@ -139,8 +139,8 @@ func (m *macOSAppProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppDat
 	return m.FindAppFromName(win.Title())
 }
 
-func (m *macOSAppProvider) DefaultApps() []string {
-	var apps []string
+func (m *macOSAppProvider) DefaultApps() []desktop.AppData {
+	var apps []desktop.AppData
 
 	apps = appendAppIfExists(apps, findOneAppFromNames(m, "Terminal", "iTerm"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(m, "Google Chrome", "Firefox", "Safari"))
