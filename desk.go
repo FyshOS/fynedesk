@@ -99,7 +99,10 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 }
 
 func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	return fyne.NewSize(1280, 720)
+	if l.wm == nil {
+		return fyne.NewSize(1280, 720)
+	}
+	return fyne.NewSize(640, 480) // tiny - the window manager will scale up to screen size
 }
 
 func (l *deskLayout) newDesktopWindow() fyne.Window {
