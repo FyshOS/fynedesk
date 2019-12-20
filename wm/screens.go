@@ -119,10 +119,7 @@ func (xsp *x11ScreensProvider) setupScreens(x *x11WM) {
 			if err != nil {
 				fyne.LogError("Could not determine randr primary output", err)
 			}
-			primaryInfo, err := randr.GetOutputInfo(x.x.Conn(), primary.Output, 0).Reply()
-			if err != nil {
-				fyne.LogError("Could not determine randr primary output information", err)
-			}
+			primaryInfo, _ := randr.GetOutputInfo(x.x.Conn(), primary.Output, 0).Reply()
 			primaryFound := false
 			var firstFoundMmWidth uint32
 			var firstFoundWidth uint16
