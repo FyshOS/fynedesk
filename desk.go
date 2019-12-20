@@ -213,9 +213,10 @@ func (l *deskLayout) startSettingsChangeListener(listener chan DeskSettings) {
 	for {
 		_ = <-listener
 		l.updateBackgrounds(l.Settings().Background())
+		appBar.iconSize = l.Settings().LauncherIconSize()
+		appBar.iconScale = float32(l.Settings().LauncherZoomScale())
 		appBar.updateIcons()
 		appBar.updateIconOrder()
-
 	}
 }
 

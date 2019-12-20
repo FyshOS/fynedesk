@@ -1,8 +1,10 @@
 package desktop
 
 import (
+	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -19,13 +21,21 @@ type DeskSettings interface {
 	Background() string
 	IconTheme() string
 	LauncherIcons() []string
+	LauncherIconSize() int
+	LauncherDisableTaskbar() bool
+	LauncherDisableZoom() bool
+	LauncherZoomScale() float64
 	AddChangeListener(listener chan DeskSettings)
 }
 
 type deskSettings struct {
-	background    string
-	iconTheme     string
-	launcherIcons []string
+	background             string
+	iconTheme              string
+	launcherIcons          []string
+	launcherIconSize       int
+	launcherDisableTaskbar bool
+	launcherDisableZoom    bool
+	launcherZoomScale      float64
 
 	listenerLock    sync.Mutex
 	changeListeners []chan DeskSettings
@@ -43,6 +53,22 @@ func (d *deskSettings) IconTheme() string {
 
 func (d *deskSettings) LauncherIcons() []string {
 	return d.launcherIcons
+}
+
+func (d *deskSettings) LauncherIconSize() int {
+	return d.launcherIconSize
+}
+
+func (d *deskSettings) LauncherDisableTaskbar() bool {
+	return d.launcherDisableTaskbar
+}
+
+func (d *deskSettings) LauncherDisableZoom() bool {
+	return d.launcherDisableZoom
+}
+
+func (d *deskSettings) LauncherZoomScale() float64 {
+	return d.launcherZoomScale
 }
 
 func (d *deskSettings) AddChangeListener(listener chan DeskSettings) {
@@ -84,6 +110,30 @@ func (d *deskSettings) setLauncherIcons(defaultApps []string) {
 	d.apply()
 }
 
+func (d *deskSettings) setLauncherIconSize(size int) {
+	d.launcherIconSize = size
+	fyne.CurrentApp().Preferences().SetInt("launchericonsize", d.launcherIconSize)
+	d.apply()
+}
+
+func (d *deskSettings) setLauncherDisableTaskbar(taskbar bool) {
+	d.launcherDisableTaskbar = taskbar
+	fyne.CurrentApp().Preferences().SetBool("launcherdisabletaskbar", d.launcherDisableTaskbar)
+	d.apply()
+}
+
+func (d *deskSettings) setLauncherDisableZoom(zoom bool) {
+	d.launcherDisableZoom = zoom
+	fyne.CurrentApp().Preferences().SetBool("launcherdisablezoom", d.launcherDisableZoom)
+	d.apply()
+}
+
+func (d *deskSettings) setLauncherZoomScale(scale float64) {
+	d.launcherZoomScale = scale
+	fyne.CurrentApp().Preferences().SetFloat("launcherzoomscale", d.launcherZoomScale)
+	d.apply()
+}
+
 func (d *deskSettings) load() {
 	env := os.Getenv("FYNEDESK_BACKGROUND")
 	if env != "" {
@@ -111,6 +161,19 @@ func (d *deskSettings) load() {
 		for _, appData := range defaultApps {
 			d.launcherIcons = append(d.launcherIcons, appData.Name())
 		}
+	}
+
+	d.launcherIconSize = fyne.CurrentApp().Preferences().Int("launchericonsize")
+	if d.launcherIconSize == 0 {
+		d.launcherIconSize = 32
+	}
+
+	d.launcherDisableTaskbar = fyne.CurrentApp().Preferences().Bool("launcherdisabletaskbar")
+	d.launcherDisableZoom = fyne.CurrentApp().Preferences().Bool("launcherdisablezoom")
+
+	d.launcherZoomScale = fyne.CurrentApp().Preferences().Float("launcherzoomscale")
+	if d.launcherZoomScale == 0.0 {
+		d.launcherZoomScale = 2.0
 	}
 }
 
@@ -260,9 +323,45 @@ func (d *deskSettings) loadBarScreen() fyne.CanvasObject {
 
 	lookup := fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, nil, nil, nil), entry, widget.NewScrollContainer(lookupList))
 	order := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, nil, nil), widget.NewScrollContainer(orderList))
-	tabs := widget.NewTabContainer(widget.NewTabItem("Launcher Icons", lookup), widget.NewTabItem("Icon Order", order))
+
+	iconSize := widget.NewEntry()
+	iconSize.SetText(fmt.Sprintf("%d", d.launcherIconSize))
+
+	zoomScale := widget.NewEntry()
+	zoomScale.SetText(fmt.Sprintf("%f", d.launcherZoomScale))
+
+	top := widget.NewForm(
+		&widget.FormItem{Text: "Launcher Icon Size:", Widget: iconSize},
+		&widget.FormItem{Text: "Launcher Zoom Scale:", Widget: zoomScale})
+
+	disableTaskbar := widget.NewCheck("Disable Taskbar", nil)
+	disableTaskbar.SetChecked(d.launcherDisableTaskbar)
+
+	disableZoom := widget.NewCheck("Disable Zoom", nil)
+	disableZoom.SetChecked(d.launcherDisableZoom)
+
+	settings := widget.NewVBox(top, disableTaskbar, disableZoom)
+
+	tabs := widget.NewTabContainer(widget.NewTabItem("Launcher Icons", lookup), widget.NewTabItem("Launcher Icon Order", order),
+		widget.NewTabItem("Launcher Settings", settings))
 	applyButton := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+			size, err := strconv.Atoi(iconSize.Text)
+			if err != nil {
+				fyne.LogError("error setting launcher icon size", err)
+				size = 32
+			}
+			d.setLauncherIconSize(size)
+
+			scale, err := strconv.ParseFloat(zoomScale.Text, 32)
+			if err != nil {
+				fyne.LogError("Error setting launcher zoom scale", err)
+				scale = 2.0
+			}
+			d.setLauncherZoomScale(scale)
+			d.setLauncherDisableTaskbar(disableTaskbar.Checked)
+			d.setLauncherDisableZoom(disableZoom.Checked)
+
 			d.setLauncherIcons(launcherIcons)
 		}})
 

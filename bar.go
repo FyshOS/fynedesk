@@ -43,7 +43,7 @@ func taskbarIconTapped(win Window) {
 }
 
 func (b *bar) WindowAdded(win Window) {
-	if win.SkipTaskbar() {
+	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
 		return
 	}
 	data := b.desk.IconProvider().FindAppFromWinInfo(win)
@@ -60,7 +60,7 @@ func (b *bar) WindowAdded(win Window) {
 }
 
 func (b *bar) WindowRemoved(win Window) {
-	if win.SkipTaskbar() {
+	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
 		return
 	}
 	for i, icon := range b.icons {
@@ -129,7 +129,9 @@ func (b *bar) appendLauncherIcons() {
 			appBar.append(icon)
 		}
 	}
-	appBar.appendSeparator()
+	if !b.desk.Settings().LauncherDisableTaskbar() {
+		appBar.appendSeparator()
+	}
 }
 
 func newBar(desk Desktop) fyne.CanvasObject {

@@ -26,18 +26,27 @@ type bar struct {
 
 //MouseIn alerts the widget that the mouse has entered
 func (b *bar) MouseIn(*desktop.MouseEvent) {
+	if b.desk.Settings().LauncherDisableZoom() {
+		return
+	}
 	b.mouseInside = true
 	b.Refresh()
 }
 
 //MouseOut alerts the widget that the mouse has left
 func (b *bar) MouseOut() {
+	if b.desk.Settings().LauncherDisableZoom() {
+		return
+	}
 	b.mouseInside = false
 	b.Refresh()
 }
 
 //MouseMoved alerts the widget that the mouse has changed position
 func (b *bar) MouseMoved(event *desktop.MouseEvent) {
+	if b.desk.Settings().LauncherDisableZoom() {
+		return
+	}
 	b.mousePosition = event.Position
 	b.Refresh()
 }
@@ -81,8 +90,8 @@ func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 func newAppBar(desk Desktop, children ...fyne.CanvasObject) *bar {
 	bar := &bar{desk: desk, children: children}
 	bar.ExtendBaseWidget(bar)
-	bar.iconSize = 32
-	bar.iconScale = 2.0
+	bar.iconSize = desk.Settings().LauncherIconSize()
+	bar.iconScale = float32(desk.Settings().LauncherZoomScale())
 
 	return bar
 }

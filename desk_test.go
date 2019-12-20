@@ -59,6 +59,22 @@ func (*testSettings) LauncherIcons() []string {
 	return []string{}
 }
 
+func (*testSettings) LauncherIconSize() int {
+	return 32
+}
+
+func (*testSettings) LauncherDisableTaskbar() bool {
+	return false
+}
+
+func (*testSettings) LauncherDisableZoom() bool {
+	return false
+}
+
+func (*testSettings) LauncherZoomScale() float64 {
+	return 2.0
+}
+
 func (*testSettings) AddChangeListener(listener chan DeskSettings) {
 	return
 }
