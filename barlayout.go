@@ -38,7 +38,7 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	barWidth := 0
 	iconCount := len(objects)
 	if !bl.bar.disableTaskbar {
-		iconCount -= 1
+		iconCount--
 		barWidth = (iconCount * (bl.bar.iconSize + theme.Padding())) + separatorWidth
 	} else {
 		barWidth = iconCount * (bl.bar.iconSize + theme.Padding())
@@ -114,7 +114,7 @@ func (bl *barLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	barWidth := 0
 	iconCount := len(objects)
 	if !bl.bar.disableTaskbar {
-		iconCount -= 1
+		iconCount--
 		barWidth = (iconCount * (bl.bar.iconSize + theme.Padding())) + separatorWidth
 	} else {
 		barWidth = iconCount * (bl.bar.iconSize + theme.Padding())
