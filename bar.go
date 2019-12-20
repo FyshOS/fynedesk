@@ -75,6 +75,21 @@ func (b *bar) WindowRemoved(win Window) {
 	}
 }
 
+func (b *bar) updateTaskbar() {
+	disableTaskbar := b.desk.Settings().LauncherDisableTaskbar()
+	if disableTaskbar == b.disableTaskbar {
+		return
+	}
+	b.disableTaskbar = b.desk.Settings().LauncherDisableTaskbar()
+	if disableTaskbar == true {
+		return
+	}
+	appBar.appendSeparator()
+	for _, win := range b.desk.WindowManager().Windows() {
+		b.WindowAdded(win)
+	}
+}
+
 func (b *bar) updateIconOrder() {
 	var index = -1
 	for i, obj := range b.children {
@@ -92,6 +107,9 @@ func (b *bar) updateIconOrder() {
 	b.children = nil
 	b.appendLauncherIcons()
 
+	if b.desk.Settings().LauncherDisableTaskbar() {
+		return
+	}
 	b.icons = append(b.icons, taskbarIcons...)
 	for _, obj := range taskbarIcons {
 		appBar.append(obj)

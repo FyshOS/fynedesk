@@ -19,9 +19,10 @@ type bar struct {
 	mouseInside   bool                // Is the mouse inside of the bar?
 	mousePosition fyne.Position       // The current coordinates of the mouse cursor
 
-	iconSize  int
-	iconScale float32
-	icons     []*barIcon
+	iconSize       int
+	iconScale      float32
+	disableTaskbar bool
+	icons          []*barIcon
 }
 
 //MouseIn alerts the widget that the mouse has entered
@@ -92,6 +93,7 @@ func newAppBar(desk Desktop, children ...fyne.CanvasObject) *bar {
 	bar.ExtendBaseWidget(bar)
 	bar.iconSize = desk.Settings().LauncherIconSize()
 	bar.iconScale = float32(desk.Settings().LauncherZoomScale())
+	bar.disableTaskbar = desk.Settings().LauncherDisableTaskbar()
 
 	return bar
 }

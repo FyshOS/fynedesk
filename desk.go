@@ -217,6 +217,7 @@ func (l *deskLayout) startSettingsChangeListener(listener chan DeskSettings) {
 		appBar.iconScale = float32(l.Settings().LauncherZoomScale())
 		appBar.updateIcons()
 		appBar.updateIconOrder()
+		appBar.updateTaskbar()
 	}
 }
 
