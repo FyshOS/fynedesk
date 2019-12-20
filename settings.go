@@ -114,11 +114,11 @@ func (d *deskSettings) load() {
 	}
 }
 
-func (d *deskSettings) populateThemeIcons(box *fyne.Container) {
+func (d *deskSettings) populateThemeIcons(box *fyne.Container, theme string) {
 	box.Objects = nil
 	for _, appName := range d.launcherIcons {
 		appData := Instance().IconProvider().FindAppFromName(appName)
-		iconRes := appData.Icon(d.iconTheme, int(32.0*fyne.CurrentApp().Settings().Scale()))
+		iconRes := appData.Icon(theme, int(32.0*fyne.CurrentApp().Settings().Scale()))
 		icon := widget.NewIcon(iconRes)
 		box.AddObject(icon)
 	}
@@ -134,38 +134,37 @@ func (d *deskSettings) loadAppearanceScreen() fyne.CanvasObject {
 	}
 	bgLabel := widget.NewLabelWithStyle("Background", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 
-	applyButton := widget.NewHBox(layout.NewSpacer(),
-		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
-			d.setBackground(bgEntry.Text)
-		}})
-
-	themeLabel := widget.NewLabel(d.iconTheme + ":")
+	themeLabel := widget.NewLabel(d.iconTheme)
 	themeIcons := fyne.NewContainerWithLayout(layout.NewHBoxLayout())
-	d.populateThemeIcons(themeIcons)
+	d.populateThemeIcons(themeIcons, d.iconTheme)
 	themeList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 	for _, themeName := range Instance().IconProvider().AvailableThemes() {
 		themeButton := widget.NewButton(themeName, nil)
 		themeButton.OnTapped = func() {
-			themeLabel.SetText(themeButton.Text + ":")
-			d.setIconTheme(themeButton.Text)
-			d.populateThemeIcons(themeIcons)
+			themeLabel.SetText(themeButton.Text)
+			d.populateThemeIcons(themeIcons, themeButton.Text)
 		}
 		themeList.AddObject(themeButton)
 	}
-	top := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, applyButton, bgLabel, nil), applyButton, bgLabel, bgEntry)
+	top := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, bgLabel, nil), bgLabel, bgEntry)
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	themeCurrent := widget.NewHBox(themeLabel, themeIcons)
+	themeCurrent := widget.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
 	middle := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, themeCurrent, themeFormLabel, nil),
 		themeCurrent, themeFormLabel, widget.NewScrollContainer(themeList))
 
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, nil, nil, nil), top, middle)
+	applyButton := widget.NewHBox(layout.NewSpacer(),
+		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+			d.setBackground(bgEntry.Text)
+			d.setIconTheme(themeLabel.Text)
+		}})
+
+	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, applyButton, nil, nil), top, applyButton, middle)
 }
 
-func (d *deskSettings) listAppMatches(lookupList *fyne.Container, orderList *fyne.Container, input string) {
+func (d *deskSettings) listAppMatches(lookupList *fyne.Container, orderList *fyne.Container, input string, launcherIcons []string) {
 	desk := Instance()
 	dataRange := desk.IconProvider().FindAppsMatching(input)
-	defaultApps := desk.Settings().LauncherIcons()
 	for _, data := range dataRange {
 		appData := data
 		if appData.Name() == "" {
@@ -176,7 +175,7 @@ func (d *deskSettings) listAppMatches(lookupList *fyne.Container, orderList *fyn
 		icon := widget.NewIcon(iconRes)
 		hbox := widget.NewHBox(icon, check)
 		exists := false
-		for _, defaultApp := range defaultApps {
+		for _, defaultApp := range launcherIcons {
 			if defaultApp == appData.Name() {
 				exists = true
 				break
@@ -189,39 +188,37 @@ func (d *deskSettings) listAppMatches(lookupList *fyne.Container, orderList *fyn
 		}
 		check.OnChanged = func(checked bool) {
 			if checked {
-				defaultApps = append(defaultApps, check.Text)
+				launcherIcons = append(launcherIcons, check.Text)
 			} else {
 				index := -1
-				for i, defaultApp := range defaultApps {
+				for i, defaultApp := range launcherIcons {
 					if defaultApp == check.Text {
 						index = i
 						break
 					}
 				}
 				if index >= 0 {
-					defaultApps = append(defaultApps[:index], defaultApps[index+1:]...)
+					launcherIcons = append(launcherIcons[:index], launcherIcons[index+1:]...)
 				}
 			}
-			d.setLauncherIcons(defaultApps)
-			d.populateOrderList(orderList)
+			d.populateOrderList(orderList, launcherIcons)
 		}
 		lookupList.AddObject(hbox)
 	}
 }
 
-func (d *deskSettings) populateOrderList(list *fyne.Container) {
+func (d *deskSettings) populateOrderList(list *fyne.Container, launcherIcons []string) {
 	list.Objects = nil
 	buttonMap := make(map[fyne.CanvasObject]int)
-	for i, appName := range d.launcherIcons {
+	for i, appName := range launcherIcons {
 		appData := Instance().IconProvider().FindAppFromName(appName)
 		upButton := widget.NewButtonWithIcon("", theme.MoveUpIcon(), nil)
 		buttonMap[upButton] = i
 		upButton.OnTapped = func() {
 			index := buttonMap[upButton]
 			if index > 0 {
-				d.launcherIcons[index-1], d.launcherIcons[index] = d.launcherIcons[index], d.launcherIcons[index-1]
-				d.setLauncherIcons(d.launcherIcons)
-				d.populateOrderList(list)
+				launcherIcons[index-1], launcherIcons[index] = launcherIcons[index], launcherIcons[index-1]
+				d.populateOrderList(list, launcherIcons)
 			}
 		}
 		downButton := widget.NewButtonWithIcon("", theme.MoveDownIcon(), nil)
@@ -229,9 +226,8 @@ func (d *deskSettings) populateOrderList(list *fyne.Container) {
 		downButton.OnTapped = func() {
 			index := buttonMap[downButton]
 			if index < len(d.launcherIcons)-1 {
-				d.launcherIcons[index+1], d.launcherIcons[index] = d.launcherIcons[index], d.launcherIcons[index+1]
-				d.setLauncherIcons(d.launcherIcons)
-				d.populateOrderList(list)
+				launcherIcons[index+1], launcherIcons[index] = launcherIcons[index], launcherIcons[index+1]
+				d.populateOrderList(list, launcherIcons)
 			}
 		}
 		iconRes := appData.Icon(d.iconTheme, int(32.0*fyne.CurrentApp().Settings().Scale()))
@@ -244,6 +240,9 @@ func (d *deskSettings) populateOrderList(list *fyne.Container) {
 }
 
 func (d *deskSettings) loadBarScreen() fyne.CanvasObject {
+	var launcherIcons []string
+	launcherIcons = append(launcherIcons, d.launcherIcons...)
+
 	lookupList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 	orderList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 
@@ -255,14 +254,19 @@ func (d *deskSettings) loadBarScreen() fyne.CanvasObject {
 			return
 		}
 
-		d.listAppMatches(lookupList, orderList, input)
+		d.listAppMatches(lookupList, orderList, input, launcherIcons)
 	}
-
-	d.populateOrderList(orderList)
+	d.populateOrderList(orderList, launcherIcons)
 
 	lookup := fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, nil, nil, nil), entry, widget.NewScrollContainer(lookupList))
 	order := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, nil, nil), widget.NewScrollContainer(orderList))
-	barSettings := widget.NewTabContainer(widget.NewTabItem("Launcher Icons", lookup), widget.NewTabItem("Icon Order", order))
+	tabs := widget.NewTabContainer(widget.NewTabItem("Launcher Icons", lookup), widget.NewTabItem("Icon Order", order))
+	applyButton := widget.NewHBox(layout.NewSpacer(),
+		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+			d.setLauncherIcons(launcherIcons)
+		}})
+
+	barSettings := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, applyButton, nil, nil), applyButton, tabs)
 
 	return barSettings
 }

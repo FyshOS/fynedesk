@@ -11,7 +11,7 @@ import (
 
 func updateBackgroundPath(background *canvas.Image, path string) {
 	_, err := os.Stat(path)
-	if path == "" || !os.IsNotExist(err) {
+	if path == "" || os.IsNotExist(err) {
 		background.Resource = wmtheme.Background
 		background.File = ""
 		return
