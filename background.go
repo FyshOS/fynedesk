@@ -10,7 +10,8 @@ import (
 )
 
 func updateBackgroundPath(background *canvas.Image, path string) {
-	if path != "" {
+	_, err := os.Stat(path)
+	if path != "" && !os.IsNotExist(err) {
 		background.Resource = nil
 		background.File = path
 		return
