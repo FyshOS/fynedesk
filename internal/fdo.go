@@ -319,6 +319,37 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 		if iconPath != "" {
 			return iconPath
 		}
+		indexTheme := filepath.Join(dir, "index.theme")
+		if _, err := os.Stat(indexTheme); os.IsNotExist(err) {
+			continue
+		}
+		file, err := os.Open(indexTheme)
+		if err != nil {
+			fyne.LogError("Could not open file", err)
+			continue
+		}
+		defer file.Close()
+
+		var inheritedThemes []string
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			line := scanner.Text()
+			if strings.HasPrefix(line, "Inherits=") {
+				inherits := strings.SplitAfter(line, "=")
+				inheritedThemes = strings.SplitN(inherits[1], ",", -1)
+				break
+			}
+		}
+		if len(inheritedThemes) == 0 {
+			continue
+		}
+		for _, theme := range inheritedThemes {
+			dir = filepath.Join(dataDir, "icons", theme)
+			iconPath = lookupIconPathInTheme(iconSize, dir, iconName)
+			if iconPath != "" {
+				return iconPath
+			}
+		}
 	}
 	for _, dataDir := range locationLookup {
 		//Hicolor is the default fallback theme - Example /usr/share/icons/icon_theme/hicolor
