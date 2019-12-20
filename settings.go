@@ -102,8 +102,10 @@ func (d *deskSettings) load() {
 		d.iconTheme = "hicolor"
 	}
 
-	d.launcherIcons = strings.SplitN(fyne.CurrentApp().Preferences().String("launchericons"), "|", -1)
-
+	launcherIcons := fyne.CurrentApp().Preferences().String("launchericons")
+	if launcherIcons != "" {
+		d.launcherIcons = strings.SplitN(fyne.CurrentApp().Preferences().String("launchericons"), "|", -1)
+	}
 	if len(d.launcherIcons) == 0 {
 		defaultApps := Instance().IconProvider().DefaultApps()
 		for _, appData := range defaultApps {

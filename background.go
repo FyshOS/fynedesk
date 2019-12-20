@@ -11,13 +11,13 @@ import (
 
 func updateBackgroundPath(background *canvas.Image, path string) {
 	_, err := os.Stat(path)
-	if path != "" && !os.IsNotExist(err) {
-		background.Resource = nil
-		background.File = path
+	if path == "" || !os.IsNotExist(err) {
+		background.Resource = wmtheme.Background
+		background.File = ""
 		return
 	}
-	background.Resource = wmtheme.Background
-	background.File = ""
+	background.Resource = nil
+	background.File = path
 }
 
 func backgroundPath() string {
