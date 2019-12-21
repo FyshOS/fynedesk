@@ -4,6 +4,7 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
+	"fyne.io/desktop/internal/notify"
 	"log"
 	"os"
 	"os/exec"
@@ -235,9 +236,13 @@ func (x *x11WM) runLoop() {
 			if err != nil {
 				fyne.LogError("Set Cursor Error", err)
 			}
-			desktop.MouseOutNotify()
+			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
+				mouseNotify.MouseOutNotify()
+			}
 		case xproto.LeaveNotifyEvent:
-			desktop.MouseInNotify(ev.RootX, ev.RootY)
+			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
+				mouseNotify.MouseInNotify(int(ev.RootX), int(ev.RootY))
+			}
 		case xproto.KeyPressEvent:
 			if x.altTabList == nil {
 				x.altTabList = []desktop.Window{}
