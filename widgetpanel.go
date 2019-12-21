@@ -235,7 +235,9 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		fyne.NewMenuItem("Settings", func() {
 			showSettings(w.desk.settings.(*deskSettings))
 		}),
-		fyne.NewMenuItem("Blank Screen", w.desk.wm.Blank),
+	}
+	if w.desk.wm != nil {
+		items = append(items, fyne.NewMenuItem("Blank Screen", w.desk.wm.Blank))
 	}
 	if os.Getenv("FYNE_DESK_RUNNER") != "" {
 		items = append(items, fyne.NewMenuItem("Reload", func() {
