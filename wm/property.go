@@ -4,11 +4,9 @@ package wm
 
 import (
 	"bytes"
-	"image/color"
 	"math"
 
 	"fyne.io/fyne"
-	"fyne.io/fyne/theme"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -93,9 +91,6 @@ func windowIcon(x *xgbutil.XUtil, win xproto.Window, width int, height int) byte
 		fyne.LogError("Could not get window icon", err)
 		return w
 	}
-	red, blue, green, _ := theme.BackgroundColor().RGBA()
-	col := color.RGBA{R: uint8(red), G: uint8(green), B: uint8(blue), A: uint8(0)}
-	xgraphics.BlendBgColor(img, col)
 	err = img.WritePng(&w)
 	if err != nil {
 		fyne.LogError("Could not convert icon to png", err)
