@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
-	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -78,7 +77,6 @@ func (data *fdoApplicationData) Run(env []string) error {
 	}
 
 	cmd.Env = vars
-	log.Println("env", vars)
 	return cmd.Start()
 }
 
