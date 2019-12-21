@@ -1,8 +1,6 @@
 package desktop
 
 import (
-	wmTheme "fyne.io/desktop/theme"
-	"fyne.io/fyne/widget"
 	"image/color"
 	"os"
 	"path/filepath"
@@ -10,8 +8,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/widget"
 )
 
 type testDesk struct {
@@ -180,7 +180,7 @@ func newTestScreensProvider() ScreenList {
 	return &testScreensProvider{}
 }
 
-func NewTestDesktop() Desktop {
+func newTestDesktop() *deskLayout {
 	l := &deskLayout{}
 	instance = l
 	l.settings = &testSettings{}
@@ -192,11 +192,11 @@ func NewTestDesktop() Desktop {
 	l.bar = newBar(l)
 	l.widgets = canvas.NewRectangle(color.Black)
 
-	return instance
+	return l
 }
 
 func TestDeskLayout_Layout(t *testing.T) {
-	l := NewTestDesktop().(*deskLayout)
+	l := newTestDesktop()
 
 	deskSize := fyne.NewSize(2000, 1000)
 	l.Layout([]fyne.CanvasObject{l.backgrounds[0], l.bar, l.widgets}, deskSize)
@@ -208,7 +208,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 }
 
 func TestScaleVars(t *testing.T) {
-	l := NewTestDesktop().(*deskLayout)
+	l := newTestDesktop()
 	env := l.scaleVars(1.8)
 	assert.Contains(t, env, "QT_SCALE_FACTOR=1.8")
 	assert.Contains(t, env, "GDK_SCALE=2")
@@ -216,7 +216,7 @@ func TestScaleVars(t *testing.T) {
 }
 
 func TestBackgroundChange(t *testing.T) {
-	l := NewTestDesktop().(*deskLayout)
+	l := newTestDesktop()
 
 	workingDir, err := os.Getwd()
 	if err != nil {
@@ -231,79 +231,79 @@ func TestBackgroundChange(t *testing.T) {
 }
 
 func TestIconsAndIconThemeChange(t *testing.T) {
-	l := NewTestDesktop().(*deskLayout)
+	l := newTestDesktop()
 
-	assert.Equal(t, 0, len(appBar.icons))
+	assert.Equal(t, 0, len(l.bar.(*bar).icons))
 	l.settings.(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
-	appBar.updateIconOrder()
+	l.bar.(*bar).updateIconOrder()
 
-	assert.Equal(t, 3, len(appBar.icons))
+	assert.Equal(t, 3, len(l.bar.(*bar).icons))
 
 	l.settings.(*testSettings).iconTheme = "Maximize"
-	appBar.updateIcons()
+	l.bar.(*bar).updateIcons()
 
 	assert.Equal(t, "Maximize", l.settings.IconTheme())
-	assert.Equal(t, wmTheme.MaximizeIcon, appBar.children[0].(*barIcon).resource)
+	assert.Equal(t, wmTheme.MaximizeIcon, l.bar.(*bar).children[0].(*barIcon).resource)
 
 	l.settings.(*testSettings).iconTheme = "TestIconTheme"
-	appBar.updateIcons()
+	l.bar.(*bar).updateIcons()
 
 	assert.Equal(t, "TestIconTheme", l.settings.IconTheme())
-	assert.Equal(t, wmTheme.IconifyIcon, appBar.children[0].(*barIcon).resource)
+	assert.Equal(t, wmTheme.IconifyIcon, l.bar.(*bar).children[0].(*barIcon).resource)
 }
 
 func TestIconOrderChange(t *testing.T) {
-	l := NewTestDesktop().(*deskLayout)
+	l := newTestDesktop()
 
-	assert.Equal(t, 0, len(appBar.icons))
+	assert.Equal(t, 0, len(l.bar.(*bar).icons))
 
 	l.settings.(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
-	appBar.updateIconOrder()
-	assert.Equal(t, "App1", appBar.children[0].(*barIcon).appData.Name())
-	assert.Equal(t, "App2", appBar.children[1].(*barIcon).appData.Name())
-	assert.Equal(t, "App3", appBar.children[2].(*barIcon).appData.Name())
+	l.bar.(*bar).updateIconOrder()
+	assert.Equal(t, "App1", l.bar.(*bar).children[0].(*barIcon).appData.Name())
+	assert.Equal(t, "App2", l.bar.(*bar).children[1].(*barIcon).appData.Name())
+	assert.Equal(t, "App3", l.bar.(*bar).children[2].(*barIcon).appData.Name())
 
 	l.settings.(*testSettings).launcherIcons = []string{"App3", "App1", "App2"}
-	appBar.updateIconOrder()
-	assert.Equal(t, "App3", appBar.children[0].(*barIcon).appData.Name())
-	assert.Equal(t, "App1", appBar.children[1].(*barIcon).appData.Name())
-	assert.Equal(t, "App2", appBar.children[2].(*barIcon).appData.Name())
+	l.bar.(*bar).updateIconOrder()
+	assert.Equal(t, "App3", l.bar.(*bar).children[0].(*barIcon).appData.Name())
+	assert.Equal(t, "App1", l.bar.(*bar).children[1].(*barIcon).appData.Name())
+	assert.Equal(t, "App2", l.bar.(*bar).children[2].(*barIcon).appData.Name())
 }
 
 func TestIconSizeChange(t *testing.T) {
-	l := NewTestDesktop().(*deskLayout)
+	l := newTestDesktop()
 
 	l.settings.(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
-	appBar.updateIconOrder()
+	l.bar.(*bar).updateIconOrder()
 
-	assert.Equal(t, 32, appBar.icons[0].Size().Width)
+	assert.Equal(t, 32, l.bar.(*bar).icons[0].Size().Width)
 
 	l.settings.(*testSettings).launcherIconSize = 64
-	appBar.iconSize = l.settings.LauncherIconSize()
-	appBar.updateIcons()
+	l.bar.(*bar).iconSize = l.settings.LauncherIconSize()
+	l.bar.(*bar).updateIcons()
 
-	assert.Equal(t, 64, appBar.icons[0].Size().Width)
+	assert.Equal(t, 64, l.bar.(*bar).icons[0].Size().Width)
 }
 
 func TestZoomScaleChange(t *testing.T) {
-	l := NewTestDesktop().(*deskLayout)
+	l := newTestDesktop()
 
 	l.settings.(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
-	appBar.updateIconOrder()
+	l.bar.(*bar).updateIconOrder()
 
-	appBar.mouseInside = true
-	appBar.mousePosition = appBar.children[0].Position()
-	widget.Refresh(appBar)
-	firstWidth := appBar.children[0].Size().Width
+	l.bar.(*bar).mouseInside = true
+	l.bar.(*bar).mousePosition = l.bar.(*bar).children[0].Position()
+	widget.Refresh(l.bar.(*bar))
+	firstWidth := l.bar.(*bar).children[0].Size().Width
 
 	l.settings.(*testSettings).launcherZoomScale = 2.0
-	appBar.iconScale = float32(l.settings.LauncherZoomScale())
-	appBar.updateIcons()
+	l.bar.(*bar).iconScale = float32(l.settings.LauncherZoomScale())
+	l.bar.(*bar).updateIcons()
 
-	appBar.mouseInside = true
-	appBar.mousePosition = appBar.children[0].Position()
-	widget.Refresh(appBar)
-	secondWidth := appBar.children[0].Size().Width
+	l.bar.(*bar).mouseInside = true
+	l.bar.(*bar).mousePosition = l.bar.(*bar).children[0].Position()
+	widget.Refresh(l.bar.(*bar))
+	secondWidth := l.bar.(*bar).children[0].Size().Width
 
 	zoomTest := false
 	if secondWidth > firstWidth {
@@ -313,60 +313,60 @@ func TestZoomScaleChange(t *testing.T) {
 }
 
 func TestIconZoomDisabled(t *testing.T) {
-	l := NewTestDesktop().(*deskLayout)
+	l := newTestDesktop()
 
 	l.settings.(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
 	l.settings.(*testSettings).launcherZoomScale = 2.0
-	appBar.iconScale = float32(l.settings.LauncherZoomScale())
-	appBar.updateIconOrder()
+	l.bar.(*bar).iconScale = float32(l.settings.LauncherZoomScale())
+	l.bar.(*bar).updateIconOrder()
 
-	appBar.mouseInside = true
-	appBar.mousePosition = appBar.children[0].Position()
-	widget.Refresh(appBar)
+	l.bar.(*bar).mouseInside = true
+	l.bar.(*bar).mousePosition = l.bar.(*bar).children[0].Position()
+	widget.Refresh(l.bar.(*bar))
 
-	width := appBar.children[0].Size().Width
+	width := l.bar.(*bar).children[0].Size().Width
 	assert.NotEqual(t, l.settings.LauncherIconSize(), width)
 
 	l.settings.(*testSettings).launcherDisableZoom = true
-	appBar.disableZoom = true
-	appBar.updateIconOrder()
+	l.bar.(*bar).disableZoom = true
+	l.bar.(*bar).updateIconOrder()
 
-	appBar.mouseInside = true
-	appBar.mousePosition = appBar.children[0].Position()
-	widget.Refresh(appBar)
+	l.bar.(*bar).mouseInside = true
+	l.bar.(*bar).mousePosition = l.bar.(*bar).children[0].Position()
+	widget.Refresh(l.bar.(*bar))
 
-	width = appBar.children[0].Size().Width
+	width = l.bar.(*bar).children[0].Size().Width
 	assert.Equal(t, l.settings.LauncherIconSize(), width)
 }
 
 func TestIconTaskbarDisabled(t *testing.T) {
-	l := NewTestDesktop().(*deskLayout)
+	l := newTestDesktop()
 
 	l.settings.(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
-	appBar.updateIconOrder()
+	l.bar.(*bar).updateIconOrder()
 
 	separatorTest := false
-	if len(appBar.icons) == len(appBar.children)-1 {
+	if len(l.bar.(*bar).icons) == len(l.bar.(*bar).children)-1 {
 		separatorTest = true
 	}
 	assert.Equal(t, true, separatorTest)
 
-	icon := barCreateIcon(appBar, true, &testAppData{}, &dummyWindow{})
-	appBar.append(icon)
+	icon := barCreateIcon(l.bar.(*bar), true, &testAppData{}, &dummyWindow{})
+	l.bar.(*bar).append(icon)
 
 	taskbarIconTest := false
-	if appBar.children[len(appBar.children)-1].(*barIcon).taskbarWindow != nil {
+	if l.bar.(*bar).children[len(l.bar.(*bar).children)-1].(*barIcon).taskbarWindow != nil {
 		taskbarIconTest = true
 	}
 	assert.Equal(t, true, taskbarIconTest)
 
 	l.settings.(*testSettings).launcherDisableTaskbar = true
-	appBar.updateIconOrder()
-	appBar.updateTaskbar()
+	l.bar.(*bar).updateIconOrder()
+	l.bar.(*bar).updateTaskbar()
 
 	//Last Child at this point should not be the separator or a taskbar icon
 	taskbarIconTest = false
-	if appBar.children[len(appBar.children)-1].(*barIcon).taskbarWindow == nil {
+	if l.bar.(*bar).children[len(l.bar.(*bar).children)-1].(*barIcon).taskbarWindow == nil {
 		taskbarIconTest = true
 	}
 	assert.Equal(t, true, taskbarIconTest)
