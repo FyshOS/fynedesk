@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	"fyne.io/desktop"
@@ -172,6 +174,18 @@ func fdoLookupApplicationsMatching(appName string) []desktop.AppData {
 	return icons
 }
 
+func fdoLookupApplications() []desktop.AppData {
+	var icons []desktop.AppData
+	fdoForEachApplicationFile(func(icon desktop.AppData) bool {
+		if icon == nil {
+			return false
+		}
+		icons = append(icons, icon)
+		return false
+	})
+	return icons
+}
+
 //fdoLookupApplicationWinInfo looks up an application based on window info and returns an fdoApplicationData struct
 func fdoLookupApplicationWinInfo(win desktop.Window) desktop.AppData {
 	icon := fdoLookupApplication(win.Title())
@@ -195,54 +209,97 @@ func fdoLookupApplicationWinInfo(win desktop.Window) desktop.AppData {
 	return &fdoApplicationData{name: win.Title()}
 }
 
-// lookupAnyIconSizeInThemeDir walks file inside of a directory in reverse order to make sure larger sized icons are found first
-func lookupAnyIconSizeInThemeDir(directory string, joiner string, iconName string) string {
-	files, err := ioutil.ReadDir(directory)
-	if err != nil {
-		return ""
-	}
-	// Lets walk the files in reverse so bigger icons are selected first (Unless it is a 3 digit icon size like 128)
-	// Example is /usr/share/icons/icon_theme/<size>/<joiner>/xterm.png
-	for i := len(files) - 1; i >= 0; i-- {
-		f := files[i]
-		if strings.HasPrefix(f.Name(), ".") || !f.IsDir() {
-			continue
-		}
-		matchDir := filepath.Join(directory, f.Name())
-		for _, extension := range iconExtensions {
-			testIcon := filepath.Join(matchDir, joiner, iconName+extension)
-			if _, err := os.Stat(testIcon); err == nil {
-				return testIcon
+func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDir string, joiner string, iconName string) string {
+	var sizes []int
+	for _, f := range files {
+		if format == "32x32" {
+			size, err := strconv.Atoi(strings.Split(f.Name(), "x")[0])
+			if err != nil {
+				continue
 			}
+			sizes = append(sizes, size)
+		} else {
+			size, err := strconv.Atoi(f.Name())
+			if err != nil {
+				continue
+			}
+			sizes = append(sizes, size)
 		}
 	}
 
-	directory = filepath.Join(directory, joiner)
+	if len(sizes) == 0 {
+		return ""
+	}
+
+	var closestMatch string
+	var difference int
+	for _, size := range sizes {
+		sizeDir := ""
+		if format == "32x32" {
+			sizeDir = fmt.Sprintf("%dx%d", size, size)
+		} else {
+			sizeDir = fmt.Sprintf("%d", size)
+		}
+		matchDir := ""
+		if joiner != "" {
+			matchDir = filepath.Join(baseDir, sizeDir, joiner)
+		} else {
+			matchDir = filepath.Join(baseDir, sizeDir)
+		}
+		diff := int(math.Abs(float64(iconSize - size)))
+		testIcon := ""
+		for _, extension := range iconExtensions {
+			testIcon = filepath.Join(matchDir, iconName+extension)
+			if _, err := os.Stat(testIcon); os.IsNotExist(err) {
+				testIcon = ""
+			} else {
+				break
+			}
+		}
+		if closestMatch == "" && testIcon != "" {
+			closestMatch = testIcon
+			difference = diff
+			continue
+		}
+		if diff < difference && testIcon != "" {
+			closestMatch = testIcon
+			difference = diff
+		}
+	}
+	return closestMatch
+}
+
+func lookupAnyIconSizeInThemeDir(dir string, joiner string, iconName string, iconSize int) string {
+	files, err := ioutil.ReadDir(dir)
+	if err != nil {
+		return ""
+	}
+
+	// Example is /usr/share/icons/icon_theme/<size>/<joiner>/xterm.png
+	closestMatch := fdoClosestSizeIcon(files, iconSize, "32x32", dir, joiner, iconName)
+	if closestMatch == "" {
+		closestMatch = fdoClosestSizeIcon(files, iconSize, "32", dir, joiner, iconName)
+	}
+	if closestMatch != "" {
+		return closestMatch
+	}
+
+	directory := filepath.Join(dir, joiner)
 	files, err = ioutil.ReadDir(directory)
 	if err != nil {
 		return ""
 	}
-	// And then walk the directories in <joiner>/<size> order
-	// Example is /usr/share/icons/icon_theme/<joiner>/<size>/xterm.png
-	for i := len(files) - 1; i >= 0; i-- {
-		f := files[i]
-		if strings.HasPrefix(f.Name(), ".") || !f.IsDir() {
-			continue
-		}
-		matchDir := filepath.Join(directory, f.Name())
-		for _, extension := range iconExtensions {
-			testIcon := filepath.Join(matchDir, iconName+extension)
-			if _, err := os.Stat(testIcon); err == nil {
-				return testIcon
-			}
-		}
-	}
 
-	return ""
+	// Example is /usr/share/icons/icon_theme/<joiner>/<size>/xterm.png
+	closestMatch = fdoClosestSizeIcon(files, iconSize, "32x32", directory, "", iconName)
+	if closestMatch == "" {
+		closestMatch = fdoClosestSizeIcon(files, iconSize, "32", directory, "", iconName)
+	}
+	return closestMatch
 }
 
 // lookupIconPathInTheme searches icon locations to find a match using a provided theme directory
-func lookupIconPathInTheme(iconSize string, dir string, iconName string) string {
+func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconName string) string {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return ""
 	}
@@ -268,25 +325,60 @@ func lookupIconPathInTheme(iconSize string, dir string, iconName string) string 
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
+	}
+	// If the requested icon wasn't found in the specific size or scalable dirs
+	// of the theme try all sizes within theme and all icon dirs besides apps
+	var subIconDirs = []string{"apps", "actions", "devices", "emblems", "mimetypes", "places", "status"}
+	iconSizeInt, err := strconv.Atoi(iconSize)
+	if err != nil {
+		iconSizeInt = 32
+	}
+	for _, joiner := range subIconDirs {
+		testIcon := lookupAnyIconSizeInThemeDir(dir, joiner, iconName, iconSizeInt)
+		if testIcon != "" {
+			return testIcon
+		}
+	}
 
-		// Try this if the requested iconSize didn't exist
+	//Lets check inherited themes for the match
+	indexTheme := filepath.Join(dir, "index.theme")
+	if _, err := os.Stat(indexTheme); !os.IsNotExist(err) {
+		file, err := os.Open(indexTheme)
+		if err == nil {
+			defer file.Close()
+
+			var inheritedThemes []string
+			scanner := bufio.NewScanner(file)
+			for scanner.Scan() {
+				line := scanner.Text()
+				if strings.HasPrefix(line, "Inherits=") {
+					inherits := strings.SplitAfter(line, "=")
+					inheritedThemes = strings.SplitN(inherits[1], ",", -1)
+					break
+				}
+			}
+			if len(inheritedThemes) > 0 {
+				for _, theme := range inheritedThemes {
+					dir = filepath.Join(parentDir, "icons", theme)
+					iconPath := lookupIconPathInTheme(iconSize, dir, parentDir, iconName)
+					if iconPath != "" {
+						return iconPath
+					}
+				}
+			}
+		}
+	}
+
+	// Try this as a last resort
+	for _, extension := range iconExtensions {
 		// Example is /usr/share/icons/icon_theme/scalable/apps/xterm.png
-		testIcon = filepath.Join(dir, "scalable", "apps", iconName+extension)
+		testIcon := filepath.Join(dir, "scalable", "apps", iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
 			return testIcon
 		}
 		// Example is /usr/share/icons/icon_theme/apps/scalable/xterm.png
 		testIcon = filepath.Join(dir, "apps", "scalable", iconName+extension)
 		if _, err := os.Stat(testIcon); err == nil {
-			return testIcon
-		}
-	}
-	// If the requested icon wasn't found in the specific size or scalable dirs
-	// of the theme try all sizes within theme and all icon dirs besides apps
-	var subIconDirs = []string{"apps", "actions", "devices", "emblems", "mimetypes", "places", "status"}
-	for _, joiner := range subIconDirs {
-		testIcon := lookupAnyIconSizeInThemeDir(dir, joiner, iconName)
-		if testIcon != "" {
 			return testIcon
 		}
 	}
@@ -301,7 +393,7 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 	for _, dataDir := range locationLookup {
 		//Example is /usr/share/icons/icon_theme
 		dir := filepath.Join(dataDir, "icons", iconTheme)
-		iconPath := lookupIconPathInTheme(iconSize, dir, iconName)
+		iconPath := lookupIconPathInTheme(iconSize, dir, dataDir, iconName)
 		if iconPath != "" {
 			return iconPath
 		}
@@ -309,7 +401,7 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 	for _, dataDir := range locationLookup {
 		//Hicolor is the default fallback theme - Example /usr/share/icons/icon_theme/hicolor
 		dir := filepath.Join(dataDir, "icons", "hicolor")
-		iconPath := lookupIconPathInTheme(iconSize, dir, iconName)
+		iconPath := lookupIconPathInTheme(iconSize, dir, dataDir, iconName)
 		if iconPath != "" {
 			return iconPath
 		}
@@ -323,9 +415,14 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 			}
 		}
 	}
+	//No Icon Was Found
+	return ""
+}
+
+func fdoLookupAvailableThemes() []string {
+	var themes []string
+	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
-		//Icon was not found in default theme or default fallback theme - Check all themes for a match
-		//Example is /usr/share/icons
 		files, err := ioutil.ReadDir(filepath.Join(dataDir, "icons"))
 		if err != nil {
 			continue
@@ -335,16 +432,11 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 			if strings.HasPrefix(f.Name(), ".") || !f.IsDir() {
 				continue
 			}
-
 			//Example is /usr/share/icons/gnome
-			iconPath := lookupIconPathInTheme(iconSize, filepath.Join(dataDir, "icons", f.Name()), iconName)
-			if iconPath != "" {
-				return iconPath
-			}
+			themes = append(themes, f.Name())
 		}
 	}
-	//No Icon Was Found
-	return ""
+	return themes
 }
 
 //newFdoIconData creates and returns a struct that contains needed fields from a .desktop file
@@ -391,6 +483,16 @@ func newFdoIconData(desktopPath string) desktop.AppData {
 type fdoIconProvider struct {
 }
 
+//AllApplications returns all of the available applications in a AppData slice
+func (f *fdoIconProvider) AvailableApps() []desktop.AppData {
+	return fdoLookupApplications()
+}
+
+//AvailableThemes returns all available icon themes in a string slice
+func (f *fdoIconProvider) AvailableThemes() []string {
+	return fdoLookupAvailableThemes()
+}
+
 //FindAppFromName matches an icon name to a location and returns an AppData interface
 func (f *fdoIconProvider) FindAppFromName(appName string) desktop.AppData {
 	return fdoLookupApplication(appName)
@@ -426,7 +528,7 @@ func appendAppIfExists(apps []desktop.AppData, app desktop.AppData) []desktop.Ap
 }
 
 func (f *fdoIconProvider) DefaultApps() []desktop.AppData {
-	apps := []desktop.AppData{}
+	var apps []desktop.AppData
 
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "xfce4-terminal", "gnome-terminal", "xterm"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "chromium", "google-chrome", "firefox"))

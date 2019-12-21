@@ -2,6 +2,7 @@ package desktop // import "fyne.io/desktop"
 
 import (
 	"fmt"
+	"fyne.io/fyne/canvas"
 	"log"
 	"math"
 	"runtime/debug"
@@ -116,6 +117,13 @@ func (l *deskLayout) newDesktopWindow() fyne.Window {
 	return desk
 }
 
+func (l *deskLayout) updateBackgrounds(path string) {
+	for _, background := range l.backgrounds {
+		updateBackgroundPath(background.(*canvas.Image), path)
+		canvas.Refresh(background)
+	}
+}
+
 func (l *deskLayout) Root() fyne.Window {
 	if l.win == nil {
 		l.win = l.newDesktopWindow()
@@ -204,13 +212,32 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 	}
 }
 
+func (l *deskLayout) startSettingsChangeListener(listener chan DeskSettings) {
+	for {
+		_ = <-listener
+		l.updateBackgrounds(l.Settings().Background())
+		appBar.iconSize = l.Settings().LauncherIconSize()
+		appBar.iconScale = float32(l.Settings().LauncherZoomScale())
+		appBar.disableZoom = l.Settings().LauncherDisableZoom()
+		appBar.updateIcons()
+		appBar.updateIconOrder()
+		appBar.updateTaskbar()
+	}
+}
+
+func (l *deskLayout) addSettingsChangeListener() {
+	listener := make(chan DeskSettings)
+	l.Settings().AddChangeListener(listener)
+	go l.startSettingsChangeListener(listener)
+}
+
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
 func (l *deskLayout) Screens() ScreenList {
 	return l.screens
 }
 
 func (esp embeddedScreensProvider) Screens() []*Screen {
-	l := Instance().(*deskLayout)
+	l := instance.(*deskLayout)
 	if esp.screens == nil {
 		esp.screens = []*Screen{{"Screen0", 0, 0,
 			removeScale(int(l.Root().Canvas().Size().Width), esp.Scale()),
@@ -253,7 +280,9 @@ func Instance() Desktop {
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An ApplicationProvider is used to lookup application icons from the operating system.
 func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider, screenProvider ScreenList) Desktop {
-	instance = &deskLayout{app: app, wm: wm, icons: icons, screens: screenProvider, settings: NewDeskSettings()}
+	instance = &deskLayout{app: app, wm: wm, icons: icons, screens: screenProvider}
+	instance.(*deskLayout).settings = NewDeskSettings()
+	instance.(*deskLayout).addSettingsChangeListener()
 	instance.(*deskLayout).screenBackgroundMap = make(map[*Screen]fyne.CanvasObject)
 	return instance
 }
@@ -263,7 +292,9 @@ func NewDesktop(app fyne.App, wm WindowManager, icons ApplicationProvider, scree
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
 func NewEmbeddedDesktop(app fyne.App, icons ApplicationProvider) Desktop {
-	instance = &deskLayout{app: app, icons: icons, screens: NewEmbeddedScreensProvider(), settings: NewDeskSettings()}
+	instance = &deskLayout{app: app, icons: icons, screens: NewEmbeddedScreensProvider()}
+	instance.(*deskLayout).settings = NewDeskSettings()
+	instance.(*deskLayout).addSettingsChangeListener()
 	instance.(*deskLayout).screenBackgroundMap = make(map[*Screen]fyne.CanvasObject)
 	return instance
 }

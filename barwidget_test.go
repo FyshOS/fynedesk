@@ -118,7 +118,7 @@ func (d *dummyIcon) Run([]string) error {
 }
 
 func testBar(icons []string) *bar {
-	appBar := newAppBar(&testDesk{})
+	appBar = newAppBar(&testDesk{})
 	for range icons {
 		icon := barCreateIcon(appBar, false, &dummyIcon{}, nil)
 		if icon != nil {
@@ -131,7 +131,7 @@ func testBar(icons []string) *bar {
 
 func TestAppBar_Append(t *testing.T) {
 	icons := []string{"fyne", "fyne", "fyne", "fyne"}
-	appBar := testBar(icons)
+	appBar = testBar(icons)
 	assert.Equal(t, len(icons), len(appBar.children))
 	appBar.appendSeparator()
 	assert.Equal(t, len(icons)+1, len(appBar.children))
@@ -145,7 +145,10 @@ func TestAppBar_Append(t *testing.T) {
 
 func TestAppBar_Zoom(t *testing.T) {
 	icons := []string{"fyne", "fyne", "fyne", "fyne"}
-	appBar := testBar(icons)
+	appBar = testBar(icons)
+	appBar.disableZoom = false
+	appBar.iconSize = 32
+	appBar.iconScale = 2.0
 	appBar.mouseInside = true
 	appBar.mousePosition = appBar.children[0].Position()
 	widget.Refresh(appBar)
