@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -245,8 +246,7 @@ func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDi
 		} else {
 			matchDir = filepath.Join(baseDir, sizeDir)
 		}
-		diff := int(
-      .Abs(float64(iconSize - size)))
+		diff := int(math.Abs(float64(iconSize - size)))
 		testIcon := ""
 		for _, extension := range iconExtensions {
 			testIcon = filepath.Join(matchDir, iconName+extension)
