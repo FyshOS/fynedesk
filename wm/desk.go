@@ -8,16 +8,16 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/BurntSushi/xgbutil/xevent"
-
-	"fyne.io/desktop"
-	"fyne.io/fyne"
-
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
+
+	"fyne.io/desktop"
+	"fyne.io/desktop/internal/notify"
+	"fyne.io/fyne"
 )
 
 type x11WM struct {
@@ -234,6 +234,14 @@ func (x *x11WM) runLoop() {
 				[]uint32{uint32(defaultCursor)}).Check()
 			if err != nil {
 				fyne.LogError("Set Cursor Error", err)
+			}
+			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
+				mouseNotify.MouseOutNotify()
+			}
+		case xproto.LeaveNotifyEvent:
+			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
+				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/x.root.Canvas().Scale()),
+					int(float32(ev.RootY)/x.root.Canvas().Scale())))
 			}
 		case xproto.KeyPressEvent:
 			if x.altTabList == nil {

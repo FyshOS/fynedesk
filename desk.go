@@ -8,6 +8,7 @@ import (
 	"runtime/debug"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/driver/desktop"
 )
 
 // Desktop defines an embedded or full desktop environment that we can run.
@@ -210,6 +211,23 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 		fmt.Sprintf("GDK_SCALE=%d", intScale),
 		fmt.Sprintf("ELM_SCALE=%1.1f", scale),
 	}
+}
+
+// MouseInNotify can be called by the window manager to alert the desktop that the cursor has entered the canvas
+func (l *deskLayout) MouseInNotify(pos fyne.Position) {
+	mouseX, mouseY := pos.X, pos.Y
+	barX, barY := appBar.Position().X, appBar.Position().Y
+	barWidth, barHeight := appBar.Size().Width, appBar.Size().Height
+	if mouseX >= barX && mouseX <= barX+barWidth {
+		if mouseY >= barY && mouseY <= barY+barHeight {
+			appBar.MouseIn(&desktop.MouseEvent{PointEvent: fyne.PointEvent{AbsolutePosition: pos, Position: pos}})
+		}
+	}
+}
+
+// MouseOutNotify can be called by the window manager to alert the desktop that the cursor has left the canvas
+func (l *deskLayout) MouseOutNotify() {
+	appBar.MouseOut()
 }
 
 func (l *deskLayout) startSettingsChangeListener(listener chan DeskSettings) {
