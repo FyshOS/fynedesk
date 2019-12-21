@@ -125,7 +125,7 @@ func (b *bar) updateIcons() {
 }
 
 func (b *bar) getIconResource(data AppData, win Window) fyne.Resource {
-	iconRes := data.Icon(b.desk.Settings().IconTheme(), int((float32(b.iconSize)*b.iconScale)*fyne.CurrentApp().Settings().Scale()))
+	iconRes := data.Icon(b.desk.Settings().IconTheme(), int((float32(b.iconSize)*b.iconScale)*b.desk.Root().Canvas().Scale()))
 	if iconRes == nil || iconRes == wmTheme.BrokenImageIcon {
 		if win != nil {
 			iconRes = win.Icon()

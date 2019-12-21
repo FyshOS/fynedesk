@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
+	"fyne.io/fyne/test"
 	"github.com/stretchr/testify/assert"
 
 	wmTheme "fyne.io/desktop/theme"
@@ -18,7 +19,7 @@ type testDesk struct {
 }
 
 func (*testDesk) Root() fyne.Window {
-	return nil
+	return test.NewWindow(nil)
 }
 
 func (*testDesk) Run() {
@@ -187,6 +188,7 @@ func newTestScreensProvider() ScreenList {
 func newTestDesktop() *deskLayout {
 	l := &deskLayout{}
 	instance = l
+	l.win = test.NewWindow(nil)
 	l.settings = &testSettings{}
 	l.icons = newTestAppProvider()
 	l.screens = newTestScreensProvider()
