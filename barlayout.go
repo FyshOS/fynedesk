@@ -50,7 +50,7 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	zoom := bl.mouseInside && mouseX >= barLeft && mouseX <= barLeft+barWidth
 
 	for _, child := range objects {
-		if zoom {
+		if zoom && !appBar.disableZoom {
 			iconCenter := iconLeft + bl.bar.iconSize/2
 			offsetX := float64(mouseX - iconCenter)
 

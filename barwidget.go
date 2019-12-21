@@ -22,6 +22,7 @@ type bar struct {
 	iconSize       int
 	iconScale      float32
 	disableTaskbar bool
+	disableZoom    bool
 	icons          []*barIcon
 }
 

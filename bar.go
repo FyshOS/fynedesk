@@ -121,6 +121,7 @@ func (b *bar) updateIcons() {
 		icon.resource = b.getIconResource(icon.appData, icon.taskbarWindow)
 		icon.Refresh()
 	}
+	b.Refresh()
 }
 
 func (b *bar) getIconResource(data AppData, win Window) fyne.Resource {
