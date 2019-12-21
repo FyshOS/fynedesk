@@ -99,7 +99,7 @@ func newAppBar(desk Desktop, children ...fyne.CanvasObject) *bar {
 	return bar
 }
 
-//barRenderer privdes the renderer functions for the bar Widget
+//barRenderer provides the renderer functions for the bar Widget
 type barRenderer struct {
 	layout barLayout
 

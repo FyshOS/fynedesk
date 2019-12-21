@@ -100,7 +100,10 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 }
 
 func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	return fyne.NewSize(1280, 720)
+	if l.wm == nil {
+		return fyne.NewSize(1280, 720)
+	}
+	return fyne.NewSize(640, 480) // tiny - the window manager will scale up to screen size
 }
 
 func (l *deskLayout) newDesktopWindow() fyne.Window {
@@ -256,6 +259,10 @@ func (esp embeddedScreensProvider) Scale() float32 {
 }
 
 func (esp embeddedScreensProvider) ScreenForWindow(win Window) *Screen {
+	return esp.Screens()[0]
+}
+
+func (esp embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *Screen {
 	return esp.Screens()[0]
 }
 
