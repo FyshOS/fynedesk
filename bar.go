@@ -98,10 +98,10 @@ func (b *bar) updateIconOrder() {
 			break
 		}
 	}
-	if index == -1 {
-		return
+	var taskbarIcons []*barIcon
+	if index != -1 {
+		taskbarIcons = b.icons[index:]
 	}
-	var taskbarIcons = b.icons[index:]
 
 	b.icons = nil
 	b.children = nil
