@@ -44,10 +44,6 @@ func (*testDesk) Screens() ScreenList {
 	return nil
 }
 
-func (*testDesk) MouseOutNotify() {
-	return
-}
-
 type testSettings struct {
 }
 

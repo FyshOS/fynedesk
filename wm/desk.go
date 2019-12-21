@@ -4,21 +4,20 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
-	"fyne.io/desktop/internal/notify"
 	"log"
 	"os"
 	"os/exec"
-
-	"github.com/BurntSushi/xgbutil/xevent"
-
-	"fyne.io/desktop"
-	"fyne.io/fyne"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
+
+	"fyne.io/desktop"
+	"fyne.io/desktop/internal/notify"
+	"fyne.io/fyne"
 )
 
 type x11WM struct {
@@ -241,7 +240,8 @@ func (x *x11WM) runLoop() {
 			}
 		case xproto.LeaveNotifyEvent:
 			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
-				mouseNotify.MouseInNotify(int(ev.RootX), int(ev.RootY))
+				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/fyne.CurrentApp().Settings().Scale()),
+					int(float32(ev.RootY)/fyne.CurrentApp().Settings().Scale())))
 			}
 		case xproto.KeyPressEvent:
 			if x.altTabList == nil {

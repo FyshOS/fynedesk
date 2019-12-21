@@ -1,6 +1,8 @@
 package notify
 
+import "fyne.io/fyne"
+
 type MouseNotify interface {
-	MouseInNotify(x int, y int)
+	MouseInNotify(fyne.Position)
 	MouseOutNotify()
 }
