@@ -211,7 +211,7 @@ func fdoLookupApplicationWinInfo(win desktop.Window) desktop.AppData {
 	return &fdoApplicationData{name: win.Title()}
 }
 
-func closestSizeDirectory(files []os.FileInfo, iconSize int, format string) string {
+func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDir string, joiner string, iconName string) string {
 	var sizes []int
 	for _, f := range files {
 		if format == "32x32" {
@@ -228,67 +228,76 @@ func closestSizeDirectory(files []os.FileInfo, iconSize int, format string) stri
 			sizes = append(sizes, size)
 		}
 	}
+
 	if len(sizes) == 0 {
 		return ""
 	}
-	var closestMatch, difference int
-	for i, size := range sizes {
-		if i == 0 {
-			closestMatch = size
-			difference = int(math.Abs(float64(iconSize - size)))
-			continue
+
+	var closestMatch string
+	var difference int
+	for _, size := range sizes {
+		sizeDir := ""
+		if format == "32x32" {
+			sizeDir = fmt.Sprintf("%dx%d", size, size)
+		} else {
+			sizeDir = fmt.Sprintf("%d", size)
+		}
+		matchDir := ""
+		if joiner != "" {
+			matchDir = filepath.Join(baseDir, sizeDir, joiner)
+		} else {
+			matchDir = filepath.Join(baseDir, sizeDir)
 		}
 		diff := int(math.Abs(float64(iconSize - size)))
-		if diff < difference {
-			closestMatch = size
+		testIcon := ""
+		for _, extension := range iconExtensions {
+			testIcon = filepath.Join(matchDir, iconName+extension)
+			if _, err := os.Stat(testIcon); os.IsNotExist(err) {
+				testIcon = ""
+			} else {
+				break
+			}
+		}
+		if closestMatch == "" && testIcon != "" {
+			closestMatch = testIcon
+			difference = diff
+			continue
+		}
+		if diff < difference && testIcon != "" {
+			closestMatch = testIcon
 			difference = diff
 		}
 	}
-	if format == "32x32" {
-		return fmt.Sprintf("%dx%d", closestMatch, closestMatch)
-	}
-	return fmt.Sprintf("%d", closestMatch)
+	return closestMatch
 }
 
-func lookupAnyIconSizeInThemeDir(directory string, joiner string, iconName string, iconSize int) string {
-	files, err := ioutil.ReadDir(directory)
+func lookupAnyIconSizeInThemeDir(dir string, joiner string, iconName string, iconSize int) string {
+	files, err := ioutil.ReadDir(dir)
 	if err != nil {
 		return ""
 	}
 
 	// Example is /usr/share/icons/icon_theme/<size>/<joiner>/xterm.png
-	sizeDirectory := closestSizeDirectory(files, iconSize, "32x322")
-	if sizeDirectory == "" {
-		sizeDirectory = closestSizeDirectory(files, iconSize, "32")
+	closestMatch := fdoClosestSizeIcon(files, iconSize, "32x32", dir, joiner, iconName)
+	if closestMatch == "" {
+		closestMatch = fdoClosestSizeIcon(files, iconSize, "32", dir, joiner, iconName)
 	}
-	matchDir := filepath.Join(directory, sizeDirectory)
-	for _, extension := range iconExtensions {
-		testIcon := filepath.Join(matchDir, joiner, iconName+extension)
-		if _, err := os.Stat(testIcon); err == nil {
-			return testIcon
-		}
+	if closestMatch != "" {
+		return closestMatch
 	}
 
-	directory = filepath.Join(directory, joiner)
+	directory := filepath.Join(dir, joiner)
 	files, err = ioutil.ReadDir(directory)
 	if err != nil {
 		return ""
 	}
 
 	// Example is /usr/share/icons/icon_theme/<joiner>/<size>/xterm.png
-	sizeDirectory = closestSizeDirectory(files, iconSize, "32x322")
-	if sizeDirectory == "" {
-		sizeDirectory = closestSizeDirectory(files, iconSize, "32")
+	closestMatch = fdoClosestSizeIcon(files, iconSize, "32x32", directory, "", iconName)
+	if closestMatch == "" {
+		closestMatch = fdoClosestSizeIcon(files, iconSize, "32", directory, "", iconName)
 	}
-	matchDir = filepath.Join(directory, sizeDirectory)
-	for _, extension := range iconExtensions {
-		testIcon := filepath.Join(matchDir, iconName+extension)
-		if _, err := os.Stat(testIcon); err == nil {
-			return testIcon
-		}
-	}
-
-	return ""
+	return closestMatch
 }
 
 // lookupIconPathInTheme searches icon locations to find a match using a provided theme directory
