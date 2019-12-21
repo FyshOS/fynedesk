@@ -240,8 +240,8 @@ func (x *x11WM) runLoop() {
 			}
 		case xproto.LeaveNotifyEvent:
 			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
-				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/fyne.CurrentApp().Settings().Scale()),
-					int(float32(ev.RootY)/fyne.CurrentApp().Settings().Scale())))
+				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/x.root.Canvas().Scale()),
+					int(float32(ev.RootY)/x.root.Canvas().Scale())))
 			}
 		case xproto.KeyPressEvent:
 			if x.altTabList == nil {
