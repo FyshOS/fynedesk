@@ -15,3 +15,5 @@ require (
 	golang.org/x/text v0.3.2 // indirect
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb
 )
+
+replace github.com/BurntSushi/xgbutil => github.com/fyne-io/xgbutil v0.0.0-20191220152344-7d838166824d

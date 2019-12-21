@@ -105,6 +105,13 @@ func (f *frame) release(x, y int16) {
 	f.resizeLeft = false
 	f.resizeRight = false
 	f.updateGeometry(f.x, f.y, f.width, f.height, false)
+
+	// ensure menus etc update
+	innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(f.x, f.y, f.width, f.height)
+	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
+		X: int16(f.x + int16(innerX)), Y: int16(f.y + int16(innerY)), Width: uint16(innerW), Height: uint16(innerH),
+		BorderWidth: f.borderWidth(), OverrideRedirect: false}
+	xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 }
 
 func (f *frame) drag(x, y int16) {
@@ -217,12 +224,11 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	f.x = x
 	f.y = y
 
-	var newx, newy, neww, newh uint32
-	newx, newy, neww, newh = f.getInnerWindowCoordinates(x, y, w, h)
+	innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(x, y, w, h)
+	adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.x, f.client.win, uint16(innerW), uint16(innerH))
 
-	adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.x, f.client.win, uint16(neww), uint16(newh))
-
-	f.applyTheme(false)
+	f.childWidth = adjustedW
+	f.childHeight = adjustedH
 
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -232,18 +238,10 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	}
 	err = xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{newx, newy, uint32(adjustedW), uint32(adjustedH)}).Check()
+		[]uint32{innerX, innerY, uint32(f.childWidth), uint32(f.childHeight)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
-	if move && !resize {
-		ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
-			X: int16(f.x + int16(newx)), Y: int16(f.y + int16(newy)), Width: uint16(f.childWidth), Height: uint16(f.childHeight),
-			BorderWidth: f.borderWidth(), OverrideRedirect: false}
-		xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
-	}
-	f.childWidth = adjustedW
-	f.childHeight = adjustedH
 }
 
 func (f *frame) maximizeApply() {

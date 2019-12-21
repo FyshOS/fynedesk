@@ -59,6 +59,7 @@ type barIcon struct {
 
 	onTapped      func()        // The function that will be called when the icon is clicked
 	resource      fyne.Resource // The image data of the image that the icon uses
+	appData       AppData       // The application data corresponding to this icon.
 	taskbarWindow Window        // The window associated with this icon if it is a taskbar icon
 }
 
@@ -79,8 +80,8 @@ func (bi *barIcon) CreateRenderer() fyne.WidgetRenderer {
 	return render
 }
 
-func newBarIcon(res fyne.Resource) *barIcon {
-	barIcon := &barIcon{resource: res}
+func newBarIcon(res fyne.Resource, appData AppData) *barIcon {
+	barIcon := &barIcon{resource: res, appData: appData}
 	barIcon.ExtendBaseWidget(barIcon)
 
 	return barIcon

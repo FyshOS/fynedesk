@@ -102,6 +102,23 @@ func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
 	}
 }
 
+func (m *macOSAppProvider) AvailableApps() []desktop.AppData {
+	var icons []desktop.AppData
+	m.forEachApplication(func(name, path string) bool {
+		app := loadAppBundle(name, path)
+		if app != nil {
+			icons = append(icons, app)
+		}
+		return false
+	})
+	return icons
+}
+
+func (m *macOSAppProvider) AvailableThemes() []string {
+	//I'm not sure this is relevant on Mac OSX
+	return []string{}
+}
+
 func (m *macOSAppProvider) FindAppFromName(appName string) desktop.AppData {
 	var icon desktop.AppData
 	m.forEachApplication(func(name, path string) bool {

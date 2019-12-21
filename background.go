@@ -9,7 +9,18 @@ import (
 	wmtheme "fyne.io/desktop/theme"
 )
 
-func wallpaperPath() string {
+func updateBackgroundPath(background *canvas.Image, path string) {
+	_, err := os.Stat(path)
+	if path == "" || os.IsNotExist(err) {
+		background.Resource = wmtheme.Background
+		background.File = ""
+		return
+	}
+	background.Resource = nil
+	background.File = path
+}
+
+func backgroundPath() string {
 	pathEnv := Instance().Settings().Background()
 	if pathEnv == "" {
 		return ""
@@ -23,7 +34,7 @@ func wallpaperPath() string {
 }
 
 func newBackground() fyne.CanvasObject {
-	imagePath := wallpaperPath()
+	imagePath := backgroundPath()
 	if imagePath != "" {
 		return canvas.NewImageFromFile(imagePath)
 	}

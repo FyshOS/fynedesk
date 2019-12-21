@@ -150,14 +150,12 @@ func NewIcccmIcon(X *xgbutil.XUtil, iconPixmap,
 			for y = r.Min.Y; y < r.Max.Y; y++ {
 				maskBgra = mximg.At(x, y).(BGRA)
 				bgra = pximg.At(x, y).(BGRA)
-				if maskBgra.A == 0 {
-					pximg.SetBGRA(x, y, BGRA{
-						B: bgra.B,
-						G: bgra.G,
-						R: bgra.R,
-						A: 0,
-					})
-				}
+				pximg.SetBGRA(x, y, BGRA{
+					B: bgra.B,
+					G: bgra.G,
+					R: bgra.R,
+					A: maskBgra.A,
+				})
 			}
 		}
 		return pximg, nil
