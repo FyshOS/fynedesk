@@ -105,6 +105,13 @@ func (f *frame) release(x, y int16) {
 	f.resizeLeft = false
 	f.resizeRight = false
 	f.updateGeometry(f.x, f.y, f.width, f.height, false)
+
+	// ensure menus etc update
+	innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(f.x, f.y, f.width, f.height)
+	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
+		X: int16(f.x + int16(innerX)), Y: int16(f.y + int16(innerY)), Width: uint16(innerW), Height: uint16(innerH),
+		BorderWidth: f.borderWidth(), OverrideRedirect: false}
+	xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 }
 
 func (f *frame) drag(x, y int16) {
