@@ -168,6 +168,10 @@ func (x *x11WM) runLoop() {
 		}
 		switch ev := ev.(type) {
 		case xproto.MapRequestEvent:
+			override := windowOverrideGet(x.x, ev.Window)
+			if override == true {
+				return
+			}
 			x.showWindow(ev.Window)
 		case xproto.UnmapNotifyEvent:
 			x.hideWindow(ev.Window)
