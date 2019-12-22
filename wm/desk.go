@@ -209,9 +209,16 @@ func (x *x11WM) runLoop() {
 				if c.(*client).id == ev.Event {
 					if x.moveResizing {
 						x.moveResizeEnd()
-						break
+					} else {
+						c.(*client).frame.release(ev.RootX, ev.RootY)
 					}
-					c.(*client).frame.release(ev.RootX, ev.RootY)
+					// ensure menus etc update
+					f := c.(*client).frame
+					innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(f.x, f.y, f.width, f.height)
+					ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
+						X: int16(f.x + int16(innerX)), Y: int16(f.y + int16(innerY)), Width: uint16(innerW), Height: uint16(innerH),
+						BorderWidth: f.borderWidth(), OverrideRedirect: false}
+					xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
 				}
 			}
 		case xproto.MotionNotifyEvent:
@@ -541,15 +548,13 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	if override {
 		return
 	}
-	transient := windowTransientForGet(x.x, win)
-	if transient != 0 {
-		winType := windowTypeGet(x.x, win)
-		switch winType[0] {
-		case windowTypeUtility, windowTypeDialog, windowTypeNormal:
-			break
-		default:
-			return
-		}
+
+	winType := windowTypeGet(x.x, win)
+	switch winType[0] {
+	case windowTypeUtility, windowTypeDialog, windowTypeNormal:
+		break
+	default:
+		return
 	}
 
 	x.setupWindow(win)

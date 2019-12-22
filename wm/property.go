@@ -170,9 +170,11 @@ func windowTransientForGet(x *xgbutil.XUtil, win xproto.Window) xproto.Window {
 
 func windowOverrideGet(x *xgbutil.XUtil, win xproto.Window) bool {
 	hints, err := icccm.WmHintsGet(x, win)
-	if err != nil {
-		return false
-	} else if (hints.Flags & xproto.CwOverrideRedirect) != 0 {
+	if err == nil && (hints.Flags&xproto.CwOverrideRedirect) != 0 {
+		return true
+	}
+	attrs, err := xproto.GetWindowAttributes(x.Conn(), win).Reply()
+	if err == nil && attrs.OverrideRedirect {
 		return true
 	}
 	return false
