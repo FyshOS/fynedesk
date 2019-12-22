@@ -11,17 +11,17 @@
 
 # About
 
-This project is at an early test stage and may not be suitable for a daily
-desktop environment. It requires the develop branch of Fyne to operate and
-will do so until the 1.2 Fyne release completes in November.
-That said we use this regularly and would be happy for anyone to test,
-play with or contribute to this project and prepare it for a first release.
+FyneDesk is an easy to use Linux desktop environment following material design.
+It is build using the [Fyne](https://fyne.io) toolkit and is designed to be
+easy to use as well as easy to develop. We use the Go language and welcome
+any contributions or feedback for the project.
 
 # Dependencies
 
 For a full desktop experience you will also need the following external tools installed:
 
 * xbacklight
+* arandr
 
 # Getting Started
 
@@ -29,7 +29,9 @@ Using standard go tools you can install Fyne's desktop using:
 
     go get fyne.io/desktop/cmd/fynedesk
 
-And you can run that in an embedded X window for testing using:
+Once installed you could set `$GOPATH/fynedesk` as your window manager (usually
+using .xinitrc).
+You can also run it in an embedded X window for testing using:
 
     DISPLAY=:0 Xephyr :1 -screen 1280x720 &
     DISPLAY=:1 fynedesk
