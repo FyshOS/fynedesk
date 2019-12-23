@@ -581,6 +581,7 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	c = newClient(win, x)
 
 	x.AddWindow(c)
+	c.RaiseToTop()
 	c.Focus()
 	windowClientListUpdate(x)
 	windowClientListStackingUpdate(x)
