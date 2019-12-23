@@ -220,17 +220,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	account = widget.NewButtonWithIcon(accountLabel, wmtheme.UserIcon, func() {
 		w.showAccountMenu(account)
 	})
-	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), func() {
-		if w.appExecWin != nil {
-			w.appExecWin.Close()
-		}
-
-		w.appExecWin = newAppExecPopUp(w.desk)
-		w.appExecWin.SetOnClosed(func() {
-			w.appExecWin = nil
-		})
-		w.appExecWin.Show()
-	})
+	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), ShowAppLauncher)
 	objects := []fyne.CanvasObject{
 		w.clock,
 		w.date,

@@ -9,30 +9,86 @@ import (
 	"fyne.io/desktop"
 )
 
-func appExecPopUpListMatches(desk desktop.Desktop, win fyne.Window, appList *fyne.Container, input string) {
-	iconTheme := desk.Settings().IconTheme()
-	dataRange := desk.IconProvider().FindAppsMatching(input)
-	for _, data := range dataRange {
-		appData := data                     // capture for goroutine below
-		icon := appData.Icon(iconTheme, 32) // TODO match theme but FDO needs power of 2 theme.IconInlineSize())
+var appExec *launcher
+
+type appEntry struct {
+	widget.Entry
+
+	launch *launcher
+}
+
+func (e *appEntry) TypedKey(ev *fyne.KeyEvent) {
+	if ev.Name == fyne.KeyEscape {
+		e.launch.close()
+		return
+	} else if ev.Name == fyne.KeyReturn {
+		e.launch.runSelected()
+		return
+	}
+
+	e.Entry.TypedKey(ev)
+}
+
+type launcher struct {
+	win     fyne.Window
+	desk    desktop.Desktop
+	appList *fyne.Container
+}
+
+func (l *launcher) close() {
+	l.win.Close()
+}
+
+func (l *launcher) runSelected() {
+	if len(l.appList.Objects) == 0 {
+		return
+	}
+
+	l.appList.Objects[0].(*widget.Button).OnTapped()
+}
+
+func (l *launcher) runApp(app desktop.AppData) {
+	err := l.desk.RunApp(app)
+	if err != nil {
+		fyne.LogError("Failed to start app", err)
+		return
+	}
+	l.win.Close()
+}
+
+func (l *launcher) updateAppListMatching(input string) {
+	l.appList.Objects = []fyne.CanvasObject{}
+
+	iconTheme := l.desk.Settings().IconTheme()
+	dataRange := l.desk.IconProvider().FindAppsMatching(input)
+	for i, data := range dataRange {
+		appData := data // capture for goroutine below
+		icon := appData.Icon(iconTheme, 32)
 		app := widget.NewButtonWithIcon(appData.Name(), icon, func() {
-			err := desk.RunApp(appData)
-			if err != nil {
-				fyne.LogError("Failed to start app", err)
-				return
-			}
-			win.Close()
+			l.runApp(appData)
 		})
-		appList.AddObject(app)
+
+		if i == 0 {
+			app.Style = widget.PrimaryButton
+		}
+		l.appList.AddObject(app)
 	}
 }
 
-func newAppExecPopUp(desk desktop.Desktop) fyne.Window {
+func newAppLauncher(desk desktop.Desktop) *launcher {
 	win := fyne.CurrentApp().NewWindow("Applications")
+	win.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
+		if ev.Name == fyne.KeyEscape {
+			win.Close()
+			return
+		}
+	})
 	appList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 	appScroller := widget.NewScrollContainer(appList)
+	l := &launcher{win: win, desk: desk, appList: appList}
 
-	entry := widget.NewEntry()
+	entry := &appEntry{launch: l}
+	entry.ExtendBaseWidget(entry)
 	entry.SetPlaceHolder("Application")
 	entry.OnChanged = func(input string) {
 		appList.Objects = nil
@@ -40,7 +96,7 @@ func newAppExecPopUp(desk desktop.Desktop) fyne.Window {
 			return
 		}
 
-		appExecPopUpListMatches(desk, win, appList, input)
+		l.updateAppListMatching(input)
 	}
 
 	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
@@ -54,5 +110,18 @@ func newAppExecPopUp(desk desktop.Desktop) fyne.Window {
 		cancel.MinSize().Height*4+theme.Padding()*6+entry.MinSize().Height))
 	win.CenterOnScreen()
 	win.Canvas().Focus(entry)
-	return win
+	return l
+}
+
+// ShowAppLauncher opens a new application launcher, closing an old one if it existed.
+func ShowAppLauncher() {
+	if appExec != nil {
+		appExec.close()
+	}
+
+	appExec = newAppLauncher(desktop.Instance())
+	appExec.win.SetOnClosed(func() {
+		appExec = nil
+	})
+	appExec.win.Show()
 }
