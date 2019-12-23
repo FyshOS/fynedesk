@@ -18,23 +18,27 @@ type appEntry struct {
 }
 
 func (e *appEntry) TypedKey(ev *fyne.KeyEvent) {
-	if ev.Name == fyne.KeyEscape {
+	switch ev.Name {
+	case fyne.KeyEscape:
 		e.launch.close()
-		return
-	} else if ev.Name == fyne.KeyReturn {
+	case fyne.KeyReturn:
 		e.launch.runSelected()
-		return
+	case fyne.KeyUp:
+		e.launch.setActiveIndex(e.launch.activeIndex - 1)
+	case fyne.KeyDown:
+		e.launch.setActiveIndex(e.launch.activeIndex + 1)
+	default:
+		e.Entry.TypedKey(ev)
 	}
-
-	e.Entry.TypedKey(ev)
 }
 
 type launcher struct {
 	win  fyne.Window
 	desk desktop.Desktop
 
-	entry   *appEntry
-	appList *fyne.Container
+	entry       *appEntry
+	appList     *fyne.Container
+	activeIndex int
 }
 
 func (l *launcher) close() {
@@ -46,7 +50,18 @@ func (l *launcher) runSelected() {
 		return
 	}
 
-	l.appList.Objects[0].(*widget.Button).OnTapped()
+	l.appList.Objects[l.activeIndex].(*widget.Button).OnTapped()
+}
+
+func (l *launcher) setActiveIndex(index int) {
+	if index < 0 || index >= len(l.appList.Objects) {
+		return
+	}
+
+	l.appList.Objects[l.activeIndex].(*widget.Button).Style = widget.DefaultButton
+	l.appList.Objects[index].(*widget.Button).Style = widget.PrimaryButton
+	l.activeIndex = index
+	l.appList.Refresh()
 }
 
 func (l *launcher) runApp(app desktop.AppData) {
@@ -59,6 +74,7 @@ func (l *launcher) runApp(app desktop.AppData) {
 }
 
 func (l *launcher) updateAppListMatching(input string) {
+	l.activeIndex = 0
 	l.appList.Objects = l.appButtonListMatching(input)
 	l.appList.Refresh()
 }
