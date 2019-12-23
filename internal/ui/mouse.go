@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import "fyne.io/fyne"
 import "fyne.io/fyne/canvas"

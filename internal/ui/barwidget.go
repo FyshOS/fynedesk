@@ -1,20 +1,22 @@
-package desktop
+package ui
 
 import (
 	"image/color"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/driver/desktop"
+	deskDriver "fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
+
+	"fyne.io/desktop"
 )
 
 //bar is the main widget housing the icon launcher
 type bar struct {
 	widget.BaseWidget
 
-	desk          Desktop             // The desktop instance we are holding icons for
+	desk          desktop.Desktop     // The desktop instance we are holding icons for
 	children      []fyne.CanvasObject // Icons that are laid out by the bar
 	mouseInside   bool                // Is the mouse inside of the bar?
 	mousePosition fyne.Position       // The current coordinates of the mouse cursor
@@ -27,7 +29,7 @@ type bar struct {
 }
 
 //MouseIn alerts the widget that the mouse has entered
-func (b *bar) MouseIn(*desktop.MouseEvent) {
+func (b *bar) MouseIn(*deskDriver.MouseEvent) {
 	if b.desk.Settings().LauncherDisableZoom() {
 		return
 	}
@@ -45,7 +47,7 @@ func (b *bar) MouseOut() {
 }
 
 //MouseMoved alerts the widget that the mouse has changed position
-func (b *bar) MouseMoved(event *desktop.MouseEvent) {
+func (b *bar) MouseMoved(event *deskDriver.MouseEvent) {
 	if b.desk.Settings().LauncherDisableZoom() {
 		return
 	}
@@ -89,7 +91,7 @@ func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 }
 
 //newAppBar returns a horizontal list of icons for an icon launcher
-func newAppBar(desk Desktop, children ...fyne.CanvasObject) *bar {
+func newAppBar(desk desktop.Desktop, children ...fyne.CanvasObject) *bar {
 	bar := &bar{desk: desk, children: children}
 	bar.ExtendBaseWidget(bar)
 	bar.iconSize = desk.Settings().LauncherIconSize()

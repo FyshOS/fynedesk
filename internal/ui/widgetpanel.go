@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"fmt"
@@ -18,6 +18,7 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
+	"fyne.io/desktop"
 	wmtheme "fyne.io/desktop/theme"
 )
 
@@ -59,61 +60,13 @@ func (w *widgetRenderer) Destroy() {
 type widgetPanel struct {
 	widget.BaseWidget
 
-	desk       *deskLayout
+	desk       desktop.Desktop
 	root       fyne.Window
 	appExecWin fyne.Window
 
 	clock               *canvas.Text
 	date                *widget.Label
 	battery, brightness *widget.ProgressBar
-}
-
-func appExecPopUpListMatches(w *widgetPanel, win fyne.Window, appList *fyne.Container, input string) {
-	iconTheme := w.desk.Settings().IconTheme()
-	dataRange := w.desk.IconProvider().FindAppsMatching(input)
-	for _, data := range dataRange {
-		appData := data                     // capture for goroutine below
-		icon := appData.Icon(iconTheme, 32) // TODO match theme but FDO needs power of 2 theme.IconInlineSize())
-		app := widget.NewButtonWithIcon(appData.Name(), icon, func() {
-			err := w.desk.RunApp(appData)
-			if err != nil {
-				fyne.LogError("Failed to start app", err)
-				return
-			}
-			win.Close()
-		})
-		appList.AddObject(app)
-	}
-}
-
-func appExecPopUp(w *widgetPanel) fyne.Window {
-	win := w.desk.app.NewWindow("Applications")
-	appList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
-	appScroller := widget.NewScrollContainer(appList)
-
-	entry := widget.NewEntry()
-	entry.SetPlaceHolder("Application")
-	entry.OnChanged = func(input string) {
-		appList.Objects = nil
-		if input == "" {
-			return
-		}
-
-		appExecPopUpListMatches(w, win, appList, input)
-	}
-
-	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
-		win.Close()
-	})
-
-	content := fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, cancel, nil, nil), entry, appScroller, cancel)
-
-	win.SetContent(content)
-	win.Resize(fyne.NewSize(300,
-		cancel.MinSize().Height*4+theme.Padding()*6+entry.MinSize().Height))
-	win.CenterOnScreen()
-	win.Canvas().Focus(entry)
-	return win
 }
 
 func (w *widgetPanel) clockTick() {
@@ -233,11 +186,11 @@ func (w *widgetPanel) createClock() {
 func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 	items := []*fyne.MenuItem{
 		fyne.NewMenuItem("Settings", func() {
-			showSettings(w.desk.settings.(*deskSettings))
+			showSettings(w.desk.Settings().(*deskSettings))
 		}),
 	}
-	if w.desk.wm != nil {
-		items = append(items, fyne.NewMenuItem("Blank Screen", w.desk.wm.Blank))
+	if w.desk.WindowManager() != nil {
+		items = append(items, fyne.NewMenuItem("Blank Screen", w.desk.WindowManager().Blank))
 	}
 	if os.Getenv("FYNE_DESK_RUNNER") != "" {
 		items = append(items, fyne.NewMenuItem("Reload", func() {
@@ -245,10 +198,10 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		}))
 	}
 	items = append(items, fyne.NewMenuItem("Log Out", func() {
-		Instance().Root().Close()
+		w.root.Close()
 	}))
 
-	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), Instance().Root().Canvas())
+	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), w.root.Canvas())
 
 	bottomLeft := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
 	popup.Move(bottomLeft.Subtract(fyne.NewPos(0, popup.MinSize().Height)))
@@ -272,7 +225,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 			w.appExecWin.Close()
 		}
 
-		w.appExecWin = appExecPopUp(w)
+		w.appExecWin = newAppExecPopUp(w.desk)
 		w.appExecWin.SetOnClosed(func() {
 			w.appExecWin = nil
 		})
@@ -313,10 +266,10 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-func newWidgetPanel(rootDesk *deskLayout) *widgetPanel {
+func newWidgetPanel(rootDesk desktop.Desktop) *widgetPanel {
 	w := &widgetPanel{
 		desk:       rootDesk,
-		root:       rootDesk.win,
+		root:       rootDesk.Root(),
 		appExecWin: nil,
 	}
 	w.ExtendBaseWidget(w)

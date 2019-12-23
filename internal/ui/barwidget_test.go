@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"testing"
@@ -9,6 +9,7 @@ import (
 	_ "fyne.io/fyne/test"
 	"fyne.io/fyne/widget"
 
+	"fyne.io/desktop"
 	wmTheme "fyne.io/desktop/theme"
 )
 
@@ -95,7 +96,7 @@ func (*dummyWindow) Unmaximize() {
 	// no-op
 }
 
-func (*dummyWindow) RaiseAbove(Window) {
+func (*dummyWindow) RaiseAbove(desktop.Window) {
 	// no-op (this is instructing the window after stack changes)
 }
 

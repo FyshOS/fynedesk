@@ -1,4 +1,4 @@
-package desktop
+package ui
 
 import (
 	"image/color"
@@ -9,14 +9,15 @@ import (
 	"fyne.io/fyne/test"
 	"github.com/stretchr/testify/assert"
 
+	"fyne.io/desktop"
 	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 )
 
 type testDesk struct {
-	settings DeskSettings
-	icons    ApplicationProvider
+	settings desktop.DeskSettings
+	icons    desktop.ApplicationProvider
 }
 
 func (*testDesk) Root() fyne.Window {
@@ -26,27 +27,27 @@ func (*testDesk) Root() fyne.Window {
 func (*testDesk) Run() {
 }
 
-func (*testDesk) RunApp(app AppData) error {
+func (*testDesk) RunApp(app desktop.AppData) error {
 	return app.Run([]string{}) // no added env
 }
 
-func (td *testDesk) Settings() DeskSettings {
+func (td *testDesk) Settings() desktop.DeskSettings {
 	return td.settings
 }
 
-func (*testDesk) ContentSizePixels(screen *Screen) (uint32, uint32) {
+func (*testDesk) ContentSizePixels(screen *desktop.Screen) (uint32, uint32) {
 	return uint32(320), uint32(240)
 }
 
-func (td *testDesk) IconProvider() ApplicationProvider {
+func (td *testDesk) IconProvider() desktop.ApplicationProvider {
 	return td.icons
 }
 
-func (*testDesk) WindowManager() WindowManager {
+func (*testDesk) WindowManager() desktop.WindowManager {
 	return nil
 }
 
-func (*testDesk) Screens() ScreenList {
+func (*testDesk) Screens() desktop.ScreenList {
 	return nil
 }
 
@@ -94,26 +95,26 @@ func (ts *testSettings) LauncherZoomScale() float64 {
 	return ts.launcherZoomScale
 }
 
-func (*testSettings) AddChangeListener(listener chan DeskSettings) {
+func (*testSettings) AddChangeListener(listener chan desktop.DeskSettings) {
 	return
 }
 
 type testScreensProvider struct {
-	screens []*Screen
+	screens []*desktop.Screen
 }
 
-func (tsp testScreensProvider) Screens() []*Screen {
+func (tsp testScreensProvider) Screens() []*desktop.Screen {
 	if tsp.screens == nil {
-		tsp.screens = []*Screen{{"Screen0", 0, 0, 2000, 1000}}
+		tsp.screens = []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0, Width: 2000, Height: 1000}}
 	}
 	return tsp.screens
 }
 
-func (tsp testScreensProvider) Active() *Screen {
+func (tsp testScreensProvider) Active() *desktop.Screen {
 	return tsp.Screens()[0]
 }
 
-func (tsp testScreensProvider) Primary() *Screen {
+func (tsp testScreensProvider) Primary() *desktop.Screen {
 	return tsp.Screens()[0]
 }
 
@@ -121,11 +122,11 @@ func (tsp testScreensProvider) Scale() float32 {
 	return 1.0
 }
 
-func (tsp testScreensProvider) ScreenForWindow(win Window) *Screen {
+func (tsp testScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
 	return tsp.Screens()[0]
 }
 
-func (tsp testScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *Screen {
+func (tsp testScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *desktop.Screen {
 	return tsp.Screens()[0]
 }
 
@@ -151,10 +152,10 @@ func (tad *testAppData) Icon(theme string, size int) fyne.Resource {
 }
 
 type testAppProvider struct {
-	screens []*Screen
+	screens []*desktop.Screen
 }
 
-func (tap *testAppProvider) AvailableApps() []AppData {
+func (tap *testAppProvider) AvailableApps() []desktop.AppData {
 	return nil
 }
 
@@ -162,19 +163,19 @@ func (tap *testAppProvider) AvailableThemes() []string {
 	return nil
 }
 
-func (tap *testAppProvider) FindAppFromName(appName string) AppData {
+func (tap *testAppProvider) FindAppFromName(appName string) desktop.AppData {
 	return &testAppData{name: appName}
 }
 
-func (tap *testAppProvider) FindAppFromWinInfo(win Window) AppData {
+func (tap *testAppProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppData {
 	return &testAppData{}
 }
 
-func (tap *testAppProvider) FindAppsMatching(pattern string) []AppData {
+func (tap *testAppProvider) FindAppsMatching(pattern string) []desktop.AppData {
 	return nil
 }
 
-func (tap *testAppProvider) DefaultApps() []AppData {
+func (tap *testAppProvider) DefaultApps() []desktop.AppData {
 	return nil
 }
 
@@ -206,7 +207,7 @@ func TestScaleVars(t *testing.T) {
 
 func TestBackgroundChange(t *testing.T) {
 	l := &deskLayout{}
-	instance = l
+	desktop.SetInstance(l)
 	l.screens = &testScreensProvider{}
 	l.settings = &testSettings{}
 	l.backgrounds = append(l.backgrounds, newBackground())
@@ -218,7 +219,7 @@ func TestBackgroundChange(t *testing.T) {
 	}
 	assert.Equal(t, wmTheme.Background, l.backgrounds[0].(*canvas.Image).Resource)
 
-	l.settings.(*testSettings).background = filepath.Join(workingDir, "testdata", "fyne.png")
+	l.settings.(*testSettings).background = filepath.Join(workingDir, "..", "testdata", "fyne.png")
 	l.updateBackgrounds(l.Settings().Background())
 	assert.Equal(t, l.settings.Background(), l.backgrounds[0].(*canvas.Image).File)
 }
