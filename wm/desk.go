@@ -194,7 +194,7 @@ func (x *x11WM) runLoop() {
 			x.handleClientMessage(ev)
 		case xproto.ExposeEvent:
 			border := x.clientForWin(ev.Window)
-			if border != nil {
+			if border != nil && border.(*client).frame != nil {
 				border.(*client).frame.applyTheme(false)
 			}
 		case xproto.ButtonPressEvent:
@@ -579,14 +579,6 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 		return
 	}
 	c = newClient(win, x)
-
-	x.bindKeys(win)
-	xproto.GrabButton(x.x.Conn(), true, c.(*client).id,
-		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
-		x.x.RootWin(), xproto.CursorNone, xproto.ButtonIndex1, xproto.ModMaskAny)
-	if x.root != nil && windowName(x.x, win) == x.root.Title() {
-		return
-	}
 
 	x.AddWindow(c)
 	c.Focus()
