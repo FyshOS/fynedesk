@@ -431,9 +431,18 @@ func (f *frame) show() {
 
 	c.RaiseToTop()
 	c.Focus()
+	windowClientListStackingUpdate(f.client.wm)
 }
 
 func (f *frame) hide() {
+	f.client.RaiseToTop() // Lets ensure this client is on top of the stack so we can walk backwards to find the next window to focus
+	stack := f.client.wm.Windows()
+	for i := len(stack) - 1; i >= 0; i-- {
+		if !stack[i].Iconic() {
+			stack[i].RaiseToTop()
+			stack[i].Focus()
+		}
+	}
 	xproto.ReparentWindow(f.client.wm.x.Conn(), f.client.win, f.client.wm.x.RootWin(), f.x, f.y)
 	xproto.UnmapWindow(f.client.wm.x.Conn(), f.client.win)
 }
