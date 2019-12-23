@@ -254,6 +254,9 @@ func (x *x11WM) runLoop() {
 			if x.altTabList == nil {
 				x.altTabList = []desktop.Window{}
 				for _, win := range x.Windows() {
+					if win.Iconic() {
+						continue
+					}
 					x.altTabList = append(x.altTabList, win)
 				}
 				x.altTabIndex = 0

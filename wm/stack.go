@@ -22,12 +22,7 @@ func (s *stack) addToStackBottom(win desktop.Window) {
 }
 
 func (s *stack) removeFromStack(win desktop.Window) {
-	pos := -1
-	for i, w := range s.clients {
-		if w == win {
-			pos = i
-		}
-	}
+	pos := s.indexForWin(win)
 
 	if pos == -1 {
 		return
@@ -44,6 +39,16 @@ func (s *stack) removeFromStack(win desktop.Window) {
 		return
 	}
 	s.mappingOrder = append(s.mappingOrder[:pos], s.mappingOrder[pos+1:]...)
+}
+
+func (s *stack) indexForWin(win desktop.Window) int {
+	pos := -1
+	for i, w := range s.clients {
+		if w == win {
+			pos = i
+		}
+	}
+	return pos
 }
 
 func (s *stack) getMappingOrder() []desktop.Window {
@@ -96,6 +101,9 @@ func (s *stack) RaiseToTop(win desktop.Window) {
 		win.RaiseAbove(s.TopWindow())
 	}
 
+	if s.indexForWin(win) == -1 {
+		return
+	}
 	s.removeFromStack(win)
 	s.addToStack(win)
 }

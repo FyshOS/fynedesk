@@ -428,6 +428,9 @@ func (f *frame) show() {
 	xproto.GrabButton(f.client.wm.x.Conn(), true, f.client.id,
 		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
 		f.client.wm.x.RootWin(), xproto.CursorNone, xproto.ButtonIndex1, xproto.ModMaskAny)
+
+	c.RaiseToTop()
+	c.Focus()
 }
 
 func (f *frame) hide() {
