@@ -30,8 +30,10 @@ func (e *appEntry) TypedKey(ev *fyne.KeyEvent) {
 }
 
 type launcher struct {
-	win     fyne.Window
-	desk    desktop.Desktop
+	win  fyne.Window
+	desk desktop.Desktop
+
+	entry   *appEntry
 	appList *fyne.Container
 }
 
@@ -57,7 +59,12 @@ func (l *launcher) runApp(app desktop.AppData) {
 }
 
 func (l *launcher) updateAppListMatching(input string) {
-	l.appList.Objects = []fyne.CanvasObject{}
+	l.appList.Objects = l.appButtonListMatching(input)
+	l.appList.Refresh()
+}
+
+func (l *launcher) appButtonListMatching(input string) []fyne.CanvasObject {
+	var appList []fyne.CanvasObject
 
 	iconTheme := l.desk.Settings().IconTheme()
 	dataRange := l.desk.IconProvider().FindAppsMatching(input)
@@ -71,8 +78,10 @@ func (l *launcher) updateAppListMatching(input string) {
 		if i == 0 {
 			app.Style = widget.PrimaryButton
 		}
-		l.appList.AddObject(app)
+		appList = append(appList, app)
 	}
+
+	return appList
 }
 
 func newAppLauncher(desk desktop.Desktop) *launcher {
@@ -98,6 +107,7 @@ func newAppLauncher(desk desktop.Desktop) *launcher {
 
 		l.updateAppListMatching(input)
 	}
+	l.entry = entry
 
 	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		win.Close()
