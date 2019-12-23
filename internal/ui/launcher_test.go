@@ -52,3 +52,21 @@ func TestLauncher_ListActive(t *testing.T) {
 	assert.Equal(t, widget.DefaultButton, launcher.appList.Objects[0].(*widget.Button).Style)
 	assert.Equal(t, widget.PrimaryButton, launcher.appList.Objects[1].(*widget.Button).Style)
 }
+
+func TestLauncher_setActiveIndex(t *testing.T) {
+	names := []string{"App 1", "App 2", "Another"}
+	desk := &testDesk{icons: newTestAppProvider(names), settings: &testSettings{}}
+	launcher := newAppLauncher(desk)
+
+	launcher.appList.Objects = launcher.appButtonListMatching("App")
+	assert.Equal(t, 0, launcher.activeIndex)
+
+	launcher.setActiveIndex(1)
+	assert.Equal(t, 1, launcher.activeIndex)
+
+	launcher.setActiveIndex(2)
+	assert.Equal(t, 1, launcher.activeIndex)
+
+	launcher.setActiveIndex(-1)
+	assert.Equal(t, 1, launcher.activeIndex)
+}
