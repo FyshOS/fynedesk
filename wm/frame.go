@@ -237,6 +237,16 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	}
 }
 
+// Notify the child window that it's geometry has changed to update menu positions etc.
+// This should be used sparingly as it can impact performance on the child window.
+func (f *frame) notifyInnerGeometry() {
+	innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(f.x, f.y, f.width, f.height)
+	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
+		X: int16(f.x + int16(innerX)), Y: int16(f.y + int16(innerY)), Width: uint16(innerW), Height: uint16(innerH),
+		BorderWidth: f.borderWidth(), OverrideRedirect: false}
+	xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+}
+
 func (f *frame) maximizeApply() {
 	f.client.restoreWidth = f.width
 	f.client.restoreHeight = f.height
@@ -250,6 +260,7 @@ func (f *frame) maximizeApply() {
 		maxHeight = uint32(head.Height)
 	}
 	f.updateGeometry(int16(head.X), int16(head.Y), uint16(maxWidth), uint16(maxHeight), true)
+	f.notifyInnerGeometry()
 	f.applyTheme(true)
 }
 
@@ -260,6 +271,7 @@ func (f *frame) unmaximizeApply() {
 		f.client.restoreHeight = uint16(screen.Height / 2)
 	}
 	f.updateGeometry(f.client.restoreX, f.client.restoreY, f.client.restoreWidth, f.client.restoreHeight, true)
+	f.notifyInnerGeometry()
 	f.applyTheme(true)
 }
 

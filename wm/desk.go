@@ -210,18 +210,10 @@ func (x *x11WM) runLoop() {
 		case xproto.ButtonReleaseEvent:
 			for _, c := range x.clients {
 				if c.(*client).id == ev.Event {
-					if x.moveResizing {
-						x.moveResizeEnd()
-					} else {
+					if !x.moveResizing {
 						c.(*client).frame.release(ev.RootX, ev.RootY)
 					}
-					// ensure menus etc update
-					f := c.(*client).frame
-					innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(f.x, f.y, f.width, f.height)
-					ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
-						X: int16(f.x + int16(innerX)), Y: int16(f.y + int16(innerY)), Width: uint16(innerW), Height: uint16(innerH),
-						BorderWidth: f.borderWidth(), OverrideRedirect: false}
-					xproto.SendEvent(f.client.wm.x.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+					x.moveResizeEnd(c.(*client))
 				}
 			}
 		case xproto.MotionNotifyEvent:
@@ -374,10 +366,13 @@ func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
 	}
 }
 
-func (x *x11WM) moveResizeEnd() {
+func (x *x11WM) moveResizeEnd(c *client) {
 	x.moveResizing = false
 	xproto.UngrabPointer(x.x.Conn(), xproto.TimeCurrentTime)
 	xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
+
+	// ensure menus etc update
+	c.frame.notifyInnerGeometry()
 }
 
 func (x *x11WM) moveResize(moveX, moveY int16, c *client) {
@@ -427,7 +422,7 @@ func (x *x11WM) moveResize(moveX, moveY int16, c *client) {
 		xcoord += deltaW
 		ycoord += deltaH
 	case moveResizeCancel:
-		x.moveResizeEnd()
+		x.moveResizeEnd(c)
 	}
 	x.moveResizingLastX = moveX
 	x.moveResizingLastY = moveY
