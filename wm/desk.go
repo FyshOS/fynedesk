@@ -17,6 +17,8 @@ import (
 
 	"fyne.io/desktop"
 	"fyne.io/desktop/internal/notify"
+	"fyne.io/desktop/internal/ui"
+
 	"fyne.io/fyne"
 )
 
@@ -53,8 +55,9 @@ const (
 	moveResizeMoveKeyboard moveResizeType = 10
 	moveResizeCancel       moveResizeType = 11
 
-	keyCodeTab = 23
-	keyCodeAlt = 64
+	keyCodeTab   = 23
+	keyCodeAlt   = 64
+	keyCodeSpace = 65
 )
 
 func (x *x11WM) Close() {
@@ -251,6 +254,12 @@ func (x *x11WM) runLoop() {
 					int(float32(ev.RootY)/x.root.Canvas().Scale())))
 			}
 		case xproto.KeyPressEvent:
+			if ev.Detail == keyCodeSpace {
+				go ui.ShowAppLauncher()
+				break
+			} else if ev.Detail != keyCodeTab {
+				break
+			}
 			if x.altTabList == nil {
 				x.altTabList = []desktop.Window{}
 				for _, win := range x.Windows() {
@@ -264,9 +273,6 @@ func (x *x11WM) runLoop() {
 				xproto.GrabKeyboard(x.x.Conn(), true, x.rootID, xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
 			}
 
-			if ev.Detail != keyCodeTab {
-				break
-			}
 			winCount := len(x.altTabList)
 			if winCount <= 1 {
 				break
@@ -601,6 +607,7 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 }
 
 func (x *x11WM) bindKeys(win xproto.Window) {
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeSpace, xproto.GrabModeAsync, xproto.GrabModeAsync)
 	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
 	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
 }

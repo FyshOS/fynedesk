@@ -4,15 +4,17 @@ import (
 	"image/color"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"fyne.io/fyne/test"
 	"github.com/stretchr/testify/assert"
 
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
+
+	"fyne.io/desktop"
+	wmTheme "fyne.io/desktop/theme"
 )
 
 type testDesk struct {
@@ -153,10 +155,11 @@ func (tad *testAppData) Icon(theme string, size int) fyne.Resource {
 
 type testAppProvider struct {
 	screens []*desktop.Screen
+	apps    []desktop.AppData
 }
 
 func (tap *testAppProvider) AvailableApps() []desktop.AppData {
-	return nil
+	return tap.apps
 }
 
 func (tap *testAppProvider) AvailableThemes() []string {
@@ -172,11 +175,30 @@ func (tap *testAppProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppDa
 }
 
 func (tap *testAppProvider) FindAppsMatching(pattern string) []desktop.AppData {
-	return nil
+	var ret []desktop.AppData
+	for _, app := range tap.apps {
+		if !strings.Contains(strings.ToLower(app.Name()), strings.ToLower(pattern)) {
+			continue
+		}
+
+		ret = append(ret, app)
+	}
+
+	return ret
 }
 
 func (tap *testAppProvider) DefaultApps() []desktop.AppData {
 	return nil
+}
+
+func newTestAppProvider(appNames []string) *testAppProvider {
+	provider := &testAppProvider{}
+
+	for _, name := range appNames {
+		provider.apps = append(provider.apps, &testAppData{name: name})
+	}
+
+	return provider
 }
 
 func TestDeskLayout_Layout(t *testing.T) {
