@@ -14,6 +14,8 @@ Bug fix release on 0.1
 ### Fixed
 
 * Issue where application menus may not be aligned in maximised or full screen
+* Fix crash if right clicking app launcher input field
+
 
 ## 0.1 - 23 December 2019
 
