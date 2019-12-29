@@ -70,8 +70,50 @@ func (bi *barIcon) Tapped(*fyne.PointEvent) {
 	bi.onTapped()
 }
 
+func addToBar(icon desktop.AppData) {
+	settings := desktop.Instance().Settings()
+	icons := settings.LauncherIcons()
+	icons = append(icons, icon.Name())
+
+	settings.(*deskSettings).setLauncherIcons(icons)
+}
+
+func removeFromBar(icon desktop.AppData) {
+	settings := desktop.Instance().Settings()
+	icons := settings.LauncherIcons()
+
+	index := -1
+	for i, defaultApp := range icons {
+		if defaultApp == icon.Name() {
+			index = i
+			break
+		}
+	}
+	if index >= 0 {
+		icons = append(icons[:index], icons[index+1:]...)
+	}
+	settings.(*deskSettings).setLauncherIcons(icons)
+}
+
 //TappedSecondary means barIcon has been clicked by a secondary binding
 func (bi *barIcon) TappedSecondary(*fyne.PointEvent) {
+	var menu *widget.PopUp
+	addRemove := fyne.NewMenuItem("Remove "+bi.appData.Name(), func() {
+		if bi.taskbarWindow != nil {
+			addToBar(bi.appData)
+		} else {
+			removeFromBar(bi.appData)
+		}
+		menu.Hide()
+	})
+
+	if bi.taskbarWindow != nil {
+		addRemove.Label = "Pin " + bi.appData.Name()
+	}
+
+	c := fyne.CurrentApp().Driver().CanvasForObject(bi)
+	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(bi)
+	menu = widget.NewPopUpMenuAtPosition(fyne.NewMenu("", []*fyne.MenuItem{addRemove}...), c, pos)
 }
 
 // CreateRenderer is a private method to fyne which links this widget to its renderer
