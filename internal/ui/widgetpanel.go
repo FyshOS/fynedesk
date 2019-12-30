@@ -185,6 +185,9 @@ func (w *widgetPanel) createClock() {
 
 func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 	items := []*fyne.MenuItem{
+		fyne.NewMenuItem("About", func() {
+			showAbout()
+		}),
 		fyne.NewMenuItem("Settings", func() {
 			showSettings(w.desk.Settings().(*deskSettings))
 		}),

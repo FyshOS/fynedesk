@@ -18,3 +18,4 @@ $BIN/fyne bundle -package theme -append -name maximizeIcon maximize.svg >> $FILE
 $BIN/fyne bundle -package theme -append -name iconifyIcon minimize.svg >> $FILE
 
 $BIN/fyne bundle -package theme -append -name lochFynePicture lochfyne.jpg >> $FILE
+$BIN/fyne bundle -package theme -append -name fyneAboutBackground fyne_about_bg.png >> $FILE
