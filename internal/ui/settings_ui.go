@@ -19,11 +19,13 @@ const randrHelper = "arandr"
 
 type settingsUI struct {
 	settings *deskSettings
+
+	launcherIcons []string
 }
 
 func (d *settingsUI) populateThemeIcons(box *fyne.Container, theme string) {
 	box.Objects = nil
-	for _, appName := range d.settings.LauncherIcons() {
+	for _, appName := range d.launcherIcons {
 		appData := desktop.Instance().IconProvider().FindAppFromName(appName)
 		iconRes := appData.Icon(theme, int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desktop.Instance().Root().Canvas().Scale())))
 		icon := widget.NewIcon(iconRes)
@@ -69,7 +71,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, applyButton, nil, nil), top, applyButton, middle)
 }
 
-func (d *settingsUI) listAppMatches(lookupList *fyne.Container, orderList *fyne.Container, input string, launcherIcons []string) {
+func (d *settingsUI) listAppMatches(lookupList *fyne.Container, orderList *fyne.Container, input string) {
 	desk := desktop.Instance()
 	dataRange := desk.IconProvider().FindAppsMatching(input)
 	for _, data := range dataRange {
@@ -82,7 +84,7 @@ func (d *settingsUI) listAppMatches(lookupList *fyne.Container, orderList *fyne.
 		icon := widget.NewIcon(iconRes)
 		hbox := widget.NewHBox(icon, check)
 		exists := false
-		for _, defaultApp := range launcherIcons {
+		for _, defaultApp := range d.launcherIcons {
 			if defaultApp == appData.Name() {
 				exists = true
 				break
@@ -95,37 +97,37 @@ func (d *settingsUI) listAppMatches(lookupList *fyne.Container, orderList *fyne.
 		}
 		check.OnChanged = func(checked bool) {
 			if checked {
-				launcherIcons = append(launcherIcons, check.Text)
+				d.launcherIcons = append(d.launcherIcons, check.Text)
 			} else {
 				index := -1
-				for i, defaultApp := range launcherIcons {
+				for i, defaultApp := range d.launcherIcons {
 					if defaultApp == check.Text {
 						index = i
 						break
 					}
 				}
 				if index >= 0 {
-					launcherIcons = append(launcherIcons[:index], launcherIcons[index+1:]...)
+					d.launcherIcons = append(d.launcherIcons[:index], d.launcherIcons[index+1:]...)
 				}
 			}
-			d.populateOrderList(orderList, launcherIcons)
+			d.populateOrderList(orderList)
 		}
 		lookupList.AddObject(hbox)
 	}
 }
 
-func (d *settingsUI) populateOrderList(list *fyne.Container, launcherIcons []string) {
+func (d *settingsUI) populateOrderList(list *fyne.Container) {
 	list.Objects = nil
 	buttonMap := make(map[fyne.CanvasObject]int)
-	for i, appName := range launcherIcons {
+	for i, appName := range d.launcherIcons {
 		appData := desktop.Instance().IconProvider().FindAppFromName(appName)
 		upButton := widget.NewButtonWithIcon("", theme.MoveUpIcon(), nil)
 		buttonMap[upButton] = i
 		upButton.OnTapped = func() {
 			index := buttonMap[upButton]
 			if index > 0 {
-				launcherIcons[index-1], launcherIcons[index] = launcherIcons[index], launcherIcons[index-1]
-				d.populateOrderList(list, launcherIcons)
+				d.launcherIcons[index-1], d.launcherIcons[index] = d.launcherIcons[index], d.launcherIcons[index-1]
+				d.populateOrderList(list)
 			}
 		}
 		downButton := widget.NewButtonWithIcon("", theme.MoveDownIcon(), nil)
@@ -133,8 +135,8 @@ func (d *settingsUI) populateOrderList(list *fyne.Container, launcherIcons []str
 		downButton.OnTapped = func() {
 			index := buttonMap[downButton]
 			if index < len(d.settings.LauncherIcons())-1 {
-				launcherIcons[index+1], launcherIcons[index] = launcherIcons[index], launcherIcons[index+1]
-				d.populateOrderList(list, launcherIcons)
+				d.launcherIcons[index+1], d.launcherIcons[index] = d.launcherIcons[index], d.launcherIcons[index+1]
+				d.populateOrderList(list)
 			}
 		}
 		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desktop.Instance().Root().Canvas().Scale())))
@@ -147,9 +149,6 @@ func (d *settingsUI) populateOrderList(list *fyne.Container, launcherIcons []str
 }
 
 func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
-	var launcherIcons []string
-	launcherIcons = append(launcherIcons, d.settings.LauncherIcons()...)
-
 	lookupList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 	orderList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 
@@ -161,9 +160,9 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 			return
 		}
 
-		d.listAppMatches(lookupList, orderList, input, launcherIcons)
+		d.listAppMatches(lookupList, orderList, input)
 	}
-	d.populateOrderList(orderList, launcherIcons)
+	d.populateOrderList(orderList)
 
 	lookup := fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, nil, nil, nil), entry, widget.NewScrollContainer(lookupList))
 	order := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, nil, nil), widget.NewScrollContainer(orderList))
@@ -206,7 +205,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 			d.settings.setLauncherDisableTaskbar(disableTaskbar.Checked)
 			d.settings.setLauncherDisableZoom(disableZoom.Checked)
 
-			d.settings.setLauncherIcons(launcherIcons)
+			d.settings.setLauncherIcons(d.launcherIcons)
 		}})
 
 	barSettings := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, applyButton, nil, nil), applyButton, tabs)
@@ -228,7 +227,8 @@ func loadAdvancedScreen() fyne.CanvasObject {
 }
 
 func showSettings(deskSettings *deskSettings) {
-	ui := &settingsUI{settings: deskSettings}
+	ui := &settingsUI{settings: deskSettings, launcherIcons: deskSettings.LauncherIcons()}
+
 	w := fyne.CurrentApp().NewWindow("FyneDesk Settings")
 	fyneSettings := settings.NewSettings()
 
