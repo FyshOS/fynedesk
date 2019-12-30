@@ -3,13 +3,14 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
-## 0.1.1 - In progress
+## 0.1.1 - 30 December 2019
 
 Bug fix release on 0.1
 
 ### Features
 
 * Added key bindings for app launcher (open with Alt-Space)
+* Add an about screen for FyneDesk
 
 ### Fixed
 
