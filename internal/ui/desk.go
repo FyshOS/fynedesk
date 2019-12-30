@@ -11,6 +11,7 @@ import (
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/desktop"
+	"fyne.io/desktop/internal/modules/builtin"
 )
 
 type deskLayout struct {
@@ -195,7 +196,7 @@ func (l *deskLayout) WindowManager() desktop.WindowManager {
 }
 
 func (l *deskLayout) Modules() []desktop.Module {
-	return nil
+	return []desktop.Module{builtin.NewBattery(), builtin.NewBrightness()}
 }
 
 func (l *deskLayout) scaleVars(scale float32) []string {

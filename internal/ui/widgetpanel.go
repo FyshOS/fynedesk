@@ -1,15 +1,9 @@
 package ui
 
 import (
-	"fmt"
 	"image/color"
-	"io/ioutil"
-	"log"
 	"os"
-	"os/exec"
 	"path"
-	"strconv"
-	"strings"
 	"time"
 
 	"fyne.io/fyne"
@@ -64,9 +58,8 @@ type widgetPanel struct {
 	root       fyne.Window
 	appExecWin fyne.Window
 
-	clock               *canvas.Text
-	date                *widget.Label
-	battery, brightness *widget.ProgressBar
+	clock *canvas.Text
+	date  *widget.Label
 }
 
 func (w *widgetPanel) clockTick() {
@@ -83,84 +76,12 @@ func (w *widgetPanel) clockTick() {
 	}()
 }
 
-func (w *widgetPanel) batteryTick() {
-	tick := time.NewTicker(time.Second * 10)
-	go func() {
-		for {
-			value, _ := battery()
-			w.battery.SetValue(value)
-			<-tick.C
-		}
-	}()
-}
-
 func formattedTime() string {
 	return time.Now().Format("15:04pm")
 }
 
 func formattedDate() string {
 	return time.Now().Format("2 January")
-}
-
-func battery() (float64, error) {
-	nowStr, err1 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_now")
-	fullStr, err2 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_full")
-	if err1 != nil || err2 != nil {
-		log.Println("Error reading battery info", err1)
-		return 0, err1
-	}
-
-	now, err1 := strconv.Atoi(strings.TrimSpace(string(nowStr)))
-	full, err2 := strconv.Atoi(strings.TrimSpace(string(fullStr)))
-	if err1 != nil || err2 != nil {
-		log.Println("Error converting battery info", err1)
-		return 0, err1
-	}
-
-	return float64(now) / float64(full), nil
-}
-
-func (w *widgetPanel) createBattery() {
-	if _, err := battery(); err == nil {
-		w.battery = widget.NewProgressBar()
-		go w.batteryTick()
-	}
-	if _, err := brightness(); err == nil {
-		w.brightness = widget.NewProgressBar()
-	}
-}
-
-func brightness() (float64, error) {
-	out, err := exec.Command("xbacklight").Output()
-	if err != nil {
-		log.Println("Error running xbacklight", err)
-		return 0, err
-	}
-	ret, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
-	if err != nil {
-		log.Println("Error reading brightness info", err)
-		return 0, err
-	}
-	return float64(ret) / 100, nil
-}
-
-func (w *widgetPanel) setBrightness(diff int) {
-	floatVal, _ := brightness()
-	value := int(floatVal*100) + diff
-
-	if value < 5 {
-		value = 5
-	} else if value > 100 {
-		value = 100
-	}
-
-	err := exec.Command("xbacklight", "-set", fmt.Sprintf("%d", value)).Run()
-	if err != nil {
-		log.Println("Error running xbacklight", err)
-	} else {
-		newVal, _ := brightness()
-		w.brightness.SetValue(newVal)
-	}
 }
 
 func (w *widgetPanel) createClock() {
@@ -242,29 +163,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		}
 	}
 
-	objects = append(objects, appExecButton)
-
-	if _, err := battery(); err == nil {
-		batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
-		objects = append(objects,
-			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, w.battery))
-	}
-	if _, err := brightness(); err == nil {
-		brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
-		less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-			w.setBrightness(-5)
-		})
-		more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-			w.setBrightness(5)
-		})
-		bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
-			less, w.brightness, more)
-		objects = append(objects,
-			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright))
-		go w.setBrightness(0)
-	}
-	objects = append(objects,
-		account)
+	objects = append(objects, appExecButton, account)
 
 	return &widgetRenderer{
 		panel:   w,
@@ -281,7 +180,6 @@ func newWidgetPanel(rootDesk desktop.Desktop) *widgetPanel {
 	}
 	w.ExtendBaseWidget(w)
 	w.createClock()
-	w.createBattery()
 
 	return w
 }
