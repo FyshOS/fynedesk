@@ -1,4 +1,4 @@
-// +build linux,!ci
+// +build linux
 
 package wm
 

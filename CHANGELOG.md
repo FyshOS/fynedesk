@@ -3,6 +3,21 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
+## 0.1.1 - 30 December 2019
+
+Bug fix release on 0.1
+
+### Features
+
+* Added key bindings for app launcher (open with Alt-Space)
+* Add an about screen for FyneDesk
+
+### Fixed
+
+* Issue where application menus may not be aligned in maximised or full screen
+* Fix crash if right clicking app launcher input field
+
+
 ## 0.1 - 23 December 2019
 
 This first release introduces the FyneDesk project to the Linux community.

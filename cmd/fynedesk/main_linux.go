@@ -1,5 +1,3 @@
-// +build !ci
-
 package main
 
 import (
@@ -9,6 +7,7 @@ import (
 
 	"fyne.io/desktop"
 	"fyne.io/desktop/internal"
+	"fyne.io/desktop/internal/ui"
 	"fyne.io/desktop/wm"
 )
 
@@ -17,9 +16,9 @@ func setupDesktop(a fyne.App) desktop.Desktop {
 	mgr, err := wm.NewX11WindowManager(a)
 	if err != nil {
 		log.Println("Could not create window manager:", err)
-		return desktop.NewEmbeddedDesktop(a, icons)
+		return ui.NewEmbeddedDesktop(a, icons)
 	}
-	desk := desktop.NewDesktop(a, mgr, icons, wm.NewX11ScreensProvider(mgr))
+	desk := ui.NewDesktop(a, mgr, icons, wm.NewX11ScreensProvider(mgr))
 	mgr.SetRoot(desk.Root())
 	return desk
 }

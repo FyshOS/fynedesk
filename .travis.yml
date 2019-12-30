@@ -6,7 +6,7 @@ os:
   - linux
   - osx
 go_import_path: fyne.io/desktop
-gobuild_args: "-v -tags ci"
+gobuild_args: "-v"
 
 addons:
   apt:
@@ -21,15 +21,15 @@ before_script:
 
 script:
 - test -z $(gofmt -s -e -d $NO_VENDOR | tee /dev/stderr)
-- go test -v -tags ci -covermode=atomic -coverprofile=coverage.out ./...
-- go vet -tags ci ./...
-- golint -set_exit_status $(go list -tags ci)
+- go test -v -covermode=atomic -coverprofile=coverage.out ./...
+- go vet ./...
+- golint -set_exit_status $(go list)
 - export coverage=$(go tool cover -func coverage.out | tail -n 1 | awk '{ print $3 }' | cut -d \% -f 1 | cut -d \. -f 1)
 - if [ $coverage -lt 16 ]; then echo "Test coverage lowered"; exit 1; fi
 - |
   set -e
   if [[ "$TRAVIS_PULL_REQUEST" == "false" && -n "$COVERALLS_TOKEN" ]]; then
-    go test -tags ci -covermode=atomic -coverprofile=coverage.out ./...
+    go test -covermode=atomic -coverprofile=coverage.out ./...
     $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
   fi
 

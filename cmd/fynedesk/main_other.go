@@ -1,4 +1,4 @@
-// +build linux,ci !linux,!darwin
+// +build !linux,!darwin
 
 package main
 
@@ -10,9 +10,10 @@ import (
 
 	"fyne.io/desktop"
 	"fyne.io/desktop/internal"
+	"fyne.io/desktop/internal/ui"
 )
 
 func setupDesktop(a fyne.App) desktop.Desktop {
 	log.Println("Full desktop not possible on", runtime.GOOS)
-	return desktop.NewEmbeddedDesktop(a, internal.NewFDOIconProvider())
+	return ui.NewEmbeddedDesktop(a, internal.NewFDOIconProvider())
 }

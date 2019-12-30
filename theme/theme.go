@@ -11,6 +11,8 @@ var (
 
 	// Background is the default background image
 	Background = lochFynePicture
+	// FyneAboutBackground is the image used as a background to the about screen
+	FyneAboutBackground = fyneAboutBackground
 
 	// BatteryIcon is the material design icon for battery in light and dark theme
 	BatteryIcon = theme.NewThemedResource(batteryIcon, nil)
