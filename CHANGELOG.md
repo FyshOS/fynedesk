@@ -16,6 +16,7 @@ Bug fix release on 0.1
 
 * Issue where application menus may not be aligned in maximised or full screen
 * Fix crash if right clicking app launcher input field
+* Correct issue where icon list may not be saved from settings
 
 
 ## 0.1 - 23 December 2019
