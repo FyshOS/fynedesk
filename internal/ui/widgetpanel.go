@@ -195,12 +195,17 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 	if w.desk.WindowManager() != nil {
 		items = append(items, fyne.NewMenuItem("Blank Screen", w.desk.WindowManager().Blank))
 	}
-	if os.Getenv("FYNE_DESK_RUNNER") != "" {
+	if os.Getenv("FYNE_DESK_RUNNER") != "" && w.desk.(*deskLayout).wm != nil {
 		items = append(items, fyne.NewMenuItem("Reload", func() {
 			os.Exit(1)
 		}))
 	}
-	items = append(items, fyne.NewMenuItem("Log Out", func() {
+
+	closeLabel := "Log Out"
+	if w.desk.(*deskLayout).wm == nil {
+		closeLabel = "Quit"
+	}
+	items = append(items, fyne.NewMenuItem(closeLabel, func() {
 		w.root.Close()
 	}))
 
