@@ -12,6 +12,7 @@ import (
 
 	"fyne.io/desktop"
 	"fyne.io/desktop/internal/modules/builtin"
+	"fyne.io/desktop/internal/modules/christmas"
 )
 
 type deskLayout struct {
@@ -196,7 +197,7 @@ func (l *deskLayout) WindowManager() desktop.WindowManager {
 }
 
 func (l *deskLayout) Modules() []desktop.Module {
-	return []desktop.Module{builtin.NewBattery(), builtin.NewBrightness()}
+	return []desktop.Module{christmas.NewChristmas(), builtin.NewBattery(), builtin.NewBrightness()}
 }
 
 func (l *deskLayout) scaleVars(scale float32) []string {
