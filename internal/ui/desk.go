@@ -89,18 +89,21 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 
 func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	if l.wm == nil {
-		return fyne.NewSize(1280, 720)
+		return fyne.NewSize(1024, 576)
 	}
 	return fyne.NewSize(640, 480) // tiny - the window manager will scale up to screen size
 }
 
 func (l *deskLayout) newDesktopWindow() fyne.Window {
+	if l.wm == nil {
+		win := l.app.NewWindow("Fyne Desktop (Embedded)")
+		win.SetPadded(false)
+		return win
+	}
+
 	desk := l.app.NewWindow("Fyne Desktop")
 	desk.SetPadded(false)
-
-	if l.wm != nil {
-		desk.FullScreen()
-	}
+	desk.FullScreen()
 
 	return desk
 }
