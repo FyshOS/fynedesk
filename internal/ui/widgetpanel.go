@@ -224,12 +224,26 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		w.showAccountMenu(account)
 	})
 	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), ShowAppLauncher)
+
+	mods := w.desk.Modules()
 	objects := []fyne.CanvasObject{
 		w.clock,
-		w.date,
-		layout.NewSpacer(),
-		appExecButton,
+		w.date}
+
+	objects = append(objects, layout.NewSpacer())
+	for _, m := range mods {
+		if statusMod, ok := m.(desktop.StatusAreaModule); ok {
+			wid := statusMod.StatusAreaWidget()
+			if wid == nil {
+				continue
+			}
+
+			objects = append(objects, wid)
+		}
 	}
+
+	objects = append(objects, appExecButton)
+
 	if _, err := battery(); err == nil {
 		batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
 		objects = append(objects,

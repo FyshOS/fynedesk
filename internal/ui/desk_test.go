@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"fyne.io/fyne/test"
+	"fyne.io/fyne/theme"
 	"github.com/stretchr/testify/assert"
 
 	"fyne.io/fyne"
@@ -50,6 +51,10 @@ func (*testDesk) WindowManager() desktop.WindowManager {
 }
 
 func (*testDesk) Screens() desktop.ScreenList {
+	return nil
+}
+
+func (*testDesk) Modules() []desktop.Module {
 	return nil
 }
 
@@ -204,7 +209,7 @@ func newTestAppProvider(appNames []string) *testAppProvider {
 func TestDeskLayout_Layout(t *testing.T) {
 	l := &deskLayout{}
 	l.screens = &testScreensProvider{}
-	l.backgrounds = append(l.backgrounds, canvas.NewRectangle(color.White))
+	l.backgrounds = append(l.backgrounds, &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())})
 	l.bar = canvas.NewRectangle(color.Black)
 	l.widgets = canvas.NewRectangle(color.Black)
 	deskSize := fyne.NewSize(2000, 1000)
@@ -239,9 +244,9 @@ func TestBackgroundChange(t *testing.T) {
 		fyne.LogError("Could not get current working directory", err)
 		t.FailNow()
 	}
-	assert.Equal(t, wmTheme.Background, l.backgrounds[0].(*canvas.Image).Resource)
+	assert.Equal(t, wmTheme.Background, l.backgrounds[0].wallpaper.Resource)
 
 	l.settings.(*testSettings).background = filepath.Join(workingDir, "..", "testdata", "fyne.png")
 	l.updateBackgrounds(l.Settings().Background())
-	assert.Equal(t, l.settings.Background(), l.backgrounds[0].(*canvas.Image).File)
+	assert.Equal(t, l.settings.Background(), l.backgrounds[0].wallpaper.File)
 }
