@@ -11,6 +11,23 @@ import (
 	"fyne.io/desktop"
 )
 
+// appWindow describes a type of icon that refers to an open window rather than an app.
+// The findApp function can be used to attempt looking up the application from it's window.
+type appWindow struct {
+	win desktop.Window
+	bar *bar
+}
+
+// findApp will try to return an application data associated with a window.
+// This may fail for many reasons, usually related too bad window metadata, and will then return nil.
+func (a *appWindow) findApp() desktop.AppData {
+	if a.win == nil {
+		return nil
+	}
+
+	return a.bar.desk.IconProvider().FindAppFromWinInfo(a.win)
+}
+
 type barIconRenderer struct {
 	objects []fyne.CanvasObject
 
@@ -59,10 +76,10 @@ func (bi *barIconRenderer) Destroy() {
 type barIcon struct {
 	widget.BaseWidget
 
-	onTapped      func()          // The function that will be called when the icon is clicked
-	resource      fyne.Resource   // The image data of the image that the icon uses
-	appData       desktop.AppData // The application data corresponding to this icon.
-	taskbarWindow desktop.Window  // The window associated with this icon if it is a taskbar icon
+	onTapped   func()          // The function that will be called when the icon is clicked
+	resource   fyne.Resource   // The image data of the image that the icon uses
+	appData    desktop.AppData // The application data corresponding to this icon.(if it is a launcher)
+	windowData *appWindow      // The window data associated with this icon (if it is a task window)
 }
 
 //Tapped means barIcon has been clicked
@@ -97,18 +114,26 @@ func removeFromBar(icon desktop.AppData) {
 
 //TappedSecondary means barIcon has been clicked by a secondary binding
 func (bi *barIcon) TappedSecondary(*fyne.PointEvent) {
+	app := bi.appData
+	if app == nil && bi.windowData != nil {
+		app = bi.windowData.findApp()
+	}
+	if app == nil || app.Name() == "" {
+		return
+	}
+
 	var menu *widget.PopUp
-	addRemove := fyne.NewMenuItem("Remove "+bi.appData.Name(), func() {
-		if bi.taskbarWindow != nil {
-			addToBar(bi.appData)
+	addRemove := fyne.NewMenuItem("Remove "+app.Name(), func() {
+		if bi.windowData != nil {
+			addToBar(app)
 		} else {
-			removeFromBar(bi.appData)
+			removeFromBar(app)
 		}
 		menu.Hide()
 	})
 
-	if bi.taskbarWindow != nil {
-		addRemove.Label = "Pin " + bi.appData.Name()
+	if bi.windowData != nil {
+		addRemove.Label = "Pin " + app.Name()
 	}
 
 	c := fyne.CurrentApp().Driver().CanvasForObject(bi)
@@ -124,8 +149,8 @@ func (bi *barIcon) CreateRenderer() fyne.WidgetRenderer {
 	return render
 }
 
-func newBarIcon(res fyne.Resource, appData desktop.AppData) *barIcon {
-	barIcon := &barIcon{resource: res, appData: appData}
+func newBarIcon(res fyne.Resource, appData desktop.AppData, winData *appWindow) *barIcon {
+	barIcon := &barIcon{resource: res, appData: appData, windowData: winData}
 	barIcon.ExtendBaseWidget(barIcon)
 
 	return barIcon

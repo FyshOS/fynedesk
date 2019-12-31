@@ -202,11 +202,7 @@ func fdoLookupApplicationWinInfo(win desktop.Window) desktop.AppData {
 	if icon != nil {
 		return icon
 	}
-	icon = fdoLookupApplication(win.IconName())
-	if icon != nil {
-		return icon
-	}
-	return &fdoApplicationData{name: win.Title()}
+	return fdoLookupApplication(win.IconName())
 }
 
 func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDir string, joiner string, iconName string) string {
