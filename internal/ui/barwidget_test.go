@@ -123,7 +123,7 @@ func (d *dummyIcon) Run([]string) error {
 func testBar(icons []string) *bar {
 	testBar := newAppBar(&testDesk{settings: &testSettings{}, icons: &testAppProvider{}})
 	for range icons {
-		icon := barCreateIcon(testBar, false, &dummyIcon{}, nil)
+		icon := testBar.createIcon(&dummyIcon{}, nil)
 		if icon != nil {
 			testBar.append(icon)
 		}
@@ -139,7 +139,7 @@ func TestAppBar_Append(t *testing.T) {
 	testBar.appendSeparator()
 	assert.Equal(t, len(icons)+1, len(testBar.children))
 	win := &dummyWindow{}
-	icon := barCreateIcon(testBar, true, &dummyIcon{}, win)
+	icon := testBar.createIcon(&dummyIcon{}, win)
 	testBar.append(icon)
 	assert.Equal(t, len(icons)+2, len(testBar.children))
 	testBar.removeFromTaskbar(icon)
@@ -283,11 +283,11 @@ func TestIconTaskbarDisabled(t *testing.T) {
 	}
 	assert.Equal(t, true, separatorTest)
 
-	icon := barCreateIcon(testBar, true, &testAppData{}, &dummyWindow{})
+	icon := testBar.createIcon(&testAppData{}, &dummyWindow{})
 	testBar.append(icon)
 
 	taskbarIconTest := false
-	if testBar.children[len(testBar.children)-1].(*barIcon).taskbarWindow != nil {
+	if testBar.children[len(testBar.children)-1].(*barIcon).windowData != nil {
 		taskbarIconTest = true
 	}
 	assert.Equal(t, true, taskbarIconTest)
@@ -298,7 +298,7 @@ func TestIconTaskbarDisabled(t *testing.T) {
 
 	//Last Child at this point should not be the separator or a taskbar icon
 	taskbarIconTest = false
-	if testBar.children[len(testBar.children)-1].(*barIcon).taskbarWindow == nil {
+	if testBar.children[len(testBar.children)-1].(*barIcon).windowData == nil {
 		taskbarIconTest = true
 	}
 	assert.Equal(t, true, taskbarIconTest)

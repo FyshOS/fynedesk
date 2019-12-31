@@ -3,6 +3,7 @@ package ui
 import (
 	"fyne.io/desktop"
 	wmTheme "fyne.io/desktop/theme"
+
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 )
@@ -11,22 +12,37 @@ var (
 	appBar *bar
 )
 
-func barCreateIcon(b *bar, taskbar bool, data desktop.AppData, win desktop.Window) *barIcon {
-	if data == nil {
+func (b *bar) newAppIcon(data desktop.AppData) *barIcon {
+	iconRes := b.appIcon(data)
+	icon := newBarIcon(iconRes, data, nil)
+
+	icon.onTapped = func() {
+		err := b.desk.RunApp(data)
+		if err != nil {
+			fyne.LogError("Failed to start app", err)
+		}
+	}
+
+	return icon
+}
+
+func (b *bar) newTaskIcon(win *appWindow) *barIcon {
+	iconRes := b.winIcon(win)
+	return newBarIcon(iconRes, nil, win)
+}
+
+func (b *bar) createIcon(data desktop.AppData, win desktop.Window) *barIcon {
+	if data == nil && win == nil {
 		return nil
 	}
-	iconRes := b.getIconResource(data, win)
-	icon := newBarIcon(iconRes, data)
-	if taskbar == false {
-		icon.onTapped = func() {
-			err := b.desk.RunApp(data)
-			if err != nil {
-				fyne.LogError("Failed to start app", err)
-			}
-		}
+
+	var icon *barIcon
+	if win == nil {
+		icon = b.newAppIcon(data)
 	} else {
-		icon.taskbarWindow = win
+		icon = b.newTaskIcon(&appWindow{win: win, bar: b})
 	}
+
 	b.icons = append(b.icons, icon)
 	return icon
 }
@@ -44,14 +60,10 @@ func taskbarIconTapped(win desktop.Window) {
 }
 
 func (b *bar) WindowAdded(win desktop.Window) {
-	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
+	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() || win.Title() == "Fyne Desktop" {
 		return
 	}
-	data := b.desk.IconProvider().FindAppFromWinInfo(win)
-	if data == nil {
-		return
-	}
-	icon := barCreateIcon(b, true, data, win)
+	icon := b.createIcon(nil, win)
 	if icon != nil {
 		icon.onTapped = func() {
 			taskbarIconTapped(win)
@@ -65,7 +77,7 @@ func (b *bar) WindowRemoved(win desktop.Window) {
 		return
 	}
 	for i, icon := range b.icons {
-		if icon.taskbarWindow == nil || win != icon.taskbarWindow {
+		if icon.windowData == nil || win != icon.windowData.win {
 			continue
 		}
 		if !win.Iconic() {
@@ -119,22 +131,34 @@ func (b *bar) updateIconOrder() {
 
 func (b *bar) updateIcons() {
 	for _, icon := range b.icons {
-		icon.resource = b.getIconResource(icon.appData, icon.taskbarWindow)
+		if icon.windowData != nil {
+			icon.resource = b.winIcon(icon.windowData)
+		} else {
+			icon.resource = b.appIcon(icon.appData)
+		}
 		icon.Refresh()
 	}
 	b.Refresh()
 }
 
-func (b *bar) getIconResource(data desktop.AppData, win desktop.Window) fyne.Resource {
-	iconRes := data.Icon(b.desk.Settings().IconTheme(), int((float32(b.iconSize)*b.iconScale)*b.desk.Root().Canvas().Scale()))
-	if iconRes == nil || iconRes == wmTheme.BrokenImageIcon {
-		if win != nil {
-			iconRes = win.Icon()
-			if iconRes == nil {
-				iconRes = wmTheme.BrokenImageIcon
-			}
+func (b *bar) appIcon(data desktop.AppData) fyne.Resource {
+	return data.Icon(b.desk.Settings().IconTheme(), int((float32(b.iconSize)*b.iconScale)*b.desk.Root().Canvas().Scale()))
+}
+
+func (b *bar) winIcon(win *appWindow) fyne.Resource {
+	app := win.findApp()
+	if app != nil {
+		icon := b.appIcon(app)
+		if icon != nil && icon != wmTheme.BrokenImageIcon {
+			return icon
 		}
 	}
+
+	iconRes := win.win.Icon()
+	if iconRes == nil {
+		return wmTheme.BrokenImageIcon
+	}
+
 	return iconRes
 }
 
@@ -144,7 +168,7 @@ func (b *bar) appendLauncherIcons() {
 		if app == nil {
 			continue
 		}
-		icon := barCreateIcon(appBar, false, app, nil)
+		icon := appBar.createIcon(app, nil)
 		if icon != nil {
 			appBar.append(icon)
 		}
