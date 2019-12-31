@@ -15,6 +15,7 @@ type Desktop interface {
 
 	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
+	Modules() []Module
 }
 
 var instance Desktop

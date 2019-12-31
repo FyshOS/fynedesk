@@ -11,6 +11,7 @@ import (
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/desktop"
+	"fyne.io/desktop/internal/modules/builtin"
 )
 
 type deskLayout struct {
@@ -21,7 +22,7 @@ type deskLayout struct {
 	screens  desktop.ScreenList
 	settings desktop.DeskSettings
 
-	backgrounds         []fyne.CanvasObject
+	backgrounds         []*background
 	bar, widgets, mouse fyne.CanvasObject
 	container           *fyne.Container
 	screenBackgroundMap map[*desktop.Screen]fyne.CanvasObject
@@ -110,43 +111,44 @@ func (l *deskLayout) newDesktopWindow() fyne.Window {
 
 func (l *deskLayout) updateBackgrounds(path string) {
 	for _, background := range l.backgrounds {
-		updateBackgroundPath(background.(*canvas.Image), path)
+		background.updateBackgroundPath(path)
 		canvas.Refresh(background)
 	}
 }
 
 func (l *deskLayout) Root() fyne.Window {
-	if l.win == nil {
-		l.win = l.newDesktopWindow()
+	if l.win != nil {
+		return l.win
+	}
 
-		if l.win.Canvas().Scale() != l.screens.Scale() {
-			l.win.Canvas().SetScale(l.screens.Scale())
-		}
+	l.win = l.newDesktopWindow()
+	if l.win.Canvas().Scale() != l.screens.Scale() {
+		l.win.Canvas().SetScale(l.screens.Scale())
+	}
 
-		l.backgrounds = append(l.backgrounds, newBackground())
-		l.screenBackgroundMap[l.screens.Screens()[0]] = l.backgrounds[0]
-		l.bar = newBar(l)
-		l.widgets = newWidgetPanel(l)
-		l.mouse = newMouse()
-		l.container = fyne.NewContainerWithLayout(l, l.backgrounds[0])
-		if l.screens.Screens() != nil && len(l.screens.Screens()) > 1 {
-			for i := 1; i < len(l.screens.Screens()); i++ {
-				l.backgrounds = append(l.backgrounds, newBackground())
-				l.screenBackgroundMap[l.screens.Screens()[i]] = l.backgrounds[i]
-				l.container.AddObject(l.backgrounds[i])
-			}
+	l.backgrounds = append(l.backgrounds, newBackground())
+	l.screenBackgroundMap[l.screens.Screens()[0]] = l.backgrounds[0]
+	l.bar = newBar(l)
+	l.widgets = newWidgetPanel(l)
+	l.mouse = newMouse()
+	l.container = fyne.NewContainerWithLayout(l, l.backgrounds[0])
+	if l.screens.Screens() != nil && len(l.screens.Screens()) > 1 {
+		for i := 1; i < len(l.screens.Screens()); i++ {
+			l.backgrounds = append(l.backgrounds, newBackground())
+			l.screenBackgroundMap[l.screens.Screens()[i]] = l.backgrounds[i]
+			l.container.AddObject(l.backgrounds[i])
 		}
-		l.container.AddObject(l.bar)
-		l.container.AddObject(l.widgets)
-		l.container.AddObject(mouse)
+	}
+	l.container.AddObject(l.bar)
+	l.container.AddObject(l.widgets)
+	l.container.AddObject(mouse)
 
-		l.win.SetContent(l.container)
-		l.mouse.Hide() // temporarily we do not handle mouse (using X default)
-		if l.wm != nil {
-			l.win.SetOnClosed(func() {
-				l.wm.Close()
-			})
-		}
+	l.win.SetContent(l.container)
+	l.mouse.Hide() // temporarily we do not draw mouse (using X default)
+	if l.wm != nil {
+		l.win.SetOnClosed(func() {
+			l.wm.Close()
+		})
 	}
 
 	return l.win
@@ -195,6 +197,10 @@ func (l *deskLayout) IconProvider() desktop.ApplicationProvider {
 
 func (l *deskLayout) WindowManager() desktop.WindowManager {
 	return l.wm
+}
+
+func (l *deskLayout) Modules() []desktop.Module {
+	return []desktop.Module{builtin.NewBattery(), builtin.NewBrightness()}
 }
 
 func (l *deskLayout) scaleVars(scale float32) []string {
