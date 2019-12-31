@@ -57,9 +57,6 @@ func (b *bar) MouseMoved(event *deskDriver.MouseEvent) {
 
 //append adds an object to the end of the widget
 func (b *bar) append(object fyne.CanvasObject) {
-	if b.Hidden && object.Visible() {
-		object.Hide()
-	}
 	b.children = append(b.children, object)
 
 	b.Refresh()
@@ -73,9 +70,6 @@ func (b *bar) appendSeparator() {
 
 //removeFromTaskbar removes an object from the taskbar area of the widget
 func (b *bar) removeFromTaskbar(object fyne.CanvasObject) {
-	if b.Hidden && object.Visible() {
-		object.Hide()
-	}
 	for i, fycon := range b.children {
 		if fycon == object {
 			b.children = append(b.children[:i], b.children[i+1:]...)
