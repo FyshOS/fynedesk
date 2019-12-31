@@ -153,6 +153,10 @@ func (l *deskLayout) Root() fyne.Window {
 }
 
 func (l *deskLayout) Run() {
+	if l.wm == nil {
+		l.Root().ShowAndRun()
+		return
+	}
 	debug.SetPanicOnFault(true)
 
 	defer func() {
