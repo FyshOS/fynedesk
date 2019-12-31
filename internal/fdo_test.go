@@ -203,29 +203,32 @@ func TestFdoLookupIconNotInApps(t *testing.T) {
 //missing - not able to match
 func TestFdoLookupMissing(t *testing.T) {
 	setTestEnv(t)
+	provider := NewFDOIconProvider()
 	win1 := &dummyWindow{title: "NoMatch"}
-	data := fdoLookupApplicationWinInfo(win1)
+	data := provider.FindAppFromWinInfo(win1)
 	assert.Equal(t, false, exists(data))
 }
 
 func TestFdoLookupIconByWinInfo(t *testing.T) {
 	setTestEnv(t)
-	//Test win info lookup by title
+	provider := NewFDOIconProvider()
+
+	// Test win info lookup by title - should fail as commands don't match
 	win1 := &dummyWindow{title: "App1"}
-	data := fdoLookupApplicationWinInfo(win1)
-	assert.Equal(t, true, exists(data))
-	//Test win info lookup by class
+	data := provider.FindAppFromWinInfo(win1)
+	assert.Equal(t, false, exists(data))
+	// Test win info lookup by class - should fail as commands don't match
 	win2 := &dummyWindow{class: []string{"App2", "app2"}}
-	data = fdoLookupApplicationWinInfo(win2)
-	assert.Equal(t, true, exists(data))
-	//Test win info lookup by command
+	data = provider.FindAppFromWinInfo(win2)
+	assert.Equal(t, false, exists(data))
+	// Test win info lookup by command
 	win3 := &dummyWindow{command: "app3"}
-	data = fdoLookupApplicationWinInfo(win3)
+	data = provider.FindAppFromWinInfo(win3)
 	assert.Equal(t, true, exists(data))
-	//Test win info lookup by icon name
+	// Test win info lookup by icon name - should fail as commands don't match
 	win4 := &dummyWindow{iconName: "app4"}
-	data = fdoLookupApplicationWinInfo(win4)
-	assert.Equal(t, true, exists(data))
+	data = provider.FindAppFromWinInfo(win4)
+	assert.Equal(t, false, exists(data))
 }
 
 func TestFdoLookupPartialMatches(t *testing.T) {

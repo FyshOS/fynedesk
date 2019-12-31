@@ -186,25 +186,6 @@ func fdoLookupApplications() []desktop.AppData {
 	return icons
 }
 
-//fdoLookupApplicationWinInfo looks up an application based on window info and returns an fdoApplicationData struct
-func fdoLookupApplicationWinInfo(win desktop.Window) desktop.AppData {
-	icon := fdoLookupApplication(win.Title())
-	if icon != nil {
-		return icon
-	}
-	for _, class := range win.Class() {
-		icon := fdoLookupApplication(class)
-		if icon != nil {
-			return icon
-		}
-	}
-	icon = fdoLookupApplication(win.Command())
-	if icon != nil {
-		return icon
-	}
-	return fdoLookupApplication(win.IconName())
-}
-
 func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDir string, joiner string, iconName string) string {
 	var sizes []int
 	for _, f := range files {
@@ -501,7 +482,11 @@ func (f *fdoIconProvider) FindAppsMatching(appName string) []desktop.AppData {
 
 //FindAppFromWinInfo matches window information to an icon location and returns an AppData interface
 func (f *fdoIconProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppData {
-	return fdoLookupApplicationWinInfo(win)
+	if win == nil || win.Command() == "" {
+		return nil
+	}
+
+	return fdoLookupApplication(win.Command())
 }
 
 func findOneAppFromNames(f desktop.ApplicationProvider, names ...string) desktop.AppData {
