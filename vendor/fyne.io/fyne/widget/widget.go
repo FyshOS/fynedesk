@@ -115,10 +115,6 @@ func (w *BaseWidget) refresh(wid fyne.Widget) {
 }
 
 func (w *BaseWidget) super() fyne.Widget {
-	if w.impl == nil {
-		return w
-	}
-
 	return w.impl
 }
 

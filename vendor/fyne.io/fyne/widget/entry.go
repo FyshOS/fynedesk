@@ -10,7 +10,6 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/internal/cache"
 	"fyne.io/fyne/theme"
 )
 
@@ -202,7 +201,7 @@ func (e *entryRenderer) Refresh() {
 	if e.entry.passwordRevealer != nil {
 		e.entry.passwordRevealer.Refresh()
 	}
-	canvas.Refresh(e.entry.super())
+	canvas.Refresh(e.entry)
 }
 
 func (e *entryRenderer) Objects() []fyne.CanvasObject {
@@ -215,9 +214,9 @@ func (e *entryRenderer) Objects() []fyne.CanvasObject {
 
 func (e *entryRenderer) Destroy() {
 	if e.entry.popUp != nil {
-		c := fyne.CurrentApp().Driver().CanvasForObject(e.entry.super())
+		c := fyne.CurrentApp().Driver().CanvasForObject(e.entry)
 		c.SetOverlay(nil)
-		cache.Renderer(e.entry.popUp).Destroy()
+		Renderer(e.entry.popUp).Destroy()
 		e.entry.popUp = nil
 	}
 }
@@ -274,7 +273,7 @@ func (e *Entry) SetText(text string) {
 		e.CursorColumn = 0
 		e.CursorRow = 0
 		e.Unlock()
-		cache.Renderer(e).(*entryRenderer).moveCursor()
+		Renderer(e).(*entryRenderer).moveCursor()
 	} else {
 		provider := e.textProvider()
 		if e.CursorRow >= provider.rows() {
@@ -327,7 +326,7 @@ func (e *Entry) updateText(text string) {
 		e.OnChanged(text)
 	}
 
-	e.Refresh()
+	Refresh(e)
 }
 
 // selection returns the start and end text positions for the selected span of text
@@ -419,14 +418,14 @@ func (e *Entry) FocusGained() {
 	}
 	e.focused = true
 
-	e.Refresh()
+	Refresh(e)
 }
 
 // FocusLost is called when the Entry has had focus removed.
 func (e *Entry) FocusLost() {
 	e.focused = false
 
-	e.Refresh()
+	Refresh(e)
 }
 
 // Focused returns whether or not this Entry has focus.
@@ -495,7 +494,7 @@ func (e *Entry) pasteFromClipboard(clipboard fyne.Clipboard) {
 		e.CursorColumn = len(runes) - lastNewline - 1
 	}
 	e.updateText(provider.String())
-	cache.Renderer(e).(*entryRenderer).moveCursor()
+	Renderer(e).(*entryRenderer).moveCursor()
 }
 
 // selectAll selects all text in entry
@@ -510,7 +509,7 @@ func (e *Entry) selectAll() {
 	e.selecting = true
 	e.Unlock()
 
-	cache.Renderer(e).(*entryRenderer).moveCursor()
+	Renderer(e).(*entryRenderer).moveCursor()
 	e.Refresh()
 }
 
@@ -518,6 +517,8 @@ func (e *Entry) selectAll() {
 //
 // Opens the PopUpMenu with `Paste` item to paste text from the clipboard.
 func (e *Entry) TappedSecondary(pe *fyne.PointEvent) {
+	c := fyne.CurrentApp().Driver().CanvasForObject(e)
+
 	cutItem := fyne.NewMenuItem("Cut", func() {
 		clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
 		e.cutToClipboard(clipboard)
@@ -532,10 +533,8 @@ func (e *Entry) TappedSecondary(pe *fyne.PointEvent) {
 	})
 	selectAllItem := fyne.NewMenuItem("Select all", e.selectAll)
 
-	super := e.super()
-	entryPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(super)
+	entryPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(e)
 	popUpPos := entryPos.Add(fyne.NewPos(pe.Position.X, pe.Position.Y))
-	c := fyne.CurrentApp().Driver().CanvasForObject(super)
 
 	if e.Disabled() && e.password() {
 		return // no popup options for a disabled password field
@@ -610,7 +609,7 @@ func (e *Entry) updateMousePointer(ev *fyne.PointEvent, rightClick bool) {
 		e.selectColumn = col
 	}
 	e.Unlock()
-	cache.Renderer(e).(*entryRenderer).moveCursor()
+	Renderer(e).(*entryRenderer).moveCursor()
 	e.Refresh()
 }
 
@@ -684,7 +683,7 @@ func (e *Entry) DoubleTapped(ev *fyne.PointEvent) {
 	}
 	e.selecting = true
 	e.Unlock()
-	cache.Renderer(e).(*entryRenderer).moveCursor()
+	Renderer(e).(*entryRenderer).moveCursor()
 	e.Refresh()
 }
 
@@ -712,7 +711,7 @@ func (e *Entry) TypedRune(r rune) {
 	e.CursorColumn += len(runes)
 	e.Unlock()
 	e.updateText(provider.String())
-	cache.Renderer(e.super()).(*entryRenderer).moveCursor()
+	Renderer(e.impl).(*entryRenderer).moveCursor()
 }
 
 // KeyDown handler for keypress events - used to store shift modifier state for text selection
@@ -830,7 +829,7 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 	if e.selectKeyDown || e.selecting {
 		if e.selectingKeyHandler(key) {
 			e.updateText(provider.String())
-			cache.Renderer(e).(*entryRenderer).moveCursor()
+			Renderer(e).(*entryRenderer).moveCursor()
 			return
 		}
 	}
@@ -955,7 +954,7 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 	}
 
 	e.updateText(provider.String())
-	cache.Renderer(e).(*entryRenderer).moveCursor()
+	Renderer(e).(*entryRenderer).moveCursor()
 }
 
 // TypedShortcut implements the Shortcutable interface

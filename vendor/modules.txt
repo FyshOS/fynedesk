@@ -1,24 +1,24 @@
-# fyne.io/fyne v1.2.2-0.20191229160036-744664dbec4e
+# fyne.io/fyne v1.2.2-0.20191224225653-64936716f619
 fyne.io/fyne
 fyne.io/fyne/app
-fyne.io/fyne/theme
 fyne.io/fyne/canvas
 fyne.io/fyne/cmd/fyne_settings/settings
 fyne.io/fyne/driver/desktop
-fyne.io/fyne/layout
-fyne.io/fyne/widget
-fyne.io/fyne/tools/playground
+fyne.io/fyne/driver/mobile
 fyne.io/fyne/internal
 fyne.io/fyne/internal/app
-fyne.io/fyne/internal/driver/glfw
-fyne.io/fyne/internal/driver/gomobile
-fyne.io/fyne/internal/painter/software
-fyne.io/fyne/test
 fyne.io/fyne/internal/cache
 fyne.io/fyne/internal/driver
+fyne.io/fyne/internal/driver/glfw
+fyne.io/fyne/internal/driver/gomobile
 fyne.io/fyne/internal/painter
 fyne.io/fyne/internal/painter/gl
-fyne.io/fyne/driver/mobile
+fyne.io/fyne/internal/painter/software
+fyne.io/fyne/layout
+fyne.io/fyne/test
+fyne.io/fyne/theme
+fyne.io/fyne/tools/playground
+fyne.io/fyne/widget
 # github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298
 github.com/BurntSushi/freetype-go/freetype
 github.com/BurntSushi/freetype-go/freetype/raster
@@ -54,8 +54,8 @@ github.com/fsnotify/fsnotify
 # github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7
 github.com/go-gl/gl/v3.1/gles2
 github.com/go-gl/gl/v3.2-core/gl
-# github.com/go-gl/glfw v0.0.0-20181213070059-819e8ce5125f
-github.com/go-gl/glfw/v3.2/glfw
+# github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72
+github.com/go-gl/glfw/v3.3/glfw
 # github.com/goki/freetype v0.0.0-20181231101311-fa8a33aabaff
 github.com/goki/freetype
 github.com/goki/freetype/raster
