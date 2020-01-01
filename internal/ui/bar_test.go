@@ -105,10 +105,11 @@ func (*dummyWindow) RaiseToTop() {
 }
 
 type dummyIcon struct {
+	name string
 }
 
 func (d *dummyIcon) Name() string {
-	return "Fyne"
+	return d.name
 }
 
 func (d *dummyIcon) Icon(theme string, size int) fyne.Resource {
@@ -121,14 +122,14 @@ func (d *dummyIcon) Run([]string) error {
 }
 
 func testBar(icons []string) *bar {
-	testBar := newAppBar(&testDesk{settings: &testSettings{}, icons: &testAppProvider{}})
-	for range icons {
-		icon := testBar.createIcon(&dummyIcon{}, nil)
+	testBar := newBar(&testDesk{settings: &testSettings{}, icons: &testAppProvider{}})
+	testBar.children = []fyne.CanvasObject{} // remove divider, then we add it again later
+	for _, name := range icons {
+		icon := testBar.createIcon(&dummyIcon{name: name}, nil)
 		if icon != nil {
 			testBar.append(icon)
 		}
 	}
-	appBar = testBar
 	return testBar
 }
 
@@ -153,13 +154,9 @@ func TestAppBar_Zoom(t *testing.T) {
 	testBar.iconSize = 32
 	testBar.iconScale = 2.0
 	testBar.mouseInside = true
-	testBar.mousePosition = testBar.children[0].Position()
-	widget.Refresh(testBar)
-	zoomTest := false
-	if testBar.children[0].Size().Width > testBar.children[1].Size().Width {
-		zoomTest = true
-	}
-	assert.Equal(t, true, zoomTest)
+	testBar.mousePosition = testBar.children[0].Position().Add(fyne.NewPos(5, 5))
+	testBar.Refresh()
+	assert.Equal(t, true, testBar.children[0].Size().Width > testBar.children[1].Size().Width)
 }
 
 func TestIconsAndIconThemeChange(t *testing.T) {

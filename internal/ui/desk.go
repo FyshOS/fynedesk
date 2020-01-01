@@ -23,7 +23,8 @@ type deskLayout struct {
 	settings desktop.DeskSettings
 
 	backgrounds         []*background
-	bar, widgets, mouse fyne.CanvasObject
+	bar                 *bar
+	widgets, mouse      fyne.CanvasObject
 	container           *fyne.Container
 	screenBackgroundMap map[*desktop.Screen]fyne.CanvasObject
 }
@@ -216,30 +217,30 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 // MouseInNotify can be called by the window manager to alert the desktop that the cursor has entered the canvas
 func (l *deskLayout) MouseInNotify(pos fyne.Position) {
 	mouseX, mouseY := pos.X, pos.Y
-	barX, barY := appBar.Position().X, appBar.Position().Y
-	barWidth, barHeight := appBar.Size().Width, appBar.Size().Height
+	barX, barY := l.bar.Position().X, l.bar.Position().Y
+	barWidth, barHeight := l.bar.Size().Width, l.bar.Size().Height
 	if mouseX >= barX && mouseX <= barX+barWidth {
 		if mouseY >= barY && mouseY <= barY+barHeight {
-			appBar.MouseIn(&deskDriver.MouseEvent{PointEvent: fyne.PointEvent{AbsolutePosition: pos, Position: pos}})
+			l.bar.MouseIn(&deskDriver.MouseEvent{PointEvent: fyne.PointEvent{AbsolutePosition: pos, Position: pos}})
 		}
 	}
 }
 
 // MouseOutNotify can be called by the window manager to alert the desktop that the cursor has left the canvas
 func (l *deskLayout) MouseOutNotify() {
-	appBar.MouseOut()
+	l.bar.MouseOut()
 }
 
 func (l *deskLayout) startSettingsChangeListener(listener chan desktop.DeskSettings) {
 	for {
 		_ = <-listener
 		l.updateBackgrounds(l.Settings().Background())
-		appBar.iconSize = l.Settings().LauncherIconSize()
-		appBar.iconScale = float32(l.Settings().LauncherZoomScale())
-		appBar.disableZoom = l.Settings().LauncherDisableZoom()
-		appBar.updateIcons()
-		appBar.updateIconOrder()
-		appBar.updateTaskbar()
+		l.bar.iconSize = l.Settings().LauncherIconSize()
+		l.bar.iconScale = float32(l.Settings().LauncherZoomScale())
+		l.bar.disableZoom = l.Settings().LauncherDisableZoom()
+		l.bar.updateIcons()
+		l.bar.updateIconOrder()
+		l.bar.updateTaskbar()
 	}
 }
 

@@ -210,7 +210,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 	l := &deskLayout{}
 	l.screens = &testScreensProvider{}
 	l.backgrounds = append(l.backgrounds, &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())})
-	l.bar = canvas.NewRectangle(color.Black)
+	l.bar = testBar([]string{})
 	l.widgets = canvas.NewRectangle(color.Black)
 	deskSize := fyne.NewSize(2000, 1000)
 

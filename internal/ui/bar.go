@@ -1,16 +1,87 @@
 package ui
 
 import (
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
+	"image/color"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
+	deskDriver "fyne.io/fyne/driver/desktop"
+	"fyne.io/fyne/theme"
+	"fyne.io/fyne/widget"
+
+	"fyne.io/desktop"
+	wmTheme "fyne.io/desktop/theme"
 )
 
-var (
-	appBar *bar
-)
+// bar is the main widget housing app icons and taskbar area
+type bar struct {
+	widget.BaseWidget
+
+	desk          desktop.Desktop     // The desktop instance we are holding icons for
+	children      []fyne.CanvasObject // Icons that are laid out by the bar
+	mouseInside   bool                // Is the mouse inside of the bar?
+	mousePosition fyne.Position       // The current coordinates of the mouse cursor
+
+	iconSize       int
+	iconScale      float32
+	disableTaskbar bool
+	disableZoom    bool
+	icons          []*barIcon
+}
+
+// MouseIn alerts the widget that the mouse has entered
+func (b *bar) MouseIn(*deskDriver.MouseEvent) {
+	if b.desk.Settings().LauncherDisableZoom() {
+		return
+	}
+	b.mouseInside = true
+	b.Refresh()
+}
+
+// MouseOut alerts the widget that the mouse has left
+func (b *bar) MouseOut() {
+	if b.desk.Settings().LauncherDisableZoom() {
+		return
+	}
+	b.mouseInside = false
+	b.Refresh()
+}
+
+// MouseMoved alerts the widget that the mouse has changed position
+func (b *bar) MouseMoved(event *deskDriver.MouseEvent) {
+	if b.desk.Settings().LauncherDisableZoom() {
+		return
+	}
+	b.mousePosition = event.Position
+	b.Refresh()
+}
+
+// append adds an object to the end of the widget
+func (b *bar) append(object fyne.CanvasObject) {
+	b.children = append(b.children, object)
+
+	b.Refresh()
+}
+
+// appendSeparator adds a separator between the default icons and the taskbar
+func (b *bar) appendSeparator() {
+	line := canvas.NewRectangle(theme.TextColor())
+	b.append(line)
+}
+
+// removeFromTaskbar removes an object from the taskbar area of the widget
+func (b *bar) removeFromTaskbar(object fyne.CanvasObject) {
+	for i, icon := range b.children {
+		if icon != object {
+			continue
+		}
+
+		b.children = append(b.children[:i], b.children[i+1:]...)
+		break
+	}
+
+	b.Refresh()
+}
 
 func (b *bar) newAppIcon(data desktop.AppData) *barIcon {
 	iconRes := b.appIcon(data)
@@ -47,7 +118,7 @@ func (b *bar) createIcon(data desktop.AppData, win desktop.Window) *barIcon {
 	return icon
 }
 
-func taskbarIconTapped(win desktop.Window) {
+func (b *bar) taskbarIconTapped(win desktop.Window) {
 	if !win.Iconic() && win.TopWindow() {
 		win.Iconify()
 		return
@@ -66,9 +137,9 @@ func (b *bar) WindowAdded(win desktop.Window) {
 	icon := b.createIcon(nil, win)
 	if icon != nil {
 		icon.onTapped = func() {
-			taskbarIconTapped(win)
+			b.taskbarIconTapped(win)
 		}
-		appBar.append(icon)
+		b.append(icon)
 	}
 }
 
@@ -81,7 +152,7 @@ func (b *bar) WindowRemoved(win desktop.Window) {
 			continue
 		}
 		if !win.Iconic() {
-			appBar.removeFromTaskbar(icon)
+			b.removeFromTaskbar(icon)
 			b.icons = append(b.icons[:i], b.icons[i+1:]...)
 		}
 		break
@@ -97,7 +168,7 @@ func (b *bar) updateTaskbar() {
 	if disableTaskbar == true {
 		return
 	}
-	appBar.appendSeparator()
+	b.appendSeparator()
 	for _, win := range b.desk.WindowManager().Windows() {
 		b.WindowAdded(win)
 	}
@@ -125,7 +196,7 @@ func (b *bar) updateIconOrder() {
 	}
 	b.icons = append(b.icons, taskbarIcons...)
 	for _, obj := range taskbarIcons {
-		appBar.append(obj)
+		b.append(obj)
 	}
 }
 
@@ -168,23 +239,76 @@ func (b *bar) appendLauncherIcons() {
 		if app == nil {
 			continue
 		}
-		icon := appBar.createIcon(app, nil)
+		icon := b.createIcon(app, nil)
 		if icon != nil {
-			appBar.append(icon)
+			b.append(icon)
 		}
 	}
 	if !b.desk.Settings().LauncherDisableTaskbar() {
-		appBar.appendSeparator()
+		b.appendSeparator()
 	}
 }
 
-func newBar(desk desktop.Desktop) fyne.CanvasObject {
-	appBar = newAppBar(desk)
+// CreateRenderer creates the renderer that will be responsible for painting the widget
+func (b *bar) CreateRenderer() fyne.WidgetRenderer {
+	return &barRenderer{objects: b.children, layout: newBarLayout(b), appBar: b}
+}
+
+// newBar creates a new application launcher and taskbar
+func newBar(desk desktop.Desktop) *bar {
+	bar := &bar{desk: desk}
+	bar.ExtendBaseWidget(bar)
+	bar.iconSize = desk.Settings().LauncherIconSize()
+	bar.iconScale = float32(desk.Settings().LauncherZoomScale())
+	bar.disableTaskbar = desk.Settings().LauncherDisableTaskbar()
 
 	if desk.WindowManager() != nil {
-		desk.WindowManager().AddStackListener(appBar)
+		desk.WindowManager().AddStackListener(bar)
 	}
-	appBar.appendLauncherIcons()
+	bar.appendLauncherIcons()
 
-	return appBar
+	return bar
+}
+
+// barRenderer provides the renderer functions for the bar Widget
+type barRenderer struct {
+	layout barLayout
+
+	appBar  *bar
+	objects []fyne.CanvasObject
+}
+
+// MinSize returns the layout's Min Size
+func (b *barRenderer) MinSize() fyne.Size {
+	return b.layout.MinSize(b.objects)
+}
+
+// Layout recalculates the widget
+func (b *barRenderer) Layout(size fyne.Size) {
+	b.layout.setPointerInside(b.appBar.mouseInside)
+	b.layout.setPointerPosition(b.appBar.mousePosition)
+	b.layout.Layout(b.objects, size)
+}
+
+// BackgroundColor returns the background color of the widget
+func (b *barRenderer) BackgroundColor() color.Color {
+	return color.Transparent
+}
+
+// Objects returns the objects associated with the widget
+func (b *barRenderer) Objects() []fyne.CanvasObject {
+	return b.objects
+}
+
+// Refresh will recalculate the widget and repaint it
+func (b *barRenderer) Refresh() {
+	b.objects = b.appBar.children
+	b.Layout(b.appBar.Size())
+
+	canvas.Refresh(b.appBar)
+}
+
+// Destroy destroys the renderer
+func (b *barRenderer) Destroy() {
+
 }
