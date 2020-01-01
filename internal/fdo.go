@@ -145,6 +145,9 @@ func fdoLookupApplicationByMetadata(appName string) desktop.AppData {
 
 //fdoLookupApplication looks up an application by name and returns an fdoApplicationData struct
 func fdoLookupApplication(appName string) desktop.AppData {
+	if appName == "" {
+		return nil
+	}
 	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
 		testLocation := filepath.Join(dataDir, "applications", appName+".desktop")
@@ -482,11 +485,19 @@ func (f *fdoIconProvider) FindAppsMatching(appName string) []desktop.AppData {
 
 //FindAppFromWinInfo matches window information to an icon location and returns an AppData interface
 func (f *fdoIconProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppData {
-	if win == nil || win.Command() == "" {
-		return nil
+	app := fdoLookupApplication(win.Command())
+	if app != nil {
+		return app
 	}
 
-	return fdoLookupApplication(win.Command())
+	for _, class := range win.Class() {
+		icon := fdoLookupApplication(class)
+		if icon != nil {
+			return icon
+		}
+	}
+
+	return fdoLookupApplication(win.IconName())
 }
 
 func findOneAppFromNames(f desktop.ApplicationProvider, names ...string) desktop.AppData {

@@ -101,7 +101,7 @@ func (l *launcher) appButtonListMatching(input string) []fyne.CanvasObject {
 }
 
 func newAppLauncher(desk desktop.Desktop) *launcher {
-	win := fyne.CurrentApp().NewWindow("Applications")
+	win := fyne.CurrentApp().NewWindow("Application Launcher")
 	win.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 		if ev.Name == fyne.KeyEscape {
 			win.Close()

@@ -213,22 +213,22 @@ func TestFdoLookupIconByWinInfo(t *testing.T) {
 	setTestEnv(t)
 	provider := NewFDOIconProvider()
 
-	// Test win info lookup by title - should fail as commands don't match
+	// Test win info lookup by title - should fail as titles are too common
 	win1 := &dummyWindow{title: "App1"}
 	data := provider.FindAppFromWinInfo(win1)
 	assert.Equal(t, false, exists(data))
-	// Test win info lookup by class - should fail as commands don't match
+	// Test win info lookup by class
 	win2 := &dummyWindow{class: []string{"App2", "app2"}}
 	data = provider.FindAppFromWinInfo(win2)
-	assert.Equal(t, false, exists(data))
+	assert.Equal(t, true, exists(data))
 	// Test win info lookup by command
 	win3 := &dummyWindow{command: "app3"}
 	data = provider.FindAppFromWinInfo(win3)
 	assert.Equal(t, true, exists(data))
-	// Test win info lookup by icon name - should fail as commands don't match
+	// Test win info lookup by icon name
 	win4 := &dummyWindow{iconName: "app4"}
 	data = provider.FindAppFromWinInfo(win4)
-	assert.Equal(t, false, exists(data))
+	assert.Equal(t, true, exists(data))
 }
 
 func TestFdoLookupPartialMatches(t *testing.T) {
