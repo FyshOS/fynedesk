@@ -3,6 +3,20 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
+## 0.2 - Ongoing
+
+### Added
+
+* Created API for writing modules that plug in to FyneDesk
+
+### Changed
+
+* Bar icons can be added and removed from a new right-click menu
+
+### Fixed
+
+
+
 ## 0.1.1 - 30 December 2019
 
 Bug fix release on 0.1
