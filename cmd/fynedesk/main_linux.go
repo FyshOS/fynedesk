@@ -6,13 +6,13 @@ import (
 	"fyne.io/fyne"
 
 	"fyne.io/desktop"
-	"fyne.io/desktop/internal"
+	"fyne.io/desktop/internal/icon"
 	"fyne.io/desktop/internal/ui"
 	"fyne.io/desktop/wm"
 )
 
 func setupDesktop(a fyne.App) desktop.Desktop {
-	icons := internal.NewFDOIconProvider()
+	icons := icon.NewFDOIconProvider()
 	mgr, err := wm.NewX11WindowManager(a)
 	if err != nil {
 		log.Println("Could not create window manager:", err)

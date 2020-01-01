@@ -1,4 +1,4 @@
-package internal // import "fyne.io/desktop/internal"
+package icon // import "fyne.io/desktop/internal/icon"
 
 import (
 	"bufio"

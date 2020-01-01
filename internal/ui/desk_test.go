@@ -246,7 +246,7 @@ func TestBackgroundChange(t *testing.T) {
 	}
 	assert.Equal(t, wmTheme.Background, l.backgrounds[0].wallpaper.Resource)
 
-	l.settings.(*testSettings).background = filepath.Join(workingDir, "..", "testdata", "fyne.png")
+	l.settings.(*testSettings).background = filepath.Join(workingDir, "testdata", "fyne.png")
 	l.updateBackgrounds(l.Settings().Background())
 	assert.Equal(t, l.settings.Background(), l.backgrounds[0].wallpaper.File)
 }
