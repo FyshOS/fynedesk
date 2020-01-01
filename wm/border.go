@@ -25,7 +25,9 @@ func newBorder(win desktop.Window, icon fyne.Resource) fyne.CanvasObject {
 	if icon == nil {
 		iconTheme := desk.Settings().IconTheme()
 		app := desk.IconProvider().FindAppFromWinInfo(win)
-		icon = app.Icon(iconTheme, iconSize)
+		if app != nil {
+			icon = app.Icon(iconTheme, iconSize)
+		}
 	}
 
 	exit := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {})
