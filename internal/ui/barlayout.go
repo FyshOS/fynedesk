@@ -11,7 +11,10 @@ import (
 // Declare conformity with Layout interface
 var _ fyne.Layout = (*barLayout)(nil)
 
-const separatorWidth = 2
+const (
+	iconZoomDistance = 2.5
+	separatorWidth   = 2
+)
 
 //barLayout returns a layout used for zooming linear groups of icons
 type barLayout struct {
@@ -33,56 +36,50 @@ func (bl *barLayout) setPointerPosition(position fyne.Position) {
 
 // Layout is called to pack all icons into a specified size.  It also handles the zooming effect of the icons.
 func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
-	total := 0
-	offset := 0
-	barWidth := 0
-	iconCount := len(objects)
+	offset := 0.0
+	barWidth := len(objects)*(bl.bar.iconSize+theme.Padding()) - theme.Padding()
 	if !bl.bar.disableTaskbar {
-		iconCount--
-		barWidth = (iconCount * (bl.bar.iconSize + theme.Padding())) + separatorWidth
-	} else {
-		barWidth = iconCount * (bl.bar.iconSize + theme.Padding())
+		barWidth = barWidth - bl.bar.iconSize + separatorWidth
 	}
 	barLeft := (size.Width - barWidth) / 2
 	iconLeft := barLeft
 
 	mouseX := bl.mousePosition.X
-	zoom := bl.mouseInside && mouseX >= barLeft && mouseX <= barLeft+barWidth
-
+	zoom := bl.mouseInside && mouseX >= barLeft && mouseX < barLeft+barWidth
 	for _, child := range objects {
 		if zoom && !bl.bar.disableZoom {
-			iconCenter := iconLeft + bl.bar.iconSize/2
-			offsetX := float64(mouseX - iconCenter)
-
-			scale := float64(bl.bar.iconScale) - (math.Abs(offsetX) / float64(bl.bar.iconSize*4))
-			newSize := int(math.Floor(float64(bl.bar.iconSize) * scale))
-			if newSize < bl.bar.iconSize {
-				newSize = bl.bar.iconSize
-			}
 			if _, ok := child.(*canvas.Rectangle); ok {
-				child.Resize(fyne.NewSize(separatorWidth, newSize))
-				total += separatorWidth
+				child.Resize(fyne.NewSize(separatorWidth, bl.bar.iconSize))
+				if iconLeft+separatorWidth+theme.Padding() < mouseX {
+					offset += separatorWidth
+				} else if iconLeft < mouseX {
+					offset += float64(separatorWidth + theme.Padding())
+				}
 			} else {
-				child.Resize(fyne.NewSize(newSize, newSize))
-				total += newSize
+				iconCenter := iconLeft + bl.bar.iconSize/2
+				offsetX := float64(mouseX - iconCenter)
+
+				scale := float64(bl.bar.iconScale) - (math.Abs(offsetX) / (float64(bl.bar.iconSize) * iconZoomDistance))
+				newSize := float64(bl.bar.iconSize) * scale
+				if int(newSize) < bl.bar.iconSize {
+					newSize = float64(bl.bar.iconSize)
+				}
+				child.Resize(fyne.NewSize(int(newSize), int(newSize)))
 
 				if iconLeft+bl.bar.iconSize+theme.Padding() < mouseX {
-					offset += (newSize - bl.bar.iconSize)
+					offset += newSize - float64(bl.bar.iconSize)
 				} else if iconLeft < mouseX {
 					ratio := float64(mouseX-iconLeft) / float64(bl.bar.iconSize+theme.Padding())
-					offset += int(float64(newSize-bl.bar.iconSize)*(ratio)) + theme.Padding()
+					offset += (newSize-float64(bl.bar.iconSize))*ratio + float64(theme.Padding())
 				}
 			}
 		} else {
 			if _, ok := child.(*canvas.Rectangle); ok {
 				child.Resize(fyne.NewSize(separatorWidth, bl.bar.iconSize))
-				total += separatorWidth
 			} else {
 				child.Resize(fyne.NewSize(bl.bar.iconSize, bl.bar.iconSize))
-				total += bl.bar.iconSize
 			}
 		}
-		total += theme.Padding()
 		if _, ok := child.(*canvas.Rectangle); ok {
 			iconLeft += separatorWidth
 		} else {
@@ -91,9 +88,7 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 		iconLeft += theme.Padding()
 	}
 
-	x := 0
-	x += barLeft - offset
-
+	x := barLeft - int(offset)
 	for _, child := range objects {
 		width := child.Size().Width
 		height := child.Size().Height
