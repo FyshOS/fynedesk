@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
@@ -79,7 +80,10 @@ func (x *x11WM) SetRoot(win fyne.Window) {
 }
 
 func (x *x11WM) Blank() {
-	exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
+	go func() {
+		time.Sleep(time.Second / 3)
+		exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
+	}()
 }
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
