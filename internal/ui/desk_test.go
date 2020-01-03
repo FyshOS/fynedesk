@@ -137,6 +137,10 @@ func (tsp testScreensProvider) ScreenForGeometry(x int, y int, width int, height
 	return tsp.Screens()[0]
 }
 
+func (tsp testScreensProvider) RefreshScreens() {
+	return
+}
+
 type testAppData struct {
 	name string
 }
