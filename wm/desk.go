@@ -180,7 +180,7 @@ func (x *x11WM) runLoop() {
 		case xproto.UnmapNotifyEvent:
 			x.hideWindow(ev.Window)
 		case xproto.ConfigureRequestEvent:
-			x.configureWindow(ev.Window, ev.Parent, ev)
+			x.configureWindow(ev.Window, ev)
 		case xproto.ConfigureNotifyEvent:
 			if ev.Window != x.x.RootWin() {
 				break
@@ -304,7 +304,7 @@ func (x *x11WM) runLoop() {
 	fyne.LogError("X11 connection terminated!", nil)
 }
 
-func (x *x11WM) configureWindow(win xproto.Window, parent xproto.Window, ev xproto.ConfigureRequestEvent) {
+func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
 	c := x.clientForWin(win)
 	width := ev.Width
 	height := ev.Height
