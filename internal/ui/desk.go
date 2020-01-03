@@ -22,11 +22,10 @@ type deskLayout struct {
 	screens  desktop.ScreenList
 	settings desktop.DeskSettings
 
-	backgrounds         []*background
-	bar                 *bar
-	widgets, mouse      fyne.CanvasObject
-	container           *fyne.Container
-	screenBackgroundMap map[*desktop.Screen]fyne.CanvasObject
+	backgrounds    []*background
+	bar            *bar
+	widgets, mouse fyne.CanvasObject
+	container      *fyne.Container
 }
 
 type embeddedScreensProvider struct {
@@ -52,16 +51,18 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 	h := applyScale(primary.Height, l.screens.Scale())
 	size.Width = w
 	size.Height = h
-	if screens != nil && len(screens) > 1 && len(l.backgrounds) > 1 {
+	var primaryIndex = 0
+	if screens != nil && len(screens) > 1 && len(screens) == len(l.backgrounds) {
 		for i := 0; i < len(screens); i++ {
 			if screens[i] == primary {
+				primaryIndex = i
 				continue
 			}
 			xx := applyScale(screens[i].X, l.screens.Scale())
 			yy := applyScale(screens[i].Y, l.screens.Scale())
 			ww := applyScale(screens[i].Width, l.screens.Scale())
 			hh := applyScale(screens[i].Height, l.screens.Scale())
-			background := l.screenBackgroundMap[screens[i]]
+			background := l.backgrounds[i]
 			if background != nil {
 				background.Move(fyne.NewPos(xx, yy))
 				background.Resize(fyne.NewSize(ww, hh))
@@ -77,15 +78,9 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 	l.widgets.Resize(fyne.NewSize(widgetsWidth, size.Height))
 	l.widgets.Move(fyne.NewPos(x+size.Width-widgetsWidth, y))
 
-	var background fyne.CanvasObject
-	if len(screens) > 1 {
-		background = l.screenBackgroundMap[primary]
-	} else {
-		background = l.backgrounds[0]
-	}
-	if background != nil {
-		background.Move(fyne.NewPos(x, y))
-		background.Resize(size)
+	if l.backgrounds[primaryIndex] != nil {
+		l.backgrounds[primaryIndex].Move(fyne.NewPos(x, y))
+		l.backgrounds[primaryIndex].Resize(size)
 	}
 }
 
@@ -128,7 +123,6 @@ func (l *deskLayout) Root() fyne.Window {
 	}
 
 	l.backgrounds = append(l.backgrounds, newBackground())
-	l.screenBackgroundMap[l.screens.Screens()[0]] = l.backgrounds[0]
 	l.bar = newBar(l)
 	l.widgets = newWidgetPanel(l)
 	l.mouse = newMouse()
@@ -136,7 +130,6 @@ func (l *deskLayout) Root() fyne.Window {
 	if l.screens.Screens() != nil && len(l.screens.Screens()) > 1 {
 		for i := 1; i < len(l.screens.Screens()); i++ {
 			l.backgrounds = append(l.backgrounds, newBackground())
-			l.screenBackgroundMap[l.screens.Screens()[i]] = l.backgrounds[i]
 			l.container.AddObject(l.backgrounds[i])
 		}
 	}
@@ -231,6 +224,44 @@ func (l *deskLayout) MouseOutNotify() {
 	l.bar.MouseOut()
 }
 
+// MouseOutNotify can be called by the window manager to alert the desktop that the cursor has left the canvas
+func (l *deskLayout) ScreenChangeNotify() {
+	l.screens.RefreshScreens()
+
+	if l.win.Canvas().Scale() != l.screens.Scale() {
+		l.win.Canvas().SetScale(l.screens.Scale())
+	}
+
+	l.backgrounds = nil
+	l.container.Objects = nil
+
+	l.backgrounds = append(l.backgrounds, newBackground())
+	l.container.AddObject(l.backgrounds[0])
+	if l.screens.Screens() != nil && len(l.screens.Screens()) > 1 {
+		for i := 1; i < len(l.screens.Screens()); i++ {
+			l.backgrounds = append(l.backgrounds, newBackground())
+			l.container.AddObject(l.backgrounds[i])
+		}
+	}
+	l.container.AddObject(l.bar)
+	l.container.AddObject(l.widgets)
+	l.container.AddObject(mouse)
+
+	l.Layout(nil, fyne.NewSize(0, 0))
+}
+
+func (l *deskLayout) startFyneSettingsChangeListener(listener chan fyne.Settings) {
+	for {
+		_ = <-listener
+		l.win.Canvas().SetScale(l.app.Settings().Scale())
+		l.screens.RefreshScreens()
+		if l.win.Canvas().Scale() != l.Screens().Scale() {
+			l.win.Canvas().SetScale(l.Screens().Scale())
+		}
+		l.Layout(nil, fyne.NewSize(0, 0))
+	}
+}
+
 func (l *deskLayout) startSettingsChangeListener(listener chan desktop.DeskSettings) {
 	for {
 		_ = <-listener
@@ -248,6 +279,9 @@ func (l *deskLayout) addSettingsChangeListener() {
 	listener := make(chan desktop.DeskSettings)
 	l.Settings().AddChangeListener(listener)
 	go l.startSettingsChangeListener(listener)
+	fyneListener := make(chan fyne.Settings)
+	l.app.Settings().AddChangeListener(fyneListener)
+	go l.startFyneSettingsChangeListener(fyneListener)
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
@@ -285,6 +319,10 @@ func (esp embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, he
 	return esp.Screens()[0]
 }
 
+func (esp embeddedScreensProvider) RefreshScreens() {
+	return
+}
+
 // NewEmbeddedScreensProvider returns a screen provider for use in embedded desktop mode
 func NewEmbeddedScreensProvider() desktop.ScreenList {
 	return &embeddedScreensProvider{}
@@ -298,7 +336,6 @@ func NewDesktop(app fyne.App, wm desktop.WindowManager, icons desktop.Applicatio
 	desktop.SetInstance(desk)
 	desk.settings = newDeskSettings()
 	desk.addSettingsChangeListener()
-	desk.screenBackgroundMap = make(map[*desktop.Screen]fyne.CanvasObject)
 	return desk
 }
 
@@ -311,6 +348,5 @@ func NewEmbeddedDesktop(app fyne.App, icons desktop.ApplicationProvider) desktop
 	desktop.SetInstance(desk)
 	desk.settings = newDeskSettings()
 	desk.addSettingsChangeListener()
-	desk.screenBackgroundMap = make(map[*desktop.Screen]fyne.CanvasObject)
 	return desk
 }

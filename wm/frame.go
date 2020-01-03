@@ -280,7 +280,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	canvas.SetPadded(false)
 	canvas.SetContent(newBorder(f.client, f.client.Icon()))
 
-	scale := desktop.Instance().Root().Canvas().Scale()
+	scale := desktop.Instance().Screens().Scale()
 	canvas.SetScale(scale)
 
 	heightPix := f.titleHeight()

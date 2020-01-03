@@ -8,6 +8,7 @@ type ScreenList interface {
 	Scale() float32                                                // Return the scale calculated for use across screens
 	ScreenForWindow(Window) *Screen                                // Return the screen that a window is located on
 	ScreenForGeometry(x int, y int, width int, height int) *Screen // Return the screen that a geometry is located on
+	RefreshScreens()                                               // Refresh the list of screens and their properties
 }
 
 // Screen provides relative information about a single physical screen

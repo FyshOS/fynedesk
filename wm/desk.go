@@ -4,11 +4,13 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
 	"time"
 
+	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -179,7 +181,7 @@ func (x *x11WM) runLoop() {
 		case xproto.UnmapNotifyEvent:
 			x.hideWindow(ev.Window)
 		case xproto.ConfigureRequestEvent:
-			x.configureWindow(ev.Window, ev)
+			x.configureWindow(ev.Window, ev.Parent, ev)
 		case xproto.ConfigureNotifyEvent:
 			if ev.Window != x.x.RootWin() {
 				break
@@ -292,13 +294,18 @@ func (x *x11WM) runLoop() {
 				x.altTabList = nil
 				xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
 			}
+
+		case randr.ScreenChangeNotifyEvent:
+			if screenNotify, ok := desktop.Instance().(notify.ScreenChangeNotify); ok {
+				screenNotify.ScreenChangeNotify()
+			}
 		}
 	}
 
 	fyne.LogError("X11 connection terminated!", nil)
 }
 
-func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
+func (x *x11WM) configureWindow(win xproto.Window, parent xproto.Window, ev xproto.ConfigureRequestEvent) {
 	c := x.clientForWin(win)
 	width := ev.Width
 	height := ev.Height
@@ -308,13 +315,10 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		if f != nil && c.(*client).win == win { // ignore requests from our frame as we must have caused it
 			f.minWidth, f.minHeight = windowMinSize(x.x, win)
 			if c.Decorated() {
-				err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-					xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-					[]uint32{uint32(f.borderWidth()), uint32(f.titleHeight()),
-						uint32(width), uint32(height)}).Check()
-
-				if err != nil {
-					fyne.LogError("Configure Frame Error", err)
+				if !c.Fullscreened() {
+					c.(*client).setWindowGeometry(f.x, f.y, ev.Width+(f.borderWidth()*2), ev.Height+(f.borderWidth()+f.titleHeight()))
+				} else {
+					c.(*client).setWindowGeometry(f.x, f.y, ev.Width, ev.Height)
 				}
 			} else {
 				if ev.X == 0 && ev.Y == 0 {
@@ -638,7 +642,7 @@ func (x *x11WM) frameExisting() {
 func (x *x11WM) scaleToPixels(i int) uint16 {
 	scale := float32(1.0)
 	if x.root != nil {
-		scale = x.root.Canvas().Scale()
+		scale = desktop.Instance().Screens().Scale()
 	}
 
 	return uint16(float32(i) * scale)

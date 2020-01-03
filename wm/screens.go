@@ -8,6 +8,7 @@ import (
 	"strconv"
 
 	"fyne.io/desktop"
+
 	"fyne.io/fyne"
 	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
@@ -18,14 +19,26 @@ type x11ScreensProvider struct {
 	screens []*desktop.Screen
 	active  *desktop.Screen
 	primary *desktop.Screen
+	root    xproto.Window
 	scale   float32
+	single  bool
+	x       *x11WM
 }
 
 // NewX11ScreensProvider returns a screen provider for use in x11 desktop mode
 func NewX11ScreensProvider(mgr desktop.WindowManager) desktop.ScreenList {
 	screensProvider := &x11ScreensProvider{}
-	x := mgr.(*x11WM)
-	screensProvider.setupScreens(x)
+	screensProvider.x = mgr.(*x11WM)
+	err := randr.Init(screensProvider.x.x.Conn())
+	if err != nil {
+		fyne.LogError("Could not initialize randr", err)
+		screensProvider.single = true
+		screensProvider.setupSingleScreen(screensProvider.x)
+		return screensProvider
+	}
+	screensProvider.root = xproto.Setup(screensProvider.x.x.Conn()).DefaultScreen(screensProvider.x.x.Conn()).Root
+	randr.SelectInput(screensProvider.x.x.Conn(), screensProvider.root, randr.NotifyMaskScreenChange)
+	screensProvider.setupScreens(screensProvider.x, screensProvider.root)
 	return screensProvider
 }
 
@@ -104,15 +117,28 @@ func getScale(widthPx uint16, widthMm uint32) float32 {
 	return float32(math.Round(float64(dpi)/144.0*10.0)) / 10.0
 }
 
-func (xsp *x11ScreensProvider) setupScreens(x *x11WM) {
-	err := randr.Init(x.x.Conn())
-	if err != nil {
-		fyne.LogError("Could not initialize randr", err)
-		xsp.setupSingleScreen(x)
+func (xsp *x11ScreensProvider) RefreshScreens() {
+	xsp.screens = nil
+	if xsp.single {
+		xsp.setupSingleScreen(xsp.x)
 		return
 	}
+	xsp.setupScreens(xsp.x, xsp.root)
+	err := xproto.ConfigureWindowChecked(xsp.x.x.Conn(), xsp.x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+		[]uint32{uint32(0), uint32(0), uint32(float32(xsp.x.x.Screen().WidthInPixels) * xsp.scale), uint32(float32(xsp.x.x.Screen().HeightInPixels) * xsp.scale)}).Check()
+	if err != nil {
+		fyne.LogError("Configure Window Error", err)
+	}
+	for _, c := range xsp.x.Windows() {
+		f := c.(*client).frame
 
-	root := xproto.Setup(x.x.Conn()).DefaultScreen(x.x.Conn()).Root
+		c.(*client).setWindowGeometry(f.x, f.y, c.(*client).frame.width, c.(*client).frame.height)
+		c.(*client).frame.applyTheme(true)
+	}
+}
+
+func (xsp *x11ScreensProvider) setupScreens(x *x11WM, root xproto.Window) {
 	resources, err := randr.GetScreenResources(x.x.Conn(), root).Reply()
 	if err != nil || len(resources.Outputs) == 0 {
 		fyne.LogError("Could not get randr screen resources", err)
