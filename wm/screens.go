@@ -131,10 +131,7 @@ func (xsp *x11ScreensProvider) RefreshScreens() {
 		fyne.LogError("Configure Window Error", err)
 	}
 	for _, c := range xsp.x.Windows() {
-		f := c.(*client).frame
-
-		c.(*client).setWindowGeometry(f.x, f.y, c.(*client).frame.width, c.(*client).frame.height)
-		c.(*client).frame.applyTheme(true)
+		c.(*client).frame.updateScale()
 	}
 }
 

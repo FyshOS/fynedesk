@@ -415,6 +415,16 @@ func (f *frame) updateTitle() {
 	f.applyTheme(true)
 }
 
+func (f *frame) updateScale() {
+	xproto.FreePixmap(f.client.wm.x.Conn(), f.borderTop)
+	f.borderTop = 0
+	xproto.FreePixmap(f.client.wm.x.Conn(), f.borderTopRight)
+	f.borderTopRight = 0
+
+	f.updateGeometry(f.x, f.y, f.width, f.height, true)
+	f.applyTheme(true)
+}
+
 func (f *frame) borderWidth() uint16 {
 	if !f.client.Decorated() {
 		return 0
