@@ -4,7 +4,6 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"

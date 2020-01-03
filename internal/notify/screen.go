@@ -1,6 +1,6 @@
 package notify
 
-// MouseNotify is an interface that can be used by objects interested in when the mouse enters or exits the desktop
+// ScreenNotify is an interface that can be used by objects interested in screen configuration changes
 type ScreenChangeNotify interface {
 	ScreenChangeNotify()
 }
