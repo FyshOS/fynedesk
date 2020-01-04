@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/widget"
 
 	"fyne.io/desktop"
+	"fyne.io/desktop/internal/app/pacman"
 )
 
 var appExec *launcher
@@ -125,11 +126,16 @@ func newAppLauncher(desk desktop.Desktop) *launcher {
 	}
 	l.entry = entry
 
+	manage := widget.NewButton("Manage Apps", func() {
+		win.Close()
+		pacman.ShowManage()
+	})
 	cancel := widget.NewButtonWithIcon("Cancel", theme.CancelIcon(), func() {
 		win.Close()
 	})
+	buttons := fyne.NewContainerWithLayout(layout.NewGridLayout(2), manage, cancel)
 
-	content := fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, cancel, nil, nil), entry, appScroller, cancel)
+	content := fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, buttons, nil, nil), entry, appScroller, buttons)
 
 	win.SetContent(content)
 	win.Resize(fyne.NewSize(300,
