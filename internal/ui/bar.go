@@ -164,11 +164,15 @@ func (b *bar) updateTaskbar() {
 	if disableTaskbar == b.disableTaskbar {
 		return
 	}
-	b.disableTaskbar = b.desk.Settings().LauncherDisableTaskbar()
-	if disableTaskbar == true {
+	b.disableTaskbar = disableTaskbar
+	if disableTaskbar {
 		return
 	}
 	b.appendSeparator()
+	if b.desk.WindowManager() == nil {
+		return
+	}
+
 	for _, win := range b.desk.WindowManager().Windows() {
 		b.WindowAdded(win)
 	}
