@@ -1,4 +1,4 @@
-// +build !linux,!darwin
+// +build !linux,!darwin,!freebsd,!openbsd,!netbsd
 
 package main
 

@@ -12,7 +12,7 @@
 
 # About
 
-FyneDesk is an easy to use Linux desktop environment following material design.
+FyneDesk is an easy to use Linux/Unix desktop environment following material design.
 It is build using the [Fyne](https://fyne.io) toolkit and is designed to be
 easy to use as well as easy to develop. We use the Go language and welcome
 any contributions or feedback for the project.

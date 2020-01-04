@@ -1,3 +1,5 @@
+// +build linux openbsd freebsd netbsd
+
 package main
 
 import (
