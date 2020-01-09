@@ -112,7 +112,8 @@ type testScreensProvider struct {
 
 func (tsp testScreensProvider) Screens() []*desktop.Screen {
 	if tsp.screens == nil {
-		tsp.screens = []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0, Width: 2000, Height: 1000}}
+		tsp.screens = []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0, Width: 2000, Height: 1000,
+			Scale: 1}}
 	}
 	return tsp.screens
 }

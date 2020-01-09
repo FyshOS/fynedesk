@@ -46,10 +46,10 @@ func removeScale(coord int, scale float32) int {
 func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 	screens := l.screens.Screens()
 	primary := l.screens.Primary()
-	x := applyScale(primary.X, l.screens.Scale())
-	y := applyScale(primary.Y, l.screens.Scale())
-	w := applyScale(primary.Width, l.screens.Scale())
-	h := applyScale(primary.Height, l.screens.Scale())
+	x := applyScale(primary.X, l.screens.Primary().CanvasScale()) // TODO here we need to get the right screen
+	y := applyScale(primary.Y, l.screens.Primary().CanvasScale())
+	w := applyScale(primary.Width, l.screens.Primary().CanvasScale())
+	h := applyScale(primary.Height, l.screens.Primary().CanvasScale())
 	size.Width = w
 	size.Height = h
 	if screens != nil && len(screens) > 1 && len(l.backgrounds) > 1 {
@@ -57,10 +57,10 @@ func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
 			if screens[i] == primary {
 				continue
 			}
-			xx := applyScale(screens[i].X, l.screens.Scale())
-			yy := applyScale(screens[i].Y, l.screens.Scale())
-			ww := applyScale(screens[i].Width, l.screens.Scale())
-			hh := applyScale(screens[i].Height, l.screens.Scale())
+			xx := applyScale(screens[i].X, l.screens.Primary().CanvasScale())
+			yy := applyScale(screens[i].Y, l.screens.Primary().CanvasScale())
+			ww := applyScale(screens[i].Width, l.screens.Primary().CanvasScale())
+			hh := applyScale(screens[i].Height, l.screens.Primary().CanvasScale())
 			background := l.screenBackgroundMap[screens[i]]
 			if background != nil {
 				background.Move(fyne.NewPos(xx, yy))
@@ -123,10 +123,6 @@ func (l *deskLayout) Root() fyne.Window {
 	}
 
 	l.win = l.newDesktopWindow()
-	if l.win.Canvas().Scale() != l.screens.Scale() {
-		l.win.Canvas().SetScale(l.screens.Scale())
-	}
-
 	l.backgrounds = append(l.backgrounds, newBackground())
 	l.screenBackgroundMap[l.screens.Screens()[0]] = l.backgrounds[0]
 	l.bar = newBar(l)
@@ -175,7 +171,7 @@ func (l *deskLayout) Run() {
 }
 
 func (l *deskLayout) RunApp(app desktop.AppData) error {
-	vars := l.scaleVars(l.Root().Canvas().Scale())
+	vars := l.scaleVars(l.Screens().Active().CanvasScale())
 	return app.Run(vars)
 }
 
@@ -187,7 +183,7 @@ func (l *deskLayout) ContentSizePixels(screen *desktop.Screen) (uint32, uint32) 
 	screenW := uint32(screen.Width)
 	screenH := uint32(screen.Height)
 	if l.screens.Primary() == screen {
-		return screenW - uint32(float32(l.widgets.Size().Width)*l.Root().Canvas().Scale()), screenH
+		return screenW - uint32(float32(l.widgets.Size().Width)*screen.CanvasScale()), screenH
 	}
 	return screenW, screenH
 }
@@ -258,9 +254,11 @@ func (l *deskLayout) Screens() desktop.ScreenList {
 func (esp embeddedScreensProvider) Screens() []*desktop.Screen {
 	l := desktop.Instance().(*deskLayout)
 	if esp.screens == nil {
+		scale := desktop.Instance().(*deskLayout).Root().Canvas().Scale()
+
 		esp.screens = []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0,
-			Width:  removeScale(int(l.Root().Canvas().Size().Width), esp.Scale()),
-			Height: removeScale(int(l.Root().Canvas().Size().Height), esp.Scale())}}
+			Width:  removeScale(int(l.Root().Canvas().Size().Width), scale),
+			Height: removeScale(int(l.Root().Canvas().Size().Height), scale)}}
 	}
 	return esp.screens
 }
@@ -271,10 +269,6 @@ func (esp embeddedScreensProvider) Active() *desktop.Screen {
 
 func (esp embeddedScreensProvider) Primary() *desktop.Screen {
 	return esp.Screens()[0]
-}
-
-func (esp embeddedScreensProvider) Scale() float32 {
-	return desktop.Instance().(*deskLayout).Root().Canvas().Scale()
 }
 
 func (esp embeddedScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
