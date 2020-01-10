@@ -420,15 +420,15 @@ func (f *frame) borderWidth() uint16 {
 	if !f.client.Decorated() {
 		return 0
 	}
-	return uint16(wmTheme.BorderWidth)
+	return uint16(f.client.wm.scaleToPixels(wmTheme.BorderWidth, desktop.Instance().Screens().ScreenForWindow(f.client)))
 }
 
 func (f *frame) buttonWidth() uint16 {
-	return uint16(wmTheme.ButtonWidth)
+	return uint16(f.client.wm.scaleToPixels(wmTheme.ButtonWidth, desktop.Instance().Screens().ScreenForWindow(f.client)))
 }
 
 func (f *frame) titleHeight() uint16 {
-	return uint16(wmTheme.TitleHeight)
+	return uint16(f.client.wm.scaleToPixels(wmTheme.TitleHeight, desktop.Instance().Screens().ScreenForWindow(f.client)))
 }
 
 func (f *frame) show() {

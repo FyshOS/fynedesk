@@ -3,7 +3,6 @@
 package wm // import "fyne.io/desktop/wm"
 
 import (
-	"fmt"
 	"errors"
 	"log"
 	"os"
@@ -29,7 +28,7 @@ type x11WM struct {
 	x                 *xgbutil.XUtil
 	roots             []fyne.Window
 	rootIDs           []xproto.Window
-	framedExisting	  bool
+	framedExisting    bool
 	loaded            bool
 	moveResizing      bool
 	moveResizingLastX int16
@@ -195,7 +194,6 @@ func (x *x11WM) runLoop() {
 				screen := desktop.Instance().ScreenForRoot(window)
 				id := x.rootIDMap[window]
 				if id != 0 {
-					fmt.Println("Configuring: " + window.Title())
 					xproto.ConfigureWindowChecked(x.x.Conn(), id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 						xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 						[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
@@ -345,7 +343,6 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 
 	name := windowName(x.x, win)
-	fmt.Println("Configuring Function... Window: " + name)
 	var rootWin fyne.Window
 	if len(x.roots) > 0 {
 		for _, window := range desktop.Instance().Roots() {
@@ -373,7 +370,6 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 			return
 		}
 		if x.rootIDMap[rootWin] == 0 {
-			fmt.Println("Mapping Root: " + name)
 			x.rootIDs = append(x.rootIDs, win)
 			x.rootIDMap[rootWin] = win
 		}

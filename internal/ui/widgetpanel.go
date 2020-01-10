@@ -177,10 +177,10 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-func newWidgetPanel(rootDesk desktop.Desktop, root fyne.Window) *widgetPanel {
+func newWidgetPanel(rootDesk desktop.Desktop) *widgetPanel {
 	w := &widgetPanel{
 		desk:       rootDesk,
-		root:       root,
+		root:       rootDesk.RootForScreen(rootDesk.Screens().Primary()),
 		appExecWin: nil,
 	}
 	w.ExtendBaseWidget(w)
