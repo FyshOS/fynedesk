@@ -35,49 +35,17 @@ type embeddedScreensProvider struct {
 	screens []*desktop.Screen
 }
 
-func applyScale(coord int, scale float32) int {
-	newCoord := int(math.Round(float64(coord) / float64(scale)))
-	return newCoord
-}
-
 func removeScale(coord int, scale float32) int {
 	newCoord := int(math.Round(float64(coord) * float64(scale)))
 	return newCoord
 }
 
-<<<<<<< HEAD
-func (l *deskLayout) Layout(objs []fyne.CanvasObject, size fyne.Size) {
-	screens := l.screens.Screens()
-	primary := l.screens.Primary()
-	x := applyScale(primary.X, l.screens.Primary().CanvasScale()) // TODO here we need to get the right screen
-	y := applyScale(primary.Y, l.screens.Primary().CanvasScale())
-	w := applyScale(primary.Width, l.screens.Primary().CanvasScale())
-	h := applyScale(primary.Height, l.screens.Primary().CanvasScale())
-	size.Width = w
-	size.Height = h
-	if screens != nil && len(screens) > 1 && len(l.backgrounds) > 1 {
-		for i := 0; i < len(screens); i++ {
-			if screens[i] == primary {
-				continue
-			}
-			xx := applyScale(screens[i].X, l.screens.Primary().CanvasScale())
-			yy := applyScale(screens[i].Y, l.screens.Primary().CanvasScale())
-			ww := applyScale(screens[i].Width, l.screens.Primary().CanvasScale())
-			hh := applyScale(screens[i].Height, l.screens.Primary().CanvasScale())
-			background := l.screenBackgroundMap[screens[i]]
-			if background != nil {
-				background.Move(fyne.NewPos(xx, yy))
-				background.Resize(fyne.NewSize(ww, hh))
-			}
-		}
-=======
 func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0]
 	win := l.rootForBackground(bg.(*background))
 	screen := l.ScreenForRoot(win)
 	if screen == nil {
 		return
->>>>>>> bb08a51... Use multiple windows for root
 	}
 	bg.Resize(size)
 

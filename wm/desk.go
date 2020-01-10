@@ -4,6 +4,7 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -200,6 +201,7 @@ func (x *x11WM) runLoop() {
 				}
 			}
 		case xproto.CreateNotifyEvent:
+			fmt.Println("Window Name " + windowName(x.x, ev.Window))
 			err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Window, xproto.CwCursor,
 				[]uint32{uint32(defaultCursor)}).Check()
 			if err != nil {
