@@ -157,8 +157,6 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	go func() {
 		for {
 			<-listener
-			desk := desktop.Instance()
-			desk.(fyne.Layout).Layout(nil, desk.Root().Canvas().Size()) // TODO remove this one we have root-per-screen
 			for _, c := range mgr.clients {
 				c.(*client).frame.applyTheme(true)
 			}
