@@ -44,6 +44,9 @@ func (xsp *x11ScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Scre
 		return xsp.screens[0]
 	}
 	fr := win.(*client).frame
+	if fr == nil {
+		return xsp.Primary()
+	}
 	return xsp.ScreenForGeometry(int(fr.x), int(fr.y), int(fr.width), int(fr.height))
 }
 
@@ -112,7 +115,6 @@ func (xsp *x11ScreensProvider) setupScreens(x *x11WM) {
 			fyne.LogError("Could not get randr crtcs", err)
 			continue
 		}
-
 		xsp.screens = append(xsp.screens, &desktop.Screen{Name: string(outputInfo.Name),
 			X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height),
 			Scale: getScale(crtcInfo.Width, uint16(outputInfo.MmWidth))})
@@ -135,8 +137,7 @@ func (xsp *x11ScreensProvider) setupSingleScreen(x *x11WM) {
 	xsp.screens = append(xsp.screens, &desktop.Screen{Name: "Screen0",
 		X: xwindow.RootGeometry(x.x).X(), Y: xwindow.RootGeometry(x.x).Y(),
 		Width: xwindow.RootGeometry(x.x).Width(), Height: xwindow.RootGeometry(x.x).Height(),
-		Scale: 1.0,
-	})
+		Scale: 1.0})
 	xsp.primary = xsp.screens[0]
 	xsp.active = xsp.screens[0]
 }

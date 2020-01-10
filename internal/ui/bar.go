@@ -217,7 +217,7 @@ func (b *bar) updateIcons() {
 }
 
 func (b *bar) appIcon(data desktop.AppData) fyne.Resource {
-	return data.Icon(b.desk.Settings().IconTheme(), int((float32(b.iconSize)*b.iconScale)*b.desk.Root().Canvas().Scale()))
+	return data.Icon(b.desk.Settings().IconTheme(), int((float32(b.iconSize)*b.iconScale)*b.desk.Screens().Primary().CanvasScale()))
 }
 
 func (b *bar) winIcon(win *appWindow) fyne.Resource {

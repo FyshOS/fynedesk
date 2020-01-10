@@ -27,7 +27,7 @@ func (d *settingsUI) populateThemeIcons(box *fyne.Container, theme string) {
 	box.Objects = nil
 	for _, appName := range d.launcherIcons {
 		appData := desktop.Instance().IconProvider().FindAppFromName(appName)
-		iconRes := appData.Icon(theme, int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desktop.Instance().Root().Canvas().Scale())))
+		iconRes := appData.Icon(theme, int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desktop.Instance().Screens().Primary().CanvasScale())))
 		icon := widget.NewIcon(iconRes)
 		box.AddObject(icon)
 	}
@@ -80,7 +80,7 @@ func (d *settingsUI) listAppMatches(lookupList *fyne.Container, orderList *fyne.
 			continue
 		}
 		check := widget.NewCheck(appData.Name(), nil)
-		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desk.Root().Canvas().Scale())))
+		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desk.Screens().Primary().CanvasScale())))
 		icon := widget.NewIcon(iconRes)
 		hbox := widget.NewHBox(icon, check)
 		exists := false
@@ -139,7 +139,7 @@ func (d *settingsUI) populateOrderList(list *fyne.Container) {
 				d.populateOrderList(list)
 			}
 		}
-		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desktop.Instance().Root().Canvas().Scale())))
+		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desktop.Instance().Screens().Primary().CanvasScale())))
 		icon := widget.NewIcon(iconRes)
 		label := widget.NewLabel(appName)
 		hbox := widget.NewHBox(upButton, downButton, icon, label)

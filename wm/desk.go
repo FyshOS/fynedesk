@@ -3,6 +3,7 @@
 package wm // import "fyne.io/desktop/wm"
 
 import (
+	"fmt"
 	"errors"
 	"log"
 	"os"
@@ -26,8 +27,9 @@ import (
 type x11WM struct {
 	stack
 	x                 *xgbutil.XUtil
-	root              fyne.Window
-	rootID            xproto.Window
+	roots             []fyne.Window
+	rootIDs           []xproto.Window
+	framedExisting	  bool
 	loaded            bool
 	moveResizing      bool
 	moveResizingLastX int16
@@ -38,6 +40,8 @@ type x11WM struct {
 
 	allowedActions []string
 	supportedHints []string
+
+	rootIDMap map[fyne.Window]xproto.Window
 }
 
 type moveResizeType uint32
@@ -75,8 +79,8 @@ func (x *x11WM) AddStackListener(l desktop.StackListener) {
 	x.stack.listeners = append(x.stack.listeners, l)
 }
 
-func (x *x11WM) SetRoot(win fyne.Window) {
-	x.root = win
+func (x *x11WM) SetRoots(wins []fyne.Window) {
+	x.roots = wins
 }
 
 func (x *x11WM) Blank() {
@@ -95,6 +99,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
+	mgr.rootIDMap = make(map[fyne.Window]xproto.Window)
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -186,9 +191,16 @@ func (x *x11WM) runLoop() {
 			if ev.Window != x.x.RootWin() {
 				break
 			}
-			xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
-				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-				[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width), uint32(ev.Height)}).Check()
+			for _, window := range x.roots {
+				screen := desktop.Instance().ScreenForRoot(window)
+				id := x.rootIDMap[window]
+				if id != 0 {
+					fmt.Println("Configuring: " + window.Title())
+					xproto.ConfigureWindowChecked(x.x.Conn(), id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+						xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+						[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
+				}
+			}
 		case xproto.CreateNotifyEvent:
 			err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Window, xproto.CwCursor,
 				[]uint32{uint32(defaultCursor)}).Check()
@@ -248,8 +260,9 @@ func (x *x11WM) runLoop() {
 			}
 		case xproto.LeaveNotifyEvent:
 			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
-				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/x.root.Canvas().Scale()),
-					int(float32(ev.RootY)/x.root.Canvas().Scale())))
+				screen := desktop.Instance().Screens().ScreenForGeometry(int(ev.RootX), int(ev.RootY), 0, 0)
+				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/screen.CanvasScale()),
+					int(float32(ev.RootY)/screen.CanvasScale())))
 			}
 		case xproto.KeyPressEvent:
 			if ev.Detail == keyCodeSpace {
@@ -268,7 +281,7 @@ func (x *x11WM) runLoop() {
 				}
 				x.altTabIndex = 0
 
-				xproto.GrabKeyboard(x.x.Conn(), true, x.rootID, xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
+				xproto.GrabKeyboard(x.x.Conn(), true, x.x.RootWin(), xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
 			}
 
 			winCount := len(x.altTabList)
@@ -302,6 +315,8 @@ func (x *x11WM) runLoop() {
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
 	c := x.clientForWin(win)
+	xcoord := ev.X
+	ycoord := ev.Y
 	width := ev.Width
 	height := ev.Height
 
@@ -330,25 +345,41 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 
 	name := windowName(x.x, win)
-	isRoot := x.root != nil && name == x.root.Title()
-	if isRoot {
-		width = x.x.Screen().WidthInPixels
-		height = x.x.Screen().HeightInPixels
+	fmt.Println("Configuring Function... Window: " + name)
+	var rootWin fyne.Window
+	if len(x.roots) > 0 {
+		for _, window := range desktop.Instance().Roots() {
+			if name == window.Title() {
+				rootWin = window
+				screen := desktop.Instance().ScreenForRoot(window)
+				xcoord = int16(screen.X)
+				ycoord = int16(screen.Y)
+				width = uint16(screen.Width)
+				height = uint16(screen.Height)
+				break
+			}
+		}
 	}
 
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(width), uint32(height)}).Check()
+		[]uint32{uint32(xcoord), uint32(ycoord), uint32(width), uint32(height)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
 
-	if isRoot {
+	if rootWin != nil {
 		if x.loaded {
 			return
 		}
-		x.rootID = win
-		x.loaded = true
+		if x.rootIDMap[rootWin] == 0 {
+			fmt.Println("Mapping Root: " + name)
+			x.rootIDs = append(x.rootIDs, win)
+			x.rootIDMap[rootWin] = win
+		}
+		if !x.loaded && len(x.roots) == len(x.rootIDs) {
+			x.loaded = true
+		}
 	}
 }
 
@@ -540,19 +571,19 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 
 func (x *x11WM) showWindow(win xproto.Window) {
 	name := windowName(x.x, win)
-
-	if name == x.root.Title() {
-		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
-		if err != nil {
-			fyne.LogError("Show Window Error", err)
+	for _, window := range x.roots {
+		if name == window.Title() {
+			err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
+			if err != nil {
+				fyne.LogError("Show Window Error", err)
+			}
+			x.bindKeys(win)
+			if !x.framedExisting {
+				x.framedExisting = true
+				go x.frameExisting()
+			}
+			return
 		}
-		x.bindKeys(win)
-		go x.frameExisting()
-
-		return
-	}
-	if x.rootID == 0 {
-		return
 	}
 	override := windowOverrideGet(x.x, win)
 	if override {
@@ -622,7 +653,14 @@ func (x *x11WM) frameExisting() {
 
 	for _, child := range tree.Children {
 		name := windowName(x.x, child)
-		if x.root != nil && name == x.root.Title() {
+		isRoot := false
+		for _, window := range x.roots {
+			if name == window.Title() {
+				isRoot = true
+				break
+			}
+		}
+		if isRoot {
 			continue
 		}
 		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
@@ -637,11 +675,6 @@ func (x *x11WM) frameExisting() {
 	}
 }
 
-func (x *x11WM) scaleToPixels(i int) uint16 {
-	scale := float32(1.0)
-	if x.root != nil {
-		scale = x.root.Canvas().Scale()
-	}
-
-	return uint16(float32(i) * scale)
+func (x *x11WM) scaleToPixels(i int, screen *desktop.Screen) uint16 {
+	return uint16(float32(i) * screen.CanvasScale())
 }
