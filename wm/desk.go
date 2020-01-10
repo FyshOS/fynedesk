@@ -323,13 +323,10 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		if f != nil && c.(*client).win == win { // ignore requests from our frame as we must have caused it
 			f.minWidth, f.minHeight = windowMinSize(x.x, win)
 			if c.Decorated() {
-				err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-					xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-					[]uint32{uint32(f.borderWidth()), uint32(f.titleHeight()),
-						uint32(width), uint32(height)}).Check()
-
-				if err != nil {
-					fyne.LogError("Configure Frame Error", err)
+				if !c.Fullscreened() {
+					c.(*client).setWindowGeometry(f.x, f.y, ev.Width+(f.borderWidth()*2), ev.Height+(f.borderWidth()+f.titleHeight()))
+				} else {
+					c.(*client).setWindowGeometry(f.x, f.y, ev.Width, ev.Height)
 				}
 			} else {
 				if ev.X == 0 && ev.Y == 0 {
