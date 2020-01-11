@@ -332,11 +332,10 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 
 	name := windowName(x.x, win)
-	var rootWin fyne.Window
 	for _, screen := range desktop.Instance().Screens().Screens() {
 		window := desktop.Instance().RootForScreen(screen)
 		if name == window.Title() {
-			rootWin = window
+			x.rootIDMap[window] = win
 			xcoord = int16(screen.X)
 			ycoord = int16(screen.Y)
 			width = uint16(screen.Width)
@@ -350,12 +349,6 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		[]uint32{uint32(xcoord), uint32(ycoord), uint32(width), uint32(height)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
-	}
-
-	if rootWin != nil {
-		if x.rootIDMap[rootWin] == 0 {
-			x.rootIDMap[rootWin] = win
-		}
 	}
 }
 
@@ -547,20 +540,17 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 
 func (x *x11WM) showWindow(win xproto.Window) {
 	name := windowName(x.x, win)
-	for _, screen := range desktop.Instance().Screens().Screens() {
-		window := desktop.Instance().RootForScreen(screen)
-		if name == window.Title() {
-			err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
-			if err != nil {
-				fyne.LogError("Show Window Error", err)
-			}
-			x.bindKeys(win)
-			if !x.framedExisting {
-				x.framedExisting = true
-				go x.frameExisting()
-			}
-			return
+	if strings.Index(name, ui.RootWindowName) == 0 {
+		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
+		if err != nil {
+			fyne.LogError("Show Window Error", err)
 		}
+		x.bindKeys(win)
+		if !x.framedExisting {
+			x.framedExisting = true
+			go x.frameExisting()
+		}
+		return
 	}
 	override := windowOverrideGet(x.x, win)
 	if override {
