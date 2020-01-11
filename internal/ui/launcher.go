@@ -9,43 +9,44 @@ import (
 	"fyne.io/desktop"
 )
 
-var appExec *launcher
+var appExec *picker
 
 type appEntry struct {
 	widget.Entry
 
-	launch *launcher
+	pick *picker
 }
 
 func (e *appEntry) TypedKey(ev *fyne.KeyEvent) {
 	switch ev.Name {
 	case fyne.KeyEscape:
-		e.launch.close()
+		e.pick.close()
 	case fyne.KeyReturn:
-		e.launch.runSelected()
+		e.pick.pickSelected()
 	case fyne.KeyUp:
-		e.launch.setActiveIndex(e.launch.activeIndex - 1)
+		e.pick.setActiveIndex(e.pick.activeIndex - 1)
 	case fyne.KeyDown:
-		e.launch.setActiveIndex(e.launch.activeIndex + 1)
+		e.pick.setActiveIndex(e.pick.activeIndex + 1)
 	default:
 		e.Entry.TypedKey(ev)
 	}
 }
 
-type launcher struct {
-	win  fyne.Window
-	desk desktop.Desktop
+type picker struct {
+	win      fyne.Window
+	desk     desktop.Desktop
+	callback func(data desktop.AppData)
 
 	entry       *appEntry
 	appList     *fyne.Container
 	activeIndex int
 }
 
-func (l *launcher) close() {
+func (l *picker) close() {
 	l.win.Close()
 }
 
-func (l *launcher) runSelected() {
+func (l *picker) pickSelected() {
 	if len(l.appList.Objects) == 0 {
 		return
 	}
@@ -53,7 +54,7 @@ func (l *launcher) runSelected() {
 	l.appList.Objects[l.activeIndex].(*widget.Button).OnTapped()
 }
 
-func (l *launcher) setActiveIndex(index int) {
+func (l *picker) setActiveIndex(index int) {
 	if index < 0 || index >= len(l.appList.Objects) {
 		return
 	}
@@ -64,22 +65,13 @@ func (l *launcher) setActiveIndex(index int) {
 	l.appList.Refresh()
 }
 
-func (l *launcher) runApp(app desktop.AppData) {
-	err := l.desk.RunApp(app)
-	if err != nil {
-		fyne.LogError("Failed to start app", err)
-		return
-	}
-	l.win.Close()
-}
-
-func (l *launcher) updateAppListMatching(input string) {
+func (l *picker) updateAppListMatching(input string) {
 	l.activeIndex = 0
 	l.appList.Objects = l.appButtonListMatching(input)
 	l.appList.Refresh()
 }
 
-func (l *launcher) appButtonListMatching(input string) []fyne.CanvasObject {
+func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 	var appList []fyne.CanvasObject
 
 	iconTheme := l.desk.Settings().IconTheme()
@@ -88,7 +80,8 @@ func (l *launcher) appButtonListMatching(input string) []fyne.CanvasObject {
 		appData := data // capture for goroutine below
 		icon := appData.Icon(iconTheme, 32)
 		app := widget.NewButtonWithIcon(appData.Name(), icon, func() {
-			l.runApp(appData)
+			l.callback(appData)
+			l.win.Close()
 		})
 
 		if i == 0 {
@@ -100,19 +93,24 @@ func (l *launcher) appButtonListMatching(input string) []fyne.CanvasObject {
 	return appList
 }
 
-func newAppLauncher(desk desktop.Desktop) *launcher {
-	win := fyne.CurrentApp().NewWindow("Application Launcher")
+func (l *picker) Show() {
+	l.win.Show()
+}
+
+func newAppPicker(title string, callback func(desktop.AppData)) *picker {
+	win := fyne.CurrentApp().NewWindow(title)
 	win.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 		if ev.Name == fyne.KeyEscape {
 			win.Close()
 			return
 		}
 	})
+
 	appList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 	appScroller := widget.NewScrollContainer(appList)
-	l := &launcher{win: win, desk: desk, appList: appList}
+	l := &picker{win: win, desk: desktop.Instance(), appList: appList, callback: callback}
 
-	entry := &appEntry{launch: l}
+	entry := &appEntry{pick: l}
 	entry.ExtendBaseWidget(entry)
 	entry.SetPlaceHolder("Application")
 	entry.OnChanged = func(input string) {
@@ -129,9 +127,8 @@ func newAppLauncher(desk desktop.Desktop) *launcher {
 		win.Close()
 	})
 
-	content := fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, cancel, nil, nil), entry, appScroller, cancel)
-
-	win.SetContent(content)
+	win.SetContent(fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, cancel, nil, nil),
+		entry, appScroller, cancel))
 	win.Resize(fyne.NewSize(300,
 		cancel.MinSize().Height*4+theme.Padding()*6+entry.MinSize().Height))
 	win.CenterOnScreen()
@@ -145,9 +142,15 @@ func ShowAppLauncher() {
 		appExec.close()
 	}
 
-	appExec = newAppLauncher(desktop.Instance())
+	appExec = newAppPicker("Application Launcher", func(app desktop.AppData) {
+		err := desktop.Instance().RunApp(app)
+		if err != nil {
+			fyne.LogError("Failed to start app", err)
+			return
+		}
+	})
 	appExec.win.SetOnClosed(func() {
 		appExec = nil
 	})
-	appExec.win.Show()
+	appExec.Show()
 }
