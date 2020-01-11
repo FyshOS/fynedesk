@@ -13,6 +13,10 @@ import (
 	"fyne.io/desktop/internal/modules/builtin"
 )
 
+const (
+	RootWindowName = "Fyne Desktop"
+)
+
 type deskLayout struct {
 	app      fyne.App
 	roots    []fyne.Window
@@ -58,12 +62,12 @@ func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 
 func (l *deskLayout) newDesktopWindow() fyne.Window {
 	if l.wm == nil {
-		win := l.app.NewWindow("Fyne Desktop (Embedded)")
+		win := l.app.NewWindow(RootWindowName + " (Embedded)")
 		win.SetPadded(false)
 		return win
 	}
 
-	desk := l.app.NewWindow(fmt.Sprintf("Fyne Desktop%d", l.uniqueRootID))
+	desk := l.app.NewWindow(fmt.Sprintf("%s%d", RootWindowName, l.uniqueRootID))
 	l.uniqueRootID++
 	desk.SetPadded(false)
 	desk.FullScreen()

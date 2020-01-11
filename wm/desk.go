@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
@@ -139,7 +140,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	ewmh.SupportedSet(mgr.x, mgr.supportedHints)
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.Dummy(), mgr.x.Dummy())
-	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), "Fyne Desktop")
+	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), ui.RootWindowName)
 
 	loadCursors(conn)
 	go mgr.runLoop()
@@ -629,15 +630,7 @@ func (x *x11WM) frameExisting() {
 
 	for _, child := range tree.Children {
 		name := windowName(x.x, child)
-		isRoot := false
-		for _, screen := range desktop.Instance().Screens().Screens() {
-			window := desktop.Instance().RootForScreen(screen)
-			if name == window.Title() {
-				isRoot = true
-				break
-			}
-		}
-		if isRoot {
+		if strings.Index(name, ui.RootWindowName) == 0 {
 			continue
 		}
 		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
