@@ -30,15 +30,6 @@ type deskLayout struct {
 	uniqueRootID int
 }
 
-type embeddedScreensProvider struct {
-	screens []*desktop.Screen
-}
-
-func removeScale(coord int, scale float32) int {
-	newCoord := int(math.Round(float64(coord) * float64(scale)))
-	return newCoord
-}
-
 func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0]
 	screen := l.backgroundScreenMap[bg.(*background)]
@@ -126,12 +117,7 @@ func (l *deskLayout) Roots() []fyne.Window {
 
 func (l *deskLayout) Run() {
 	if l.wm == nil {
-		for _, win := range l.Roots() {
-			if win == l.RootForScreen(l.screens.Primary()) {
-				continue
-			}
-			win.Show()
-		}
+		l.Roots() // required for init
 		l.RootForScreen(l.screens.Primary()).ShowAndRun()
 		return
 	}
@@ -236,38 +222,6 @@ func (l *deskLayout) Screens() desktop.ScreenList {
 	return l.screens
 }
 
-func (esp embeddedScreensProvider) Screens() []*desktop.Screen {
-	l := desktop.Instance().(*deskLayout)
-	if esp.screens == nil {
-		scale := desktop.Instance().(*deskLayout).Roots()[0].Canvas().Scale()
-		esp.screens = []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0,
-			Width:  removeScale(l.Roots()[0].Canvas().Size().Width, scale),
-			Height: removeScale(l.Roots()[0].Canvas().Size().Height, scale)}}
-	}
-	return esp.screens
-}
-
-func (esp embeddedScreensProvider) Active() *desktop.Screen {
-	return esp.Screens()[0]
-}
-
-func (esp embeddedScreensProvider) Primary() *desktop.Screen {
-	return esp.Screens()[0]
-}
-
-func (esp embeddedScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
-	return esp.Screens()[0]
-}
-
-func (esp embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *desktop.Screen {
-	return esp.Screens()[0]
-}
-
-// NewEmbeddedScreensProvider returns a screen provider for use in embedded desktop mode
-func NewEmbeddedScreensProvider() desktop.ScreenList {
-	return &embeddedScreensProvider{}
-}
-
 func setupInitialVars(desk *deskLayout) {
 	desktop.SetInstance(desk)
 	desk.settings = newDeskSettings()
@@ -290,7 +244,7 @@ func NewDesktop(app fyne.App, wm desktop.WindowManager, icons desktop.Applicatio
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
 func NewEmbeddedDesktop(app fyne.App, icons desktop.ApplicationProvider) desktop.Desktop {
-	desk := &deskLayout{app: app, icons: icons, screens: NewEmbeddedScreensProvider()}
+	desk := &deskLayout{app: app, icons: icons, screens: newEmbeddedScreensProvider()}
 	setupInitialVars(desk)
 	return desk
 }
