@@ -2,7 +2,6 @@ package ui
 
 import (
 	"fmt"
-	"log"
 	"math"
 	"runtime/debug"
 
@@ -22,8 +21,8 @@ type deskLayout struct {
 	screens  desktop.ScreenList
 	settings desktop.DeskSettings
 
-	screenRootMap     map[*desktop.Screen]fyne.Window
-	rootBackgroundMap map[fyne.Window]*background
+	screenRootMap       map[*desktop.Screen]fyne.Window
+	backgroundScreenMap map[*background]*desktop.Screen
 
 	bar            *bar
 	widgets, mouse fyne.CanvasObject
@@ -42,8 +41,7 @@ func removeScale(coord int, scale float32) int {
 
 func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0]
-	win := l.rootForBackground(bg.(*background))
-	screen := l.ScreenForRoot(win)
+	screen := l.backgroundScreenMap[bg.(*background)]
 	if screen == nil {
 		return
 	}
@@ -83,34 +81,14 @@ func (l *deskLayout) newDesktopWindow() fyne.Window {
 }
 
 func (l *deskLayout) updateBackgrounds(path string) {
-	for _, win := range l.roots {
-		bg := l.rootBackgroundMap[win]
+	for bg := range l.backgroundScreenMap {
 		bg.updateBackgroundPath(path)
 		canvas.Refresh(bg)
 	}
 }
 
-func (l *deskLayout) rootForBackground(bg *background) fyne.Window {
-	for _, win := range l.roots {
-		bg2 := l.rootBackgroundMap[win]
-		if bg2 == bg {
-			return win
-		}
-	}
-	return nil
-}
-
 func (l *deskLayout) RootForScreen(screen *desktop.Screen) fyne.Window {
 	return l.screenRootMap[screen]
-}
-
-func (l *deskLayout) ScreenForRoot(win fyne.Window) *desktop.Screen {
-	for _, screen := range l.screens.Screens() {
-		if l.screenRootMap[screen] == win {
-			return screen
-		}
-	}
-	return nil
 }
 
 func (l *deskLayout) Roots() []fyne.Window {
@@ -123,7 +101,7 @@ func (l *deskLayout) Roots() []fyne.Window {
 		l.roots = append(l.roots, win)
 		win.Canvas().SetScale(screen.CanvasScale())
 		bg := newBackground()
-		l.rootBackgroundMap[win] = bg
+		l.backgroundScreenMap[bg] = screen
 		var container *fyne.Container
 		if screen == l.screens.Primary() {
 			l.bar = newBar(l)
@@ -136,6 +114,7 @@ func (l *deskLayout) Roots() []fyne.Window {
 					l.wm.Close()
 				})
 			}
+			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
 		} else {
 			container = fyne.NewContainerWithLayout(l, bg)
 		}
@@ -146,22 +125,21 @@ func (l *deskLayout) Roots() []fyne.Window {
 }
 
 func (l *deskLayout) Run() {
-	primary := l.RootForScreen(l.screens.Primary())
 	if l.wm == nil {
 		for _, win := range l.Roots() {
-			if win == primary {
+			if win == l.RootForScreen(l.screens.Primary()) {
 				continue
 			}
 			win.Show()
 		}
-		primary.ShowAndRun()
+		l.RootForScreen(l.screens.Primary()).ShowAndRun()
 		return
 	}
 	debug.SetPanicOnFault(true)
 
 	defer func() {
 		if r := recover(); r != nil {
-			log.Println("Crashed!!!")
+			fyne.LogError("Crashed: "+string(debug.Stack()), nil)
 			if l.wm != nil {
 				l.wm.Close() // attempt to close cleanly to leave X server running
 			}
@@ -169,12 +147,12 @@ func (l *deskLayout) Run() {
 	}()
 
 	for _, win := range l.Roots() {
-		if win == primary {
+		if win == l.RootForScreen(l.screens.Primary()) {
 			continue
 		}
 		win.Show()
 	}
-	primary.ShowAndRun()
+	l.RootForScreen(l.screens.Primary()).ShowAndRun()
 }
 
 func (l *deskLayout) RunApp(app desktop.AppData) error {
@@ -295,7 +273,7 @@ func setupInitialVars(desk *deskLayout) {
 	desk.settings = newDeskSettings()
 	desk.addSettingsChangeListener()
 	desk.screenRootMap = make(map[*desktop.Screen]fyne.Window)
-	desk.rootBackgroundMap = make(map[fyne.Window]*background)
+	desk.backgroundScreenMap = make(map[*background]*desktop.Screen)
 }
 
 // NewDesktop creates a new desktop in fullscreen for main usage.

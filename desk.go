@@ -8,7 +8,6 @@ import (
 type Desktop interface {
 	Roots() []fyne.Window
 	RootForScreen(screen *Screen) fyne.Window
-	ScreenForRoot(fyne.Window) *Screen
 	Run()
 	RunApp(AppData) error
 	Settings() DeskSettings

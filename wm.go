@@ -8,7 +8,6 @@ type WindowManager interface {
 	AddStackListener(StackListener)
 
 	Close()
-	SetRoots([]fyne.Window)
 	Blank()
 }
 

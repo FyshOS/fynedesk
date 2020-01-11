@@ -4,7 +4,6 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -27,10 +26,7 @@ import (
 type x11WM struct {
 	stack
 	x                 *xgbutil.XUtil
-	roots             []fyne.Window
-	rootIDs           []xproto.Window
 	framedExisting    bool
-	loaded            bool
 	moveResizing      bool
 	moveResizingLastX int16
 	moveResizingLastY int16
@@ -77,10 +73,6 @@ func (x *x11WM) Close() {
 
 func (x *x11WM) AddStackListener(l desktop.StackListener) {
 	x.stack.listeners = append(x.stack.listeners, l)
-}
-
-func (x *x11WM) SetRoots(wins []fyne.Window) {
-	x.roots = wins
 }
 
 func (x *x11WM) Blank() {
@@ -189,8 +181,8 @@ func (x *x11WM) runLoop() {
 			if ev.Window != x.x.RootWin() {
 				break
 			}
-			for _, window := range x.roots {
-				screen := desktop.Instance().ScreenForRoot(window)
+			for _, screen := range desktop.Instance().Screens().Screens() {
+				window := desktop.Instance().RootForScreen(screen)
 				id := x.rootIDMap[window]
 				if id != 0 {
 					xproto.ConfigureWindowChecked(x.x.Conn(), id, xproto.ConfigWindowX|xproto.ConfigWindowY|
@@ -199,7 +191,6 @@ func (x *x11WM) runLoop() {
 				}
 			}
 		case xproto.CreateNotifyEvent:
-			fmt.Println("Window Name " + windowName(x.x, ev.Window))
 			err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Window, xproto.CwCursor,
 				[]uint32{uint32(defaultCursor)}).Check()
 			if err != nil {
@@ -341,17 +332,15 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 
 	name := windowName(x.x, win)
 	var rootWin fyne.Window
-	if len(x.roots) > 0 {
-		for _, window := range desktop.Instance().Roots() {
-			if name == window.Title() {
-				rootWin = window
-				screen := desktop.Instance().ScreenForRoot(window)
-				xcoord = int16(screen.X)
-				ycoord = int16(screen.Y)
-				width = uint16(screen.Width)
-				height = uint16(screen.Height)
-				break
-			}
+	for _, screen := range desktop.Instance().Screens().Screens() {
+		window := desktop.Instance().RootForScreen(screen)
+		if name == window.Title() {
+			rootWin = window
+			xcoord = int16(screen.X)
+			ycoord = int16(screen.Y)
+			width = uint16(screen.Width)
+			height = uint16(screen.Height)
+			break
 		}
 	}
 
@@ -363,15 +352,8 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 
 	if rootWin != nil {
-		if x.loaded {
-			return
-		}
 		if x.rootIDMap[rootWin] == 0 {
-			x.rootIDs = append(x.rootIDs, win)
 			x.rootIDMap[rootWin] = win
-		}
-		if !x.loaded && len(x.roots) == len(x.rootIDs) {
-			x.loaded = true
 		}
 	}
 }
@@ -564,7 +546,8 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 
 func (x *x11WM) showWindow(win xproto.Window) {
 	name := windowName(x.x, win)
-	for _, window := range x.roots {
+	for _, screen := range desktop.Instance().Screens().Screens() {
+		window := desktop.Instance().RootForScreen(screen)
 		if name == window.Title() {
 			err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
 			if err != nil {
@@ -647,7 +630,8 @@ func (x *x11WM) frameExisting() {
 	for _, child := range tree.Children {
 		name := windowName(x.x, child)
 		isRoot := false
-		for _, window := range x.roots {
+		for _, screen := range desktop.Instance().Screens().Screens() {
+			window := desktop.Instance().RootForScreen(screen)
 			if name == window.Title() {
 				isRoot = true
 				break
