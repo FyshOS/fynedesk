@@ -129,6 +129,7 @@ func (l *deskLayout) Roots() []fyne.Window {
 			l.bar = newBar(l)
 			l.widgets = newWidgetPanel(l)
 			l.mouse = newMouse()
+			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
 			container = fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse)
 			if l.wm != nil {
 				win.SetOnClosed(func() {
@@ -139,7 +140,6 @@ func (l *deskLayout) Roots() []fyne.Window {
 			container = fyne.NewContainerWithLayout(l, bg)
 		}
 		win.SetContent(container)
-		l.mouse.Hide() // temporarily we do not draw mouse (using X default)
 	}
 
 	return l.roots
