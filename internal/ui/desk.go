@@ -82,9 +82,9 @@ func (l *deskLayout) RootForScreen(screen *desktop.Screen) fyne.Window {
 	return l.screenRootMap[screen]
 }
 
-func (l *deskLayout) Roots() []fyne.Window {
+func (l *deskLayout) setupRoots() {
 	if len(l.roots) != 0 {
-		return l.roots
+		return
 	}
 	for _, screen := range l.screens.Screens() {
 		win := l.newDesktopWindow()
@@ -111,13 +111,10 @@ func (l *deskLayout) Roots() []fyne.Window {
 		}
 		win.SetContent(container)
 	}
-
-	return l.roots
 }
 
 func (l *deskLayout) Run() {
 	if l.wm == nil {
-		l.Roots() // required for init
 		l.RootForScreen(l.screens.Primary()).ShowAndRun()
 		return
 	}
@@ -132,7 +129,7 @@ func (l *deskLayout) Run() {
 		}
 	}()
 
-	for _, win := range l.Roots() {
+	for _, win := range l.roots {
 		if win == l.RootForScreen(l.screens.Primary()) {
 			continue
 		}
@@ -228,6 +225,7 @@ func setupInitialVars(desk *deskLayout) {
 	desk.addSettingsChangeListener()
 	desk.screenRootMap = make(map[*desktop.Screen]fyne.Window)
 	desk.backgroundScreenMap = make(map[*background]*desktop.Screen)
+	desk.setupRoots()
 }
 
 // NewDesktop creates a new desktop in fullscreen for main usage.

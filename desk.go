@@ -6,7 +6,6 @@ import (
 
 // Desktop defines an embedded or full desktop environment that we can run.
 type Desktop interface {
-	Roots() []fyne.Window
 	RootForScreen(screen *Screen) fyne.Window
 	Run()
 	RunApp(AppData) error
