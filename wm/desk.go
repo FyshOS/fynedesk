@@ -178,7 +178,7 @@ func (x *x11WM) runLoop() {
 		case xproto.ConfigureRequestEvent:
 			x.configureWindow(ev.Window, ev)
 		case xproto.ConfigureNotifyEvent:
-			if ev.Window != x.x.RootWin() {
+			if ev.Window != x.x.RootWin() || desktop.Instance() == nil {
 				break
 			}
 			for _, screen := range desktop.Instance().Screens().Screens() {
