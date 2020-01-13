@@ -30,7 +30,6 @@ type deskLayout struct {
 
 	bar            *bar
 	widgets, mouse fyne.CanvasObject
-	backgrounds    []*background
 
 	uniqueRootID int
 }
@@ -93,20 +92,20 @@ func (l *deskLayout) setupRoots() {
 	if len(l.roots) != 0 {
 		return
 	}
-	for i, screen := range l.screens.Screens() {
+	for _, screen := range l.screens.Screens() {
 		win := l.newDesktopWindow()
 		l.screenRootMap[screen] = win
 		l.roots = append(l.roots, win)
 		win.Canvas().SetScale(screen.CanvasScale())
-		l.backgrounds = append(l.backgrounds, newBackground())
-		l.backgroundScreenMap[l.backgrounds[i]] = screen
+		bg := newBackground()
+		l.backgroundScreenMap[bg] = screen
 		var container *fyne.Container
 		if screen == l.screens.Primary() {
 			l.bar = newBar(l)
 			l.widgets = newWidgetPanel(l)
 			l.mouse = newMouse()
 			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
-			container = fyne.NewContainerWithLayout(l, l.backgrounds[i], l.bar, l.widgets, l.mouse)
+			container = fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse)
 			if l.wm != nil {
 				win.SetOnClosed(func() {
 					l.wm.Close()
@@ -114,7 +113,7 @@ func (l *deskLayout) setupRoots() {
 			}
 			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
 		} else {
-			container = fyne.NewContainerWithLayout(l, l.backgrounds[i])
+			container = fyne.NewContainerWithLayout(l, bg)
 		}
 		win.SetContent(container)
 	}
