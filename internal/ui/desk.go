@@ -30,13 +30,14 @@ type deskLayout struct {
 
 	bar            *bar
 	widgets, mouse fyne.CanvasObject
+	backgrounds    []*background
 
 	uniqueRootID int
 }
 
 func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
-	bg := objects[0]
-	screen := l.backgroundScreenMap[bg.(*background)]
+	bg := objects[0].(*background)
+	screen := l.backgroundScreenMap[bg]
 	if screen == nil {
 		return
 	}
@@ -46,10 +47,12 @@ func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 		barHeight := l.bar.MinSize().Height
 		l.bar.Resize(fyne.NewSize(size.Width, barHeight))
 		l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
+		l.bar.Refresh()
 
 		widgetsWidth := l.widgets.MinSize().Width
 		l.widgets.Resize(fyne.NewSize(widgetsWidth, size.Height))
 		l.widgets.Move(fyne.NewPos(size.Width-widgetsWidth, 0))
+		l.widgets.Refresh()
 	}
 }
 
@@ -90,20 +93,20 @@ func (l *deskLayout) setupRoots() {
 	if len(l.roots) != 0 {
 		return
 	}
-	for _, screen := range l.screens.Screens() {
+	for i, screen := range l.screens.Screens() {
 		win := l.newDesktopWindow()
 		l.screenRootMap[screen] = win
 		l.roots = append(l.roots, win)
 		win.Canvas().SetScale(screen.CanvasScale())
-		bg := newBackground()
-		l.backgroundScreenMap[bg] = screen
+		l.backgrounds = append(l.backgrounds, newBackground())
+		l.backgroundScreenMap[l.backgrounds[i]] = screen
 		var container *fyne.Container
 		if screen == l.screens.Primary() {
 			l.bar = newBar(l)
 			l.widgets = newWidgetPanel(l)
 			l.mouse = newMouse()
 			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
-			container = fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse)
+			container = fyne.NewContainerWithLayout(l, l.backgrounds[i], l.bar, l.widgets, l.mouse)
 			if l.wm != nil {
 				win.SetOnClosed(func() {
 					l.wm.Close()
@@ -111,7 +114,7 @@ func (l *deskLayout) setupRoots() {
 			}
 			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
 		} else {
-			container = fyne.NewContainerWithLayout(l, bg)
+			container = fyne.NewContainerWithLayout(l, l.backgrounds[i])
 		}
 		win.SetContent(container)
 	}
@@ -199,6 +202,19 @@ func (l *deskLayout) MouseOutNotify() {
 	l.bar.MouseOut()
 }
 
+func (l *deskLayout) startFyneSettingsChangeListener(listener chan fyne.Settings) {
+	for {
+		_ = <-listener
+		for _, screen := range l.screens.Screens() {
+			win := l.RootForScreen(screen)
+			win.Canvas().SetScale(screen.CanvasScale())
+			size := fyne.NewSize(int(math.Round(float64(screen.Width)/float64(screen.CanvasScale()))),
+				int(math.Round(float64(screen.Height)/float64(screen.CanvasScale()))))
+			win.Resize(size)
+		}
+	}
+}
+
 func (l *deskLayout) startSettingsChangeListener(listener chan desktop.DeskSettings) {
 	for {
 		_ = <-listener
@@ -216,6 +232,9 @@ func (l *deskLayout) addSettingsChangeListener() {
 	listener := make(chan desktop.DeskSettings)
 	l.Settings().AddChangeListener(listener)
 	go l.startSettingsChangeListener(listener)
+	fyneListener := make(chan fyne.Settings)
+	l.app.Settings().AddChangeListener(fyneListener)
+	go l.startFyneSettingsChangeListener(fyneListener)
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.

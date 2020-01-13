@@ -151,7 +151,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		for {
 			<-listener
 			for _, c := range mgr.clients {
-				c.(*client).frame.applyTheme(true)
+				c.(*client).frame.updateScale()
 			}
 		}
 	}()
@@ -182,15 +182,7 @@ func (x *x11WM) runLoop() {
 			if ev.Window != x.x.RootWin() || desktop.Instance() == nil {
 				break
 			}
-			for _, screen := range desktop.Instance().Screens().Screens() {
-				window := desktop.Instance().RootForScreen(screen)
-				id := x.rootIDMap[window]
-				if id != 0 {
-					xproto.ConfigureWindowChecked(x.x.Conn(), id, xproto.ConfigWindowX|xproto.ConfigWindowY|
-						xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-						[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
-				}
-			}
+			x.layoutRoots()
 		case xproto.CreateNotifyEvent:
 			err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Window, xproto.CwCursor,
 				[]uint32{uint32(defaultCursor)}).Check()
@@ -301,6 +293,18 @@ func (x *x11WM) runLoop() {
 	}
 
 	fyne.LogError("X11 connection terminated!", nil)
+}
+
+func (x *x11WM) layoutRoots() {
+	for _, screen := range desktop.Instance().Screens().Screens() {
+		window := desktop.Instance().RootForScreen(screen)
+		id := x.rootIDMap[window]
+		if id != 0 {
+			xproto.ConfigureWindowChecked(x.x.Conn(), id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+				[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
+		}
+	}
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
