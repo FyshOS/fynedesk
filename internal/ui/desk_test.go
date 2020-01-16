@@ -210,14 +210,14 @@ func newTestAppProvider(appNames []string) *testAppProvider {
 func TestDeskLayout_Layout(t *testing.T) {
 	l := &deskLayout{}
 	l.screens = &testScreensProvider{}
-	l.backgrounds = append(l.backgrounds, &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())})
 	l.bar = testBar([]string{})
 	l.widgets = canvas.NewRectangle(color.Black)
+	background := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}
 	deskSize := fyne.NewSize(2000, 1000)
 
-	l.Layout([]fyne.CanvasObject{l.backgrounds[0], l.bar, l.widgets}, deskSize)
+	l.Layout([]fyne.CanvasObject{background, l.bar, l.widgets}, deskSize)
 
-	assert.Equal(t, l.backgrounds[0].Size(), deskSize)
+	assert.Equal(t, background.Size(), deskSize)
 	assert.Equal(t, l.widgets.Position().X+l.widgets.Size().Width, deskSize.Width)
 	assert.Equal(t, l.widgets.Size().Height, deskSize.Height)
 	assert.Equal(t, l.bar.Size().Width, deskSize.Width)
@@ -238,16 +238,16 @@ func TestBackgroundChange(t *testing.T) {
 	desktop.SetInstance(l)
 	l.screens = &testScreensProvider{}
 	l.settings = &testSettings{}
-	l.backgrounds = append(l.backgrounds, newBackground())
+	background := newBackground()
 
 	workingDir, err := os.Getwd()
 	if err != nil {
 		fyne.LogError("Could not get current working directory", err)
 		t.FailNow()
 	}
-	assert.Equal(t, wmTheme.Background, l.backgrounds[0].wallpaper.Resource)
+	assert.Equal(t, wmTheme.Background, background.wallpaper.Resource)
 
 	l.settings.(*testSettings).background = filepath.Join(workingDir, "testdata", "fyne.png")
 	l.updateBackgrounds(l.Settings().Background())
-	assert.Equal(t, l.settings.Background(), l.backgrounds[0].wallpaper.File)
+	assert.Equal(t, l.settings.Background(), background.wallpaper.File)
 }

@@ -38,7 +38,7 @@ type x11WM struct {
 	allowedActions []string
 	supportedHints []string
 
-	rootIDMap map[fyne.Window]xproto.Window
+	rootIDs []xproto.Window
 }
 
 type moveResizeType uint32
@@ -92,7 +92,6 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr := &x11WM{x: conn}
-	mgr.rootIDMap = make(map[fyne.Window]xproto.Window)
 	root := conn.RootWin()
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
@@ -153,6 +152,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 			for _, c := range mgr.clients {
 				c.(*client).frame.updateScale()
 			}
+			mgr.layoutRoots()
 		}
 	}()
 
@@ -295,12 +295,23 @@ func (x *x11WM) runLoop() {
 	fyne.LogError("X11 connection terminated!", nil)
 }
 
+func (x *x11WM) getWindowFromName(screenName string) xproto.Window {
+	for _, id := range x.rootIDs {
+		name := windowName(x.x, id)
+		pos := strings.LastIndex(name, ui.RootWindowName) + len(ui.RootWindowName) + 1
+		outputName := name[pos:]
+		if outputName == screenName {
+			return id
+		}
+	}
+	return 0
+}
+
 func (x *x11WM) layoutRoots() {
 	for _, screen := range desktop.Instance().Screens().Screens() {
-		window := desktop.Instance().RootForScreen(screen)
-		id := x.rootIDMap[window]
-		if id != 0 {
-			xproto.ConfigureWindowChecked(x.x.Conn(), id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		win := x.getWindowFromName(screen.Name)
+		if win != 0 {
+			xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 				[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
 		}
@@ -337,9 +348,21 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 
 	name := windowName(x.x, win)
 	for _, screen := range desktop.Instance().Screens().Screens() {
-		window := desktop.Instance().RootForScreen(screen)
-		if name == window.Title() {
-			x.rootIDMap[window] = win
+		if len(name) <= len(ui.RootWindowName) {
+			continue
+		}
+		pos := strings.Index(ui.RootWindowName, name) + len(ui.RootWindowName) + 1
+		outputName := name[pos:]
+		if outputName == screen.Name {
+			found := false
+			for _, id := range x.rootIDs {
+				if id == win {
+					found = true
+				}
+			}
+			if !found {
+				x.rootIDs = append(x.rootIDs, win)
+			}
 			xcoord = int16(screen.X)
 			ycoord = int16(screen.Y)
 			width = uint16(screen.Width)

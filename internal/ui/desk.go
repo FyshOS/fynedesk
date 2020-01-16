@@ -13,25 +13,24 @@ import (
 	"fyne.io/desktop/internal/modules/builtin"
 )
 
+// RootWindowName is the base string that all root windows will have in their title and is used to identify root windows.
 const (
 	RootWindowName = "Fyne Desktop"
 )
 
 type deskLayout struct {
 	app      fyne.App
-	roots    []fyne.Window
 	wm       desktop.WindowManager
 	icons    desktop.ApplicationProvider
 	screens  desktop.ScreenList
 	settings desktop.DeskSettings
 
-	screenRootMap       map[*desktop.Screen]fyne.Window
 	backgroundScreenMap map[*background]*desktop.Screen
 
 	bar            *bar
 	widgets, mouse fyne.CanvasObject
-
-	uniqueRootID int
+	primaryWin     fyne.Window
+	roots          []fyne.Window
 }
 
 func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
@@ -62,15 +61,14 @@ func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(640, 480) // tiny - the window manager will scale up to screen size
 }
 
-func (l *deskLayout) newDesktopWindow() fyne.Window {
+func (l *deskLayout) newDesktopWindow(outputName string) fyne.Window {
 	if l.wm == nil {
 		win := l.app.NewWindow(RootWindowName + " (Embedded)")
 		win.SetPadded(false)
 		return win
 	}
 
-	desk := l.app.NewWindow(fmt.Sprintf("%s%d", RootWindowName, l.uniqueRootID))
-	l.uniqueRootID++
+	desk := l.app.NewWindow(fmt.Sprintf("%s%s", RootWindowName, outputName))
 	desk.SetPadded(false)
 	desk.FullScreen()
 
@@ -84,23 +82,18 @@ func (l *deskLayout) updateBackgrounds(path string) {
 	}
 }
 
-func (l *deskLayout) RootForScreen(screen *desktop.Screen) fyne.Window {
-	return l.screenRootMap[screen]
-}
-
 func (l *deskLayout) setupRoots() {
-	if len(l.roots) != 0 {
+	if l.primaryWin != nil {
 		return
 	}
 	for _, screen := range l.screens.Screens() {
-		win := l.newDesktopWindow()
-		l.screenRootMap[screen] = win
+		win := l.newDesktopWindow(screen.Name)
 		l.roots = append(l.roots, win)
-		win.Canvas().SetScale(screen.CanvasScale())
 		bg := newBackground()
 		l.backgroundScreenMap[bg] = screen
 		var container *fyne.Container
 		if screen == l.screens.Primary() {
+			l.primaryWin = win
 			l.bar = newBar(l)
 			l.widgets = newWidgetPanel(l)
 			l.mouse = newMouse()
@@ -112,16 +105,21 @@ func (l *deskLayout) setupRoots() {
 				})
 			}
 			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
+			win.SetContent(container)
 		} else {
 			container = fyne.NewContainerWithLayout(l, bg)
+			win.SetContent(container)
+			win.Show()
 		}
-		win.SetContent(container)
 	}
 }
 
 func (l *deskLayout) Run() {
+	if l.primaryWin == nil {
+		return
+	}
 	if l.wm == nil {
-		l.RootForScreen(l.screens.Primary()).ShowAndRun()
+		l.primaryWin.ShowAndRun()
 		return
 	}
 	debug.SetPanicOnFault(true)
@@ -135,13 +133,7 @@ func (l *deskLayout) Run() {
 		}
 	}()
 
-	for _, win := range l.roots {
-		if win == l.RootForScreen(l.screens.Primary()) {
-			continue
-		}
-		win.Show()
-	}
-	l.RootForScreen(l.screens.Primary()).ShowAndRun()
+	l.primaryWin.ShowAndRun()
 }
 
 func (l *deskLayout) RunApp(app desktop.AppData) error {
@@ -204,12 +196,8 @@ func (l *deskLayout) MouseOutNotify() {
 func (l *deskLayout) startFyneSettingsChangeListener(listener chan fyne.Settings) {
 	for {
 		_ = <-listener
-		for _, screen := range l.screens.Screens() {
-			win := l.RootForScreen(screen)
-			win.Canvas().SetScale(screen.CanvasScale())
-			size := fyne.NewSize(int(math.Round(float64(screen.Width)/float64(screen.CanvasScale()))),
-				int(math.Round(float64(screen.Height)/float64(screen.CanvasScale()))))
-			win.Resize(size)
+		for _, win := range l.roots {
+			win.Resize(fyne.NewSize(0, 0))
 		}
 	}
 }
@@ -232,7 +220,7 @@ func (l *deskLayout) addSettingsChangeListener() {
 	l.Settings().AddChangeListener(listener)
 	go l.startSettingsChangeListener(listener)
 	fyneListener := make(chan fyne.Settings)
-	l.app.Settings().AddChangeListener(fyneListener)
+	fyne.CurrentApp().Settings().AddChangeListener(fyneListener)
 	go l.startFyneSettingsChangeListener(fyneListener)
 }
 
@@ -245,7 +233,6 @@ func setupInitialVars(desk *deskLayout) {
 	desktop.SetInstance(desk)
 	desk.settings = newDeskSettings()
 	desk.addSettingsChangeListener()
-	desk.screenRootMap = make(map[*desktop.Screen]fyne.Window)
 	desk.backgroundScreenMap = make(map[*background]*desktop.Screen)
 	desk.setupRoots()
 }

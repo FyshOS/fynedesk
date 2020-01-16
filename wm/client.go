@@ -230,8 +230,7 @@ func (c *client) RaiseToTop() {
 
 func (c *client) RaiseAbove(win desktop.Window) {
 	//not quite sure what to do here
-	screen := desktop.Instance().Screens().ScreenForWindow(win)
-	topID := c.wm.rootIDMap[desktop.Instance().RootForScreen(screen)]
+	topID := c.wm.rootIDs[0]
 	if win != nil {
 		topID = win.(*client).id
 	}
