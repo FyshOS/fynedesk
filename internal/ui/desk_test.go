@@ -21,6 +21,7 @@ import (
 type testDesk struct {
 	settings desktop.DeskSettings
 	icons    desktop.ApplicationProvider
+	screens  desktop.ScreenList
 }
 
 func (*testDesk) Root() fyne.Window {
@@ -50,8 +51,8 @@ func (*testDesk) WindowManager() desktop.WindowManager {
 	return nil
 }
 
-func (*testDesk) Screens() desktop.ScreenList {
-	return nil
+func (td *testDesk) Screens() desktop.ScreenList {
+	return td.screens
 }
 
 func (*testDesk) Modules() []desktop.Module {
@@ -108,22 +109,20 @@ func (*testSettings) AddChangeListener(listener chan desktop.DeskSettings) {
 
 type testScreensProvider struct {
 	screens []*desktop.Screen
+	primary *desktop.Screen
+	active  *desktop.Screen
 }
 
 func (tsp testScreensProvider) Screens() []*desktop.Screen {
-	if tsp.screens == nil {
-		tsp.screens = []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0, Width: 2000, Height: 1000,
-			Scale: 1}}
-	}
 	return tsp.screens
 }
 
 func (tsp testScreensProvider) Active() *desktop.Screen {
-	return tsp.Screens()[0]
+	return tsp.screens[0]
 }
 
 func (tsp testScreensProvider) Primary() *desktop.Screen {
-	return tsp.Screens()[0]
+	return tsp.screens[0]
 }
 
 func (tsp testScreensProvider) Scale() float32 {
@@ -208,16 +207,18 @@ func newTestAppProvider(appNames []string) *testAppProvider {
 }
 
 func TestDeskLayout_Layout(t *testing.T) {
-	l := &deskLayout{}
-	l.screens = &testScreensProvider{}
+	l := &deskLayout{screens: &testScreensProvider{screens: []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0,
+		Width: 2000, Height: 1000, Scale: 1.0}}}}
 	l.bar = testBar([]string{})
 	l.widgets = canvas.NewRectangle(color.Black)
-	background := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}
+	bg := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}
+	l.backgroundScreenMap = make(map[*background]*desktop.Screen)
+	l.backgroundScreenMap[bg] = l.screens.Primary()
 	deskSize := fyne.NewSize(2000, 1000)
 
-	l.Layout([]fyne.CanvasObject{background, l.bar, l.widgets}, deskSize)
+	l.Layout([]fyne.CanvasObject{bg, l.bar, l.widgets}, deskSize)
 
-	assert.Equal(t, background.Size(), deskSize)
+	assert.Equal(t, bg.Size(), deskSize)
 	assert.Equal(t, l.widgets.Position().X+l.widgets.Size().Width, deskSize.Width)
 	assert.Equal(t, l.widgets.Size().Height, deskSize.Height)
 	assert.Equal(t, l.bar.Size().Width, deskSize.Width)
@@ -234,20 +235,22 @@ func TestScaleVars(t *testing.T) {
 }
 
 func TestBackgroundChange(t *testing.T) {
-	l := &deskLayout{}
+	l := &deskLayout{screens: &testScreensProvider{screens: []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0,
+		Width: 2000, Height: 1000, Scale: 1.0}}}}
 	desktop.SetInstance(l)
-	l.screens = &testScreensProvider{}
 	l.settings = &testSettings{}
-	background := newBackground()
+	bg := newBackground()
+	l.backgroundScreenMap = make(map[*background]*desktop.Screen)
+	l.backgroundScreenMap[bg] = l.screens.Primary()
 
 	workingDir, err := os.Getwd()
 	if err != nil {
 		fyne.LogError("Could not get current working directory", err)
 		t.FailNow()
 	}
-	assert.Equal(t, wmTheme.Background, background.wallpaper.Resource)
+	assert.Equal(t, wmTheme.Background, bg.wallpaper.Resource)
 
 	l.settings.(*testSettings).background = filepath.Join(workingDir, "testdata", "fyne.png")
 	l.updateBackgrounds(l.Settings().Background())
-	assert.Equal(t, l.settings.Background(), background.wallpaper.File)
+	assert.Equal(t, l.settings.Background(), bg.wallpaper.File)
 }

@@ -41,7 +41,7 @@ func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	}
 	bg.Resize(size)
 
-	if screen == l.Screens().Primary() {
+	if screen == l.screens.Primary() {
 		barHeight := l.bar.MinSize().Height
 		l.bar.Resize(fyne.NewSize(size.Width, barHeight))
 		l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
@@ -63,7 +63,7 @@ func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 
 func (l *deskLayout) newDesktopWindow(outputName string) fyne.Window {
 	if l.wm == nil {
-		win := l.app.NewWindow(RootWindowName + " (Embedded)")
+		win := l.app.NewWindow(RootWindowName + "(Embedded)")
 		win.SetPadded(false)
 		return win
 	}
