@@ -28,6 +28,6 @@ func (esp embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, he
 
 // NewEmbeddedScreensProvider returns a screen provider for use in embedded desktop mode
 func newEmbeddedScreensProvider() desktop.ScreenList {
-	return &embeddedScreensProvider{[]*desktop.Screen{{Name: "Screen0", X: 0, Y: 0,
+	return &embeddedScreensProvider{[]*desktop.Screen{{Name: "(Embedded)", X: 0, Y: 0,
 		Width: 1280, Height: 1024, Scale: 1.0}}}
 }
