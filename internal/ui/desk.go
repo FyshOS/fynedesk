@@ -94,6 +94,7 @@ func (l *deskLayout) setupRoots() {
 		var container *fyne.Container
 		if screen == l.screens.Primary() {
 			l.primaryWin = win
+			win.SetMaster()
 			l.bar = newBar(l)
 			l.widgets = newWidgetPanel(l)
 			l.mouse = newMouse()
