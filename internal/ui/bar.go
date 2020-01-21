@@ -131,7 +131,7 @@ func (b *bar) taskbarIconTapped(win desktop.Window) {
 }
 
 func (b *bar) WindowAdded(win desktop.Window) {
-	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() || win.Title() == "Fyne Desktop" {
+	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
 		return
 	}
 	icon := b.createIcon(nil, win)

@@ -86,6 +86,12 @@ func (l *deskLayout) setupRoots() {
 	if l.primaryWin != nil {
 		return
 	}
+
+	l.bar = newBar(l)
+	l.widgets = newWidgetPanel(l)
+	l.mouse = newMouse()
+	l.mouse.Hide() // temporarily we do not draw mouse (using X default)
+
 	for _, screen := range l.screens.Screens() {
 		win := l.newDesktopWindow(screen.Name)
 		l.roots = append(l.roots, win)
@@ -95,10 +101,6 @@ func (l *deskLayout) setupRoots() {
 		if screen == l.screens.Primary() {
 			l.primaryWin = win
 			win.SetMaster()
-			l.bar = newBar(l)
-			l.widgets = newWidgetPanel(l)
-			l.mouse = newMouse()
-			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
 			container = fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse)
 			if l.wm != nil {
 				win.SetOnClosed(func() {
