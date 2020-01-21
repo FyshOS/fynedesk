@@ -55,7 +55,6 @@ type widgetPanel struct {
 	widget.BaseWidget
 
 	desk       desktop.Desktop
-	root       fyne.Window
 	appExecWin fyne.Window
 
 	clock *canvas.Text
@@ -126,11 +125,13 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 	if w.desk.(*deskLayout).wm == nil {
 		closeLabel = "Quit"
 	}
+
+	root := w.desk.(*deskLayout).primaryWin
 	items = append(items, fyne.NewMenuItem(closeLabel, func() {
-		w.root.Close()
+		root.Close()
 	}))
 
-	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), w.root.Canvas())
+	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), root.Canvas())
 
 	bottomLeft := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
 	popup.Move(bottomLeft.Subtract(fyne.NewPos(0, popup.MinSize().Height)))
@@ -180,7 +181,6 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 func newWidgetPanel(rootDesk desktop.Desktop) *widgetPanel {
 	w := &widgetPanel{
 		desk:       rootDesk,
-		root:       rootDesk.(*deskLayout).primaryWin,
 		appExecWin: nil,
 	}
 	w.ExtendBaseWidget(w)
