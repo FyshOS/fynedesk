@@ -33,8 +33,6 @@ type x11WM struct {
 	moveResizingLastX int16
 	moveResizingLastY int16
 	moveResizingType  moveResizeType
-	altTabList        []desktop.Window
-	altTabIndex       int
 
 	allowedActions []string
 	supportedHints []string
@@ -253,44 +251,20 @@ func (x *x11WM) runLoop() {
 			if ev.Detail == keyCodeSpace {
 				go ui.ShowAppLauncher()
 				break
-			} else if ev.Detail != keyCodeTab {
-				break
-			}
-			if x.altTabList == nil {
-				x.altTabList = []desktop.Window{}
-				for _, win := range x.Windows() {
-					if win.Iconic() {
-						continue
-					}
-					x.altTabList = append(x.altTabList, win)
-				}
-				x.altTabIndex = 0
-
-				xproto.GrabKeyboard(x.x.Conn(), true, x.rootID, xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
-			}
-
-			winCount := len(x.altTabList)
-			if winCount <= 1 {
-				break
-			}
-			if ev.State&xproto.ModMaskShift != 0 {
-				x.altTabIndex--
-				if x.altTabIndex < 0 {
-					x.altTabIndex = winCount - 1
-				}
-			} else {
-				x.altTabIndex++
-				if x.altTabIndex == winCount {
-					x.altTabIndex = 0
+			} else if ev.Detail == keyCodeTab {
+				xproto.GrabKeyboard(x.x.Conn(), true, x.x.RootWin(), xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
+				shiftPressed := ev.State&xproto.ModMaskShift != 0
+				if shiftPressed {
+					go ui.ShowAppSwitcherReverse()
+				} else {
+					go ui.ShowAppSwitcher()
 				}
 			}
-
-			x.RaiseToTop(x.altTabList[x.altTabIndex])
-			windowClientListStackingUpdate(x)
 		case xproto.KeyReleaseEvent:
 			if ev.Detail == keyCodeAlt {
-				x.altTabList = nil
+				go ui.HideAppSwitcher()
 				xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
+				windowClientListStackingUpdate(x)
 			}
 		}
 	}
