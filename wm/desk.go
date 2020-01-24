@@ -314,6 +314,10 @@ func (x *x11WM) layoutRoots() {
 			xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 				[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
+			notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
+				X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
+				BorderWidth: 0, OverrideRedirect: false}
+			xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 		}
 	}
 }
@@ -367,6 +371,10 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 			ycoord = int16(screen.Y)
 			width = uint16(screen.Width)
 			height = uint16(screen.Height)
+			notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
+				X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
+				BorderWidth: 0, OverrideRedirect: false}
+			xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 			break
 		}
 	}

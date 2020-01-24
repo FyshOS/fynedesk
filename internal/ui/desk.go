@@ -70,7 +70,7 @@ func (l *deskLayout) newDesktopWindow(outputName string) fyne.Window {
 
 	desk := l.app.NewWindow(fmt.Sprintf("%s%s", RootWindowName, outputName))
 	desk.SetPadded(false)
-	desk.FullScreen()
+	desk.SetFullScreen(true)
 
 	return desk
 }

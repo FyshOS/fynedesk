@@ -101,5 +101,7 @@ func newBackground() *background {
 		bg = canvas.NewImageFromResource(wmtheme.Background)
 	}
 
-	return &background{wallpaper: bg}
+	ret := &background{wallpaper: bg}
+	ret.ExtendBaseWidget(ret)
+	return ret
 }
