@@ -109,8 +109,7 @@ func (xsp *x11ScreensProvider) setupScreens() {
 	}
 
 	var primaryInfo *randr.GetOutputInfoReply
-	primary, err := randr.GetOutputPrimary(xsp.x.x.Conn(),
-		xproto.Setup(xsp.x.x.Conn()).DefaultScreen(xsp.x.x.Conn()).Root).Reply()
+	primary, err := randr.GetOutputPrimary(xsp.x.x.Conn(), xsp.root).Reply()
 	if err == nil {
 		primaryInfo, _ = randr.GetOutputInfo(xsp.x.x.Conn(), primary.Output, 0).Reply()
 	}
