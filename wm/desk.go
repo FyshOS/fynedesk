@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -288,6 +289,11 @@ func (x *x11WM) runLoop() {
 			if ev.Detail == keyCodeAlt {
 				x.altTabList = nil
 				xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
+			}
+		case randr.ScreenChangeNotifyEvent:
+			if screenNotify, ok := desktop.Instance().(notify.ScreenChangeNotify); ok {
+				x.rootIDs = nil
+				screenNotify.ScreenChangeNotify()
 			}
 		}
 	}

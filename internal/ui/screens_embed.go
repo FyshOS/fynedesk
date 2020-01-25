@@ -6,6 +6,10 @@ type embeddedScreensProvider struct {
 	screens []*desktop.Screen
 }
 
+func (esp embeddedScreensProvider) RefreshScreens() {
+	return
+}
+
 func (esp embeddedScreensProvider) Screens() []*desktop.Screen {
 	return esp.screens
 }

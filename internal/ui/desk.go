@@ -101,12 +101,12 @@ func (l *deskLayout) setupRoots() {
 		if screen == l.screens.Primary() {
 			l.primaryWin = win
 			win.SetMaster()
-			container = fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse)
 			if l.wm != nil {
 				win.SetOnClosed(func() {
 					l.wm.Close()
 				})
 			}
+			container = fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse)
 			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
 			win.SetContent(container)
 		} else {
@@ -177,6 +177,17 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 		fmt.Sprintf("GDK_SCALE=%d", intScale),
 		fmt.Sprintf("ELM_SCALE=%1.1f", scale),
 	}
+}
+
+// ScreenChangeNotify can be called by the screen provider to alert interested objects that screen configuration has changed
+func (l *deskLayout) ScreenChangeNotify() {
+	l.screens.RefreshScreens()
+	l.roots = nil
+	l.backgroundScreenMap = nil
+	l.primaryWin = nil
+
+	l.backgroundScreenMap = make(map[*background]*desktop.Screen)
+	l.setupRoots()
 }
 
 // MouseInNotify can be called by the window manager to alert the desktop that the cursor has entered the canvas

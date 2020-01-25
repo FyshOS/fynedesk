@@ -113,6 +113,10 @@ type testScreensProvider struct {
 	active  *desktop.Screen
 }
 
+func (tsp testScreensProvider) RefreshScreens() {
+	return
+}
+
 func (tsp testScreensProvider) Screens() []*desktop.Screen {
 	return tsp.screens
 }

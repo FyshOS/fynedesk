@@ -9,6 +9,7 @@ import (
 
 // ScreenList provides information about available physical screens for Fyne desktop
 type ScreenList interface {
+	RefreshScreens()                                               // RefreshScreens clears screen information and recreates it
 	Screens() []*Screen                                            // Screens returns a Screen type slice of each available physical screen
 	Active() *Screen                                               // Active returns the screen index of the currently active screen
 	Primary() *Screen                                              // Primary returns the screen index of the primary screen
