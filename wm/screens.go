@@ -115,7 +115,6 @@ func (xsp *x11ScreensProvider) setupScreens() {
 		primaryInfo, _ = randr.GetOutputInfo(xsp.x.x.Conn(), primary.Output, 0).Reply()
 	}
 	primaryFound := false
-	i := 0
 	for _, output := range resources.Outputs {
 		outputInfo, err := randr.GetOutputInfo(xsp.x.x.Conn(), output, 0).Reply()
 		if err != nil {
@@ -156,7 +155,6 @@ func (xsp *x11ScreensProvider) setupScreens() {
 				xsp.active = xsp.screens[insertIndex]
 			}
 		}
-		i++
 	}
 	if !primaryFound {
 		xsp.primary = xsp.screens[0]
