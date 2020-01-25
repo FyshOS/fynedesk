@@ -151,8 +151,8 @@ func (xsp *x11ScreensProvider) setupScreens() {
 		if primaryInfo != nil {
 			if string(primaryInfo.Name) == string(outputInfo.Name) {
 				primaryFound = true
-				xsp.primary = xsp.screens[i]
-				xsp.active = xsp.screens[i]
+				xsp.primary = xsp.screens[insertIndex]
+				xsp.active = xsp.screens[insertIndex]
 			}
 		}
 		i++
