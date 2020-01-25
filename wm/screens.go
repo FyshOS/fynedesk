@@ -141,6 +141,7 @@ func (xsp *x11ScreensProvider) setupScreens() {
 			xsp.screens = append(xsp.screens, &desktop.Screen{Name: string(outputInfo.Name),
 				X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height),
 				Scale: getScale(crtcInfo.Width, uint16(outputInfo.MmWidth))})
+			insertIndex = len(xsp.screens) - 1
 		} else {
 			xsp.screens = append(xsp.screens, nil)
 			copy(xsp.screens[insertIndex+1:], xsp.screens[insertIndex:])
