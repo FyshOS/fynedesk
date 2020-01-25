@@ -291,10 +291,11 @@ func (x *x11WM) runLoop() {
 				xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
 			}
 		case randr.ScreenChangeNotifyEvent:
-			if screenNotify, ok := desktop.Instance().(notify.ScreenChangeNotify); ok {
-				x.rootIDs = nil
-				screenNotify.ScreenChangeNotify()
+			desk := desktop.Instance()
+			if desk == nil {
+				break
 			}
+			desk.Screens().RefreshScreens()
 		}
 	}
 

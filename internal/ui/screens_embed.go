@@ -10,6 +10,10 @@ func (esp embeddedScreensProvider) RefreshScreens() {
 	return
 }
 
+func (esp embeddedScreensProvider) AddChangeListener(func()) {
+	// no-op
+}
+
 func (esp embeddedScreensProvider) Screens() []*desktop.Screen {
 	return esp.screens
 }

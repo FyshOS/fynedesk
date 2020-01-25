@@ -87,11 +87,6 @@ func (l *deskLayout) setupRoots() {
 		return
 	}
 
-	l.bar = newBar(l)
-	l.widgets = newWidgetPanel(l)
-	l.mouse = newMouse()
-	l.mouse.Hide() // temporarily we do not draw mouse (using X default)
-
 	for _, screen := range l.screens.Screens() {
 		win := l.newDesktopWindow(screen.Name)
 		l.roots = append(l.roots, win)
@@ -179,11 +174,8 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 	}
 }
 
-// ScreenChangeNotify can be called by the screen provider to alert interested objects that screen configuration has changed
-func (l *deskLayout) ScreenChangeNotify() {
-	l.screens.RefreshScreens()
+func (l *deskLayout) screensChanged() {
 	l.roots = nil
-	l.backgroundScreenMap = nil
 	l.primaryWin = nil
 
 	l.backgroundScreenMap = make(map[*background]*desktop.Screen)
@@ -243,12 +235,17 @@ func (l *deskLayout) Screens() desktop.ScreenList {
 	return l.screens
 }
 
-func setupInitialVars(desk *deskLayout) {
-	desktop.SetInstance(desk)
-	desk.settings = newDeskSettings()
-	desk.addSettingsChangeListener()
-	desk.backgroundScreenMap = make(map[*background]*desktop.Screen)
-	desk.setupRoots()
+func (l *deskLayout) setupInitialVars() {
+	desktop.SetInstance(l)
+	l.settings = newDeskSettings()
+	l.addSettingsChangeListener()
+	l.backgroundScreenMap = make(map[*background]*desktop.Screen)
+	l.bar = newBar(l)
+	l.widgets = newWidgetPanel(l)
+	l.mouse = newMouse()
+	l.mouse.Hide() // temporarily we do not draw mouse (using X default)
+
+	l.setupRoots()
 }
 
 // NewDesktop creates a new desktop in fullscreen for main usage.
@@ -256,7 +253,8 @@ func setupInitialVars(desk *deskLayout) {
 // An ApplicationProvider is used to lookup application icons from the operating system.
 func NewDesktop(app fyne.App, wm desktop.WindowManager, icons desktop.ApplicationProvider, screenProvider desktop.ScreenList) desktop.Desktop {
 	desk := &deskLayout{app: app, wm: wm, icons: icons, screens: screenProvider}
-	setupInitialVars(desk)
+	screenProvider.AddChangeListener(desk.screensChanged)
+	desk.setupInitialVars()
 	return desk
 }
 
@@ -266,6 +264,6 @@ func NewDesktop(app fyne.App, wm desktop.WindowManager, icons desktop.Applicatio
 // fyne/test package.
 func NewEmbeddedDesktop(app fyne.App, icons desktop.ApplicationProvider) desktop.Desktop {
 	desk := &deskLayout{app: app, icons: icons, screens: newEmbeddedScreensProvider()}
-	setupInitialVars(desk)
+	desk.setupInitialVars()
 	return desk
 }

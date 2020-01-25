@@ -20,6 +20,8 @@ type x11ScreensProvider struct {
 	single  bool
 	x       *x11WM
 	root    xproto.Window
+
+	onChange []func()
 }
 
 // NewX11ScreensProvider returns a screen provider for use in x11 desktop mode
@@ -39,15 +41,23 @@ func NewX11ScreensProvider(mgr desktop.WindowManager) desktop.ScreenList {
 	return screensProvider
 }
 
+func (xsp *x11ScreensProvider) AddChangeListener(f func()) {
+	xsp.onChange = append(xsp.onChange, f)
+}
+
 func (xsp *x11ScreensProvider) RefreshScreens() {
 	xsp.screens = nil
 	xsp.active = nil
 	xsp.primary = nil
 	if xsp.single {
 		xsp.setupSingleScreen()
-		return
+	} else {
+		xsp.setupScreens()
 	}
-	xsp.setupScreens()
+
+	for _, listener := range xsp.onChange {
+		listener()
+	}
 }
 
 func (xsp *x11ScreensProvider) Screens() []*desktop.Screen {

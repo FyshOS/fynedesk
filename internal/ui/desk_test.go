@@ -117,6 +117,10 @@ func (tsp testScreensProvider) RefreshScreens() {
 	return
 }
 
+func (tsp testScreensProvider) AddChangeListener(func()) {
+	// no-op
+}
+
 func (tsp testScreensProvider) Screens() []*desktop.Screen {
 	return tsp.screens
 }
