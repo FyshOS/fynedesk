@@ -1,6 +1,7 @@
 package desktop
 
 import (
+	"math"
 	"os"
 	"strconv"
 
@@ -32,7 +33,7 @@ func (s *Screen) CanvasScale() float32 {
 		user = 1.0
 	}
 
-	return s.Scale * user
+	return float32(math.Round(float64(s.Scale*user*10.0))) / 10.0
 }
 
 func userScale() float32 {
