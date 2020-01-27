@@ -3,6 +3,21 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
+## 0.1.2 - Ongoing
+
+Additional bug fixes on 0.1 release
+
+### Added
+
+
+### Changed
+
+
+### Fixed
+
+* GoLand editor loses focus on mouse click (#69)
+
+
 ## 0.1.1 - 30 December 2019
 
 Bug fix release on 0.1
