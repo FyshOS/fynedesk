@@ -54,9 +54,15 @@ const (
 	moveResizeMoveKeyboard moveResizeType = 10
 	moveResizeCancel       moveResizeType = 11
 
-	keyCodeTab   = 23
-	keyCodeAlt   = 64
-	keyCodeSpace = 65
+	keyCodeEscape = 9
+	keyCodeTab    = 23
+	keyCodeReturn = 36
+	keyCodeAlt    = 64
+	keyCodeSpace  = 65
+
+	keyCodeEnter = 108
+	keyCodeLeft  = 113
+	keyCodeRight = 114
 )
 
 func (x *x11WM) Close() {
@@ -249,22 +255,30 @@ func (x *x11WM) runLoop() {
 			}
 		case xproto.KeyPressEvent:
 			if ev.Detail == keyCodeSpace {
-				go ui.ShowAppLauncher()
-				break
-			} else if ev.Detail == keyCodeTab {
-				xproto.GrabKeyboard(x.x.Conn(), true, x.x.RootWin(), xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
-				shiftPressed := ev.State&xproto.ModMaskShift != 0
-				if shiftPressed {
-					go ui.ShowAppSwitcherReverse()
+				if switcherInstance != nil { // we are currently switching windows - select current window
+					x.applyAppSwitcher()
 				} else {
-					go ui.ShowAppSwitcher()
+					go ui.ShowAppLauncher()
+				}
+			} else {
+				// The rest of these methods are about app switcher.
+				// Apart from Tab they will only be called once the keyboard grab is in effect.
+				if ev.Detail == keyCodeTab {
+					shiftPressed := ev.State&xproto.ModMaskShift != 0
+					x.showOrSelectAppSwitcher(shiftPressed)
+				} else if ev.Detail == keyCodeEscape {
+					x.cancelAppSwitcher()
+				} else if ev.Detail == keyCodeReturn || ev.Detail == keyCodeEnter {
+					x.applyAppSwitcher()
+				} else if ev.Detail == keyCodeLeft {
+					x.previousAppSwitcher()
+				} else if ev.Detail == keyCodeRight {
+					x.nextAppSwitcher()
 				}
 			}
 		case xproto.KeyReleaseEvent:
 			if ev.Detail == keyCodeAlt {
-				go ui.HideAppSwitcher()
-				xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
-				windowClientListStackingUpdate(x)
+				x.applyAppSwitcher()
 			}
 		}
 	}

@@ -11,8 +11,6 @@ import (
 	"fyne.io/desktop"
 )
 
-var switcherInstance *switcher
-
 const (
 	switcherIconSize = 64
 	switcherTextSize = 24
@@ -22,14 +20,14 @@ type switchIcon struct {
 	widget.BaseWidget
 	current bool
 
-	parent *switcher
+	parent *Switcher
 	win    desktop.Window
 }
 
 func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 	var res fyne.Resource
 	title := s.win.Title()
-	app := desktop.Instance().IconProvider().FindAppFromWinInfo(s.win)
+	app := s.parent.provider.FindAppFromWinInfo(s.win)
 	if app != nil {
 		res = app.Icon(desktop.Instance().Settings().IconTheme(), switcherIconSize*2)
 		title = app.Name()
@@ -43,38 +41,32 @@ func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 		img: img, text: text, objects: []fyne.CanvasObject{img, text}}
 }
 
+// FocusGained is called when this icon gets focus - it becomes the candidate for window raising
 func (s *switchIcon) FocusGained() {
 	s.current = true
 	s.Refresh()
 }
 
+// FocusLost is called when a different item is focused
 func (s *switchIcon) FocusLost() {
 	s.current = false
 	s.Refresh()
 }
 
+// Focused returns whether or not this icon has focus
 func (s *switchIcon) Focused() bool {
 	return s.current
 }
 
+// TypedRune notifies when a rune is typed, we don't care
 func (s *switchIcon) TypedRune(rune) {
 }
 
-func (s *switchIcon) TypedKey(ev *fyne.KeyEvent) {
-	switch ev.Name {
-	case fyne.KeyReturn, fyne.KeyEnter:
-		s.parent.win.Close()
-
-		s.parent.raise(s)
-	case fyne.KeyRight:
-		s.parent.next()
-	case fyne.KeyLeft:
-		s.parent.previous()
-	case fyne.KeyEscape:
-		s.parent.win.Close()
-	}
+// TypedKey is called when a key is typed. Currently this is handled by the window manager
+func (s *switchIcon) TypedKey(*fyne.KeyEvent) {
 }
-func newSwitchIcon(p *switcher, win desktop.Window) *switchIcon {
+
+func newSwitchIcon(p *Switcher, win desktop.Window) *switchIcon {
 	ret := &switchIcon{
 		parent: p,
 		win:    win,
@@ -119,12 +111,14 @@ func (s switchIconRenderer) Objects() []fyne.CanvasObject {
 func (s switchIconRenderer) Destroy() {
 }
 
-type switcher struct {
-	win   fyne.Window
-	icons []fyne.CanvasObject
+// Switcher is an instance of a visible app switcher that can request a change in window stacking order
+type Switcher struct {
+	win      fyne.Window
+	icons    []fyne.CanvasObject
+	provider desktop.ApplicationProvider
 }
 
-func (s *switcher) currentIndex() int {
+func (s *Switcher) currentIndex() int {
 	for i, item := range s.icons {
 		if item.(*switchIcon).current {
 			return i
@@ -134,7 +128,14 @@ func (s *switcher) currentIndex() int {
 	return 0
 }
 
-func (s *switcher) next() {
+func (s *Switcher) setCurrent(i int) {
+	s.win.Canvas().Focus(s.icons[i].(*switchIcon))
+}
+
+// Next selects the next logical lower window in the stack.
+// If the bottom most window is selected then it will wrap to the topmost.
+// This will be raised if the change is applied by calling HideApply.
+func (s *Switcher) Next() {
 	if len(s.icons) == 0 {
 		return
 	}
@@ -144,10 +145,13 @@ func (s *switcher) next() {
 	if i >= len(s.icons) {
 		i = 0
 	}
-	s.win.Canvas().Focus(s.icons[i].(*switchIcon))
+	s.setCurrent(i)
 }
 
-func (s *switcher) previous() {
+// Previous selects the next logical higher window in the stack.
+// If the top most window was selected it wraps to the lowest.
+// This will be raised if the change is applied by calling HideApply.
+func (s *Switcher) Previous() {
 	if len(s.icons) == 0 {
 		return
 	}
@@ -157,17 +161,17 @@ func (s *switcher) previous() {
 	if i < 0 {
 		i = len(s.icons) - 1
 	}
-	s.win.Canvas().Focus(s.icons[i].(*switchIcon))
+	s.setCurrent(i)
 }
 
-func (s *switcher) raise(icon *switchIcon) {
+func (s *Switcher) raise(icon *switchIcon) {
 	if icon.win.Iconic() {
 		icon.win.Uniconify()
 	}
 	icon.win.RaiseToTop()
 }
 
-func (s *switcher) loadUI() fyne.Window {
+func (s *Switcher) loadUI() fyne.Window {
 	win := fyne.CurrentApp().NewWindow("Application instance")
 
 	win.SetContent(widget.NewHBox(s.icons...))
@@ -176,7 +180,7 @@ func (s *switcher) loadUI() fyne.Window {
 	return win
 }
 
-func (s *switcher) loadIcons(list []desktop.Window) []fyne.CanvasObject {
+func (s *Switcher) loadIcons(list []desktop.Window) []fyne.CanvasObject {
 	var ret []fyne.CanvasObject
 
 	for _, item := range list {
@@ -186,57 +190,44 @@ func (s *switcher) loadIcons(list []desktop.Window) []fyne.CanvasObject {
 	return ret
 }
 
-func showAppSwitcherAt(off int, wm desktop.WindowManager) {
-	if wm == nil || len(wm.Windows()) <= 1 {
-		return
+// HideApply dismisses the application Switcher and raises
+// whichever window was selected.
+func (s *Switcher) HideApply() {
+	s.HideCancel()
+	s.raise(s.win.Canvas().Focused().(*switchIcon))
+}
+
+// HideCancel dismisses the application Switcher without changing window order.
+func (s *Switcher) HideCancel() {
+	s.win.Close()
+}
+
+func showAppSwitcherAt(off int, wins []desktop.Window, prov desktop.ApplicationProvider) *Switcher {
+	if len(wins) <= 1 { // don't actually show
+		return nil
 	}
-	s := &switcher{}
-	s.icons = s.loadIcons(wm.Windows())
+
+	s := &Switcher{provider: prov}
+	s.icons = s.loadIcons(wins)
 	s.win = s.loadUI()
 	if off < 0 {
 		off = len(s.icons) + off // plus a negative is minus
 	}
 	s.win.Canvas().Focus(s.icons[off].(*switchIcon))
-	s.win.SetOnClosed(func() {
-		switcherInstance = nil
-	})
 	s.win.Show()
-	switcherInstance = s
+	return s
 }
 
-// ShowAppSwitcher shows the application switcher to change windows.
+// ShowAppSwitcher shows the application Switcher to change windows.
 // The most recently used not-top window will be selected by default.
-// If the switcher was already visible then it will select the next window in order.
-func ShowAppSwitcher() {
-	wm := desktop.Instance().WindowManager()
-	if switcherInstance != nil {
-		switcherInstance.next()
-		return
-	}
-
-	showAppSwitcherAt(1, wm)
+// If the Switcher was already visible then it will select the next window in order.
+func ShowAppSwitcher(wins []desktop.Window, prov desktop.ApplicationProvider) *Switcher {
+	return showAppSwitcherAt(1, wins, prov)
 }
 
-// ShowAppSwitcherReverse shows the application switcher to change windows.
+// ShowAppSwitcherReverse shows the application Switcher to change windows.
 // The least recently used window will be selected by default.
-// If the switcher was already visible then it will select the last window in order.
-func ShowAppSwitcherReverse() {
-	wm := desktop.Instance().WindowManager()
-	if switcherInstance != nil {
-		switcherInstance.previous()
-		return
-	}
-
-	showAppSwitcherAt(-1, wm)
-}
-
-// HideAppSwitcher dismisses the application switcher and raises
-// whichever window was selected.
-func HideAppSwitcher() {
-	if switcherInstance == nil {
-		return
-	}
-
-	switcherInstance.win.Close()
-	switcherInstance.raise(switcherInstance.win.Canvas().Focused().(*switchIcon))
+// If the Switcher was already visible then it will select the last window in order.
+func ShowAppSwitcherReverse(wins []desktop.Window, prov desktop.ApplicationProvider) *Switcher {
+	return showAppSwitcherAt(-1, wins, prov)
 }
