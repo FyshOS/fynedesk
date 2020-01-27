@@ -491,6 +491,10 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		if c == nil {
 			return
 		}
+		win, err := windowActiveGet(x.x)
+		if err == nil && win == ev.Window {
+			return
+		}
 		xproto.SetInputFocus(x.x.Conn(), 0, ev.Window, 0)
 		windowActiveSet(x.x, ev.Window)
 	case "_NET_WM_FULLSCREEN_MONITORS":
