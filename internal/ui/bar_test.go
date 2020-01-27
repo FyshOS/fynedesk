@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"strings"
 	"testing"
 
 	"fyne.io/fyne"
@@ -14,94 +15,100 @@ import (
 )
 
 type dummyWindow struct {
+	name   string // a name to override the dummy default
+	raised bool   // this flag shows we were requested to raise above the other windows
 }
 
-func (*dummyWindow) Decorated() bool {
+func (w *dummyWindow) Decorated() bool {
 	return true
 }
 
-func (*dummyWindow) Title() string {
-	return "Xterm"
+func (w *dummyWindow) Title() string {
+	if w.name == "" {
+		return "Xterm"
+	}
+
+	return w.name
 }
 
-func (*dummyWindow) Class() []string {
-	return []string{"Xterm", "xterm"}
+func (w *dummyWindow) Class() []string {
+	return []string{w.Title(), "xterm"}
 }
 
-func (*dummyWindow) Command() string {
-	return "xterm"
+func (w *dummyWindow) Command() string {
+	return strings.ToLower(w.Title())
 }
 
-func (*dummyWindow) IconName() string {
-	return "xterm"
+func (w *dummyWindow) IconName() string {
+	return strings.ToLower(w.Title())
 }
 
-func (*dummyWindow) Icon() fyne.Resource {
+func (w *dummyWindow) Icon() fyne.Resource {
 	return nil
 }
 
-func (*dummyWindow) Fullscreened() bool {
+func (w *dummyWindow) Fullscreened() bool {
 	return false
 }
 
-func (*dummyWindow) Iconic() bool {
+func (w *dummyWindow) Iconic() bool {
 	return false
 }
 
-func (*dummyWindow) Maximized() bool {
+func (w *dummyWindow) Maximized() bool {
 	return false
 }
 
-func (*dummyWindow) TopWindow() bool {
+func (w *dummyWindow) TopWindow() bool {
 	return true
 }
 
-func (*dummyWindow) SkipTaskbar() bool {
+func (w *dummyWindow) SkipTaskbar() bool {
 	return false
 }
 
-func (*dummyWindow) Focused() bool {
+func (w *dummyWindow) Focused() bool {
 	return false
 }
 
-func (*dummyWindow) Focus() {
+func (w *dummyWindow) Focus() {
 	// no-op
 }
 
-func (*dummyWindow) Close() {
+func (w *dummyWindow) Close() {
 	// no-op
 }
 
-func (*dummyWindow) Fullscreen() {
+func (w *dummyWindow) Fullscreen() {
 	// no-op
 }
 
-func (*dummyWindow) Unfullscreen() {
+func (w *dummyWindow) Unfullscreen() {
 	// no-op
 }
 
-func (*dummyWindow) Iconify() {
+func (w *dummyWindow) Iconify() {
 	// no-op
 }
 
-func (*dummyWindow) Uniconify() {
+func (w *dummyWindow) Uniconify() {
 	// no-op
 }
 
-func (*dummyWindow) Maximize() {
+func (w *dummyWindow) Maximize() {
 	// no-op
 }
 
-func (*dummyWindow) Unmaximize() {
+func (w *dummyWindow) Unmaximize() {
 	// no-op
 }
 
-func (*dummyWindow) RaiseAbove(desktop.Window) {
+func (w *dummyWindow) RaiseAbove(desktop.Window) {
 	// no-op (this is instructing the window after stack changes)
 }
 
-func (*dummyWindow) RaiseToTop() {
-	// no-op
+func (w *dummyWindow) RaiseToTop() {
+	w.raised = true
 }
 
 type dummyIcon struct {
