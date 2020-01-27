@@ -103,7 +103,9 @@ func (l *deskLayout) setupRoots() {
 			if l.wm != nil {
 				win.SetOnClosed(func() {
 					if !l.refreshing {
-						l.wm.Close()
+						for _, root := range l.roots {
+							root.Close()
+						}
 					}
 					l.refreshing = false
 				})
