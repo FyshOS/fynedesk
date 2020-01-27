@@ -213,6 +213,30 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	return barSettings
 }
 
+func loadScreensTable() fyne.CanvasObject {
+	names := widget.NewVBox()
+	labels1 := widget.NewVBox()
+	values1 := widget.NewVBox()
+	labels2 := widget.NewVBox()
+	values2 := widget.NewVBox()
+
+	for _, screen := range desktop.Instance().Screens().Screens() {
+		names.Append(widget.NewLabelWithStyle(screen.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
+		labels1.Append(widget.NewLabel("Width"))
+		values1.Append(widget.NewLabel(fmt.Sprintf("%dpx", screen.Width)))
+		labels2.Append(widget.NewLabel("Height"))
+		values2.Append(widget.NewLabel(fmt.Sprintf("%dpx", screen.Height)))
+
+		names.Append(widget.NewLabel(""))
+		labels1.Append(widget.NewLabel("Scale"))
+		values1.Append(widget.NewLabel(fmt.Sprintf("%.1f", screen.Scale)))
+		labels2.Append(widget.NewLabel("Applied"))
+		values2.Append(widget.NewLabel(fmt.Sprintf("%.1f", screen.CanvasScale())))
+	}
+
+	return widget.NewHBox(names, labels1, values1, labels2, values2)
+}
+
 func loadAdvancedScreen() fyne.CanvasObject {
 	var displays fyne.CanvasObject
 	if _, err := exec.LookPath(randrHelper); err == nil {
@@ -223,7 +247,12 @@ func loadAdvancedScreen() fyne.CanvasObject {
 		displays = widget.NewLabel("This requires " + randrHelper)
 	}
 
-	return widget.NewVBox(displays)
+	userScale := fyne.CurrentApp().Settings().Scale()
+	content := widget.NewVBox(widget.NewLabel(fmt.Sprintf("User scale: %0.2f", userScale)))
+	screens := widget.NewGroup("Screens", content)
+	screens.Append(loadScreensTable())
+
+	return widget.NewVBox(displays, screens)
 }
 
 func showSettings(deskSettings *deskSettings) {
