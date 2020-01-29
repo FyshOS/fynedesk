@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
+	deskDriver "fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
@@ -172,7 +173,13 @@ func (s *Switcher) raise(icon *switchIcon) {
 }
 
 func (s *Switcher) loadUI() fyne.Window {
-	win := fyne.CurrentApp().NewWindow("Application instance")
+	var win fyne.Window
+	if d, ok := fyne.CurrentApp().Driver().(deskDriver.Driver); ok {
+		win = d.CreateSplashWindow()
+		win.SetPadded(true)
+	} else {
+		win = fyne.CurrentApp().NewWindow("Application instance")
+	}
 
 	win.SetContent(widget.NewHBox(s.icons...))
 	win.CenterOnScreen()
