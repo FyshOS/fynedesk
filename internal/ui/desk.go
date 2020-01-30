@@ -65,7 +65,7 @@ func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 
 func (l *deskLayout) newDesktopWindow(outputName string) fyne.Window {
 	if l.wm == nil {
-		win := l.app.NewWindow(RootWindowName + "(Embedded)")
+		win := l.app.NewWindow("Embedded " + RootWindowName)
 		win.SetPadded(false)
 		return win
 	}
