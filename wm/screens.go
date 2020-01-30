@@ -35,7 +35,7 @@ func NewX11ScreensProvider(mgr desktop.WindowManager) desktop.ScreenList {
 		return screensProvider
 	}
 	screensProvider.root = xproto.Setup(screensProvider.x.x.Conn()).DefaultScreen(screensProvider.x.x.Conn()).Root
-	randr.SelectInput(screensProvider.x.x.Conn(), screensProvider.root, randr.NotifyMaskScreenChange)
+	randr.SelectInput(screensProvider.x.x.Conn(), screensProvider.x.x.RootWin(), randr.NotifyMaskScreenChange)
 	screensProvider.setupScreens()
 
 	return screensProvider
@@ -46,6 +46,7 @@ func (xsp *x11ScreensProvider) AddChangeListener(f func()) {
 }
 
 func (xsp *x11ScreensProvider) RefreshScreens() {
+	xsp.root = xproto.Setup(xsp.x.x.Conn()).DefaultScreen(xsp.x.x.Conn()).Root
 	xsp.screens = nil
 	xsp.active = nil
 	xsp.primary = nil
@@ -144,6 +145,7 @@ func (xsp *x11ScreensProvider) setupScreens() {
 				insertIndex = i
 				break
 			}
+
 		}
 		if insertIndex == -1 {
 			xsp.screens = append(xsp.screens, &desktop.Screen{Name: string(outputInfo.Name),

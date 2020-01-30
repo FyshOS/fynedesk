@@ -27,14 +27,15 @@ import (
 
 type x11WM struct {
 	stack
-	x                 *xgbutil.XUtil
-	framedExisting    bool
-	moveResizing      bool
-	moveResizingLastX int16
-	moveResizingLastY int16
-	moveResizingType  moveResizeType
-	altTabList        []desktop.Window
-	altTabIndex       int
+	x                     *xgbutil.XUtil
+	framedExisting        bool
+	moveResizing          bool
+	moveResizingLastX     int16
+	moveResizingLastY     int16
+	moveResizingType      moveResizeType
+	altTabList            []desktop.Window
+	altTabIndex           int
+	screenChangeTimestamp xproto.Timestamp
 
 	allowedActions []string
 	supportedHints []string
@@ -291,6 +292,10 @@ func (x *x11WM) runLoop() {
 				xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
 			}
 		case randr.ScreenChangeNotifyEvent:
+			if x.screenChangeTimestamp == ev.Timestamp {
+				break
+			}
+			x.screenChangeTimestamp = ev.Timestamp
 			desk := desktop.Instance()
 			if desk == nil {
 				break
@@ -305,6 +310,9 @@ func (x *x11WM) runLoop() {
 func (x *x11WM) getWindowFromName(screenName string) xproto.Window {
 	for _, id := range x.rootIDs {
 		name := windowName(x.x, id)
+		if strings.Index(name, ui.RootWindowName) != 0 {
+			continue
+		}
 		pos := strings.LastIndex(name, ui.RootWindowName) + len(ui.RootWindowName) + 1
 		outputName := name[pos:]
 		if outputName == screenName {
@@ -535,7 +543,15 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		if c == nil {
 			return
 		}
-		xproto.SetInputFocus(x.x.Conn(), 0, ev.Window, 0)
+		activeWin, err := windowActiveGet(x.x)
+		if err == nil && activeWin == ev.Window {
+			return
+		}
+		err = xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, 0).Check()
+		if err != nil {
+			fyne.LogError("Could not set focus", err)
+			return
+		}
 		windowActiveSet(x.x, ev.Window)
 	case "_NET_WM_FULLSCREEN_MONITORS":
 		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
@@ -606,7 +622,6 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	default:
 		return
 	}
-
 	x.setupWindow(win)
 }
 
@@ -615,7 +630,6 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 	if c == nil {
 		return
 	}
-
 	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
 }
 
@@ -629,7 +643,6 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 		return
 	}
 	c = newClient(win, x)
-
 	x.AddWindow(c)
 	c.RaiseToTop()
 	c.Focus()

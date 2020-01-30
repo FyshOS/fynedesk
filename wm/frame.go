@@ -597,7 +597,7 @@ func newFrame(c *client) *frame {
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
 		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange |
 		xproto.EventMaskPropertyChange}
-	err = xproto.CreateWindowChecked(c.wm.x.Conn(), c.wm.x.Screen().RootDepth, f.Id, c.wm.x.RootWin(),
+	err = xproto.CreateWindowChecked(c.wm.x.Conn(), c.wm.x.Screen().RootDepth, f.Id, xproto.Setup(c.wm.x.Conn()).Roots[0].Root,
 		x, y, w, h, 0, xproto.WindowClassInputOutput, c.wm.x.Screen().RootVisual,
 		xproto.CwEventMask, values).Check()
 	if err != nil {

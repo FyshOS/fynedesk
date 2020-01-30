@@ -29,6 +29,7 @@ type deskLayout struct {
 
 	bar            *bar
 	widgets, mouse fyne.CanvasObject
+	controlWin     fyne.Window
 	primaryWin     fyne.Window
 	roots          []fyne.Window
 	refreshing     bool
@@ -100,33 +101,28 @@ func (l *deskLayout) setupRoots() {
 			l.widgets = newWidgetPanel(l)
 			l.mouse = newMouse()
 			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
-			if l.wm != nil {
-				win.SetOnClosed(func() {
-					if !l.refreshing {
-						for _, root := range l.roots {
-							root.Close()
-						}
-					}
-					l.refreshing = false
-				})
-			}
+			win.SetOnClosed(func() {
+				if !l.refreshing {
+					l.controlWin.Close()
+				}
+				l.refreshing = false
+			})
 			container = fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse)
 			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
-			win.SetContent(container)
 		} else {
 			container = fyne.NewContainerWithLayout(l, bg)
-			win.SetContent(container)
-			win.Show()
 		}
+		win.SetContent(container)
+		win.Show()
 	}
 }
 
 func (l *deskLayout) Run() {
-	if l.primaryWin == nil {
+	if l.wm == nil {
+		l.roots[0].ShowAndRun()
 		return
 	}
-	if l.wm == nil {
-		l.primaryWin.ShowAndRun()
+	if l.controlWin == nil {
 		return
 	}
 	debug.SetPanicOnFault(true)
@@ -140,7 +136,7 @@ func (l *deskLayout) Run() {
 		}
 	}()
 
-	l.primaryWin.ShowAndRun()
+	l.controlWin.ShowAndRun()
 }
 
 func (l *deskLayout) RunApp(app desktop.AppData) error {
@@ -193,12 +189,16 @@ func (l *deskLayout) screensChanged() {
 	l.widgets = nil
 	l.mouse = nil
 	l.roots = nil
+	l.backgroundScreenMap = nil
 	l.backgroundScreenMap = make(map[*background]*desktop.Screen)
 	l.setupRoots()
 }
 
 // MouseInNotify can be called by the window manager to alert the desktop that the cursor has entered the canvas
 func (l *deskLayout) MouseInNotify(pos fyne.Position) {
+	if l.bar == nil {
+		return
+	}
 	mouseX, mouseY := pos.X, pos.Y
 	barX, barY := l.bar.Position().X, l.bar.Position().Y
 	barWidth, barHeight := l.bar.Size().Width, l.bar.Size().Height
@@ -211,9 +211,10 @@ func (l *deskLayout) MouseInNotify(pos fyne.Position) {
 
 // MouseOutNotify can be called by the window manager to alert the desktop that the cursor has left the canvas
 func (l *deskLayout) MouseOutNotify() {
-	if l.bar != nil {
-		l.bar.MouseOut()
+	if l.bar == nil {
+		return
 	}
+	l.bar.MouseOut()
 }
 
 func (l *deskLayout) startFyneSettingsChangeListener(listener chan fyne.Settings) {
@@ -257,6 +258,15 @@ func (l *deskLayout) setupInitialVars() {
 	l.settings = newDeskSettings()
 	l.addSettingsChangeListener()
 	l.backgroundScreenMap = make(map[*background]*desktop.Screen)
+
+	if l.wm != nil {
+		l.controlWin = l.app.NewWindow(RootWindowName)
+		l.controlWin.Resize(fyne.NewSize(1, 1))
+		l.controlWin.SetMaster()
+		l.controlWin.SetOnClosed(func() {
+			l.wm.Close()
+		})
+	}
 
 	l.setupRoots()
 }
