@@ -296,6 +296,8 @@ func (x *x11WM) runLoop() {
 				break
 			}
 			x.screenChangeTimestamp = ev.Timestamp
+			x.rootIDs = nil
+			x.framedExisting = false
 			desk := desktop.Instance()
 			if desk == nil {
 				break
@@ -603,6 +605,7 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		if err != nil {
 			fyne.LogError("Show Window Error", err)
 		}
+		xproto.ConfigureWindow(x.x.Conn(), win, xproto.ConfigWindowStackMode, []uint32{xproto.StackModeBelow})
 		x.bindKeys(win)
 		if !x.framedExisting {
 			x.framedExisting = true

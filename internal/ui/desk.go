@@ -261,7 +261,7 @@ func (l *deskLayout) setupInitialVars() {
 
 	if l.wm != nil {
 		l.controlWin = l.app.NewWindow(RootWindowName)
-		l.controlWin.Resize(fyne.NewSize(1, 1))
+		l.controlWin.Resize(fyne.NewSize(15, 15))
 		l.controlWin.SetMaster()
 		l.controlWin.SetOnClosed(func() {
 			l.wm.Close()

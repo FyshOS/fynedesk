@@ -31,10 +31,8 @@ func NewX11ScreensProvider(mgr desktop.WindowManager) desktop.ScreenList {
 	err := randr.Init(screensProvider.x.x.Conn())
 	if err != nil {
 		fyne.LogError("Could not initialize randr", err)
-		screensProvider.setupSingleScreen()
 		return screensProvider
 	}
-	screensProvider.root = xproto.Setup(screensProvider.x.x.Conn()).DefaultScreen(screensProvider.x.x.Conn()).Root
 	randr.SelectInput(screensProvider.x.x.Conn(), screensProvider.x.x.RootWin(), randr.NotifyMaskScreenChange)
 	screensProvider.setupScreens()
 
@@ -46,10 +44,6 @@ func (xsp *x11ScreensProvider) AddChangeListener(f func()) {
 }
 
 func (xsp *x11ScreensProvider) RefreshScreens() {
-	xsp.root = xproto.Setup(xsp.x.x.Conn()).DefaultScreen(xsp.x.x.Conn()).Root
-	xsp.screens = nil
-	xsp.active = nil
-	xsp.primary = nil
 	if xsp.single {
 		xsp.setupSingleScreen()
 	} else {
@@ -112,7 +106,8 @@ func getScale(widthPx, widthMm uint16) float32 {
 }
 
 func (xsp *x11ScreensProvider) setupScreens() {
-	resources, err := randr.GetScreenResources(xsp.x.x.Conn(), xsp.root).Reply()
+	root := xproto.Setup(xsp.x.x.Conn()).DefaultScreen(xsp.x.x.Conn()).Root
+	resources, err := randr.GetScreenResources(xsp.x.x.Conn(), root).Reply()
 	if err != nil || len(resources.Outputs) == 0 {
 		fyne.LogError("Could not get randr screen resources", err)
 		xsp.setupSingleScreen()
@@ -120,11 +115,12 @@ func (xsp *x11ScreensProvider) setupScreens() {
 	}
 
 	var primaryInfo *randr.GetOutputInfoReply
-	primary, err := randr.GetOutputPrimary(xsp.x.x.Conn(), xsp.root).Reply()
+	primary, err := randr.GetOutputPrimary(xsp.x.x.Conn(), root).Reply()
 	if err == nil {
 		primaryInfo, _ = randr.GetOutputInfo(xsp.x.x.Conn(), primary.Output, 0).Reply()
 	}
 	primaryFound := false
+	var tmpScreens []*desktop.Screen
 	for _, output := range resources.Outputs {
 		outputInfo, err := randr.GetOutputInfo(xsp.x.x.Conn(), output, 0).Reply()
 		if err != nil {
@@ -140,7 +136,7 @@ func (xsp *x11ScreensProvider) setupScreens() {
 			continue
 		}
 		insertIndex := -1
-		for i, screen := range xsp.screens {
+		for i, screen := range tmpScreens {
 			if screen.X >= int(crtcInfo.X) && screen.Y >= int(crtcInfo.Y) {
 				insertIndex = i
 				break
@@ -148,33 +144,35 @@ func (xsp *x11ScreensProvider) setupScreens() {
 
 		}
 		if insertIndex == -1 {
-			xsp.screens = append(xsp.screens, &desktop.Screen{Name: string(outputInfo.Name),
+			tmpScreens = append(tmpScreens, &desktop.Screen{Name: string(outputInfo.Name),
 				X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height),
 				Scale: getScale(crtcInfo.Width, uint16(outputInfo.MmWidth))})
-			insertIndex = len(xsp.screens) - 1
+			insertIndex = len(tmpScreens) - 1
 		} else {
-			xsp.screens = append(xsp.screens, nil)
-			copy(xsp.screens[insertIndex+1:], xsp.screens[insertIndex:])
-			xsp.screens[insertIndex] = &desktop.Screen{Name: string(outputInfo.Name),
+			tmpScreens = append(tmpScreens, nil)
+			copy(tmpScreens[insertIndex+1:], tmpScreens[insertIndex:])
+			tmpScreens[insertIndex] = &desktop.Screen{Name: string(outputInfo.Name),
 				X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height),
 				Scale: getScale(crtcInfo.Width, uint16(outputInfo.MmWidth))}
 		}
 		if primaryInfo != nil {
 			if string(primaryInfo.Name) == string(outputInfo.Name) {
 				primaryFound = true
-				xsp.primary = xsp.screens[insertIndex]
-				xsp.active = xsp.screens[insertIndex]
+				xsp.primary = tmpScreens[insertIndex]
+				xsp.active = tmpScreens[insertIndex]
 			}
 		}
 	}
 	if !primaryFound {
-		xsp.primary = xsp.screens[0]
-		xsp.active = xsp.screens[0]
+		xsp.primary = tmpScreens[0]
+		xsp.active = tmpScreens[0]
 	}
+	xsp.screens = tmpScreens
 }
 
 func (xsp *x11ScreensProvider) setupSingleScreen() {
 	xsp.single = true
+	xsp.screens = nil
 	xsp.screens = append(xsp.screens, &desktop.Screen{Name: "Screen0",
 		X: xwindow.RootGeometry(xsp.x.x).X(), Y: xwindow.RootGeometry(xsp.x.x).Y(),
 		Width: xwindow.RootGeometry(xsp.x.x).Width(), Height: xwindow.RootGeometry(xsp.x.x).Height(),
