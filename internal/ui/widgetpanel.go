@@ -117,7 +117,7 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 	}
 	if os.Getenv("FYNE_DESK_RUNNER") != "" && w.desk.(*deskLayout).wm != nil {
 		items = append(items, fyne.NewMenuItem("Reload", func() {
-			os.Exit(1)
+			os.Exit(5)
 		}))
 	}
 
