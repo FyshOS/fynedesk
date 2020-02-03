@@ -297,12 +297,12 @@ func (x *x11WM) runLoop() {
 			}
 			x.screenChangeTimestamp = ev.Timestamp
 			x.rootIDs = nil
-			x.framedExisting = false
 			desk := desktop.Instance()
 			if desk == nil {
 				break
 			}
 			desk.Screens().RefreshScreens()
+			x.layoutRoots()
 		}
 	}
 

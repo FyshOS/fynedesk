@@ -84,36 +84,84 @@ func (l *deskLayout) updateBackgrounds(path string) {
 	}
 }
 
+func (l *deskLayout) createRoot(screen *desktop.Screen) {
+	win := l.newDesktopWindow(screen.Name)
+	l.roots = append(l.roots, win)
+	bg := newBackground()
+	l.backgroundScreenMap[bg] = screen
+	if screen == l.screens.Primary() {
+		l.primaryWin = win
+		l.bar = newBar(l)
+		l.widgets = newWidgetPanel(l)
+		l.mouse = newMouse()
+		l.mouse.Hide() // temporarily we do not draw mouse (using X default)
+		win.SetOnClosed(func() {
+			if !l.refreshing {
+				l.controlWin.Close()
+			}
+			l.refreshing = false
+		})
+		win.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
+		l.mouse.Hide()
+	} else {
+		win.SetContent(fyne.NewContainerWithLayout(l, bg))
+	}
+	win.Show()
+}
+
 func (l *deskLayout) setupRoots() {
-	if l.primaryWin != nil {
+	if len(l.roots) > 0 {
+		if len(l.screens.Screens()) >= len(l.roots) {
+			diff := len(l.screens.Screens()) - len(l.roots)
+			count := len(l.screens.Screens()) - diff - 1
+			for i := 0; i < diff; i++ {
+				l.createRoot(l.screens.Screens()[count])
+				count++
+			}
+		} else {
+			diff := len(l.roots) - len(l.screens.Screens())
+			count := len(l.roots) - diff - 1
+			for i := 0; i < diff; i++ {
+				root := l.roots[count]
+				root.SetOnClosed(nil)
+				bg := root.Content().(*fyne.Container).Objects[0].(*background)
+				delete(l.backgroundScreenMap, bg)
+				root.Close()
+			}
+			l.roots = l.roots[:len(l.screens.Screens())]
+		}
+		for i, root := range l.roots {
+			screen := l.screens.Screens()[i]
+			root.Hide()
+			root.SetOnClosed(nil)
+			root.SetTitle(fmt.Sprintf("%s%s", RootWindowName, screen.Name))
+			bg := root.Content().(*fyne.Container).Objects[0].(*background)
+			l.backgroundScreenMap[bg] = screen
+			if screen == l.screens.Primary() {
+				l.primaryWin = root
+				if l.bar == nil && l.widgets == nil && l.mouse == nil {
+					l.bar = newBar(l)
+					l.widgets = newWidgetPanel(l)
+					l.mouse = newMouse()
+					l.mouse.Hide() // temporarily we do not draw mouse (using X default)
+				}
+				root.SetOnClosed(func() {
+					if !l.refreshing {
+						l.controlWin.Close()
+					}
+					l.refreshing = false
+				})
+				root.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
+				l.mouse.Hide()
+			} else {
+				root.SetContent(fyne.NewContainerWithLayout(l, bg))
+			}
+			root.Show()
+		}
 		return
 	}
-
 	for _, screen := range l.screens.Screens() {
-		win := l.newDesktopWindow(screen.Name)
-		l.roots = append(l.roots, win)
-		bg := newBackground()
-		l.backgroundScreenMap[bg] = screen
-		var container *fyne.Container
-		if screen == l.screens.Primary() {
-			l.primaryWin = win
-			l.bar = newBar(l)
-			l.widgets = newWidgetPanel(l)
-			l.mouse = newMouse()
-			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
-			win.SetOnClosed(func() {
-				if !l.refreshing {
-					l.controlWin.Close()
-				}
-				l.refreshing = false
-			})
-			container = fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse)
-			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
-		} else {
-			container = fyne.NewContainerWithLayout(l, bg)
-		}
-		win.SetContent(container)
-		win.Show()
+		l.createRoot(screen)
 	}
 }
 
@@ -181,16 +229,6 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 
 func (l *deskLayout) screensChanged() {
 	l.refreshing = true
-	for _, root := range l.roots {
-		root.Close()
-	}
-	l.primaryWin = nil
-	l.bar = nil
-	l.widgets = nil
-	l.mouse = nil
-	l.roots = nil
-	l.backgroundScreenMap = nil
-	l.backgroundScreenMap = make(map[*background]*desktop.Screen)
 	l.setupRoots()
 }
 
