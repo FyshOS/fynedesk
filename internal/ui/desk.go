@@ -99,7 +99,6 @@ func (l *deskLayout) createRoot(screen *desktop.Screen) {
 			if !l.refreshing {
 				l.controlWin.Close()
 			}
-			l.refreshing = false
 		})
 		win.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
 		l.mouse.Hide()
@@ -149,7 +148,6 @@ func (l *deskLayout) setupRoots() {
 					if !l.refreshing {
 						l.controlWin.Close()
 					}
-					l.refreshing = false
 				})
 				root.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
 				l.mouse.Hide()
@@ -230,6 +228,7 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 func (l *deskLayout) screensChanged() {
 	l.refreshing = true
 	l.setupRoots()
+	l.refreshing = false
 }
 
 // MouseInNotify can be called by the window manager to alert the desktop that the cursor has entered the canvas
@@ -255,15 +254,6 @@ func (l *deskLayout) MouseOutNotify() {
 	l.bar.MouseOut()
 }
 
-func (l *deskLayout) startFyneSettingsChangeListener(listener chan fyne.Settings) {
-	for {
-		_ = <-listener
-		for _, win := range l.roots {
-			win.Resize(fyne.NewSize(0, 0))
-		}
-	}
-}
-
 func (l *deskLayout) startSettingsChangeListener(listener chan desktop.DeskSettings) {
 	for {
 		_ = <-listener
@@ -281,9 +271,6 @@ func (l *deskLayout) addSettingsChangeListener() {
 	listener := make(chan desktop.DeskSettings)
 	l.Settings().AddChangeListener(listener)
 	go l.startSettingsChangeListener(listener)
-	fyneListener := make(chan fyne.Settings)
-	fyne.CurrentApp().Settings().AddChangeListener(fyneListener)
-	go l.startFyneSettingsChangeListener(fyneListener)
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
@@ -299,7 +286,7 @@ func (l *deskLayout) setupInitialVars() {
 
 	if l.wm != nil {
 		l.controlWin = l.app.NewWindow(RootWindowName)
-		l.controlWin.Resize(fyne.NewSize(15, 15))
+		l.controlWin.Resize(fyne.NewSize(1, 1))
 		l.controlWin.SetMaster()
 		l.controlWin.SetOnClosed(func() {
 			l.wm.Close()
