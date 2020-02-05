@@ -296,7 +296,6 @@ func (x *x11WM) runLoop() {
 				break
 			}
 			x.screenChangeTimestamp = ev.Timestamp
-			x.rootIDs = nil
 			desk := desktop.Instance()
 			if desk == nil {
 				break
@@ -656,6 +655,11 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 func (x *x11WM) destroyWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
+		for i, id := range x.rootIDs {
+			if id == win {
+				x.rootIDs = append(x.rootIDs[:i], x.rootIDs[i+1:]...)
+			}
+		}
 		return
 	}
 	x.RemoveWindow(c)
