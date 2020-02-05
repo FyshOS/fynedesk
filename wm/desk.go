@@ -308,15 +308,24 @@ func (x *x11WM) runLoop() {
 	fyne.LogError("X11 connection terminated!", nil)
 }
 
-func (x *x11WM) getWindowFromName(screenName string) xproto.Window {
+func (x *x11WM) isRootTitle(title string) bool {
+	return strings.Index(title, ui.RootWindowName) == 0
+}
+
+func (x *x11WM) screenNameFromRootTitle(title string) string {
+	if len(title) <= len(ui.RootWindowName) {
+		return ""
+	}
+	return title[len(ui.RootWindowName):]
+}
+
+func (x *x11WM) getWindowFromScreenName(screenName string) xproto.Window {
 	for _, id := range x.rootIDs {
 		name := windowName(x.x, id)
-		if strings.Index(name, ui.RootWindowName) != 0 {
+		if !x.isRootTitle(name) {
 			continue
 		}
-		pos := strings.LastIndex(name, ui.RootWindowName) + len(ui.RootWindowName) + 1
-		outputName := name[pos:]
-		if outputName == screenName {
+		if x.screenNameFromRootTitle(name) == screenName {
 			return id
 		}
 	}
@@ -325,7 +334,7 @@ func (x *x11WM) getWindowFromName(screenName string) xproto.Window {
 
 func (x *x11WM) layoutRoots() {
 	for _, screen := range desktop.Instance().Screens().Screens() {
-		win := x.getWindowFromName(screen.Name)
+		win := x.getWindowFromScreenName(screen.Name)
 		if win != 0 {
 			xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -368,12 +377,10 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 
 	name := windowName(x.x, win)
 	for _, screen := range desktop.Instance().Screens().Screens() {
-		if len(name) <= len(ui.RootWindowName) {
+		if !x.isRootTitle(name) {
 			continue
 		}
-		pos := strings.Index(ui.RootWindowName, name) + len(ui.RootWindowName) + 1
-		outputName := name[pos:]
-		if outputName == screen.Name {
+		if x.screenNameFromRootTitle(name) == screen.Name {
 			found := false
 			for _, id := range x.rootIDs {
 				if id == win {
@@ -599,7 +606,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 
 func (x *x11WM) showWindow(win xproto.Window) {
 	name := windowName(x.x, win)
-	if strings.Index(name, ui.RootWindowName) == 0 {
+	if x.isRootTitle(name) {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
 		if err != nil {
 			fyne.LogError("Show Window Error", err)
@@ -682,7 +689,7 @@ func (x *x11WM) frameExisting() {
 
 	for _, child := range tree.Children {
 		name := windowName(x.x, child)
-		if strings.Index(name, ui.RootWindowName) == 0 {
+		if x.isRootTitle(name) {
 			continue
 		}
 		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
