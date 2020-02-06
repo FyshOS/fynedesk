@@ -9,9 +9,12 @@ Additional bug fixes on 0.1 release
 
 ### Added
 
+* Initial support for BSD systems
 
 ### Changed
 
+* Improved wording for account menu in embedded mode
+* Simpler app bar configuration screen
 
 ### Fixed
 
