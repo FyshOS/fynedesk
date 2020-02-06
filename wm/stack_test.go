@@ -1,8 +1,9 @@
 package wm
 
 import (
-	"fyne.io/fyne"
 	"testing"
+
+	"fyne.io/fyne"
 
 	"github.com/stretchr/testify/assert"
 
