@@ -312,7 +312,7 @@ func (x *x11WM) isRootTitle(title string) bool {
 	return strings.Index(title, ui.RootWindowName) == 0
 }
 
-func (x *x11WM) screenNameFromRootTitle(title string) string {
+func screenNameFromRootTitle(title string) string {
 	if len(title) <= len(ui.RootWindowName) {
 		return ""
 	}
@@ -325,7 +325,7 @@ func (x *x11WM) getWindowFromScreenName(screenName string) xproto.Window {
 		if !x.isRootTitle(name) {
 			continue
 		}
-		if x.screenNameFromRootTitle(name) == screenName {
+		if screenNameFromRootTitle(name) == screenName {
 			return id
 		}
 	}
@@ -380,7 +380,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		if !x.isRootTitle(name) {
 			continue
 		}
-		if x.screenNameFromRootTitle(name) == screen.Name {
+		if screenNameFromRootTitle(name) == screen.Name {
 			found := false
 			for _, id := range x.rootIDs {
 				if id == win {
