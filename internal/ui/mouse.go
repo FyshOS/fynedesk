@@ -1,9 +1,11 @@
 package ui
 
-import "fyne.io/fyne"
-import "fyne.io/fyne/canvas"
+import (
+	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
 
-import wmtheme "fyne.io/desktop/theme"
+	wmtheme "fyne.io/desktop/theme"
+)
 
 var mouse *canvas.Image
 

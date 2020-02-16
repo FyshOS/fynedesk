@@ -15,15 +15,18 @@ addons:
       - xorg-dev
 
 before_script:
+- go get golang.org/x/tools/cmd/goimports
+- go get github.com/fzipp/gocyclo
 - go get golang.org/x/lint/golint
 - go get github.com/mattn/goveralls
-- NO_VENDOR=$(find . -iname '*.go' -type f | grep -v /vendor/)
+- GO_FILES=$(find . -iname '*.go' -type f | grep -v /vendor/)
 
 script:
-- test -z $(gofmt -s -e -d $NO_VENDOR | tee /dev/stderr)
+- test -z $(goimports -e -d $GO_FILES | tee /dev/stderr)
 - go test -v -covermode=atomic -coverprofile=coverage.out ./...
 - go vet ./...
 - golint -set_exit_status $(go list)
+- gocyclo -over 50 $GO_FILES
 - export coverage=$(go tool cover -func coverage.out | tail -n 1 | awk '{ print $3 }' | cut -d \% -f 1 | cut -d \. -f 1)
 - if [ $coverage -lt 16 ]; then echo "Test coverage lowered"; exit 1; fi
 - |

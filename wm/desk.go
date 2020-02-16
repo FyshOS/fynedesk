@@ -33,8 +33,6 @@ type x11WM struct {
 	moveResizingLastX     int16
 	moveResizingLastY     int16
 	moveResizingType      moveResizeType
-	altTabList            []desktop.Window
-	altTabIndex           int
 	screenChangeTimestamp xproto.Timestamp
 
 	allowedActions []string
@@ -59,9 +57,15 @@ const (
 	moveResizeMoveKeyboard moveResizeType = 10
 	moveResizeCancel       moveResizeType = 11
 
-	keyCodeTab   = 23
-	keyCodeAlt   = 64
-	keyCodeSpace = 65
+	keyCodeEscape = 9
+	keyCodeTab    = 23
+	keyCodeReturn = 36
+	keyCodeAlt    = 64
+	keyCodeSpace  = 65
+
+	keyCodeEnter = 108
+	keyCodeLeft  = 113
+	keyCodeRight = 114
 )
 
 func (x *x11WM) Close() {
@@ -250,46 +254,30 @@ func (x *x11WM) runLoop() {
 			}
 		case xproto.KeyPressEvent:
 			if ev.Detail == keyCodeSpace {
-				go ui.ShowAppLauncher()
-				break
-			} else if ev.Detail != keyCodeTab {
-				break
-			}
-			if x.altTabList == nil {
-				x.altTabList = []desktop.Window{}
-				for _, win := range x.Windows() {
-					if win.Iconic() {
-						continue
-					}
-					x.altTabList = append(x.altTabList, win)
-				}
-				x.altTabIndex = 0
-
-				xproto.GrabKeyboard(x.x.Conn(), true, x.x.RootWin(), xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
-			}
-
-			winCount := len(x.altTabList)
-			if winCount <= 1 {
-				break
-			}
-			if ev.State&xproto.ModMaskShift != 0 {
-				x.altTabIndex--
-				if x.altTabIndex < 0 {
-					x.altTabIndex = winCount - 1
+				if switcherInstance != nil { // we are currently switching windows - select current window
+					x.applyAppSwitcher()
+				} else {
+					go ui.ShowAppLauncher()
 				}
 			} else {
-				x.altTabIndex++
-				if x.altTabIndex == winCount {
-					x.altTabIndex = 0
+				// The rest of these methods are about app switcher.
+				// Apart from Tab they will only be called once the keyboard grab is in effect.
+				if ev.Detail == keyCodeTab {
+					shiftPressed := ev.State&xproto.ModMaskShift != 0
+					x.showOrSelectAppSwitcher(shiftPressed)
+				} else if ev.Detail == keyCodeEscape {
+					x.cancelAppSwitcher()
+				} else if ev.Detail == keyCodeReturn || ev.Detail == keyCodeEnter {
+					x.applyAppSwitcher()
+				} else if ev.Detail == keyCodeLeft {
+					x.previousAppSwitcher()
+				} else if ev.Detail == keyCodeRight {
+					x.nextAppSwitcher()
 				}
 			}
-
-			x.RaiseToTop(x.altTabList[x.altTabIndex])
-			windowClientListStackingUpdate(x)
 		case xproto.KeyReleaseEvent:
 			if ev.Detail == keyCodeAlt {
-				x.altTabList = nil
-				xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
+				x.applyAppSwitcher()
 			}
 		case randr.ScreenChangeNotifyEvent:
 			if x.screenChangeTimestamp == ev.Timestamp {
