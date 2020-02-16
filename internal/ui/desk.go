@@ -13,9 +13,8 @@ import (
 	"fyne.io/desktop/internal/modules/builtin"
 )
 
-// RootWindowName is the base string that all root windows will have in their title and is used to identify root windows.
 const (
-	RootWindowName = "Fyne Desktop"
+	RootWindowName = "Fyne Desktop" // RootWindowName is the base string that all root windows will have in their title and is used to identify root windows.
 )
 
 type deskLayout struct {
@@ -84,6 +83,12 @@ func (l *deskLayout) updateBackgrounds(path string) {
 	}
 }
 
+func (l *deskLayout) createPrimaryContent() {
+	l.bar = newBar(l)
+	l.widgets = newWidgetPanel(l)
+	l.mouse = newMouse()
+}
+
 func (l *deskLayout) createRoot(screen *desktop.Screen) {
 	win := l.newDesktopWindow(screen.Name)
 	l.roots = append(l.roots, win)
@@ -91,10 +96,7 @@ func (l *deskLayout) createRoot(screen *desktop.Screen) {
 	l.backgroundScreenMap[bg] = screen
 	if screen == l.screens.Primary() {
 		l.primaryWin = win
-		l.bar = newBar(l)
-		l.widgets = newWidgetPanel(l)
-		l.mouse = newMouse()
-		l.mouse.Hide() // temporarily we do not draw mouse (using X default)
+		l.createPrimaryContent()
 		win.SetOnClosed(func() {
 			if !l.refreshing {
 				l.controlWin.Close()
@@ -108,58 +110,59 @@ func (l *deskLayout) createRoot(screen *desktop.Screen) {
 	win.Show()
 }
 
-func (l *deskLayout) setupRoots() {
-	if len(l.roots) > 0 {
-		if len(l.screens.Screens()) >= len(l.roots) {
-			diff := len(l.screens.Screens()) - len(l.roots)
-			count := len(l.screens.Screens()) - diff - 1
-			for i := 0; i < diff; i++ {
-				l.createRoot(l.screens.Screens()[count])
-				count++
-			}
-		} else {
-			diff := len(l.roots) - len(l.screens.Screens())
-			count := len(l.roots) - diff - 1
-			for i := 0; i < diff; i++ {
-				root := l.roots[count]
-				root.SetOnClosed(nil)
-				bg := root.Content().(*fyne.Container).Objects[0].(*background)
-				delete(l.backgroundScreenMap, bg)
-				root.Close()
-			}
-			l.roots = l.roots[:len(l.screens.Screens())]
+func (l *deskLayout) ensureSufficientRoots() {
+	if len(l.screens.Screens()) >= len(l.roots) {
+		diff := len(l.screens.Screens()) - len(l.roots)
+		count := len(l.screens.Screens()) - diff - 1
+		for i := 0; i < diff; i++ {
+			l.createRoot(l.screens.Screens()[count])
+			count++
 		}
-		for i, root := range l.roots {
-			screen := l.screens.Screens()[i]
-			root.Hide()
+	} else {
+		diff := len(l.roots) - len(l.screens.Screens())
+		count := len(l.roots) - diff - 1
+		for i := 0; i < diff; i++ {
+			root := l.roots[count]
 			root.SetOnClosed(nil)
-			root.SetTitle(fmt.Sprintf("%s%s", RootWindowName, screen.Name))
 			bg := root.Content().(*fyne.Container).Objects[0].(*background)
-			l.backgroundScreenMap[bg] = screen
-			if screen == l.screens.Primary() {
-				l.primaryWin = root
-				if l.bar == nil && l.widgets == nil && l.mouse == nil {
-					l.bar = newBar(l)
-					l.widgets = newWidgetPanel(l)
-					l.mouse = newMouse()
-					l.mouse.Hide() // temporarily we do not draw mouse (using X default)
-				}
-				root.SetOnClosed(func() {
-					if !l.refreshing {
-						l.controlWin.Close()
-					}
-				})
-				root.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
-				l.mouse.Hide()
-			} else {
-				root.SetContent(fyne.NewContainerWithLayout(l, bg))
-			}
-			root.Show()
+			delete(l.backgroundScreenMap, bg)
+			root.Close()
+		}
+		l.roots = l.roots[:len(l.screens.Screens())]
+	}
+}
+
+func (l *deskLayout) setupRoots() {
+	if len(l.roots) == 0 {
+		for _, screen := range l.screens.Screens() {
+			l.createRoot(screen)
 		}
 		return
 	}
-	for _, screen := range l.screens.Screens() {
-		l.createRoot(screen)
+	l.ensureSufficientRoots()
+	for i, root := range l.roots {
+		screen := l.screens.Screens()[i]
+		root.Hide()
+		root.SetOnClosed(nil)
+		root.SetTitle(fmt.Sprintf("%s%s", RootWindowName, screen.Name))
+		bg := root.Content().(*fyne.Container).Objects[0].(*background)
+		l.backgroundScreenMap[bg] = screen
+		if screen == l.screens.Primary() {
+			l.primaryWin = root
+			if l.bar == nil && l.widgets == nil && l.mouse == nil {
+				l.createPrimaryContent()
+			}
+			root.SetOnClosed(func() {
+				if !l.refreshing {
+					l.controlWin.Close()
+				}
+			})
+			root.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
+			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
+		} else {
+			root.SetContent(fyne.NewContainerWithLayout(l, bg))
+		}
+		root.Show()
 	}
 }
 
@@ -175,7 +178,7 @@ func (l *deskLayout) Run() {
 
 	defer func() {
 		if r := recover(); r != nil {
-			fyne.LogError("Crashed: "+string(debug.Stack()), nil)
+			debug.PrintStack()
 			if l.wm != nil {
 				l.wm.Close() // attempt to close cleanly to leave X server running
 			}

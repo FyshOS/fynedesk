@@ -323,15 +323,16 @@ func (x *x11WM) getWindowFromScreenName(screenName string) xproto.Window {
 func (x *x11WM) layoutRoots() {
 	for _, screen := range desktop.Instance().Screens().Screens() {
 		win := x.getWindowFromScreenName(screen.Name)
-		if win != 0 {
-			xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-				[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
-			notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
-				X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
-				BorderWidth: 0, OverrideRedirect: false}
-			xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
+		if win == 0 {
+			continue
 		}
+		xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+			[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
+		notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
+			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
+			BorderWidth: 0, OverrideRedirect: false}
+		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 	}
 }
 
@@ -365,29 +366,27 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 
 	name := windowName(x.x, win)
 	for _, screen := range desktop.Instance().Screens().Screens() {
-		if !x.isRootTitle(name) {
+		if !x.isRootTitle(name) || screenNameFromRootTitle(name) != screen.Name {
 			continue
 		}
-		if screenNameFromRootTitle(name) == screen.Name {
-			found := false
-			for _, id := range x.rootIDs {
-				if id == win {
-					found = true
-				}
+		found := false
+		for _, id := range x.rootIDs {
+			if id == win {
+				found = true
 			}
-			if !found {
-				x.rootIDs = append(x.rootIDs, win)
-			}
-			xcoord = int16(screen.X)
-			ycoord = int16(screen.Y)
-			width = uint16(screen.Width)
-			height = uint16(screen.Height)
-			notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
-				X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
-				BorderWidth: 0, OverrideRedirect: false}
-			xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
-			break
 		}
+		if !found {
+			x.rootIDs = append(x.rootIDs, win)
+		}
+		xcoord = int16(screen.X)
+		ycoord = int16(screen.Y)
+		width = uint16(screen.Width)
+		height = uint16(screen.Height)
+		notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
+			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
+			BorderWidth: 0, OverrideRedirect: false}
+		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
+		break
 	}
 
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
