@@ -21,6 +21,5 @@ func setupDesktop(a fyne.App) desktop.Desktop {
 		return ui.NewEmbeddedDesktop(a, icons)
 	}
 	desk := ui.NewDesktop(a, mgr, icons, wm.NewX11ScreensProvider(mgr))
-	mgr.SetRoot(desk.Root())
 	return desk
 }

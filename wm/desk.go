@@ -7,8 +7,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"strings"
 	"time"
 
+	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -25,17 +27,18 @@ import (
 
 type x11WM struct {
 	stack
-	x                 *xgbutil.XUtil
-	root              fyne.Window
-	rootID            xproto.Window
-	loaded            bool
-	moveResizing      bool
-	moveResizingLastX int16
-	moveResizingLastY int16
-	moveResizingType  moveResizeType
+	x                     *xgbutil.XUtil
+	framedExisting        bool
+	moveResizing          bool
+	moveResizingLastX     int16
+	moveResizingLastY     int16
+	moveResizingType      moveResizeType
+	screenChangeTimestamp xproto.Timestamp
 
 	allowedActions []string
 	supportedHints []string
+
+	rootIDs []xproto.Window
 }
 
 type moveResizeType uint32
@@ -77,10 +80,6 @@ func (x *x11WM) Close() {
 
 func (x *x11WM) AddStackListener(l desktop.StackListener) {
 	x.stack.listeners = append(x.stack.listeners, l)
-}
-
-func (x *x11WM) SetRoot(win fyne.Window) {
-	x.root = win
 }
 
 func (x *x11WM) Blank() {
@@ -146,7 +145,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	ewmh.SupportedSet(mgr.x, mgr.supportedHints)
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.Dummy(), mgr.x.Dummy())
-	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), "Fyne Desktop")
+	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), ui.RootWindowName)
 
 	loadCursors(conn)
 	go mgr.runLoop()
@@ -157,8 +156,9 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 		for {
 			<-listener
 			for _, c := range mgr.clients {
-				c.(*client).frame.applyTheme(true)
+				c.(*client).frame.updateScale()
 			}
+			mgr.layoutRoots()
 		}
 	}()
 
@@ -185,12 +185,10 @@ func (x *x11WM) runLoop() {
 		case xproto.ConfigureRequestEvent:
 			x.configureWindow(ev.Window, ev)
 		case xproto.ConfigureNotifyEvent:
-			if ev.Window != x.x.RootWin() {
+			if ev.Window != x.x.RootWin() || desktop.Instance() == nil {
 				break
 			}
-			xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
-				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-				[]uint32{uint32(ev.X), uint32(ev.Y), uint32(ev.Width), uint32(ev.Height)}).Check()
+			x.layoutRoots()
 		case xproto.CreateNotifyEvent:
 			err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Window, xproto.CwCursor,
 				[]uint32{uint32(defaultCursor)}).Check()
@@ -250,8 +248,9 @@ func (x *x11WM) runLoop() {
 			}
 		case xproto.LeaveNotifyEvent:
 			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
-				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/x.root.Canvas().Scale()),
-					int(float32(ev.RootY)/x.root.Canvas().Scale())))
+				screen := desktop.Instance().Screens().ScreenForGeometry(int(ev.RootX), int(ev.RootY), 0, 0)
+				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/screen.CanvasScale()),
+					int(float32(ev.RootY)/screen.CanvasScale())))
 			}
 		case xproto.KeyPressEvent:
 			if ev.Detail == keyCodeSpace {
@@ -280,14 +279,67 @@ func (x *x11WM) runLoop() {
 			if ev.Detail == keyCodeAlt {
 				x.applyAppSwitcher()
 			}
+		case randr.ScreenChangeNotifyEvent:
+			if x.screenChangeTimestamp == ev.Timestamp {
+				break
+			}
+			x.screenChangeTimestamp = ev.Timestamp
+			desk := desktop.Instance()
+			if desk == nil {
+				break
+			}
+			desk.Screens().RefreshScreens()
+			x.layoutRoots()
 		}
 	}
 
 	fyne.LogError("X11 connection terminated!", nil)
 }
 
+func (x *x11WM) isRootTitle(title string) bool {
+	return strings.Index(title, ui.RootWindowName) == 0
+}
+
+func screenNameFromRootTitle(title string) string {
+	if len(title) <= len(ui.RootWindowName) {
+		return ""
+	}
+	return title[len(ui.RootWindowName):]
+}
+
+func (x *x11WM) getWindowFromScreenName(screenName string) xproto.Window {
+	for _, id := range x.rootIDs {
+		name := windowName(x.x, id)
+		if !x.isRootTitle(name) {
+			continue
+		}
+		if screenNameFromRootTitle(name) == screenName {
+			return id
+		}
+	}
+	return 0
+}
+
+func (x *x11WM) layoutRoots() {
+	for _, screen := range desktop.Instance().Screens().Screens() {
+		win := x.getWindowFromScreenName(screen.Name)
+		if win == 0 {
+			continue
+		}
+		xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+			[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
+		notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
+			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
+			BorderWidth: 0, OverrideRedirect: false}
+		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
+	}
+}
+
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
 	c := x.clientForWin(win)
+	xcoord := ev.X
+	ycoord := ev.Y
 	width := ev.Width
 	height := ev.Height
 
@@ -296,13 +348,10 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		if f != nil && c.(*client).win == win { // ignore requests from our frame as we must have caused it
 			f.minWidth, f.minHeight = windowMinSize(x.x, win)
 			if c.Decorated() {
-				err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-					xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-					[]uint32{uint32(f.borderWidth()), uint32(f.titleHeight()),
-						uint32(width), uint32(height)}).Check()
-
-				if err != nil {
-					fyne.LogError("Configure Frame Error", err)
+				if !c.Fullscreened() {
+					c.(*client).setWindowGeometry(f.x, f.y, ev.Width+(f.borderWidth()*2), ev.Height+(f.borderWidth()+f.titleHeight()))
+				} else {
+					c.(*client).setWindowGeometry(f.x, f.y, ev.Width, ev.Height)
 				}
 			} else {
 				if ev.X == 0 && ev.Y == 0 {
@@ -316,25 +365,35 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 
 	name := windowName(x.x, win)
-	isRoot := x.root != nil && name == x.root.Title()
-	if isRoot {
-		width = x.x.Screen().WidthInPixels
-		height = x.x.Screen().HeightInPixels
+	for _, screen := range desktop.Instance().Screens().Screens() {
+		if !x.isRootTitle(name) || screenNameFromRootTitle(name) != screen.Name {
+			continue
+		}
+		found := false
+		for _, id := range x.rootIDs {
+			if id == win {
+				found = true
+			}
+		}
+		if !found {
+			x.rootIDs = append(x.rootIDs, win)
+		}
+		xcoord = int16(screen.X)
+		ycoord = int16(screen.Y)
+		width = uint16(screen.Width)
+		height = uint16(screen.Height)
+		notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
+			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
+			BorderWidth: 0, OverrideRedirect: false}
+		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
+		break
 	}
 
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(width), uint32(height)}).Check()
+		[]uint32{uint32(xcoord), uint32(ycoord), uint32(width), uint32(height)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
-	}
-
-	if isRoot {
-		if x.loaded {
-			return
-		}
-		x.rootID = win
-		x.loaded = true
 	}
 }
 
@@ -479,11 +538,15 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		if c == nil {
 			return
 		}
-		win, err := windowActiveGet(x.x)
-		if err == nil && win == ev.Window {
+		activeWin, err := windowActiveGet(x.x)
+		if err == nil && activeWin == ev.Window {
 			return
 		}
-		xproto.SetInputFocus(x.x.Conn(), 0, ev.Window, 0)
+		err = xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, 0).Check()
+		if err != nil {
+			fyne.LogError("Could not set focus", err)
+			return
+		}
 		windowActiveSet(x.x, ev.Window)
 	case "_NET_WM_FULLSCREEN_MONITORS":
 		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
@@ -530,18 +593,17 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 
 func (x *x11WM) showWindow(win xproto.Window) {
 	name := windowName(x.x, win)
-
-	if name == x.root.Title() {
+	if x.isRootTitle(name) {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
 		if err != nil {
 			fyne.LogError("Show Window Error", err)
 		}
+		xproto.ConfigureWindow(x.x.Conn(), win, xproto.ConfigWindowStackMode, []uint32{xproto.StackModeBelow})
 		x.bindKeys(win)
-		go x.frameExisting()
-
-		return
-	}
-	if x.rootID == 0 {
+		if !x.framedExisting {
+			x.framedExisting = true
+			go x.frameExisting()
+		}
 		return
 	}
 	override := windowOverrideGet(x.x, win)
@@ -556,7 +618,6 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	default:
 		return
 	}
-
 	x.setupWindow(win)
 }
 
@@ -565,7 +626,6 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 	if c == nil {
 		return
 	}
-
 	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
 }
 
@@ -579,7 +639,6 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 		return
 	}
 	c = newClient(win, x)
-
 	x.AddWindow(c)
 	c.RaiseToTop()
 	c.Focus()
@@ -590,6 +649,11 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 func (x *x11WM) destroyWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
+		for i, id := range x.rootIDs {
+			if id == win {
+				x.rootIDs = append(x.rootIDs[:i], x.rootIDs[i+1:]...)
+			}
+		}
 		return
 	}
 	x.RemoveWindow(c)
@@ -612,7 +676,7 @@ func (x *x11WM) frameExisting() {
 
 	for _, child := range tree.Children {
 		name := windowName(x.x, child)
-		if x.root != nil && name == x.root.Title() {
+		if x.isRootTitle(name) {
 			continue
 		}
 		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
@@ -627,11 +691,6 @@ func (x *x11WM) frameExisting() {
 	}
 }
 
-func (x *x11WM) scaleToPixels(i int) uint16 {
-	scale := float32(1.0)
-	if x.root != nil {
-		scale = x.root.Canvas().Scale()
-	}
-
-	return uint16(float32(i) * scale)
+func (x *x11WM) scaleToPixels(i int, screen *desktop.Screen) uint16 {
+	return uint16(float32(i) * screen.CanvasScale())
 }

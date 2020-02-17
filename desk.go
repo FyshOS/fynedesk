@@ -1,12 +1,7 @@
 package desktop // import "fyne.io/desktop"
 
-import (
-	"fyne.io/fyne"
-)
-
 // Desktop defines an embedded or full desktop environment that we can run.
 type Desktop interface {
-	Root() fyne.Window
 	Run()
 	RunApp(AppData) error
 	Settings() DeskSettings

@@ -452,7 +452,6 @@ func (w *window) moved(viewport *glfw.Window, x, y int) {
 
 	w.canvas.detectedScale = w.detectScale()
 	go w.canvas.SetScale(fyne.SettingsScaleAuto) // scale is ignored
-	w.rescaleOnMain()
 }
 
 func (w *window) resized(viewport *glfw.Window, width, height int) {
@@ -1072,6 +1071,14 @@ func (w *window) rescaleOnMain() {
 	}
 
 	size := w.canvas.size.Union(w.canvas.MinSize())
+	if w.fullScreen {
+		w.width, w.height = w.viewport.GetSize()
+		cSize := fyne.NewSize(
+			internal.UnscaleInt(w.canvas, w.width),
+			internal.UnscaleInt(w.canvas, w.height))
+		w.canvas.Resize(cSize)
+		return
+	}
 	newWidth, newHeight := w.screenSize(size)
 	w.viewport.SetSize(newWidth, newHeight)
 }

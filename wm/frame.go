@@ -214,6 +214,8 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 		}
 	}
 
+	currentScreen := desktop.Instance().Screens().ScreenForWindow(f.client)
+
 	f.x = x
 	f.y = y
 
@@ -234,6 +236,11 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 		[]uint32{innerX, innerY, uint32(f.childWidth), uint32(f.childHeight)}).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
+	}
+
+	newScreen := desktop.Instance().Screens().ScreenForWindow(f.client)
+	if newScreen != currentScreen {
+		f.updateScale()
 	}
 }
 
@@ -276,12 +283,13 @@ func (f *frame) unmaximizeApply() {
 }
 
 func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pidTopRight xproto.Pixmap, drawTopRight xproto.Gcontext, depth byte) {
+	screen := desktop.Instance().Screens().ScreenForWindow(f.client)
+	scale := screen.CanvasScale()
+
 	canvas := playground.NewSoftwareCanvas()
+	canvas.SetScale(scale)
 	canvas.SetPadded(false)
 	canvas.SetContent(newBorder(f.client, f.client.Icon()))
-
-	scale := desktop.Instance().Root().Canvas().Scale()
-	canvas.SetScale(scale)
 
 	heightPix := f.titleHeight()
 	iconBorderPixWidth := heightPix + f.borderWidth()*2
@@ -415,19 +423,29 @@ func (f *frame) updateTitle() {
 	f.applyTheme(true)
 }
 
+func (f *frame) updateScale() {
+	xproto.FreePixmap(f.client.wm.x.Conn(), f.borderTop)
+	f.borderTop = 0
+	xproto.FreePixmap(f.client.wm.x.Conn(), f.borderTopRight)
+	f.borderTopRight = 0
+
+	f.updateGeometry(f.x, f.y, f.width, f.height, true)
+	f.applyTheme(true)
+}
+
 func (f *frame) borderWidth() uint16 {
 	if !f.client.Decorated() {
 		return 0
 	}
-	return f.client.wm.scaleToPixels(wmTheme.BorderWidth)
+	return uint16(f.client.wm.scaleToPixels(wmTheme.BorderWidth, desktop.Instance().Screens().ScreenForWindow(f.client)))
 }
 
 func (f *frame) buttonWidth() uint16 {
-	return f.client.wm.scaleToPixels(wmTheme.ButtonWidth)
+	return uint16(f.client.wm.scaleToPixels(wmTheme.ButtonWidth, desktop.Instance().Screens().ScreenForWindow(f.client)))
 }
 
 func (f *frame) titleHeight() uint16 {
-	return f.client.wm.scaleToPixels(wmTheme.TitleHeight)
+	return uint16(f.client.wm.scaleToPixels(wmTheme.TitleHeight, desktop.Instance().Screens().ScreenForWindow(f.client)))
 }
 
 func (f *frame) show() {
