@@ -32,97 +32,12 @@ type client struct {
 	restoreWidth, restoreHeight uint16
 
 	frame *frame
-	wm    *x11WM
-}
 
-func (s *stack) getWindowsFromClients(clients []desktop.Window) []xproto.Window {
-	var wins []xproto.Window
-	for _, cli := range clients {
-		wins = append(wins, cli.(*client).id)
-	}
-	return wins
-}
-
-func (s *stack) clientForWin(id xproto.Window) desktop.Window {
-	for _, w := range s.clients {
-		if w.(*client).id == id || w.(*client).win == id {
-			return w
-		}
-	}
-
-	return nil
-}
-
-func (c *client) Decorated() bool {
-	return !windowBorderless(c.wm.x, c.win)
-}
-
-func (c *client) Title() string {
-	return windowName(c.wm.x, c.win)
+	wm *x11WM
 }
 
 func (c *client) Class() []string {
 	return windowClass(c.wm.x, c.win)
-}
-
-func (c *client) Command() string {
-	return windowCommand(c.wm.x, c.win)
-}
-
-func (c *client) IconName() string {
-	return windowIconName(c.wm.x, c.win)
-}
-
-func (c *client) Icon() fyne.Resource {
-	xIcon := windowIcon(c.wm.x, c.win, iconSize, iconSize)
-	if len(xIcon.Bytes()) != 0 {
-		return fyne.NewStaticResource(c.Title(), xIcon.Bytes())
-	}
-	return nil
-}
-
-func (c *client) Fullscreened() bool {
-	return c.full
-}
-
-func (c *client) Iconic() bool {
-	return c.iconic
-}
-
-func (c *client) Maximized() bool {
-	return c.maximized
-}
-
-func (c *client) TopWindow() bool {
-	if c.wm.TopWindow() == c {
-		return true
-	}
-	return false
-}
-
-func (c *client) Focused() bool {
-	focusedWin, err := windowActiveGet(c.wm.x)
-	if err != nil {
-		fyne.LogError("Could not determine focused window", err)
-		return false
-	}
-	if focusedWin == c.win {
-		return true
-	}
-	return false
-}
-
-func (c *client) SkipTaskbar() bool {
-	extendedHints := windowExtendedHintsGet(c.wm.x, c.win)
-	if extendedHints == nil {
-		return false
-	}
-	for _, hint := range extendedHints {
-		if hint == "_NET_WM_STATE_SKIP_TASKBAR" {
-			return true
-		}
-	}
-	return false
 }
 
 func (c *client) Close() {
@@ -167,8 +82,28 @@ func (c *client) Close() {
 	}
 }
 
-func (c *client) fullscreenMessage(action clientMessageStateAction) {
-	ewmh.WmStateReq(c.wm.x, c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
+func (c *client) Command() string {
+	return windowCommand(c.wm.x, c.win)
+}
+
+func (c *client) Decorated() bool {
+	return !windowBorderless(c.wm.x, c.win)
+}
+
+func (c *client) Focus() {
+	windowActiveReq(c.wm.x, c.win)
+}
+
+func (c *client) Focused() bool {
+	focusedWin, err := windowActiveGet(c.wm.x)
+	if err != nil {
+		fyne.LogError("Could not determine focused window", err)
+		return false
+	}
+	if focusedWin == c.win {
+		return true
+	}
+	return false
 }
 
 func (c *client) Fullscreen() {
@@ -176,56 +111,41 @@ func (c *client) Fullscreen() {
 	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_FULLSCREEN")
 }
 
-func (c *client) Unfullscreen() {
-	c.maximizeMessage(clientMessageStateActionRemove)
-	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_FULLSCREEN")
+func (c *client) Fullscreened() bool {
+	return c.full
 }
 
-func (c *client) sendStateMessage(state int) {
-	stateChangeAtom, err := xprop.Atm(c.wm.x, "WM_CHANGE_STATE")
-	if err != nil {
-		fyne.LogError("Error getting X Atom", err)
-		return
+func (c *client) Icon() fyne.Resource {
+	xIcon := windowIcon(c.wm.x, c.win, iconSize, iconSize)
+	if len(xIcon.Bytes()) != 0 {
+		return fyne.NewStaticResource(c.Title(), xIcon.Bytes())
 	}
-	cm, err := xevent.NewClientMessage(32, c.win, stateChangeAtom,
-		state)
-	if err != nil {
-		fyne.LogError("Error creating client message", err)
-		return
-	}
-	err = xevent.SendRootEvent(c.wm.x, cm, xproto.EventMaskSubstructureNotify|xproto.EventMaskSubstructureRedirect)
+	return nil
 }
 
 func (c *client) Iconify() {
-	c.sendStateMessage(icccm.StateIconic)
+	c.stateMessage(icccm.StateIconic)
 	windowStateSet(c.wm.x, c.win, icccm.StateIconic)
 }
 
-func (c *client) Uniconify() {
-	c.sendStateMessage(icccm.StateNormal)
-	windowStateSet(c.wm.x, c.win, icccm.StateNormal)
+func (c *client) IconName() string {
+	return windowIconName(c.wm.x, c.win)
 }
 
-func (c *client) maximizeMessage(action clientMessageStateAction) {
-	ewmh.WmStateReqExtra(c.wm.x, c.win, int(action), "_NET_WM_STATE_MAXIMIZED_VERT",
-		"_NET_WM_STATE_MAXIMIZED_HORZ", 1)
+func (c *client) Title() string {
+	return windowName(c.wm.x, c.win)
+}
+
+func (c *client) Iconic() bool {
+	return c.iconic
 }
 
 func (c *client) Maximize() {
 	c.maximizeMessage(clientMessageStateActionAdd)
 }
 
-func (c *client) Unmaximize() {
-	c.maximizeMessage(clientMessageStateActionRemove)
-}
-
-func (c *client) Focus() {
-	windowActiveReq(c.wm.x, c.win)
-}
-
-func (c *client) RaiseToTop() {
-	c.wm.RaiseToTop(c)
-	windowClientListStackingUpdate(c.wm)
+func (c *client) Maximized() bool {
+	return c.maximized
 }
 
 func (c *client) RaiseAbove(win desktop.Window) {
@@ -243,12 +163,53 @@ func (c *client) RaiseAbove(win desktop.Window) {
 	c.wm.raiseWinAboveID(c.id, topID)
 }
 
-func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
-	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-		[]uint32{uint32(top), uint32(xproto.StackModeAbove)}).Check()
-	if err != nil {
-		fyne.LogError("Restack Error", err)
+func (c *client) RaiseToTop() {
+	c.wm.RaiseToTop(c)
+	windowClientListStackingUpdate(c.wm)
+}
+
+func (c *client) SkipTaskbar() bool {
+	extendedHints := windowExtendedHintsGet(c.wm.x, c.win)
+	if extendedHints == nil {
+		return false
 	}
+	for _, hint := range extendedHints {
+		if hint == "_NET_WM_STATE_SKIP_TASKBAR" {
+			return true
+		}
+	}
+	return false
+}
+
+func (c *client) TopWindow() bool {
+	if c.wm.TopWindow() == c {
+		return true
+	}
+	return false
+}
+
+func (c *client) Unfullscreen() {
+	c.maximizeMessage(clientMessageStateActionRemove)
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_FULLSCREEN")
+}
+
+func (c *client) Uniconify() {
+	c.stateMessage(icccm.StateNormal)
+	windowStateSet(c.wm.x, c.win, icccm.StateNormal)
+}
+
+func (c *client) Unmaximize() {
+	c.maximizeMessage(clientMessageStateActionRemove)
+}
+
+func (s *stack) clientForWin(id xproto.Window) desktop.Window {
+	for _, w := range s.clients {
+		if w.(*client).id == id || w.(*client).win == id {
+			return w
+		}
+	}
+
+	return nil
 }
 
 func (c *client) fullscreenClient() {
@@ -256,26 +217,26 @@ func (c *client) fullscreenClient() {
 	c.frame.maximizeApply()
 }
 
-func (c *client) unfullscreenClient() {
-	c.full = false
-	c.frame.unmaximizeApply()
+func (c *client) fullscreenMessage(action clientMessageStateAction) {
+	ewmh.WmStateReq(c.wm.x, c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
+}
+
+func (s *stack) getWindowsFromClients(clients []desktop.Window) []xproto.Window {
+	var wins []xproto.Window
+	for _, cli := range clients {
+		wins = append(wins, cli.(*client).id)
+	}
+	return wins
+}
+
+func (c *client) getWindowGeometry() (int16, int16, uint16, uint16) {
+	return c.frame.getGeometry()
 }
 
 func (c *client) iconifyClient() {
 	c.frame.hide()
 	c.iconic = true
 	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
-}
-
-func (c *client) uniconifyClient() {
-	c.newFrame()
-	if c.frame == nil {
-		return
-	}
-
-	c.iconic = false
-	c.frame.show()
-	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
 }
 
 func (c *client) maximizeClient() {
@@ -285,38 +246,9 @@ func (c *client) maximizeClient() {
 	windowExtendedHintsAdd(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 }
 
-func (c *client) unmaximizeClient() {
-	c.maximized = false
-	c.frame.unmaximizeApply()
-	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
-	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
-}
-
-func (c *client) updateTitle() {
-	if c.frame == nil {
-		return
-	}
-	c.frame.updateTitle()
-}
-
-func (c *client) setWindowGeometry(x int16, y int16, width uint16, height uint16) {
-	c.frame.updateGeometry(x, y, width, height, true)
-}
-
-func (c *client) getWindowGeometry() (int16, int16, uint16, uint16) {
-	return c.frame.getGeometry()
-}
-
-func (c *client) setupBorder() {
-	if c.Decorated() {
-		c.frame.addBorder()
-	} else {
-		c.frame.removeBorder()
-	}
-}
-
-func (c *client) newFrame() {
-	c.frame = newFrame(c)
+func (c *client) maximizeMessage(action clientMessageStateAction) {
+	ewmh.WmStateReqExtra(c.wm.x, c.win, int(action), "_NET_WM_STATE_MAXIMIZED_VERT",
+		"_NET_WM_STATE_MAXIMIZED_HORZ", 1)
 }
 
 func newClient(win xproto.Window, wm *x11WM) *client {
@@ -346,4 +278,73 @@ func newClient(win xproto.Window, wm *x11WM) *client {
 	}
 
 	return c
+}
+
+func (c *client) newFrame() {
+	c.frame = newFrame(c)
+}
+
+func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
+	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		[]uint32{uint32(top), uint32(xproto.StackModeAbove)}).Check()
+	if err != nil {
+		fyne.LogError("Restack Error", err)
+	}
+}
+
+func (c *client) setupBorder() {
+	if c.Decorated() {
+		c.frame.addBorder()
+	} else {
+		c.frame.removeBorder()
+	}
+}
+
+func (c *client) setWindowGeometry(x int16, y int16, width uint16, height uint16) {
+	c.frame.updateGeometry(x, y, width, height, true)
+}
+
+func (c *client) stateMessage(state int) {
+	stateChangeAtom, err := xprop.Atm(c.wm.x, "WM_CHANGE_STATE")
+	if err != nil {
+		fyne.LogError("Error getting X Atom", err)
+		return
+	}
+	cm, err := xevent.NewClientMessage(32, c.win, stateChangeAtom,
+		state)
+	if err != nil {
+		fyne.LogError("Error creating client message", err)
+		return
+	}
+	err = xevent.SendRootEvent(c.wm.x, cm, xproto.EventMaskSubstructureNotify|xproto.EventMaskSubstructureRedirect)
+}
+
+func (c *client) unfullscreenClient() {
+	c.full = false
+	c.frame.unmaximizeApply()
+}
+
+func (c *client) uniconifyClient() {
+	c.newFrame()
+	if c.frame == nil {
+		return
+	}
+
+	c.iconic = false
+	c.frame.show()
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_HIDDEN")
+}
+
+func (c *client) unmaximizeClient() {
+	c.maximized = false
+	c.frame.unmaximizeApply()
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
+	windowExtendedHintsRemove(c.wm.x, c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
+}
+
+func (c *client) updateTitle() {
+	if c.frame == nil {
+		return
+	}
+	c.frame.updateTitle()
 }

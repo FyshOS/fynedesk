@@ -33,17 +33,29 @@ const (
 	windowTypeNormal       = "_NET_WM_WINDOW_TYPE_NORMAL"
 )
 
-func windowName(x *xgbutil.XUtil, win xproto.Window) string {
-	//Spec says _NET_WM_NAME is preferred to WM_NAME
-	name, err := ewmh.WmNameGet(x, win)
-	if err != nil {
-		name, err = icccm.WmNameGet(x, win)
-		if err != nil {
-			return ""
-		}
+func windowActiveGet(x *xgbutil.XUtil) (xproto.Window, error) {
+	return ewmh.ActiveWindowGet(x)
+}
+
+func windowActiveReq(x *xgbutil.XUtil, win xproto.Window) {
+	ewmh.ActiveWindowReq(x, win)
+}
+
+func windowActiveSet(x *xgbutil.XUtil, win xproto.Window) {
+	ewmh.ActiveWindowSet(x, win)
+}
+
+func windowAllowedActionsSet(x *xgbutil.XUtil, win xproto.Window, actions []string) {
+	ewmh.WmAllowedActionsSet(x, win, actions)
+}
+
+func windowBorderless(x *xgbutil.XUtil, win xproto.Window) bool {
+	hints, err := motif.WmHintsGet(x, win)
+	if err == nil {
+		return !motif.Decor(hints)
 	}
 
-	return name
+	return false
 }
 
 func windowClass(x *xgbutil.XUtil, win xproto.Window) []string {
@@ -59,6 +71,14 @@ func windowClass(x *xgbutil.XUtil, win xproto.Window) []string {
 	return class
 }
 
+func windowClientListUpdate(wm *x11WM) {
+	ewmh.ClientListSet(wm.x, wm.getWindowsFromClients(wm.mappingOrder))
+}
+
+func windowClientListStackingUpdate(wm *x11WM) {
+	ewmh.ClientListStackingSet(wm.x, wm.getWindowsFromClients(wm.clients))
+}
+
 func windowCommand(x *xgbutil.XUtil, win xproto.Window) string {
 	command, err := xprop.PropValStr(xprop.GetProperty(x, win, "WM_COMMAND"))
 	if err != nil {
@@ -72,16 +92,32 @@ func windowCommand(x *xgbutil.XUtil, win xproto.Window) string {
 	return command
 }
 
-func windowIconName(x *xgbutil.XUtil, win xproto.Window) string {
-	icon, err := icccm.WmIconNameGet(x, win)
+func windowExtendedHintsAdd(x *xgbutil.XUtil, win xproto.Window, hint string) {
+	extendedHints, _ := ewmh.WmStateGet(x, win) // error unimportant
+	extendedHints = append(extendedHints, hint)
+	ewmh.WmStateSet(x, win, extendedHints)
+}
+
+func windowExtendedHintsGet(x *xgbutil.XUtil, win xproto.Window) []string {
+	extendedHints, err := ewmh.WmStateGet(x, win)
 	if err != nil {
-		icon, err = ewmh.WmIconNameGet(x, win)
-		if err != nil {
-			return ""
+		return nil
+	}
+	return extendedHints
+}
+
+func windowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string) {
+	extendedHints, err := ewmh.WmStateGet(x, win)
+	if err != nil {
+		return
+	}
+	for i, curHint := range extendedHints {
+		if curHint == hint {
+			extendedHints = append(extendedHints[:i], extendedHints[i+1:]...)
+			ewmh.WmStateSet(x, win, extendedHints)
+			return
 		}
 	}
-
-	return icon
 }
 
 func windowIcon(x *xgbutil.XUtil, win xproto.Window, width int, height int) bytes.Buffer {
@@ -98,13 +134,16 @@ func windowIcon(x *xgbutil.XUtil, win xproto.Window, width int, height int) byte
 	return w
 }
 
-func windowBorderless(x *xgbutil.XUtil, win xproto.Window) bool {
-	hints, err := motif.WmHintsGet(x, win)
-	if err == nil {
-		return !motif.Decor(hints)
+func windowIconName(x *xgbutil.XUtil, win xproto.Window) string {
+	icon, err := icccm.WmIconNameGet(x, win)
+	if err != nil {
+		icon, err = ewmh.WmIconNameGet(x, win)
+		if err != nil {
+			return ""
+		}
 	}
 
-	return false
+	return icon
 }
 
 func windowMinSize(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
@@ -114,6 +153,31 @@ func windowMinSize(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
 	}
 
 	return 0, 0
+}
+
+func windowName(x *xgbutil.XUtil, win xproto.Window) string {
+	//Spec says _NET_WM_NAME is preferred to WM_NAME
+	name, err := ewmh.WmNameGet(x, win)
+	if err != nil {
+		name, err = icccm.WmNameGet(x, win)
+		if err != nil {
+			return ""
+		}
+	}
+
+	return name
+}
+
+func windowOverrideGet(x *xgbutil.XUtil, win xproto.Window) bool {
+	hints, err := icccm.WmHintsGet(x, win)
+	if err == nil && (hints.Flags&xproto.CwOverrideRedirect) != 0 {
+		return true
+	}
+	attrs, err := xproto.GetWindowAttributes(x.Conn(), win).Reply()
+	if err == nil && attrs.OverrideRedirect {
+		return true
+	}
+	return false
 }
 
 func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, height uint16) (uint16, uint16) {
@@ -144,20 +208,16 @@ func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, 
 	return width, height
 }
 
-func windowAllowedActionsSet(x *xgbutil.XUtil, win xproto.Window, actions []string) {
-	ewmh.WmAllowedActionsSet(x, win, actions)
-}
-
-func windowStateSet(x *xgbutil.XUtil, win xproto.Window, state uint) {
-	icccm.WmStateSet(x, win, &icccm.WmState{State: state})
-}
-
 func windowStateGet(x *xgbutil.XUtil, win xproto.Window) uint {
 	state, err := icccm.WmStateGet(x, win)
 	if err != nil {
 		return icccm.StateNormal
 	}
 	return state.State
+}
+
+func windowStateSet(x *xgbutil.XUtil, win xproto.Window, state uint) {
+	icccm.WmStateSet(x, win, &icccm.WmState{State: state})
 }
 
 func windowTransientForGet(x *xgbutil.XUtil, win xproto.Window) xproto.Window {
@@ -168,70 +228,10 @@ func windowTransientForGet(x *xgbutil.XUtil, win xproto.Window) xproto.Window {
 	return transient
 }
 
-func windowOverrideGet(x *xgbutil.XUtil, win xproto.Window) bool {
-	hints, err := icccm.WmHintsGet(x, win)
-	if err == nil && (hints.Flags&xproto.CwOverrideRedirect) != 0 {
-		return true
-	}
-	attrs, err := xproto.GetWindowAttributes(x.Conn(), win).Reply()
-	if err == nil && attrs.OverrideRedirect {
-		return true
-	}
-	return false
-}
-
-func windowActiveReq(x *xgbutil.XUtil, win xproto.Window) {
-	ewmh.ActiveWindowReq(x, win)
-}
-
-func windowActiveSet(x *xgbutil.XUtil, win xproto.Window) {
-	ewmh.ActiveWindowSet(x, win)
-}
-
-func windowActiveGet(x *xgbutil.XUtil) (xproto.Window, error) {
-	return ewmh.ActiveWindowGet(x)
-}
-
-func windowExtendedHintsGet(x *xgbutil.XUtil, win xproto.Window) []string {
-	extendedHints, err := ewmh.WmStateGet(x, win)
-	if err != nil {
-		return nil
-	}
-	return extendedHints
-}
-
-func windowExtendedHintsAdd(x *xgbutil.XUtil, win xproto.Window, hint string) {
-	extendedHints, _ := ewmh.WmStateGet(x, win) // error unimportant
-	extendedHints = append(extendedHints, hint)
-	ewmh.WmStateSet(x, win, extendedHints)
-}
-
-func windowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string) {
-	extendedHints, err := ewmh.WmStateGet(x, win)
-	if err != nil {
-		return
-	}
-	for i, curHint := range extendedHints {
-		if curHint == hint {
-			extendedHints = append(extendedHints[:i], extendedHints[i+1:]...)
-			ewmh.WmStateSet(x, win, extendedHints)
-			return
-		}
-	}
-}
-
 func windowTypeGet(x *xgbutil.XUtil, win xproto.Window) []string {
 	winType, err := ewmh.WmWindowTypeGet(x, win)
 	if err != nil || len(winType) == 0 {
 		return []string{windowTypeNormal}
 	}
 	return winType
-}
-
-func windowClientListUpdate(wm *x11WM) {
-	ewmh.ClientListSet(wm.x, wm.getWindowsFromClients(wm.mappingOrder))
-}
-
-func windowClientListStackingUpdate(wm *x11WM) {
-	ewmh.ClientListStackingSet(wm.x, wm.getWindowsFromClients(wm.clients))
 }

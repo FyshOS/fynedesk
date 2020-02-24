@@ -18,9 +18,12 @@ type x11ScreensProvider struct {
 	screens []*desktop.Screen
 	active  *desktop.Screen
 	primary *desktop.Screen
-	single  bool
-	x       *x11WM
-	root    xproto.Window
+
+	single bool
+
+	root xproto.Window
+
+	x *x11WM
 
 	onChange []func()
 }
@@ -40,8 +43,16 @@ func NewX11ScreensProvider(mgr desktop.WindowManager) desktop.ScreenList {
 	return screensProvider
 }
 
+func (xsp *x11ScreensProvider) Active() *desktop.Screen {
+	return xsp.active
+}
+
 func (xsp *x11ScreensProvider) AddChangeListener(f func()) {
 	xsp.onChange = append(xsp.onChange, f)
+}
+
+func (xsp *x11ScreensProvider) Primary() *desktop.Screen {
+	return xsp.primary
 }
 
 func (xsp *x11ScreensProvider) RefreshScreens() {
@@ -58,25 +69,6 @@ func (xsp *x11ScreensProvider) RefreshScreens() {
 
 func (xsp *x11ScreensProvider) Screens() []*desktop.Screen {
 	return xsp.screens
-}
-
-func (xsp *x11ScreensProvider) Active() *desktop.Screen {
-	return xsp.active
-}
-
-func (xsp *x11ScreensProvider) Primary() *desktop.Screen {
-	return xsp.primary
-}
-
-func (xsp *x11ScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
-	if len(xsp.screens) <= 1 {
-		return xsp.screens[0]
-	}
-	fr := win.(*client).frame
-	if fr == nil {
-		return xsp.Primary()
-	}
-	return xsp.ScreenForGeometry(int(fr.x), int(fr.y), int(fr.width), int(fr.height))
 }
 
 func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *desktop.Screen {
@@ -96,6 +88,17 @@ func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height
 		}
 	}
 	return xsp.screens[0]
+}
+
+func (xsp *x11ScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
+	if len(xsp.screens) <= 1 {
+		return xsp.screens[0]
+	}
+	fr := win.(*client).frame
+	if fr == nil {
+		return xsp.Primary()
+	}
+	return xsp.ScreenForGeometry(int(fr.x), int(fr.y), int(fr.width), int(fr.height))
 }
 
 func getScale(widthPx, widthMm uint16) float32 {
