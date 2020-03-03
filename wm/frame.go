@@ -34,6 +34,112 @@ type frame struct {
 	client *client
 }
 
+func newFrame(c *client) *frame {
+	attrs, err := xproto.GetGeometry(c.wm.x.Conn(), xproto.Drawable(c.win)).Reply()
+	if err != nil {
+		fyne.LogError("Get Geometry Error", err)
+		return nil
+	}
+
+	f, err := xwindow.Generate(c.wm.x)
+	if err != nil {
+		fyne.LogError("Generate Window Error", err)
+		return nil
+	}
+	x, y, w, h := attrs.X, attrs.Y, attrs.Width, attrs.Height
+	full := c.Fullscreened()
+	decorated := c.Decorated()
+	maximized := c.Maximized()
+	if full || maximized {
+		activeHead := desktop.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
+		x = int16(activeHead.X)
+		y = int16(activeHead.Y)
+		if full {
+			w = uint16(activeHead.Width)
+			h = uint16(activeHead.Height)
+		} else {
+			maxWidth, maxHeight := desktop.Instance().ContentSizePixels(activeHead)
+			w = uint16(maxWidth)
+			h = uint16(maxHeight)
+		}
+	} else if !decorated {
+		x = attrs.X
+		y = attrs.Y
+		w = attrs.Width
+		h = attrs.Height
+	}
+	framed := &frame{client: c}
+	if !full && decorated {
+		x -= int16(framed.borderWidth())
+		y -= int16(framed.titleHeight())
+		if x < 0 {
+			x = 0
+		}
+		if y < 0 {
+			y = 0
+		}
+		if !maximized {
+			w = attrs.Width + uint16(framed.borderWidth()*2)
+			h = attrs.Height + uint16(framed.borderWidth()) + framed.titleHeight()
+		}
+	}
+	framed.x = x
+	framed.y = y
+	values := []uint32{xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
+		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
+		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
+		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange |
+		xproto.EventMaskPropertyChange}
+	err = xproto.CreateWindowChecked(c.wm.x.Conn(), c.wm.x.Screen().RootDepth, f.Id, c.wm.x.RootWin(),
+		x, y, w, h, 0, xproto.WindowClassInputOutput, c.wm.x.Screen().RootVisual,
+		xproto.CwEventMask, values).Check()
+	if err != nil {
+		fyne.LogError("Create Window Error", err)
+		return nil
+	}
+	c.id = f.Id
+
+	framed.width = w
+	framed.height = h
+	if full || !decorated {
+		framed.childWidth = w
+		framed.childHeight = h
+	} else {
+		framed.childWidth = w - uint16(framed.borderWidth()*2)
+		framed.childHeight = h - uint16(framed.borderWidth()) - framed.titleHeight()
+	}
+	var offsetX, offsetY int16 = 0, 0
+	if !full && decorated {
+		offsetX = int16(framed.borderWidth())
+		offsetY = int16(framed.titleHeight())
+		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()), int16(framed.titleHeight()))
+		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: int(framed.borderWidth()), Right: int(framed.borderWidth()), Top: int(framed.titleHeight()), Bottom: int(framed.borderWidth())})
+	} else {
+		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id,
+			int16(desktop.Instance().Screens().Active().X), int16(desktop.Instance().Screens().Active().Y))
+		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
+	}
+
+	if full || maximized {
+		err = xproto.ConfigureWindowChecked(c.wm.x.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+			[]uint32{uint32(offsetX), uint32(offsetY), uint32(framed.childWidth), uint32(framed.childHeight)}).Check()
+		if err != nil {
+			fyne.LogError("Configure Window Error", err)
+		}
+	}
+
+	framed.show()
+	framed.applyTheme(true)
+
+	ev := xproto.ConfigureNotifyEvent{Event: c.win, Window: c.win, AboveSibling: 0,
+		X: int16(x + offsetX), Y: int16(y + offsetY), Width: uint16(framed.childWidth), Height: uint16(framed.childHeight),
+		BorderWidth: framed.borderWidth(), OverrideRedirect: false}
+	xproto.SendEvent(c.wm.x.Conn(), false, c.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+
+	return framed
+}
+
 func (f *frame) addBorder() {
 	x := int16(f.borderWidth())
 	y := int16(f.titleHeight())
@@ -404,112 +510,6 @@ func (f *frame) mouseRelease(x, y int16) {
 	f.resizeLeft = false
 	f.resizeRight = false
 	f.updateGeometry(f.x, f.y, f.width, f.height, false)
-}
-
-func newFrame(c *client) *frame {
-	attrs, err := xproto.GetGeometry(c.wm.x.Conn(), xproto.Drawable(c.win)).Reply()
-	if err != nil {
-		fyne.LogError("Get Geometry Error", err)
-		return nil
-	}
-
-	f, err := xwindow.Generate(c.wm.x)
-	if err != nil {
-		fyne.LogError("Generate Window Error", err)
-		return nil
-	}
-	x, y, w, h := attrs.X, attrs.Y, attrs.Width, attrs.Height
-	full := c.Fullscreened()
-	decorated := c.Decorated()
-	maximized := c.Maximized()
-	if full || maximized {
-		activeHead := desktop.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
-		x = int16(activeHead.X)
-		y = int16(activeHead.Y)
-		if full {
-			w = uint16(activeHead.Width)
-			h = uint16(activeHead.Height)
-		} else {
-			maxWidth, maxHeight := desktop.Instance().ContentSizePixels(activeHead)
-			w = uint16(maxWidth)
-			h = uint16(maxHeight)
-		}
-	} else if !decorated {
-		x = attrs.X
-		y = attrs.Y
-		w = attrs.Width
-		h = attrs.Height
-	}
-	framed := &frame{client: c}
-	if !full && decorated {
-		x -= int16(framed.borderWidth())
-		y -= int16(framed.titleHeight())
-		if x < 0 {
-			x = 0
-		}
-		if y < 0 {
-			y = 0
-		}
-		if !maximized {
-			w = attrs.Width + uint16(framed.borderWidth()*2)
-			h = attrs.Height + uint16(framed.borderWidth()) + framed.titleHeight()
-		}
-	}
-	framed.x = x
-	framed.y = y
-	values := []uint32{xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
-		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
-		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
-		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange |
-		xproto.EventMaskPropertyChange}
-	err = xproto.CreateWindowChecked(c.wm.x.Conn(), c.wm.x.Screen().RootDepth, f.Id, c.wm.x.RootWin(),
-		x, y, w, h, 0, xproto.WindowClassInputOutput, c.wm.x.Screen().RootVisual,
-		xproto.CwEventMask, values).Check()
-	if err != nil {
-		fyne.LogError("Create Window Error", err)
-		return nil
-	}
-	c.id = f.Id
-
-	framed.width = w
-	framed.height = h
-	if full || !decorated {
-		framed.childWidth = w
-		framed.childHeight = h
-	} else {
-		framed.childWidth = w - uint16(framed.borderWidth()*2)
-		framed.childHeight = h - uint16(framed.borderWidth()) - framed.titleHeight()
-	}
-	var offsetX, offsetY int16 = 0, 0
-	if !full && decorated {
-		offsetX = int16(framed.borderWidth())
-		offsetY = int16(framed.titleHeight())
-		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()), int16(framed.titleHeight()))
-		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: int(framed.borderWidth()), Right: int(framed.borderWidth()), Top: int(framed.titleHeight()), Bottom: int(framed.borderWidth())})
-	} else {
-		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id,
-			int16(desktop.Instance().Screens().Active().X), int16(desktop.Instance().Screens().Active().Y))
-		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
-	}
-
-	if full || maximized {
-		err = xproto.ConfigureWindowChecked(c.wm.x.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(offsetX), uint32(offsetY), uint32(framed.childWidth), uint32(framed.childHeight)}).Check()
-		if err != nil {
-			fyne.LogError("Configure Window Error", err)
-		}
-	}
-
-	framed.show()
-	framed.applyTheme(true)
-
-	ev := xproto.ConfigureNotifyEvent{Event: c.win, Window: c.win, AboveSibling: 0,
-		X: int16(x + offsetX), Y: int16(y + offsetY), Width: uint16(framed.childWidth), Height: uint16(framed.childHeight),
-		BorderWidth: framed.borderWidth(), OverrideRedirect: false}
-	xproto.SendEvent(c.wm.x.Conn(), false, c.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
-
-	return framed
 }
 
 // Notify the child window that it's geometry has changed to update menu positions etc.

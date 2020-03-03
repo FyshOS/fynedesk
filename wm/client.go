@@ -36,6 +36,35 @@ type client struct {
 	wm *x11WM
 }
 
+func newClient(win xproto.Window, wm *x11WM) *client {
+	c := &client{win: win, wm: wm}
+	err := xproto.ChangeWindowAttributesChecked(wm.x.Conn(), win, xproto.CwEventMask,
+		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow}).Check()
+	if err != nil {
+		fyne.LogError("Could not change window attributes", err)
+	}
+	windowAllowedActionsSet(wm.x, win, wm.allowedActions)
+
+	initialHints := windowExtendedHintsGet(c.wm.x, c.win)
+	for _, hint := range initialHints {
+		switch hint {
+		case "_NET_WM_STATE_FULLSCREEN":
+			c.full = true
+		case "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ":
+			c.maximized = true
+			// TODO Handle more of these possible hints
+		}
+	}
+	if windowStateGet(wm.x, win) == icccm.StateIconic {
+		c.iconic = true
+		xproto.UnmapWindow(wm.x.Conn(), win)
+	} else {
+		c.newFrame()
+	}
+
+	return c
+}
+
 func (c *client) Class() []string {
 	return windowClass(c.wm.x, c.win)
 }
@@ -249,35 +278,6 @@ func (c *client) maximizeClient() {
 func (c *client) maximizeMessage(action clientMessageStateAction) {
 	ewmh.WmStateReqExtra(c.wm.x, c.win, int(action), "_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_MAXIMIZED_HORZ", 1)
-}
-
-func newClient(win xproto.Window, wm *x11WM) *client {
-	c := &client{win: win, wm: wm}
-	err := xproto.ChangeWindowAttributesChecked(wm.x.Conn(), win, xproto.CwEventMask,
-		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow}).Check()
-	if err != nil {
-		fyne.LogError("Could not change window attributes", err)
-	}
-	windowAllowedActionsSet(wm.x, win, wm.allowedActions)
-
-	initialHints := windowExtendedHintsGet(c.wm.x, c.win)
-	for _, hint := range initialHints {
-		switch hint {
-		case "_NET_WM_STATE_FULLSCREEN":
-			c.full = true
-		case "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ":
-			c.maximized = true
-			// TODO Handle more of these possible hints
-		}
-	}
-	if windowStateGet(wm.x, win) == icccm.StateIconic {
-		c.iconic = true
-		xproto.UnmapWindow(wm.x.Conn(), win)
-	} else {
-		c.newFrame()
-	}
-
-	return c
 }
 
 func (c *client) newFrame() {
