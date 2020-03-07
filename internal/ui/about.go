@@ -30,7 +30,7 @@ func showAbout() {
 	buttons := fyne.NewContainerWithLayout(layout.NewGridLayout(3),
 		newURLButton("Home Page", "https://fyne.io"),
 		newURLButton("Report Issue", "https://github.com/fyne-io/desktop/issues/new"),
-		newURLButton("Sponsor", "https://github.com/fyne-io/desktop"),
+		newURLButton("Sponsor", "https://github.com/sponsors/fyne-io"),
 	)
 
 	bg := canvas.NewImageFromResource(wmTheme.FyneAboutBackground)
