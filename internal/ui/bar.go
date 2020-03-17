@@ -255,7 +255,8 @@ func (b *bar) appendLauncherIcons() {
 
 // CreateRenderer creates the renderer that will be responsible for painting the widget
 func (b *bar) CreateRenderer() fyne.WidgetRenderer {
-	return &barRenderer{objects: b.children, layout: newBarLayout(b), appBar: b}
+	bg := canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	return &barRenderer{objects: b.children, background: bg, layout: newBarLayout(b), appBar: b}
 }
 
 // newBar creates a new application launcher and taskbar
@@ -278,8 +279,9 @@ func newBar(desk desktop.Desktop) *bar {
 type barRenderer struct {
 	layout barLayout
 
-	appBar  *bar
-	objects []fyne.CanvasObject
+	appBar     *bar
+	background *canvas.LinearGradient
+	objects    []fyne.CanvasObject
 }
 
 // MinSize returns the layout's Min Size
@@ -291,7 +293,7 @@ func (b *barRenderer) MinSize() fyne.Size {
 func (b *barRenderer) Layout(size fyne.Size) {
 	b.layout.setPointerInside(b.appBar.mouseInside)
 	b.layout.setPointerPosition(b.appBar.mousePosition)
-	b.layout.Layout(b.objects, size)
+	b.layout.Layout(b.Objects(), size)
 }
 
 // BackgroundColor returns the background color of the widget
@@ -301,11 +303,12 @@ func (b *barRenderer) BackgroundColor() color.Color {
 
 // Objects returns the objects associated with the widget
 func (b *barRenderer) Objects() []fyne.CanvasObject {
-	return b.objects
+	return append([]fyne.CanvasObject{b.background}, b.objects...)
 }
 
 // Refresh will recalculate the widget and repaint it
 func (b *barRenderer) Refresh() {
+	b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
 	b.objects = b.appBar.children
 	b.Layout(b.appBar.Size())
 

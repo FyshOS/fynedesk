@@ -1,10 +1,13 @@
 package ui
 
 import (
+	"image/color"
 	"strings"
 	"testing"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/test"
+	"fyne.io/fyne/theme"
 	"github.com/stretchr/testify/assert"
 
 	_ "fyne.io/fyne/test"
@@ -165,6 +168,17 @@ func TestAppBar_Zoom(t *testing.T) {
 	testBar.mousePosition = testBar.children[0].Position().Add(fyne.NewPos(5, 5))
 	testBar.Refresh()
 	assert.Equal(t, true, testBar.children[0].Size().Width > testBar.children[1].Size().Width)
+}
+
+func TestAppBarBackground(t *testing.T) {
+	icons := []string{"fyne"}
+	testBar := testBar(icons)
+	testBar.disableTaskbar = true
+
+	grad := test.WidgetRenderer(testBar).(*barRenderer).background
+	assert.Equal(t, color.Transparent, grad.EndColor)
+	assert.Equal(t, theme.BackgroundColor(), grad.StartColor)
+	assert.Equal(t, testBar.iconSize+theme.Padding()*2, grad.Size().Width)
 }
 
 func TestIconsAndIconThemeChange(t *testing.T) {
