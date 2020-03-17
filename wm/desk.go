@@ -64,6 +64,8 @@ const (
 	keyCodeRight = 114
 )
 
+var focusedWin xproto.Window
+
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
 func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	conn, err := xgbutil.NewConn()
