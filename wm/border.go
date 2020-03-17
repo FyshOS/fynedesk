@@ -83,6 +83,7 @@ func (r *coloredBoxRenderer) BackgroundColor() color.Color {
 func newColoredHBox(focused bool, objs ...fyne.CanvasObject) *coloredHBox {
 	ret := &coloredHBox{focused: focused}
 	ret.Box = widget.NewHBox(objs...)
+	ret.ExtendBaseWidget(ret)
 
 	return ret
 }
