@@ -11,54 +11,6 @@ type stack struct {
 	listeners []desktop.StackListener
 }
 
-func (s *stack) addToStack(win desktop.Window) {
-	s.clients = append([]desktop.Window{win}, s.clients...)
-	s.mappingOrder = append(s.mappingOrder, win)
-}
-
-func (s *stack) addToStackBottom(win desktop.Window) {
-	s.clients = append(s.clients, win)
-	s.mappingOrder = append(s.mappingOrder, win)
-}
-
-func (s *stack) removeFromStack(win desktop.Window) {
-	pos := s.indexForWin(win)
-
-	if pos == -1 {
-		return
-	}
-	s.clients = append(s.clients[:pos], s.clients[pos+1:]...)
-
-	pos = -1
-	for i, w := range s.mappingOrder {
-		if w == win {
-			pos = i
-		}
-	}
-	if pos == -1 {
-		return
-	}
-	s.mappingOrder = append(s.mappingOrder[:pos], s.mappingOrder[pos+1:]...)
-}
-
-func (s *stack) indexForWin(win desktop.Window) int {
-	pos := -1
-	for i, w := range s.clients {
-		if w == win {
-			pos = i
-		}
-	}
-	return pos
-}
-
-func (s *stack) getMappingOrder() []desktop.Window {
-	return s.mappingOrder
-}
-
-func (s *stack) getClients(clients []desktop.Window) []desktop.Window {
-	return s.clients
-}
-
 func (s *stack) AddWindow(win desktop.Window) {
 	if win == nil {
 		return
@@ -68,6 +20,21 @@ func (s *stack) AddWindow(win desktop.Window) {
 	for _, l := range s.listeners {
 		l.WindowAdded(win)
 	}
+}
+
+func (s *stack) RaiseToTop(win desktop.Window) {
+	if win.Iconic() {
+		return
+	}
+	if len(s.clients) > 1 {
+		win.RaiseAbove(s.TopWindow())
+	}
+
+	if s.indexForWin(win) == -1 {
+		return
+	}
+	s.removeFromStack(win)
+	s.addToStack(win)
 }
 
 func (s *stack) RemoveWindow(win desktop.Window) {
@@ -93,17 +60,50 @@ func (s *stack) Windows() []desktop.Window {
 	return s.clients
 }
 
-func (s *stack) RaiseToTop(win desktop.Window) {
-	if win.Iconic() {
-		return
-	}
-	if len(s.clients) > 1 {
-		win.RaiseAbove(s.TopWindow())
-	}
+func (s *stack) addToStack(win desktop.Window) {
+	s.clients = append([]desktop.Window{win}, s.clients...)
+	s.mappingOrder = append(s.mappingOrder, win)
+}
 
-	if s.indexForWin(win) == -1 {
+func (s *stack) addToStackBottom(win desktop.Window) {
+	s.clients = append(s.clients, win)
+	s.mappingOrder = append(s.mappingOrder, win)
+}
+
+func (s *stack) getClients(clients []desktop.Window) []desktop.Window {
+	return s.clients
+}
+
+func (s *stack) getMappingOrder() []desktop.Window {
+	return s.mappingOrder
+}
+
+func (s *stack) indexForWin(win desktop.Window) int {
+	pos := -1
+	for i, w := range s.clients {
+		if w == win {
+			pos = i
+		}
+	}
+	return pos
+}
+
+func (s *stack) removeFromStack(win desktop.Window) {
+	pos := s.indexForWin(win)
+
+	if pos == -1 {
 		return
 	}
-	s.removeFromStack(win)
-	s.addToStack(win)
+	s.clients = append(s.clients[:pos], s.clients[pos+1:]...)
+
+	pos = -1
+	for i, w := range s.mappingOrder {
+		if w == win {
+			pos = i
+		}
+	}
+	if pos == -1 {
+		return
+	}
+	s.mappingOrder = append(s.mappingOrder[:pos], s.mappingOrder[pos+1:]...)
 }

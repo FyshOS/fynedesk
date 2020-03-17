@@ -14,12 +14,8 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
-	"github.com/BurntSushi/xgbutil/icccm"
-	"github.com/BurntSushi/xgbutil/xevent"
-	"github.com/BurntSushi/xgbutil/xprop"
 
 	"fyne.io/desktop"
-	"fyne.io/desktop/internal/notify"
 	"fyne.io/desktop/internal/ui"
 
 	"fyne.io/fyne"
@@ -27,12 +23,17 @@ import (
 
 type x11WM struct {
 	stack
-	x                     *xgbutil.XUtil
-	framedExisting        bool
-	moveResizing          bool
-	moveResizingLastX     int16
-	moveResizingLastY     int16
-	moveResizingType      moveResizeType
+
+	x *xgbutil.XUtil
+
+	framedExisting bool
+	moveResizing   bool
+
+	moveResizingLastX int16
+	moveResizingLastY int16
+
+	moveResizingType moveResizeType
+
 	screenChangeTimestamp xproto.Timestamp
 
 	allowedActions []string
@@ -67,27 +68,6 @@ const (
 	keyCodeLeft  = 113
 	keyCodeRight = 114
 )
-
-func (x *x11WM) Close() {
-	log.Println("Disconnecting from X server")
-
-	for _, child := range x.clients {
-		child.(*client).frame.unFrame()
-	}
-
-	x.x.Conn().Close()
-}
-
-func (x *x11WM) AddStackListener(l desktop.StackListener) {
-	x.stack.listeners = append(x.stack.listeners, l)
-}
-
-func (x *x11WM) Blank() {
-	go func() {
-		time.Sleep(time.Second / 3)
-		exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
-	}()
-}
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
 func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
@@ -158,11 +138,32 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 			for _, c := range mgr.clients {
 				c.(*client).frame.updateScale()
 			}
-			mgr.layoutRoots()
+			mgr.configureRoots(mgr.x.RootWin())
 		}
 	}()
 
 	return mgr, nil
+}
+
+func (x *x11WM) AddStackListener(l desktop.StackListener) {
+	x.stack.listeners = append(x.stack.listeners, l)
+}
+
+func (x *x11WM) Blank() {
+	go func() {
+		time.Sleep(time.Second / 3)
+		exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
+	}()
+}
+
+func (x *x11WM) Close() {
+	log.Println("Disconnecting from X server")
+
+	for _, child := range x.clients {
+		child.(*client).frame.unFrame()
+	}
+
+	x.x.Conn().Close()
 }
 
 func (x *x11WM) runLoop() {
@@ -178,149 +179,56 @@ func (x *x11WM) runLoop() {
 			break
 		}
 		switch ev := ev.(type) {
-		case xproto.MapRequestEvent:
-			x.showWindow(ev.Window)
-		case xproto.UnmapNotifyEvent:
-			x.hideWindow(ev.Window)
-		case xproto.ConfigureRequestEvent:
-			x.configureWindow(ev.Window, ev)
-		case xproto.ConfigureNotifyEvent:
-			if ev.Window != x.x.RootWin() || desktop.Instance() == nil {
-				break
-			}
-			x.layoutRoots()
-		case xproto.CreateNotifyEvent:
-			err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Window, xproto.CwCursor,
-				[]uint32{uint32(defaultCursor)}).Check()
-			if err != nil {
-				fyne.LogError("Set Cursor Error", err)
-			}
-		case xproto.DestroyNotifyEvent:
-			x.destroyWindow(ev.Window)
-		case xproto.PropertyNotifyEvent:
-			x.handlePropertyChange(ev)
+		case xproto.ButtonPressEvent:
+			x.handleButtonPress(ev)
+		case xproto.ButtonReleaseEvent:
+			x.handleButtonRelease(ev)
 		case xproto.ClientMessageEvent:
 			x.handleClientMessage(ev)
-		case xproto.ExposeEvent:
-			border := x.clientForWin(ev.Window)
-			if border != nil && border.(*client).frame != nil {
-				border.(*client).frame.applyTheme(false)
-			}
-		case xproto.ButtonPressEvent:
-			for _, c := range x.clients {
-				if c.(*client).id == ev.Event {
-					c.(*client).frame.press(ev.RootX, ev.RootY)
-				}
-			}
-			xevent.ReplayPointer(x.x)
-		case xproto.ButtonReleaseEvent:
-			for _, c := range x.clients {
-				if c.(*client).id == ev.Event {
-					if !x.moveResizing {
-						c.(*client).frame.release(ev.RootX, ev.RootY)
-					}
-					x.moveResizeEnd(c.(*client))
-				}
-			}
-		case xproto.MotionNotifyEvent:
-			for _, c := range x.clients {
-				if c.(*client).id == ev.Event {
-					if x.moveResizing {
-						x.moveResize(ev.RootX, ev.RootY, c.(*client))
-						break
-					}
-					if ev.State&xproto.ButtonMask1 != 0 {
-						c.(*client).frame.drag(ev.RootX, ev.RootY)
-					} else {
-						c.(*client).frame.motion(ev.RootX, ev.RootY)
-					}
-					break
-				}
-			}
+		case xproto.CreateNotifyEvent:
+			x.setInitialWindowAttributes(ev.Window)
+		case xproto.ConfigureNotifyEvent:
+			x.configureRoots(ev.Window)
+		case xproto.ConfigureRequestEvent:
+			x.configureWindow(ev.Window, ev)
+		case xproto.DestroyNotifyEvent:
+			x.destroyWindow(ev.Window)
 		case xproto.EnterNotifyEvent:
-			err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Event, xproto.CwCursor,
-				[]uint32{uint32(defaultCursor)}).Check()
-			if err != nil {
-				fyne.LogError("Set Cursor Error", err)
-			}
-			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
-				mouseNotify.MouseOutNotify()
-			}
-		case xproto.LeaveNotifyEvent:
-			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
-				screen := desktop.Instance().Screens().ScreenForGeometry(int(ev.RootX), int(ev.RootY), 0, 0)
-				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/screen.CanvasScale()),
-					int(float32(ev.RootY)/screen.CanvasScale())))
-			}
+			x.handleMouseEnter(ev)
+		case xproto.ExposeEvent:
+			x.exposeWindow(ev.Window)
 		case xproto.KeyPressEvent:
-			if ev.Detail == keyCodeSpace {
-				if switcherInstance != nil { // we are currently switching windows - select current window
-					x.applyAppSwitcher()
-				} else {
-					go ui.ShowAppLauncher()
-				}
-			} else {
-				// The rest of these methods are about app switcher.
-				// Apart from Tab they will only be called once the keyboard grab is in effect.
-				if ev.Detail == keyCodeTab {
-					shiftPressed := ev.State&xproto.ModMaskShift != 0
-					x.showOrSelectAppSwitcher(shiftPressed)
-				} else if ev.Detail == keyCodeEscape {
-					x.cancelAppSwitcher()
-				} else if ev.Detail == keyCodeReturn || ev.Detail == keyCodeEnter {
-					x.applyAppSwitcher()
-				} else if ev.Detail == keyCodeLeft {
-					x.previousAppSwitcher()
-				} else if ev.Detail == keyCodeRight {
-					x.nextAppSwitcher()
-				}
-			}
+			x.handleKeyPress(ev)
 		case xproto.KeyReleaseEvent:
-			if ev.Detail == keyCodeAlt {
-				x.applyAppSwitcher()
-			}
+			x.handleKeyRelease(ev)
+		case xproto.LeaveNotifyEvent:
+			x.handleMouseLeave(ev)
+		case xproto.MapRequestEvent:
+			x.showWindow(ev.Window)
+		case xproto.MotionNotifyEvent:
+			x.handleMouseMotion(ev)
+		case xproto.PropertyNotifyEvent:
+			x.handlePropertyChange(ev)
 		case randr.ScreenChangeNotifyEvent:
-			if x.screenChangeTimestamp == ev.Timestamp {
-				break
-			}
-			x.screenChangeTimestamp = ev.Timestamp
-			desk := desktop.Instance()
-			if desk == nil {
-				break
-			}
-			desk.Screens().RefreshScreens()
-			x.layoutRoots()
+			x.handleScreenChange(ev.Timestamp)
+		case xproto.UnmapNotifyEvent:
+			x.hideWindow(ev.Window)
 		}
 	}
 
 	fyne.LogError("X11 connection terminated!", nil)
 }
 
-func (x *x11WM) isRootTitle(title string) bool {
-	return strings.Index(title, ui.RootWindowName) == 0
+func (x *x11WM) bindKeys(win xproto.Window) {
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeSpace, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
 }
 
-func screenNameFromRootTitle(title string) string {
-	if len(title) <= len(ui.RootWindowName) {
-		return ""
+func (x *x11WM) configureRoots(win xproto.Window) {
+	if win != x.x.RootWin() || desktop.Instance() == nil {
+		return
 	}
-	return title[len(ui.RootWindowName):]
-}
-
-func (x *x11WM) getWindowFromScreenName(screenName string) xproto.Window {
-	for _, id := range x.rootIDs {
-		name := windowName(x.x, id)
-		if !x.isRootTitle(name) {
-			continue
-		}
-		if screenNameFromRootTitle(name) == screenName {
-			return id
-		}
-	}
-	return 0
-}
-
-func (x *x11WM) layoutRoots() {
 	for _, screen := range desktop.Instance().Screens().Screens() {
 		win := x.getWindowFromScreenName(screen.Name)
 		if win == 0 {
@@ -397,198 +305,111 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 }
 
-func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
-	c := x.clientForWin(ev.Window)
+func (x *x11WM) destroyWindow(win xproto.Window) {
+	c := x.clientForWin(win)
+	if c == nil {
+		for i, id := range x.rootIDs {
+			if id == win {
+				x.rootIDs = append(x.rootIDs[:i], x.rootIDs[i+1:]...)
+			}
+		}
+		return
+	}
+	x.RemoveWindow(c)
+	windowClientListUpdate(x)
+	windowClientListStackingUpdate(x)
+}
+
+func (x *x11WM) exposeWindow(win xproto.Window) {
+	border := x.clientForWin(win)
+	if border != nil && border.(*client).frame != nil {
+		border.(*client).frame.applyTheme(false)
+	}
+}
+
+func (x *x11WM) frameExisting() {
+	tree, err := xproto.QueryTree(x.x.Conn(), x.x.RootWin()).Reply()
+	if err != nil {
+		fyne.LogError("Query Tree Error", err)
+		return
+	}
+
+	for _, child := range tree.Children {
+		name := windowName(x.x, child)
+		if x.isRootTitle(name) {
+			continue
+		}
+		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
+		if err != nil {
+			fyne.LogError("Get Window Attributes Error", err)
+			continue
+		}
+		if attrs.MapState == xproto.MapStateUnmapped {
+			continue
+		}
+		x.setupWindow(child)
+	}
+}
+
+func (x *x11WM) getWindowFromScreenName(screenName string) xproto.Window {
+	for _, id := range x.rootIDs {
+		name := windowName(x.x, id)
+		if !x.isRootTitle(name) {
+			continue
+		}
+		if screenNameFromRootTitle(name) == screenName {
+			return id
+		}
+	}
+	return 0
+}
+
+func (x *x11WM) hideWindow(win xproto.Window) {
+	c := x.clientForWin(win)
 	if c == nil {
 		return
 	}
-	propAtom, err := xprop.AtomName(x.x, ev.Atom)
+	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
+}
+
+func (x *x11WM) isRootTitle(title string) bool {
+	return strings.Index(title, ui.RootWindowName) == 0
+}
+
+func (x *x11WM) scaleToPixels(i int, screen *desktop.Screen) uint16 {
+	return uint16(float32(i) * screen.CanvasScale())
+}
+
+func screenNameFromRootTitle(title string) string {
+	if len(title) <= len(ui.RootWindowName) {
+		return ""
+	}
+	return title[len(ui.RootWindowName):]
+}
+
+func (x *x11WM) setInitialWindowAttributes(win xproto.Window) {
+	err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), win, xproto.CwCursor,
+		[]uint32{uint32(defaultCursor)}).Check()
 	if err != nil {
-		fyne.LogError("Error getting event", err)
+		fyne.LogError("Set Cursor Error", err)
+	}
+}
+
+func (x *x11WM) setupWindow(win xproto.Window) {
+	if windowName(x.x, win) == "" {
+		windowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
+		windowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
+	}
+	c := x.clientForWin(win)
+	if c != nil {
 		return
 	}
-	switch propAtom {
-	case "_NET_WM_NAME":
-		c.(*client).updateTitle()
-	case "WM_NAME":
-		c.(*client).updateTitle()
-	case "_MOTIF_WM_HINTS":
-		c.(*client).setupBorder()
-	}
-}
-
-func (x *x11WM) moveResizeEnd(c *client) {
-	x.moveResizing = false
-	xproto.UngrabPointer(x.x.Conn(), xproto.TimeCurrentTime)
-	xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
-
-	// ensure menus etc update
-	c.frame.notifyInnerGeometry()
-}
-
-func (x *x11WM) moveResize(moveX, moveY int16, c *client) {
-	xcoord, ycoord, width, height := c.getWindowGeometry()
-	w := int16(width)
-	h := int16(height)
-	deltaW := moveX - x.moveResizingLastX
-	deltaH := moveY - x.moveResizingLastY
-
-	switch x.moveResizingType {
-	case moveResizeTopLeft:
-		//Move both X,Y coords and resize both W,H
-		xcoord += deltaW
-		ycoord += deltaH
-		w -= deltaW
-		h -= deltaH
-	case moveResizeTop:
-		//Move Y coord and resize H
-		ycoord += deltaH
-		h -= deltaH
-	case moveResizeTopRight:
-		//Move Y coord and resize both W,H
-		ycoord += deltaH
-		w += deltaW
-		h -= deltaH
-	case moveResizeRight:
-		//Keep X coord and resize W
-		w += deltaW
-	case moveResizeBottomRight, moveResizeKeyboard:
-		//Keep both X,Y coords and resize both W,H
-		w += deltaW
-		h += deltaH
-	case moveResizeBottom:
-		//Keep Y coord and resize H
-		h += deltaH
-	case moveResizeBottomLeft:
-		//Move X coord and resize both W,H
-		xcoord += deltaW
-		w -= deltaW
-		h += deltaH
-	case moveResizeLeft:
-		//Move X coord and resize W
-		xcoord += deltaW
-		w -= deltaW
-	case moveResizeMove, moveResizeMoveKeyboard:
-		//Move both X,Y coords and no resize
-		xcoord += deltaW
-		ycoord += deltaH
-	case moveResizeCancel:
-		x.moveResizeEnd(c)
-	}
-	x.moveResizingLastX = moveX
-	x.moveResizingLastY = moveY
-	c.setWindowGeometry(xcoord, ycoord, uint16(w), uint16(h))
-}
-
-func (x *x11WM) handleMoveResize(ev xproto.ClientMessageEvent, c *client) {
-	x.moveResizing = true
-	x.moveResizingLastX = int16(ev.Data.Data32[0])
-	x.moveResizingLastY = int16(ev.Data.Data32[1])
-	x.moveResizingType = moveResizeType(ev.Data.Data32[2])
-	xproto.GrabPointer(x.x.Conn(), true, c.id,
-		xproto.EventMaskButtonPress|xproto.EventMaskButtonRelease|xproto.EventMaskPointerMotion,
-		xproto.GrabModeAsync, xproto.GrabModeAsync, x.x.RootWin(), xproto.CursorNone, xproto.TimeCurrentTime)
-	xproto.GrabKeyboard(x.x.Conn(), true, c.id, xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
-}
-
-func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeState func(), addState func(), toggleCheck bool) {
-	switch clientMessageStateAction(ev.Data.Data32[0]) {
-	case clientMessageStateActionRemove:
-		removeState()
-	case clientMessageStateActionAdd:
-		addState()
-	case clientMessageStateActionToggle:
-		if toggleCheck {
-			removeState()
-		} else {
-			addState()
-		}
-	}
-}
-
-func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
-	switch clientMessageStateAction(ev.Data.Data32[0]) {
-	case clientMessageStateActionRemove:
-		windowExtendedHintsRemove(x.x, ev.Window, hint)
-		x.showWindow(ev.Window)
-	case clientMessageStateActionAdd:
-		windowExtendedHintsAdd(x.x, ev.Window, hint)
-	}
-}
-
-func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
-	c := x.clientForWin(ev.Window)
-	msgAtom, err := xprop.AtomName(x.x, ev.Type)
-	if err != nil {
-		fyne.LogError("Error getting event", err)
-		return
-	}
-	switch msgAtom {
-	case "WM_CHANGE_STATE":
-		if c == nil {
-			return
-		}
-		switch ev.Data.Bytes()[0] {
-		case icccm.StateIconic:
-			c.(*client).iconifyClient()
-		case icccm.StateNormal:
-			c.(*client).uniconifyClient()
-		}
-	case "_NET_ACTIVE_WINDOW":
-		if c == nil {
-			return
-		}
-		activeWin, err := windowActiveGet(x.x)
-		if err == nil && activeWin == ev.Window {
-			return
-		}
-		err = xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, 0).Check()
-		if err != nil {
-			fyne.LogError("Could not set focus", err)
-			return
-		}
-		windowActiveSet(x.x, ev.Window)
-	case "_NET_WM_FULLSCREEN_MONITORS":
-		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
-		// TO FULLSCREEN ACROSS
-	case "_NET_WM_MOVERESIZE":
-		if c == nil {
-			return
-		}
-		if c.Maximized() || c.Fullscreened() {
-			return
-		}
-		x.handleMoveResize(ev, c.(*client))
-	case "_NET_WM_STATE":
-		subMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[1]))
-		if err != nil {
-			fyne.LogError("Error getting event", err)
-			return
-		}
-		if c == nil {
-			x.handleInitialHints(ev, subMsgAtom)
-			return
-		}
-		switch subMsgAtom {
-		case "_NET_WM_STATE_FULLSCREEN":
-			x.handleStateActionRequest(ev, c.(*client).unfullscreenClient, c.(*client).fullscreenClient, c.Fullscreened())
-		case "_NET_WM_STATE_HIDDEN":
-			fyne.LogError("Extended Window Manager Hints says to ignore the HIDDEN state.", nil)
-		//	x.handleStateActionRequest(ev, c.(*client).uniconifyClient, c.(*client).iconifyClient, c.Iconic())
-		case "_NET_WM_STATE_MAXIMIZED_VERT", "_NET_WM_STATE_MAXIMIZED_HORZ":
-			extraMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[2]))
-			if err != nil {
-				fyne.LogError("Error getting event", err)
-				return
-			}
-			if extraMsgAtom == subMsgAtom {
-				return
-			}
-			if extraMsgAtom == "_NET_WM_STATE_MAXIMIZED_VERT" || extraMsgAtom == "_NET_WM_STATE_MAXIMIZED_HORZ" {
-				x.handleStateActionRequest(ev, c.(*client).unmaximizeClient, c.(*client).maximizeClient, c.Maximized())
-			}
-		}
-	}
+	c = newClient(win, x)
+	x.AddWindow(c)
+	c.RaiseToTop()
+	c.Focus()
+	windowClientListUpdate(x)
+	windowClientListStackingUpdate(x)
 }
 
 func (x *x11WM) showWindow(win xproto.Window) {
@@ -619,78 +440,4 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		return
 	}
 	x.setupWindow(win)
-}
-
-func (x *x11WM) hideWindow(win xproto.Window) {
-	c := x.clientForWin(win)
-	if c == nil {
-		return
-	}
-	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
-}
-
-func (x *x11WM) setupWindow(win xproto.Window) {
-	if windowName(x.x, win) == "" {
-		windowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
-		windowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
-	}
-	c := x.clientForWin(win)
-	if c != nil {
-		return
-	}
-	c = newClient(win, x)
-	x.AddWindow(c)
-	c.RaiseToTop()
-	c.Focus()
-	windowClientListUpdate(x)
-	windowClientListStackingUpdate(x)
-}
-
-func (x *x11WM) destroyWindow(win xproto.Window) {
-	c := x.clientForWin(win)
-	if c == nil {
-		for i, id := range x.rootIDs {
-			if id == win {
-				x.rootIDs = append(x.rootIDs[:i], x.rootIDs[i+1:]...)
-			}
-		}
-		return
-	}
-	x.RemoveWindow(c)
-	windowClientListUpdate(x)
-	windowClientListStackingUpdate(x)
-}
-
-func (x *x11WM) bindKeys(win xproto.Window) {
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeSpace, xproto.GrabModeAsync, xproto.GrabModeAsync)
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
-}
-
-func (x *x11WM) frameExisting() {
-	tree, err := xproto.QueryTree(x.x.Conn(), x.x.RootWin()).Reply()
-	if err != nil {
-		fyne.LogError("Query Tree Error", err)
-		return
-	}
-
-	for _, child := range tree.Children {
-		name := windowName(x.x, child)
-		if x.isRootTitle(name) {
-			continue
-		}
-		attrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
-		if err != nil {
-			fyne.LogError("Get Window Attributes Error", err)
-			continue
-		}
-		if attrs.MapState == xproto.MapStateUnmapped {
-			continue
-		}
-		x.setupWindow(child)
-	}
-}
-
-func (x *x11WM) scaleToPixels(i int, screen *desktop.Screen) uint16 {
-	return uint16(float32(i) * screen.CanvasScale())
 }
