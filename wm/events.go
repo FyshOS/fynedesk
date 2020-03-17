@@ -15,6 +15,28 @@ import (
 	"fyne.io/fyne"
 )
 
+func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent, c *client) {
+	if focusedWin == ev.Window {
+		return
+	}
+	err := xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, 0).Check()
+	if err != nil {
+		fyne.LogError("Could not set focus", err)
+		return
+	}
+	oldFocus := focusedWin
+	focusedWin = ev.Window
+	windowActiveSet(x.x, ev.Window)
+
+	// refresh old focused
+	oldClient := desktop.Instance().WindowManager().(*x11WM).clientForWin(oldFocus)
+	if oldClient != nil {
+		oldClient.(*client).frame.applyTheme(true)
+	}
+	// refresh new window
+	c.frame.applyTheme(true)
+}
+
 func (x *x11WM) handleButtonPress(ev xproto.ButtonPressEvent) {
 	for _, c := range x.clients {
 		if c.(*client).id == ev.Event {
@@ -57,16 +79,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		if c == nil {
 			return
 		}
-		activeWin, err := windowActiveGet(x.x)
-		if err == nil && activeWin == ev.Window {
-			return
-		}
-		err = xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, 0).Check()
-		if err != nil {
-			fyne.LogError("Could not set focus", err)
-			return
-		}
-		windowActiveSet(x.x, ev.Window)
+		x.handleActiveWin(ev, c.(*client))
 	case "_NET_WM_FULLSCREEN_MONITORS":
 		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
 		// TO FULLSCREEN ACROSS

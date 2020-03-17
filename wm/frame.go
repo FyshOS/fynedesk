@@ -276,7 +276,10 @@ func (f *frame) decorate(force bool) {
 		refresh = true
 	}
 
-	backR, backG, backB, _ := theme.BackgroundColor().RGBA()
+	backR, backG, backB, _ := theme.ButtonColor().RGBA()
+	if f.client.Focused() {
+		backR, backG, backB, _ = theme.BackgroundColor().RGBA()
+	}
 	bgColor := backR<<16 | backG<<8 | backB
 
 	drawTop, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
@@ -313,7 +316,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	heightPix := f.titleHeight()
 	iconBorderPixWidth := heightPix + f.borderWidth()*2
 	widthPix := f.borderTopWidth + iconBorderPixWidth
-	canvas.Resize(fyne.NewSize(int(float32(widthPix)/scale), wmTheme.TitleHeight))
+	canvas.Resize(fyne.NewSize(int(float32(widthPix)/scale)+1, wmTheme.TitleHeight))
 	img := canvas.Capture()
 
 	// TODO just copy the label minSize - smallest possible but maybe bigger than window width

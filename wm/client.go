@@ -123,15 +123,7 @@ func (c *client) Focus() {
 }
 
 func (c *client) Focused() bool {
-	focusedWin, err := windowActiveGet(c.wm.x)
-	if err != nil {
-		fyne.LogError("Could not determine focused window", err)
-		return false
-	}
-	if focusedWin == c.win {
-		return true
-	}
-	return false
+	return focusedWin == c.win
 }
 
 func (c *client) Fullscreen() {
