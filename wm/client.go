@@ -32,8 +32,7 @@ type client struct {
 	restoreWidth, restoreHeight uint16
 
 	frame *frame
-
-	wm *x11WM
+	wm    *x11WM
 }
 
 func newClient(win xproto.Window, wm *x11WM) *client {

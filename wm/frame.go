@@ -20,16 +20,15 @@ import (
 
 type frame struct {
 	x, y                    int16
-	mouseX, mouseY          int16
 	width, height           uint16
 	childWidth, childHeight uint16
-	borderTopWidth          uint16
-	minWidth, minHeight     uint
-
+	mouseX, mouseY          int16
 	resizeBottom            bool
 	resizeLeft, resizeRight bool
 
+	minWidth, minHeight       uint
 	borderTop, borderTopRight xproto.Pixmap
+	borderTopWidth            uint16
 
 	client *client
 }

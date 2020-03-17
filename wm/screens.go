@@ -18,12 +18,9 @@ type x11ScreensProvider struct {
 	screens []*desktop.Screen
 	active  *desktop.Screen
 	primary *desktop.Screen
-
-	single bool
-
-	root xproto.Window
-
-	x *x11WM
+	single  bool
+	x       *x11WM
+	root    xproto.Window
 
 	onChange []func()
 }
