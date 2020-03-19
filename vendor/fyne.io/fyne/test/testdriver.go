@@ -5,6 +5,8 @@ import (
 	"sync"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/internal/driver"
+
 	"github.com/goki/freetype/truetype"
 	"golang.org/x/image/font"
 )
@@ -27,12 +29,18 @@ var _ fyne.Driver = (*testDriver)(nil)
 func (d *testDriver) CanvasForObject(fyne.CanvasObject) fyne.Canvas {
 	d.windowsMutex.RLock()
 	defer d.windowsMutex.RUnlock()
-	// cheating as we only have a single test window
-	return d.windows[0].Canvas()
+	// cheating: probably the last created window is meant
+	return d.windows[len(d.windows)-1].Canvas()
 }
 
 func (d *testDriver) AbsolutePositionForObject(co fyne.CanvasObject) fyne.Position {
-	return co.Position() // TODO get the real answer
+	c := d.CanvasForObject(co)
+	if c == nil {
+		return fyne.NewPos(0, 0)
+	}
+
+	tc := c.(*testCanvas)
+	return driver.AbsolutePositionForObject(co, tc.objectTrees())
 }
 
 func (d *testDriver) CreateWindow(string) fyne.Window {

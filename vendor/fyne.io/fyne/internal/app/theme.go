@@ -8,6 +8,9 @@ import (
 // ApplyThemeTo ensures that the specified canvasobject and all widgets and themeable objects will
 // be updated for the current theme.
 func ApplyThemeTo(content fyne.CanvasObject, canv fyne.Canvas) {
+	if content == nil {
+		return
+	}
 	if wid, ok := content.(fyne.Widget); ok {
 		for _, o := range cache.Renderer(wid).Objects() {
 			ApplyThemeTo(o, canv)
@@ -30,8 +33,8 @@ func ApplySettings(set fyne.Settings, app fyne.App) {
 		ApplyThemeTo(window.Content(), window.Canvas())
 		window.Canvas().SetScale(set.Scale())
 
-		if window.Canvas().Overlay() != nil {
-			ApplyThemeTo(window.Canvas().Overlay(), window.Canvas())
+		for _, overlay := range window.Canvas().Overlays().List() {
+			ApplyThemeTo(overlay, window.Canvas())
 		}
 	}
 }

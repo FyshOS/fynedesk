@@ -140,6 +140,7 @@ func newAppPicker(title string, callback func(desktop.AppData)) *picker {
 func ShowAppLauncher() {
 	if appExec != nil {
 		appExec.close()
+		return
 	}
 
 	appExec = newAppPicker("Application Launcher", func(app desktop.AppData) {

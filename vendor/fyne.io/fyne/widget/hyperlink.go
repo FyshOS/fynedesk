@@ -71,8 +71,8 @@ func (hl *Hyperlink) textColor() color.Color {
 	return theme.HyperlinkColor()
 }
 
-// password tells the rendering textProvider if we are a password field
-func (hl *Hyperlink) password() bool {
+// concealed tells the rendering textProvider if we are a concealed field
+func (hl *Hyperlink) concealed() bool {
 	return false
 }
 
@@ -86,10 +86,6 @@ func (hl *Hyperlink) Tapped(*fyne.PointEvent) {
 	if hl.URL != nil {
 		fyne.CurrentApp().OpenURL(hl.URL)
 	}
-}
-
-// TappedSecondary is called when a secondary pointer tapped event is captured
-func (hl *Hyperlink) TappedSecondary(*fyne.PointEvent) {
 }
 
 // CreateRenderer is a private method to Fyne which links this widget to its renderer

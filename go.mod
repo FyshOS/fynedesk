@@ -3,10 +3,9 @@ module fyne.io/desktop
 go 1.12
 
 require (
-	fyne.io/fyne v1.2.2-0.20200129164526-631a82cd1cae
+	fyne.io/fyne v1.2.4-0.20200319092426-8f685e21facd
 	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
-
 	github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802
 	github.com/BurntSushi/xgbutil v0.0.0-20160919175755-f7c97cef3b4e
 	github.com/jackmordaunt/icns v1.0.0
