@@ -291,17 +291,17 @@ func (f *frame) decorate(force bool) {
 		f.drawDecoration(f.borderTop, drawTop, f.borderTopRight, drawTopRight, depth)
 	}
 
+	iconSizePix := f.titleHeight()
 	draw, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
 	xproto.CreateGC(f.client.wm.x.Conn(), draw, xproto.Drawable(f.client.id), xproto.GcForeground, []uint32{bgColor})
-	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
+	rect := xproto.Rectangle{X: 0, Y: int16(iconSizePix), Width: f.width, Height: f.height - iconSizePix}
 	xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 
-	iconSizePix := f.titleHeight()
 	iconAndBorderSizePix := iconSizePix + f.borderWidth()*2
 	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), drawTop,
-		0, 0, 0, 0, f.borderTopWidth, uint16(iconSizePix))
+		0, 0, 0, 0, f.borderTopWidth, iconSizePix)
 	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), drawTopRight,
-		0, 0, int16(f.width-iconAndBorderSizePix), 0, uint16(iconAndBorderSizePix), uint16(iconSizePix))
+		0, 0, int16(f.width-iconAndBorderSizePix), 0, iconAndBorderSizePix, iconSizePix)
 }
 
 func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pidTopRight xproto.Pixmap, drawTopRight xproto.Gcontext, depth byte) {
