@@ -67,8 +67,6 @@ const (
 	keyCodeRight = 114
 )
 
-var focusedWin xproto.Window
-
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
 func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	conn, err := xgbutil.NewConn()
@@ -111,6 +109,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	mgr.supportedHints = append(mgr.supportedHints, "_NET_SUPPORTED",
 		"_NET_CLIENT_LIST",
 		"_NET_CLIENT_LIST_STACKING",
+		"_NET_ACTIVE_WINDOW",
 		"_NET_WM_STATE",
 		"_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_MAXIMIZED_HORZ",
@@ -199,6 +198,10 @@ func (x *x11WM) runLoop() {
 			x.handleMouseEnter(ev)
 		case xproto.ExposeEvent:
 			x.exposeWindow(ev.Window)
+		case xproto.FocusInEvent:
+			x.handleFocus(ev.Event)
+		case xproto.FocusOutEvent:
+			x.handleFocus(ev.Event)
 		case xproto.KeyPressEvent:
 			x.handleKeyPress(ev)
 		case xproto.KeyReleaseEvent:

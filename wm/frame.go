@@ -127,7 +127,6 @@ func newFrame(c *client) *frame {
 			fyne.LogError("Configure Window Error", err)
 		}
 	}
-
 	framed.show()
 	framed.applyTheme(true)
 
