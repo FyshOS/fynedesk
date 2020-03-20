@@ -130,27 +130,35 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr.supportedHints = append(mgr.supportedHints, mgr.allowedActions...)
-	mgr.supportedHints = append(mgr.supportedHints, "_NET_SUPPORTED",
+	mgr.supportedHints = append(mgr.supportedHints, "_NET_ACTIVE_WINDOW",
 		"_NET_CLIENT_LIST",
 		"_NET_CLIENT_LIST_STACKING",
-		"_NET_ACTIVE_WINDOW",
-		"_NET_WM_STATE",
-		"_NET_WM_STATE_MAXIMIZED_VERT",
-		"_NET_WM_STATE_MAXIMIZED_HORZ",
-		"_NET_WM_STATE_SKIP_TASKBAR",
-		"_NET_WM_STATE_SKIP_PAGER",
-		"_NET_WM_STATE_HIDDEN",
-		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_CURRENT_DESKTOP",
+		"_NET_DESKTOP_GEOMETRY",
+		"_NET_DESKTOP_VIEWPORT",
 		"_NET_FRAME_EXTENTS",
+		"_NET_MOVERESIZE_WINDOW",
+		"_NET_NUMBER_OF_DESKTOPS",
+		"_NET_WM_FULLSCREEN_MONITORS",
 		"_NET_WM_MOVERESIZE",
 		"_NET_WM_NAME",
-		"_NET_WM_FULLSCREEN_MONITORS",
-		"_NET_MOVERESIZE_WINDOW")
+		"_NET_WM_STATE",
+		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_WM_STATE_HIDDEN",
+		"_NET_WM_STATE_MAXIMIZED_HORZ",
+		"_NET_WM_STATE_MAXIMIZED_VERT",
+		"_NET_WM_STATE_SKIP_PAGER",
+		"_NET_WM_STATE_SKIP_TASKBAR",
+		"_NET_WORKAREA",
+		"_NET_SUPPORTED")
 
 	ewmh.SupportedSet(mgr.x, mgr.supportedHints)
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.Dummy(), mgr.x.Dummy())
 	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), "Fyne Desktop")
+	ewmh.DesktopViewportSet(mgr.x, []ewmh.DesktopViewport{{X: 0, Y: 0}}) // Will always be 0, 0 until virtual desktops are supported
+	ewmh.NumberOfDesktopsSet(mgr.x, 1)                                   // Will always be 1 until virtual desktops are supported
+	ewmh.CurrentDesktopSet(mgr.x, 0)                                     // Will always be 0 until virtual desktops are supported
 
 	loadCursors(conn)
 	go mgr.runLoop()
@@ -344,6 +352,9 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	if isRoot {
 		width = x.x.Screen().WidthInPixels
 		height = x.x.Screen().HeightInPixels
+
+		ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: int(width), Height: int(height)})    // The array will grow when virtual desktops are supported
+		ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(width), Height: uint(height)}}) // The array will grow when virtual desktops are supported
 	}
 
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
