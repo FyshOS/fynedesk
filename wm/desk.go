@@ -4,6 +4,7 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -14,6 +15,8 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/xevent"
+	"github.com/BurntSushi/xgbutil/xprop"
 
 	"fyne.io/desktop"
 	"fyne.io/desktop/internal/ui"
@@ -76,6 +79,8 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 
 	mgr := &x11WM{x: conn}
 	root := conn.RootWin()
+	mgr.takeSelectionOwnership()
+
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
 		xproto.EventMaskButtonPress |
@@ -437,4 +442,39 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		return
 	}
 	x.setupWindow(win)
+}
+
+func (x *x11WM) takeSelectionOwnership() {
+	name := fmt.Sprintf("WM_S%d", x.x.Conn().DefaultScreen)
+	selAtom, err := xprop.Atm(x.x, name)
+	if err != nil {
+		fyne.LogError("Error getting selection atom", err)
+		return
+	}
+	err = xproto.SetSelectionOwnerChecked(x.x.Conn(), x.x.Dummy(), selAtom, xproto.TimeCurrentTime).Check()
+	if err != nil {
+		fyne.LogError("Error setting selection owner", err)
+		return
+	}
+	reply, err := xproto.GetSelectionOwner(x.x.Conn(), selAtom).Reply()
+	if err != nil {
+		fyne.LogError("Error getting selection owner", err)
+		return
+	}
+	if reply.Owner != x.x.Dummy() {
+		fyne.LogError("Could not obtain ownership - Another WM is likely running", err)
+	}
+	manAtom, err := xprop.Atm(x.x, "MANAGER")
+	if err != nil {
+		fyne.LogError("Error getting manager atom", err)
+		return
+	}
+	cm, err := xevent.NewClientMessage(32, x.x.RootWin(), manAtom,
+		xproto.TimeCurrentTime, int(selAtom), int(x.x.Dummy()))
+	if err != nil {
+		fyne.LogError("Error creating client message", err)
+		return
+	}
+	xproto.SendEvent(x.x.Conn(), false, x.x.RootWin(), xproto.EventMaskStructureNotify,
+		string(cm.Bytes()))
 }
