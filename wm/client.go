@@ -101,15 +101,11 @@ func (c *client) TopWindow() bool {
 }
 
 func (c *client) Focused() bool {
-	focusedWin, err := windowActiveGet(c.wm.x)
+	active, err := windowActiveGet(c.wm.x)
 	if err != nil {
-		fyne.LogError("Could not determine focused window", err)
 		return false
 	}
-	if focusedWin == c.win {
-		return true
-	}
-	return false
+	return active == c.win
 }
 
 func (c *client) SkipTaskbar() bool {

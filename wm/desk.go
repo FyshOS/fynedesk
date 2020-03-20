@@ -133,6 +133,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	mgr.supportedHints = append(mgr.supportedHints, "_NET_SUPPORTED",
 		"_NET_CLIENT_LIST",
 		"_NET_CLIENT_LIST_STACKING",
+		"_NET_ACTIVE_WINDOW",
 		"_NET_WM_STATE",
 		"_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_MAXIMIZED_HORZ",
@@ -202,6 +203,10 @@ func (x *x11WM) runLoop() {
 			}
 		case xproto.DestroyNotifyEvent:
 			x.destroyWindow(ev.Window)
+		case xproto.FocusInEvent:
+			x.handleFocus(ev.Event)
+		case xproto.FocusOutEvent:
+			x.handleFocus(ev.Event)
 		case xproto.PropertyNotifyEvent:
 			x.handlePropertyChange(ev)
 		case xproto.ClientMessageEvent:
@@ -355,6 +360,14 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		x.rootID = win
 		x.loaded = true
 	}
+}
+
+func (x *x11WM) handleFocus(win xproto.Window) {
+	c := x.clientForWin(win)
+	if c == nil {
+		return
+	}
+	c.(*client).frame.applyTheme(true)
 }
 
 func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
