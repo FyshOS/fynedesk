@@ -107,15 +107,16 @@ func newFrame(c *client) *frame {
 		framed.childWidth = w - uint16(framed.borderWidth()*2)
 		framed.childHeight = h - uint16(framed.borderWidth()) - framed.titleHeight()
 	}
+
 	var offsetX, offsetY int16 = 0, 0
 	if !full && decorated {
+		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()), int16(framed.titleHeight()))
 		offsetX = int16(framed.borderWidth())
 		offsetY = int16(framed.titleHeight())
-		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()), int16(framed.titleHeight()))
-		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: int(framed.borderWidth()), Right: int(framed.borderWidth()), Top: int(framed.titleHeight()), Bottom: int(framed.borderWidth())})
+		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: int(framed.borderWidth()), Right: int(framed.borderWidth()),
+			Top: int(framed.titleHeight()), Bottom: int(framed.borderWidth())})
 	} else {
-		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id,
-			int16(desktop.Instance().Screens().Active().X), int16(desktop.Instance().Screens().Active().Y))
+		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, attrs.X, attrs.Y)
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
 	}
 
@@ -127,8 +128,6 @@ func newFrame(c *client) *frame {
 			fyne.LogError("Configure Window Error", err)
 		}
 	}
-	framed.show()
-	framed.applyTheme(true)
 
 	ev := xproto.ConfigureNotifyEvent{Event: c.win, Window: c.win, AboveSibling: 0,
 		X: int16(x + offsetX), Y: int16(y + offsetY), Width: uint16(framed.childWidth), Height: uint16(framed.childHeight),
