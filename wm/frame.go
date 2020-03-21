@@ -6,6 +6,7 @@ import (
 	"image"
 
 	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/icccm"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/theme"
@@ -629,9 +630,9 @@ func newFrame(c *client) *frame {
 	}
 	var offsetX, offsetY int16 = 0, 0
 	if !full && decorated {
-		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()), int16(framed.titleHeight()))
 		offsetX = int16(framed.borderWidth())
 		offsetY = int16(framed.titleHeight())
+		xproto.ReparentWindow(c.wm.x.Conn(), c.win, c.id, int16(framed.borderWidth()), int16(framed.titleHeight()))
 		ewmh.FrameExtentsSet(c.wm.x, c.win, &ewmh.FrameExtents{Left: int(framed.borderWidth()), Right: int(framed.borderWidth()),
 			Top: int(framed.titleHeight()), Bottom: int(framed.borderWidth())})
 	} else {
@@ -647,6 +648,10 @@ func newFrame(c *client) *frame {
 			fyne.LogError("Configure Window Error", err)
 		}
 	}
+
+	windowStateSet(c.wm.x, c.win, icccm.StateNormal)
+	framed.show()
+	framed.applyTheme(true)
 
 	ev := xproto.ConfigureNotifyEvent{Event: c.win, Window: c.win, AboveSibling: 0,
 		X: int16(x + offsetX), Y: int16(y + offsetY), Width: uint16(framed.childWidth), Height: uint16(framed.childHeight),
