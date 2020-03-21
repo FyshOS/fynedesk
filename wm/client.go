@@ -59,8 +59,6 @@ func newClient(win xproto.Window, wm *x11WM) *client {
 		xproto.UnmapWindow(wm.x.Conn(), win)
 	} else {
 		c.newFrame()
-		c.stateMessage(icccm.StateNormal)
-		windowStateSet(c.wm.x, c.win, icccm.StateNormal)
 	}
 
 	return c
