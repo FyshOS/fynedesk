@@ -123,7 +123,11 @@ func (c *client) Focus() {
 }
 
 func (c *client) Focused() bool {
-	return focusedWin == c.win
+	active, err := windowActiveGet(c.wm.x)
+	if err != nil {
+		return false
+	}
+	return active == c.win
 }
 
 func (c *client) Fullscreen() {

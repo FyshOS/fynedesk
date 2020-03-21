@@ -4,6 +4,7 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"errors"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -14,6 +15,8 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/xevent"
+	"github.com/BurntSushi/xgbutil/xprop"
 
 	"fyne.io/desktop"
 	"fyne.io/desktop/internal/ui"
@@ -64,8 +67,6 @@ const (
 	keyCodeRight = 114
 )
 
-var focusedWin xproto.Window
-
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
 func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	conn, err := xgbutil.NewConn()
@@ -76,6 +77,8 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 
 	mgr := &x11WM{x: conn}
 	root := conn.RootWin()
+	mgr.takeSelectionOwnership()
+
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
 		xproto.EventMaskButtonPress |
@@ -103,26 +106,35 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	}
 
 	mgr.supportedHints = append(mgr.supportedHints, mgr.allowedActions...)
-	mgr.supportedHints = append(mgr.supportedHints, "_NET_SUPPORTED",
+	mgr.supportedHints = append(mgr.supportedHints, "_NET_ACTIVE_WINDOW",
 		"_NET_CLIENT_LIST",
 		"_NET_CLIENT_LIST_STACKING",
-		"_NET_WM_STATE",
-		"_NET_WM_STATE_MAXIMIZED_VERT",
-		"_NET_WM_STATE_MAXIMIZED_HORZ",
-		"_NET_WM_STATE_SKIP_TASKBAR",
-		"_NET_WM_STATE_SKIP_PAGER",
-		"_NET_WM_STATE_HIDDEN",
-		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_CURRENT_DESKTOP",
+		"_NET_DESKTOP_GEOMETRY",
+		"_NET_DESKTOP_VIEWPORT",
 		"_NET_FRAME_EXTENTS",
+		"_NET_MOVERESIZE_WINDOW",
+		"_NET_NUMBER_OF_DESKTOPS",
+		"_NET_WM_FULLSCREEN_MONITORS",
 		"_NET_WM_MOVERESIZE",
 		"_NET_WM_NAME",
-		"_NET_WM_FULLSCREEN_MONITORS",
-		"_NET_MOVERESIZE_WINDOW")
+		"_NET_WM_STATE",
+		"_NET_WM_STATE_FULLSCREEN",
+		"_NET_WM_STATE_HIDDEN",
+		"_NET_WM_STATE_MAXIMIZED_HORZ",
+		"_NET_WM_STATE_MAXIMIZED_VERT",
+		"_NET_WM_STATE_SKIP_PAGER",
+		"_NET_WM_STATE_SKIP_TASKBAR",
+		"_NET_WORKAREA",
+		"_NET_SUPPORTED")
 
 	ewmh.SupportedSet(mgr.x, mgr.supportedHints)
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.Dummy(), mgr.x.Dummy())
 	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), ui.RootWindowName)
+	ewmh.DesktopViewportSet(mgr.x, []ewmh.DesktopViewport{{X: 0, Y: 0}}) // Will always be 0, 0 until virtual desktops are supported
+	ewmh.NumberOfDesktopsSet(mgr.x, 1)                                   // Will always be 1 until virtual desktops are supported
+	ewmh.CurrentDesktopSet(mgr.x, 0)                                     // Will always be 0 until virtual desktops are supported
 
 	loadCursors(conn)
 	go mgr.runLoop()
@@ -194,6 +206,10 @@ func (x *x11WM) runLoop() {
 			x.handleMouseEnter(ev)
 		case xproto.ExposeEvent:
 			x.exposeWindow(ev.Window)
+		case xproto.FocusInEvent:
+			x.handleFocus(ev.Event)
+		case xproto.FocusOutEvent:
+			x.handleFocus(ev.Event)
 		case xproto.KeyPressEvent:
 			x.handleKeyPress(ev)
 		case xproto.KeyReleaseEvent:
@@ -226,10 +242,17 @@ func (x *x11WM) configureRoots(win xproto.Window) {
 	if win != x.x.RootWin() || desktop.Instance() == nil {
 		return
 	}
+	width, height := 0, 0
 	for _, screen := range desktop.Instance().Screens().Screens() {
 		win := x.getWindowFromScreenName(screen.Name)
 		if win == 0 {
 			continue
+		}
+		if screen.X+screen.Width > width {
+			width = screen.X + screen.Width
+		}
+		if screen.Y+screen.Height > height {
+			height = screen.Y + screen.Height
 		}
 		xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -239,6 +262,8 @@ func (x *x11WM) configureRoots(win xproto.Window) {
 			BorderWidth: 0, OverrideRedirect: false}
 		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 	}
+	ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: width, Height: height})              // The array will grow when virtual desktops are supported
+	ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(width), Height: uint(height)}}) // The array will grow when virtual desktops are supported
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
@@ -437,4 +462,39 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		return
 	}
 	x.setupWindow(win)
+}
+
+func (x *x11WM) takeSelectionOwnership() {
+	name := fmt.Sprintf("WM_S%d", x.x.Conn().DefaultScreen)
+	selAtom, err := xprop.Atm(x.x, name)
+	if err != nil {
+		fyne.LogError("Error getting selection atom", err)
+		return
+	}
+	err = xproto.SetSelectionOwnerChecked(x.x.Conn(), x.x.Dummy(), selAtom, xproto.TimeCurrentTime).Check()
+	if err != nil {
+		fyne.LogError("Error setting selection owner", err)
+		return
+	}
+	reply, err := xproto.GetSelectionOwner(x.x.Conn(), selAtom).Reply()
+	if err != nil {
+		fyne.LogError("Error getting selection owner", err)
+		return
+	}
+	if reply.Owner != x.x.Dummy() {
+		fyne.LogError("Could not obtain ownership - Another WM is likely running", err)
+	}
+	manAtom, err := xprop.Atm(x.x, "MANAGER")
+	if err != nil {
+		fyne.LogError("Error getting manager atom", err)
+		return
+	}
+	cm, err := xevent.NewClientMessage(32, x.x.RootWin(), manAtom,
+		xproto.TimeCurrentTime, int(selAtom), int(x.x.Dummy()))
+	if err != nil {
+		fyne.LogError("Error creating client message", err)
+		return
+	}
+	xproto.SendEvent(x.x.Conn(), false, x.x.RootWin(), xproto.EventMaskStructureNotify,
+		string(cm.Bytes()))
 }

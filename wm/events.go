@@ -15,26 +15,53 @@ import (
 	"fyne.io/fyne"
 )
 
-func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent, c *client) {
-	if focusedWin == ev.Window {
+func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
+	canFocus := true
+	notifyFocus := false
+	hints, err := icccm.WmHintsGet(x.x, ev.Window)
+	if err == nil {
+		if hints.Flags&icccm.HintInput > 0 {
+			canFocus = hints.Input > 0
+		}
+	}
+	protocols, err := icccm.WmProtocolsGet(x.x, ev.Window)
+	if err == nil {
+		for _, protocol := range protocols {
+			if protocol == "WM_TAKE_FOCUS" {
+				notifyFocus = true
+				break
+			}
+		}
+	}
+	if !canFocus && !notifyFocus {
 		return
 	}
-	err := xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, 0).Check()
-	if err != nil {
-		fyne.LogError("Could not set focus", err)
-		return
-	}
-	oldFocus := focusedWin
-	focusedWin = ev.Window
 	windowActiveSet(x.x, ev.Window)
-
-	// refresh old focused
-	oldClient := desktop.Instance().WindowManager().(*x11WM).clientForWin(oldFocus)
-	if oldClient != nil {
-		oldClient.(*client).frame.applyTheme(true)
+	if canFocus {
+		err = xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, xproto.TimeCurrentTime).Check()
+		if err != nil {
+			fyne.LogError("Could not set focus", err)
+			return
+		}
 	}
-	// refresh new window
-	c.frame.applyTheme(true)
+	if notifyFocus {
+		protocolAtm, err := xprop.Atm(x.x, "WM_PROTOCOLS")
+		if err != nil {
+			fyne.LogError("Could not get protocol atom", err)
+			return
+		}
+		focusAtm, err := xprop.Atm(x.x, "WM_TAKE_FOCUS")
+		if err != nil {
+			fyne.LogError("Could not get focus atom", err)
+			return
+		}
+		cm, err := xevent.NewClientMessage(32, ev.Window, protocolAtm, int(focusAtm), xproto.TimeCurrentTime)
+		if err != nil {
+			fyne.LogError("Could not create client focus message", err)
+			return
+		}
+		xproto.SendEvent(x.x.Conn(), false, ev.Window, 0, string(cm.Bytes()))
+	}
 }
 
 func (x *x11WM) handleButtonPress(ev xproto.ButtonPressEvent) {
@@ -76,10 +103,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 			c.(*client).uniconifyClient()
 		}
 	case "_NET_ACTIVE_WINDOW":
-		if c == nil {
-			return
-		}
-		x.handleActiveWin(ev, c.(*client))
+		x.handleActiveWin(ev)
 	case "_NET_WM_FULLSCREEN_MONITORS":
 		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
 		// TO FULLSCREEN ACROSS
@@ -121,6 +145,14 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 			}
 		}
 	}
+}
+
+func (x *x11WM) handleFocus(win xproto.Window) {
+	c := x.clientForWin(win)
+	if c == nil {
+		return
+	}
+	c.(*client).frame.applyTheme(true)
 }
 
 func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
