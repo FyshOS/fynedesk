@@ -146,15 +146,6 @@ func windowIconName(x *xgbutil.XUtil, win xproto.Window) string {
 	return icon
 }
 
-func windowMinSize(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
-	hints, err := icccm.WmNormalHintsGet(x, win)
-	if err == nil {
-		return hints.MinWidth, hints.MinHeight
-	}
-
-	return 0, 0
-}
-
 func windowName(x *xgbutil.XUtil, win xproto.Window) string {
 	//Spec says _NET_WM_NAME is preferred to WM_NAME
 	name, err := ewmh.WmNameGet(x, win)
@@ -180,6 +171,55 @@ func windowOverrideGet(x *xgbutil.XUtil, win xproto.Window) bool {
 	return false
 }
 
+func windowSizeConstrain(x *xgbutil.XUtil, win xproto.Window, width uint16, height uint16) (uint16, uint16) {
+	minWidth, minHeight := windowSizeMin(x, win)
+	maxWidth, maxHeight := windowSizeMax(x, win)
+	if width < uint16(minWidth) {
+		width = uint16(minWidth)
+	}
+	if height < uint16(minHeight) {
+		height = uint16(minHeight)
+	}
+	if maxWidth > -1 && width > uint16(maxWidth) {
+		width = uint16(maxWidth)
+	}
+	if maxHeight > -1 && height > uint16(maxHeight) {
+		height = uint16(maxHeight)
+	}
+	return width, height
+}
+
+func windowSizeFixed(x *xgbutil.XUtil, win xproto.Window) bool {
+	minWidth, minHeight := windowSizeMin(x, win)
+	maxWidth, maxHeight := windowSizeMax(x, win)
+	if int(minWidth) == maxWidth && int(minHeight) == maxHeight {
+		return true
+	}
+	return false
+}
+
+func windowSizeMax(x *xgbutil.XUtil, win xproto.Window) (int, int) {
+	nh, err := icccm.WmNormalHintsGet(x, win)
+	if err != nil {
+		return -1, -1
+	}
+	if (nh.Flags & icccm.SizeHintPMaxSize) > 0 {
+		return int(nh.MaxWidth), int(nh.MaxHeight)
+	}
+	return -1, -1
+}
+
+func windowSizeMin(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
+	nh, err := icccm.WmNormalHintsGet(x, win)
+	if err != nil {
+		return 0, 0
+	}
+	if (nh.Flags & icccm.SizeHintPMinSize) > 0 {
+		return nh.MinWidth, nh.MinHeight
+	}
+	return 0, 0
+}
+
 func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, height uint16) (uint16, uint16) {
 	nh, err := icccm.WmNormalHintsGet(x, win)
 	if err != nil {
@@ -191,12 +231,14 @@ func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, 
 		if nh.BaseWidth > 0 {
 			baseWidth = uint16(nh.BaseWidth)
 		} else {
-			baseWidth = uint16(nh.MinWidth)
+			minWidth, _ := windowSizeMin(x, win)
+			baseWidth = uint16(minWidth)
 		}
 		if nh.BaseHeight > 0 {
 			baseHeight = uint16(nh.BaseHeight)
 		} else {
-			baseHeight = uint16(nh.MinHeight)
+			_, minHeight := windowSizeMin(x, win)
+			baseHeight = uint16(minHeight)
 		}
 		if nh.WidthInc > 0 {
 			width = baseWidth + (uint16(math.Round((float64(width-baseWidth) / float64(nh.WidthInc)) * float64(nh.WidthInc))))
