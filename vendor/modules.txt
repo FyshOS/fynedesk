@@ -1,4 +1,4 @@
-# fyne.io/fyne v1.2.4-0.20200319092426-8f685e21facd
+# fyne.io/fyne v1.2.4-0.20200325121629-6b8cdee31b7f
 fyne.io/fyne
 fyne.io/fyne/app
 fyne.io/fyne/canvas
