@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"strconv"
 
+	"fyne.io/fyne/dialog"
+
 	"fyne.io/desktop"
 	wmtheme "fyne.io/desktop/theme"
 
@@ -19,6 +21,7 @@ const randrHelper = "arandr"
 
 type settingsUI struct {
 	settings *deskSettings
+	win      fyne.Window
 
 	launcherIcons []string
 }
@@ -35,13 +38,32 @@ func (d *settingsUI) populateThemeIcons(box *fyne.Container, theme string) {
 }
 
 func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
-	bgEntry := widget.NewEntry()
-	if fyne.CurrentApp().Preferences().String("background") == "" {
-		bgEntry.SetPlaceHolder("Input A File Path")
+	var bgPathClear *widget.Button
+	bgPath := widget.NewEntry()
+	bgPath.SetPlaceHolder("Choose an image")
+	bgPathClear = widget.NewButtonWithIcon("", theme.CancelIcon(), func() {
+		bgPath.SetText("")
+		bgPathClear.Disable()
+	})
+
+	if fyne.CurrentApp().Preferences().String("background") != "" {
+		bgPath.SetText(fyne.CurrentApp().Preferences().String("background"))
 	} else {
-		bgEntry.SetText(fyne.CurrentApp().Preferences().String("background"))
+		bgPathClear.Disable()
 	}
 	bgLabel := widget.NewLabelWithStyle("Background", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+
+	bgButtons := widget.NewHBox(bgPathClear,
+		widget.NewButtonWithIcon("", theme.SearchIcon(), func() {
+			dialog.ShowFileOpen(func(file string) {
+				if file == "" {
+					return
+				}
+
+				bgPath.SetText(file)
+				bgPathClear.Enable()
+			}, d.win)
+		}))
 
 	themeLabel := widget.NewLabel(d.settings.IconTheme())
 	themeIcons := fyne.NewContainerWithLayout(layout.NewHBoxLayout())
@@ -55,7 +77,8 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		}
 		themeList.AddObject(themeButton)
 	}
-	top := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, bgLabel, nil), bgLabel, bgEntry)
+	top := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, bgLabel, bgButtons),
+		bgLabel, bgPath, bgButtons)
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	themeCurrent := widget.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
@@ -64,7 +87,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 	applyButton := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
-			d.settings.setBackground(bgEntry.Text)
+			d.settings.setBackground(bgPath.Text)
 			d.settings.setIconTheme(themeLabel.Text)
 		}})
 
@@ -222,6 +245,7 @@ func showSettings(deskSettings *deskSettings) {
 	ui := &settingsUI{settings: deskSettings, launcherIcons: deskSettings.LauncherIcons()}
 
 	w := fyne.CurrentApp().NewWindow("FyneDesk Settings")
+	ui.win = w
 	fyneSettings := settings.NewSettings()
 
 	tabs := widget.NewTabContainer(
