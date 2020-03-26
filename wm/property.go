@@ -14,6 +14,8 @@ import (
 	"github.com/BurntSushi/xgbutil/motif"
 	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
+
+	"fyne.io/desktop"
 )
 
 const (
@@ -107,6 +109,17 @@ func windowBorderless(x *xgbutil.XUtil, win xproto.Window) bool {
 	return false
 }
 
+func windowSizeCanMaximize(x *xgbutil.XUtil, win xproto.Window, screen *desktop.Screen) bool {
+	maxWidth, maxHeight := windowSizeMax(x, win)
+	if maxWidth == -1 && maxHeight == -1 {
+		return true
+	}
+	if maxWidth < screen.Width || maxHeight < screen.Height {
+		return false
+	}
+	return true
+}
+
 func windowSizeConstrain(x *xgbutil.XUtil, win xproto.Window, width uint16, height uint16) (uint16, uint16) {
 	minWidth, minHeight := windowSizeMin(x, win)
 	maxWidth, maxHeight := windowSizeMax(x, win)
@@ -163,7 +176,7 @@ func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, 
 		return width, height
 	}
 	if (nh.Flags & icccm.SizeHintPResizeInc) > 0 {
-		var baseWidth, baseHeight uint16
+		var baseWidth, baseHeight uint16 = 0, 0
 		if nh.BaseWidth > 0 {
 			baseWidth = uint16(nh.BaseWidth)
 		} else {
@@ -177,10 +190,10 @@ func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, 
 			baseHeight = uint16(minHeight)
 		}
 		if nh.WidthInc > 0 {
-			width = baseWidth + (uint16(math.Round((float64(width-baseWidth) / float64(nh.WidthInc)) * float64(nh.WidthInc))))
+			width = baseWidth + uint16((math.Round(float64(width-baseWidth)/float64(nh.WidthInc)))*float64(nh.WidthInc))
 		}
 		if nh.HeightInc > 0 {
-			height = baseHeight + (uint16(math.Round((float64(height-baseHeight) / float64(nh.HeightInc)) * float64(nh.HeightInc))))
+			height = baseHeight + uint16((math.Round(float64(height-baseHeight)/float64(nh.HeightInc)))*float64(nh.HeightInc))
 		}
 	}
 	return width, height

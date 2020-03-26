@@ -25,16 +25,20 @@ import (
 
 type x11WM struct {
 	stack
-	x                 *xgbutil.XUtil
-	root              fyne.Window
-	rootID            xproto.Window
-	loaded            bool
-	moveResizing      bool
-	moveResizingLastX int16
-	moveResizingLastY int16
-	moveResizingType  moveResizeType
-	altTabList        []desktop.Window
-	altTabIndex       int
+	x                       *xgbutil.XUtil
+	root                    fyne.Window
+	rootID                  xproto.Window
+	loaded                  bool
+	moveResizing            bool
+	moveResizingStartX      int16
+	moveResizingStartY      int16
+	moveResizingLastX       int16
+	moveResizingLastY       int16
+	moveResizingStartWidth  uint16
+	moveResizingStartHeight uint16
+	moveResizingType        moveResizeType
+	altTabList              []desktop.Window
+	altTabIndex             int
 
 	allowedActions []string
 	supportedHints []string
@@ -385,42 +389,45 @@ func (x *x11WM) moveResize(moveX, moveY int16, c *client) {
 	h := int16(height)
 	deltaW := moveX - x.moveResizingLastX
 	deltaH := moveY - x.moveResizingLastY
+	deltaX := moveX - x.moveResizingStartX
+	deltaY := moveY - x.moveResizingStartY
 
 	switch x.moveResizingType {
 	case moveResizeTopLeft:
 		//Move both X,Y coords and resize both W,H
 		xcoord += deltaW
 		ycoord += deltaH
-		w -= deltaW
-		h -= deltaH
+
+		w = int16(x.moveResizingStartWidth) - deltaX
+		h = int16(x.moveResizingStartHeight) - deltaY
 	case moveResizeTop:
 		//Move Y coord and resize H
 		ycoord += deltaH
-		h -= deltaH
+		h = int16(x.moveResizingStartHeight) - deltaY
 	case moveResizeTopRight:
 		//Move Y coord and resize both W,H
 		ycoord += deltaH
-		w += deltaW
-		h -= deltaH
+		w = int16(x.moveResizingStartWidth) + deltaX
+		h = int16(x.moveResizingStartHeight) - deltaY
 	case moveResizeRight:
 		//Keep X coord and resize W
-		w += deltaW
+		w = int16(x.moveResizingStartWidth) + deltaX
 	case moveResizeBottomRight, moveResizeKeyboard:
 		//Keep both X,Y coords and resize both W,H
-		w += deltaW
-		h += deltaH
+		w = int16(x.moveResizingStartWidth) + deltaX
+		h = int16(x.moveResizingStartHeight) + deltaY
 	case moveResizeBottom:
 		//Keep Y coord and resize H
-		h += deltaH
+		h = int16(x.moveResizingStartHeight) + deltaY
 	case moveResizeBottomLeft:
 		//Move X coord and resize both W,H
 		xcoord += deltaW
-		w -= deltaW
-		h += deltaH
+		w = int16(x.moveResizingStartWidth) - deltaX
+		h = int16(x.moveResizingStartHeight) + deltaY
 	case moveResizeLeft:
 		//Move X coord and resize W
 		xcoord += deltaW
-		w -= deltaW
+		w = int16(x.moveResizingStartWidth) - deltaX
 	case moveResizeMove, moveResizeMoveKeyboard:
 		//Move both X,Y coords and no resize
 		xcoord += deltaW
@@ -437,6 +444,9 @@ func (x *x11WM) handleMoveResize(ev xproto.ClientMessageEvent, c *client) {
 	x.moveResizing = true
 	x.moveResizingLastX = int16(ev.Data.Data32[0])
 	x.moveResizingLastY = int16(ev.Data.Data32[1])
+	x.moveResizingStartX = x.moveResizingLastX
+	x.moveResizingStartY = x.moveResizingLastY
+	_, _, x.moveResizingStartWidth, x.moveResizingStartHeight = c.getWindowGeometry()
 	x.moveResizingType = moveResizeType(ev.Data.Data32[2])
 	xproto.GrabPointer(x.x.Conn(), true, c.id,
 		xproto.EventMaskButtonPress|xproto.EventMaskButtonRelease|xproto.EventMaskPointerMotion,
