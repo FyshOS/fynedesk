@@ -20,13 +20,15 @@ import (
 )
 
 type frame struct {
-	x, y                    int16
-	width, height           uint16
-	childWidth, childHeight uint16
-	mouseX, mouseY          int16
-	resizeBottom            bool
-	resizeLeft, resizeRight bool
-	moveOnly                bool
+	x, y                                int16
+	width, height                       uint16
+	childWidth, childHeight             uint16
+	resizeStartWidth, resizeStartHeight uint16
+	mouseX, mouseY                      int16
+	resizeStartX, resizeStartY          int16
+	resizeBottom                        bool
+	resizeLeft, resizeRight             bool
+	moveOnly                            bool
 
 	minWidth, minHeight       uint
 	borderTop, borderTopRight xproto.Pixmap
@@ -376,6 +378,10 @@ func (f *frame) hide() {
 }
 
 func (f *frame) maximizeApply() {
+	if windowSizeFixed(f.client.wm.x, f.client.win) ||
+		!windowSizeCanMaximize(f.client.wm.x, f.client.win, desktop.Instance().Screens().ScreenForWindow(f.client)) {
+		return
+	}
 	f.client.restoreWidth = f.width
 	f.client.restoreHeight = f.height
 	f.client.restoreX = f.x
@@ -396,30 +402,32 @@ func (f *frame) mouseDrag(x, y int16) {
 	if f.client.Maximized() || f.client.Fullscreened() {
 		return
 	}
-	deltaX := x - f.mouseX
-	deltaY := y - f.mouseY
+	moveDeltaX := x - f.mouseX
+	moveDeltaY := y - f.mouseY
 	f.mouseX = x
 	f.mouseY = y
-	if deltaX == 0 && deltaY == 0 {
+	if moveDeltaX == 0 && moveDeltaY == 0 {
 		return
 	}
 
 	if f.resizeBottom || f.resizeLeft || f.resizeRight && !windowSizeFixed(f.client.wm.x, f.client.win) {
+		deltaX := x - f.resizeStartX
+		deltaY := y - f.resizeStartY
 		x := f.x
-		width := f.width
-		height := f.height
+		width := f.resizeStartWidth
+		height := f.resizeStartHeight
 		if f.resizeBottom {
 			height += uint16(deltaY)
 		}
 		if f.resizeLeft {
-			x += int16(deltaX)
+			x += moveDeltaX
 			width -= uint16(deltaX)
 		} else if f.resizeRight {
 			width += uint16(deltaX)
 		}
 		f.updateGeometry(x, f.y, width, height, false)
 	} else if f.moveOnly {
-		f.updateGeometry(f.x+deltaX, f.y+deltaY, f.width, f.height, false)
+		f.updateGeometry(f.x+moveDeltaX, f.y+moveDeltaY, f.width, f.height, false)
 	}
 }
 
@@ -477,9 +485,13 @@ func (f *frame) mousePress(x, y int16) {
 
 	f.mouseX = x
 	f.mouseY = y
+	f.resizeStartX = x
+	f.resizeStartY = y
 
 	relX := x - f.x
 	relY := y - f.y
+	f.resizeStartWidth = f.width
+	f.resizeStartHeight = f.height
 	f.resizeBottom = false
 	f.resizeLeft = false
 	f.resizeRight = false
@@ -602,6 +614,10 @@ func (f *frame) unFrame() {
 }
 
 func (f *frame) unmaximizeApply() {
+	if windowSizeFixed(f.client.wm.x, f.client.win) ||
+		!windowSizeCanMaximize(f.client.wm.x, f.client.win, desktop.Instance().Screens().ScreenForWindow(f.client)) {
+		return
+	}
 	if f.client.restoreWidth == 0 && f.client.restoreHeight == 0 {
 		screen := desktop.Instance().Screens().ScreenForWindow(f.client)
 		f.client.restoreWidth = uint16(screen.Width / 2)

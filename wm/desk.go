@@ -26,13 +26,17 @@ import (
 
 type x11WM struct {
 	stack
-	x                     *xgbutil.XUtil
-	framedExisting        bool
-	moveResizing          bool
-	moveResizingLastX     int16
-	moveResizingLastY     int16
-	moveResizingType      moveResizeType
-	screenChangeTimestamp xproto.Timestamp
+	x                       *xgbutil.XUtil
+	framedExisting          bool
+	moveResizing            bool
+	moveResizingStartX      int16
+	moveResizingStartY      int16
+	moveResizingLastX       int16
+	moveResizingLastY       int16
+	moveResizingStartWidth  uint16
+	moveResizingStartHeight uint16
+	moveResizingType        moveResizeType
+	screenChangeTimestamp   xproto.Timestamp
 
 	allowedActions []string
 	supportedHints []string
