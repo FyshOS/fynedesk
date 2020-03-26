@@ -379,7 +379,7 @@ func (f *frame) hide() {
 
 func (f *frame) maximizeApply() {
 	if windowSizeFixed(f.client.wm.x, f.client.win) ||
-		!windowSizeCanMaximize(f.client.wm.x, f.client.win, desktop.Instance().Screens().ScreenForWindow(f.client)) {
+		!windowSizeCanMaximize(f.client.wm.x, f.client) {
 		return
 	}
 	f.client.restoreWidth = f.width
@@ -615,7 +615,7 @@ func (f *frame) unFrame() {
 
 func (f *frame) unmaximizeApply() {
 	if windowSizeFixed(f.client.wm.x, f.client.win) ||
-		!windowSizeCanMaximize(f.client.wm.x, f.client.win, desktop.Instance().Screens().ScreenForWindow(f.client)) {
+		!windowSizeCanMaximize(f.client.wm.x, f.client) {
 		return
 	}
 	if f.client.restoreWidth == 0 && f.client.restoreHeight == 0 {

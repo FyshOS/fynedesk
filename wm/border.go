@@ -40,8 +40,7 @@ func newBorder(win desktop.Window, icon fyne.Resource) fyne.CanvasObject {
 		max.Icon = theme.ViewRestoreIcon()
 	}
 	if windowSizeFixed(win.(*client).wm.x, win.(*client).win) ||
-		!windowSizeCanMaximize(win.(*client).wm.x, win.(*client).win,
-			desktop.Instance().Screens().ScreenForWindow(win)) {
+		!windowSizeCanMaximize(win.(*client).wm.x, win) {
 		max.Disable()
 	}
 	titleBar := newColoredHBox(win.Focused(), makeFiller(0),
