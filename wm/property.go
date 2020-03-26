@@ -109,8 +109,10 @@ func windowBorderless(x *xgbutil.XUtil, win xproto.Window) bool {
 	return false
 }
 
-func windowSizeCanMaximize(x *xgbutil.XUtil, win xproto.Window, screen *desktop.Screen) bool {
-	maxWidth, maxHeight := windowSizeMax(x, win)
+func windowSizeCanMaximize(x *xgbutil.XUtil, win desktop.Window) bool {
+	screen := desktop.Instance().Screens().ScreenForWindow(win)
+
+	maxWidth, maxHeight := windowSizeMax(x, win.(*client).win)
 	if maxWidth == -1 && maxHeight == -1 {
 		return true
 	}
