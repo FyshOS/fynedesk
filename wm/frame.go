@@ -317,7 +317,12 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	canvas := playground.NewSoftwareCanvas()
 	canvas.SetScale(scale)
 	canvas.SetPadded(false)
-	canvas.SetContent(newBorder(f.client, f.client.Icon()))
+	canMaximize := true
+	if windowSizeFixed(f.client.wm.x, f.client.win) ||
+		!windowSizeCanMaximize(f.client.wm.x, f.client) {
+		canMaximize = false
+	}
+	canvas.SetContent(newBorder(f.client, f.client.Icon(), canMaximize))
 
 	heightPix := f.titleHeight()
 	iconBorderPixWidth := heightPix + f.borderWidth()*2
