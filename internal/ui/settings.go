@@ -145,7 +145,7 @@ func (d *deskSettings) load() {
 
 	d.launcherIconSize = fyne.CurrentApp().Preferences().Int("launchericonsize")
 	if d.launcherIconSize == 0 {
-		d.launcherIconSize = 32
+		d.launcherIconSize = 48
 	}
 
 	d.launcherDisableTaskbar = fyne.CurrentApp().Preferences().Bool("launcherdisabletaskbar")
