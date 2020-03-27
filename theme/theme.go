@@ -23,6 +23,14 @@ var (
 	UserIcon = theme.NewThemedResource(personIcon, nil)
 	// DisplayIcon is the material design icon for computer displays in light and dark theme
 	DisplayIcon = theme.NewThemedResource(displayIcon, nil)
+
+	// EthernetIcon is the material design icon for a network connection
+	EthernetIcon = theme.NewThemedResource(ethernetIcon, nil)
+	// WifiIcon is the material design icon for a wireless network connection
+	WifiIcon = theme.NewThemedResource(wifiIcon, nil)
+	//WifiOffIcon is the material design icon for a wireless device without a connection
+	WifiOffIcon = theme.NewThemedResource(wifiOffIcon, nil)
+
 	// BrokenImageIcon is the material design icon for a broken image
 	BrokenImageIcon = theme.NewThemedResource(brokenImageIcon, nil)
 	// MaximizeIcon is the material design icon for maximizing a window

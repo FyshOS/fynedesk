@@ -215,7 +215,7 @@ func (l *deskLayout) WindowManager() desktop.WindowManager {
 }
 
 func (l *deskLayout) Modules() []desktop.Module {
-	return []desktop.Module{builtin.NewBattery(), builtin.NewBrightness()}
+	return []desktop.Module{builtin.NewNetwork(), builtin.NewBattery(), builtin.NewBrightness()}
 }
 
 func (l *deskLayout) scaleVars(scale float32) []string {
