@@ -14,7 +14,8 @@ import (
 )
 
 const (
-	RootWindowName = "Fyne Desktop" // RootWindowName is the base string that all root windows will have in their title and is used to identify root windows.
+	// RootWindowName is the base string that all root windows will have in their title and is used to identify root windows.
+	RootWindowName = "Fyne Desktop"
 )
 
 type deskLayout struct {
