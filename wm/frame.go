@@ -20,12 +20,15 @@ import (
 )
 
 type frame struct {
-	x, y                    int16
-	width, height           uint16
-	childWidth, childHeight uint16
-	mouseX, mouseY          int16
-	resizeBottom            bool
-	resizeLeft, resizeRight bool
+	x, y                                int16
+	width, height                       uint16
+	childWidth, childHeight             uint16
+	resizeStartWidth, resizeStartHeight uint16
+	mouseX, mouseY                      int16
+	resizeStartX, resizeStartY          int16
+	resizeBottom                        bool
+	resizeLeft, resizeRight             bool
+	moveOnly                            bool
 
 	minWidth, minHeight       uint
 	borderTop, borderTopRight xproto.Pixmap
@@ -314,7 +317,12 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	canvas := playground.NewSoftwareCanvas()
 	canvas.SetScale(scale)
 	canvas.SetPadded(false)
-	canvas.SetContent(newBorder(f.client, f.client.Icon()))
+	canMaximize := true
+	if windowSizeFixed(f.client.wm.x, f.client.win) ||
+		!windowSizeCanMaximize(f.client.wm.x, f.client) {
+		canMaximize = false
+	}
+	canvas.SetContent(newBorder(f.client, f.client.Icon(), canMaximize))
 
 	heightPix := f.titleHeight()
 	iconBorderPixWidth := heightPix + f.borderWidth()*2
@@ -335,25 +343,30 @@ func (f *frame) getGeometry() (int16, int16, uint16, uint16) {
 	return f.x, f.y, f.width, f.height
 }
 
-func (f *frame) getInnerWindowCoordinates(x int16, y int16, w uint16, h uint16) (uint32, uint32, uint32, uint32) {
+func (f *frame) getInnerWindowCoordinates(w uint16, h uint16) (uint32, uint32, uint32, uint32) {
 	if f.client.Fullscreened() || !f.client.Decorated() {
-		f.width = w
-		f.height = h
-		return uint32(0), uint32(0), uint32(w), uint32(h)
+		constrainW, constrainH := w, h
+		if !f.client.Decorated() {
+			adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.x, f.client.win, w, h)
+			constrainW, constrainH = windowSizeConstrain(f.client.wm.x, f.client.win,
+				adjustedW, adjustedH)
+		}
+		f.width = constrainW
+		f.height = constrainH
+		return 0, 0, uint32(constrainW), uint32(constrainH)
 	}
-	borderWidth := 2 * f.borderWidth()
-	if w < uint16(f.minWidth)+borderWidth {
-		w = uint16(f.minWidth) + borderWidth
-	}
-	borderHeight := f.borderWidth() + f.titleHeight()
-	if h < uint16(f.minHeight)+borderHeight {
-		h = uint16(f.minHeight) + borderHeight
-	}
-	f.width = w
-	f.height = h
 
-	return uint32(f.borderWidth()), uint32(f.titleHeight()),
-		uint32(f.width - borderWidth), uint32(f.height - borderHeight)
+	borderWidth := 2 * f.borderWidth()
+	borderHeight := f.borderWidth() + f.titleHeight()
+	w -= borderWidth
+	h -= borderHeight
+	adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.x, f.client.win, w, h)
+	constrainW, constrainH := windowSizeConstrain(f.client.wm.x, f.client.win,
+		adjustedW, adjustedH)
+	f.width = constrainW + borderWidth
+	f.height = constrainH + borderHeight
+
+	return uint32(f.borderWidth()), uint32(f.titleHeight()), uint32(constrainW), uint32(constrainH)
 }
 
 func (f *frame) hide() {
@@ -370,6 +383,10 @@ func (f *frame) hide() {
 }
 
 func (f *frame) maximizeApply() {
+	if windowSizeFixed(f.client.wm.x, f.client.win) ||
+		!windowSizeCanMaximize(f.client.wm.x, f.client) {
+		return
+	}
 	f.client.restoreWidth = f.width
 	f.client.restoreHeight = f.height
 	f.client.restoreX = f.x
@@ -390,30 +407,32 @@ func (f *frame) mouseDrag(x, y int16) {
 	if f.client.Maximized() || f.client.Fullscreened() {
 		return
 	}
-	deltaX := x - f.mouseX
-	deltaY := y - f.mouseY
+	moveDeltaX := x - f.mouseX
+	moveDeltaY := y - f.mouseY
 	f.mouseX = x
 	f.mouseY = y
-	if deltaX == 0 && deltaY == 0 {
+	if moveDeltaX == 0 && moveDeltaY == 0 {
 		return
 	}
 
-	if f.resizeBottom || f.resizeLeft || f.resizeRight {
+	if f.resizeBottom || f.resizeLeft || f.resizeRight && !windowSizeFixed(f.client.wm.x, f.client.win) {
+		deltaX := x - f.resizeStartX
+		deltaY := y - f.resizeStartY
 		x := f.x
-		width := f.width
-		height := f.height
+		width := f.resizeStartWidth
+		height := f.resizeStartHeight
 		if f.resizeBottom {
 			height += uint16(deltaY)
 		}
 		if f.resizeLeft {
-			x += int16(deltaX)
+			x += moveDeltaX
 			width -= uint16(deltaX)
 		} else if f.resizeRight {
 			width += uint16(deltaX)
 		}
 		f.updateGeometry(x, f.y, width, height, false)
-	} else {
-		f.updateGeometry(f.x+deltaX, f.y+deltaY, f.width, f.height, false)
+	} else if f.moveOnly {
+		f.updateGeometry(f.x+moveDeltaX, f.y+moveDeltaY, f.width, f.height, false)
 	}
 }
 
@@ -432,9 +451,10 @@ func (f *frame) mouseMotion(x, y int16) {
 		}
 		return
 	}
-	if f.client.Maximized() || f.client.Fullscreened() {
+	if f.client.Maximized() || f.client.Fullscreened() || windowSizeFixed(f.client.wm.x, f.client.win) {
 		return
 	}
+
 	if relY >= int16(f.height-f.buttonWidth()) { // bottom
 		if relX < int16(f.buttonWidth()) {
 			cursor = resizeBottomLeftCursor
@@ -467,15 +487,22 @@ func (f *frame) mousePress(x, y int16) {
 	if f.client.Maximized() || f.client.Fullscreened() {
 		return
 	}
+
 	f.mouseX = x
 	f.mouseY = y
+	f.resizeStartX = x
+	f.resizeStartY = y
 
 	relX := x - f.x
 	relY := y - f.y
+	f.resizeStartWidth = f.width
+	f.resizeStartHeight = f.height
 	f.resizeBottom = false
 	f.resizeLeft = false
 	f.resizeRight = false
-	if relY >= int16(f.titleHeight()) {
+	f.moveOnly = false
+
+	if relY >= int16(f.titleHeight()) && !windowSizeFixed(f.client.wm.x, f.client.win) {
 		if relY >= int16(f.height-f.buttonWidth()) {
 			f.resizeBottom = true
 		}
@@ -484,6 +511,8 @@ func (f *frame) mousePress(x, y int16) {
 		} else if relX >= int16(f.width-f.buttonWidth()) {
 			f.resizeRight = true
 		}
+	} else if relY < int16(f.titleHeight()) {
+		f.moveOnly = true
 	}
 
 	f.client.wm.RaiseToTop(f.client)
@@ -514,13 +543,14 @@ func (f *frame) mouseRelease(x, y int16) {
 	f.resizeBottom = false
 	f.resizeLeft = false
 	f.resizeRight = false
+	f.moveOnly = false
 	f.updateGeometry(f.x, f.y, f.width, f.height, false)
 }
 
 // Notify the child window that it's geometry has changed to update menu positions etc.
 // This should be used sparingly as it can impact performance on the child window.
 func (f *frame) notifyInnerGeometry() {
-	innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(f.x, f.y, f.width, f.height)
+	innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(f.width, f.height)
 	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
 		X: int16(f.x + int16(innerX)), Y: int16(f.y + int16(innerY)), Width: uint16(innerW), Height: uint16(innerH),
 		BorderWidth: f.borderWidth(), OverrideRedirect: false}
@@ -589,6 +619,10 @@ func (f *frame) unFrame() {
 }
 
 func (f *frame) unmaximizeApply() {
+	if windowSizeFixed(f.client.wm.x, f.client.win) ||
+		!windowSizeCanMaximize(f.client.wm.x, f.client) {
+		return
+	}
 	if f.client.restoreWidth == 0 && f.client.restoreHeight == 0 {
 		screen := desktop.Instance().Screens().ScreenForWindow(f.client)
 		f.client.restoreWidth = uint16(screen.Width / 2)
@@ -614,11 +648,10 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	f.x = x
 	f.y = y
 
-	innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(x, y, w, h)
-	adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.x, f.client.win, uint16(innerW), uint16(innerH))
+	innerX, innerY, innerW, innerH := f.getInnerWindowCoordinates(w, h)
 
-	f.childWidth = adjustedW
-	f.childHeight = adjustedH
+	f.childWidth = uint16(innerW)
+	f.childHeight = uint16(innerH)
 
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,

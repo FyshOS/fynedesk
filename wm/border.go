@@ -22,7 +22,7 @@ func makeFiller(width int) fyne.CanvasObject {
 	return filler
 }
 
-func newBorder(win desktop.Window, icon fyne.Resource) fyne.CanvasObject {
+func newBorder(win desktop.Window, icon fyne.Resource, canMaximize bool) fyne.CanvasObject {
 	desk := desktop.Instance()
 
 	if icon == nil {
@@ -38,6 +38,9 @@ func newBorder(win desktop.Window, icon fyne.Resource) fyne.CanvasObject {
 	max := widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {})
 	if win.Maximized() {
 		max.Icon = theme.ViewRestoreIcon()
+	}
+	if !canMaximize {
+		max.Disable()
 	}
 	titleBar := newColoredHBox(win.Focused(), makeFiller(0),
 		exit,
