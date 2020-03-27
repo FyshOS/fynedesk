@@ -305,7 +305,12 @@ func (f *frame) unmaximizeApply() {
 func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pidTopRight xproto.Pixmap, drawTopRight xproto.Gcontext, depth byte) {
 	canvas := playground.NewSoftwareCanvas()
 	canvas.SetPadded(false)
-	canvas.SetContent(newBorder(f.client, f.client.Icon()))
+	canMaximize := true
+	if windowSizeFixed(f.client.wm.x, f.client.win) ||
+		!windowSizeCanMaximize(f.client.wm.x, f.client) {
+		canMaximize = false
+	}
+	canvas.SetContent(newBorder(f.client, f.client.Icon(), canMaximize))
 
 	scale := desktop.Instance().Root().Canvas().Scale()
 	canvas.SetScale(scale)
