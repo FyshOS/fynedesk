@@ -33,6 +33,9 @@ func (bl *barLayout) setPointerPosition(position fyne.Position) {
 
 // Layout is called to pack all icons into a specified size.  It also handles the zooming effect of the icons.
 func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	bg := objects[0]
+	objects = objects[1:]
+
 	total := 0
 	offset := 0
 	barWidth := 0
@@ -93,6 +96,7 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 
 	x := 0
 	x += barLeft - offset
+	zoomLeft := x
 
 	for _, child := range objects {
 		width := child.Size().Width
@@ -105,6 +109,12 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 		}
 		x += width + theme.Padding()
 	}
+	if bl.mouseInside && !bl.bar.disableZoom {
+		bg.Move(fyne.NewPos(zoomLeft-theme.Padding(), bl.bar.iconSize))
+	} else {
+		bg.Move(fyne.NewPos(zoomLeft-theme.Padding(), 0))
+	}
+	bg.Resize(fyne.NewSize(x-zoomLeft+theme.Padding(), bl.bar.iconSize))
 }
 
 // MinSize finds the smallest size that satisfies all the child objects.
@@ -127,7 +137,7 @@ func (bl *barLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(barWidth, bl.bar.iconSize)
 }
 
-// NewbarLayout returns a horizontal icon bar
+// newBarLayout returns a horizontal icon bar
 func newBarLayout(bar *bar) barLayout {
 	return barLayout{bar, false, fyne.NewPos(0, 0)}
 }
