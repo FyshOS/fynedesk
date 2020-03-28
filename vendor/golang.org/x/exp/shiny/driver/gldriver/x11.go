@@ -208,7 +208,7 @@ func onKey(id uintptr, state uint16, detail, dir uint8) {
 		return
 	}
 
-	r, c := theKeysyms.Lookup(detail, state)
+	r, c := theKeysyms.Lookup(detail, state, 0)
 	w.Send(key.Event{
 		Rune:      r,
 		Code:      c,

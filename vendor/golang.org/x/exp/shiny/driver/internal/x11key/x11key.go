@@ -2,10 +2,14 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:generate go run gen.go
+
 // x11key contains X11 numeric codes for the keyboard and mouse.
 package x11key // import "golang.org/x/exp/shiny/driver/internal/x11key"
 
 import (
+	"unicode"
+
 	"golang.org/x/mobile/event/key"
 )
 
@@ -28,11 +32,15 @@ const (
 
 type KeysymTable [256][2]uint32
 
-func (t *KeysymTable) Lookup(detail uint8, state uint16) (rune, key.Code) {
+func (t *KeysymTable) Lookup(detail uint8, state uint16, numLockMod uint16) (rune, key.Code) {
 	// The key event's rune depends on whether the shift key is down.
 	unshifted := rune(t[detail][0])
 	r := unshifted
-	if state&ShiftMask != 0 {
+	if state&numLockMod != 0 && isKeypad(t[detail][1]) {
+		if state&ShiftMask == 0 {
+			r = rune(t[detail][1])
+		}
+	} else if state&ShiftMask != 0 {
 		r = rune(t[detail][1])
 		// In X11, a zero keysym when shift is down means to use what the
 		// keysym is when shift is up.
@@ -44,15 +52,26 @@ func (t *KeysymTable) Lookup(detail uint8, state uint16) (rune, key.Code) {
 	// The key event's code is independent of whether the shift key is down.
 	var c key.Code
 	if 0 <= unshifted && unshifted < 0x80 {
-		// TODO: distinguish the regular '2' key and number-pad '2' key (with
-		// Num-Lock).
 		c = asciiKeycodes[unshifted]
+		if state&LockMask != 0 {
+			r = unicode.ToUpper(r)
+		}
+	} else if kk, isKeypad := keypadKeysyms[r]; isKeypad {
+		r, c = kk.rune, kk.code
+	} else if nuk := nonUnicodeKeycodes[unshifted]; nuk != key.CodeUnknown {
+		r, c = -1, nuk
 	} else {
-		r, c = -1, nonUnicodeKeycodes[unshifted]
+		r = keysymCodePoints[r]
+		if state&LockMask != 0 {
+			r = unicode.ToUpper(r)
+		}
 	}
 
-	// TODO: Unicode-but-not-ASCII keysyms like the Swiss keyboard's 'ö'.
 	return r, c
+}
+
+func isKeypad(keysym uint32) bool {
+	return keysym >= 0xff80 && keysym <= 0xffbd
 }
 
 func KeyModifiers(state uint16) (m key.Modifiers) {
@@ -89,27 +108,59 @@ const (
 	xkEnd        = 0xff57
 	xkInsert     = 0xff63
 	xkMenu       = 0xff67
-	xkF1         = 0xffbe
-	xkF2         = 0xffbf
-	xkF3         = 0xffc0
-	xkF4         = 0xffc1
-	xkF5         = 0xffc2
-	xkF6         = 0xffc3
-	xkF7         = 0xffc4
-	xkF8         = 0xffc5
-	xkF9         = 0xffc6
-	xkF10        = 0xffc7
-	xkF11        = 0xffc8
-	xkF12        = 0xffc9
-	xkShiftL     = 0xffe1
-	xkShiftR     = 0xffe2
-	xkControlL   = 0xffe3
-	xkControlR   = 0xffe4
-	xkAltL       = 0xffe9
-	xkAltR       = 0xffea
-	xkSuperL     = 0xffeb
-	xkSuperR     = 0xffec
-	xkDelete     = 0xffff
+	xkHelp       = 0xff6a
+
+	xkNumLock        = 0xff7f
+	xkKeypadEnter    = 0xff8d
+	xkKeypadHome     = 0xff95
+	xkKeypadLeft     = 0xff96
+	xkKeypadUp       = 0xff97
+	xkKeypadRight    = 0xff98
+	xkKeypadDown     = 0xff99
+	xkKeypadPageUp   = 0xff9a
+	xkKeypadPageDown = 0xff9b
+	xkKeypadEnd      = 0xff9c
+	xkKeypadInsert   = 0xff9e
+	xkKeypadDelete   = 0xff9f
+	xkKeypadEqual    = 0xffbd
+	xkKeypadMultiply = 0xffaa
+	xkKeypadAdd      = 0xffab
+	xkKeypadSubtract = 0xffad
+	xkKeypadDecimal  = 0xffae
+	xkKeypadDivide   = 0xffaf
+	xkKeypad0        = 0xffb0
+	xkKeypad1        = 0xffb1
+	xkKeypad2        = 0xffb2
+	xkKeypad3        = 0xffb3
+	xkKeypad4        = 0xffb4
+	xkKeypad5        = 0xffb5
+	xkKeypad6        = 0xffb6
+	xkKeypad7        = 0xffb7
+	xkKeypad8        = 0xffb8
+	xkKeypad9        = 0xffb9
+
+	xkF1       = 0xffbe
+	xkF2       = 0xffbf
+	xkF3       = 0xffc0
+	xkF4       = 0xffc1
+	xkF5       = 0xffc2
+	xkF6       = 0xffc3
+	xkF7       = 0xffc4
+	xkF8       = 0xffc5
+	xkF9       = 0xffc6
+	xkF10      = 0xffc7
+	xkF11      = 0xffc8
+	xkF12      = 0xffc9
+	xkShiftL   = 0xffe1
+	xkShiftR   = 0xffe2
+	xkControlL = 0xffe3
+	xkControlR = 0xffe4
+	xkCapsLock = 0xffe5
+	xkAltL     = 0xffe9
+	xkAltR     = 0xffea
+	xkSuperL   = 0xffeb
+	xkSuperR   = 0xffec
+	xkDelete   = 0xffff
 
 	xf86xkAudioLowerVolume = 0x1008ff11
 	xf86xkAudioMute        = 0x1008ff12
@@ -135,7 +186,21 @@ var nonUnicodeKeycodes = map[rune]key.Code{
 	xkEnd:        key.CodeEnd,
 	xkInsert:     key.CodeInsert,
 	xkMenu:       key.CodeRightGUI, // TODO: CodeRightGUI or CodeMenu??
+	xkHelp:       key.CodeHelp,
+	xkNumLock:    key.CodeKeypadNumLock,
 	xkMultiKey:   key.CodeCompose,
+
+	xkKeypadEnter:    key.CodeKeypadEnter,
+	xkKeypadHome:     key.CodeHome,
+	xkKeypadLeft:     key.CodeLeftArrow,
+	xkKeypadUp:       key.CodeUpArrow,
+	xkKeypadRight:    key.CodeRightArrow,
+	xkKeypadDown:     key.CodeDownArrow,
+	xkKeypadPageUp:   key.CodePageUp,
+	xkKeypadPageDown: key.CodePageDown,
+	xkKeypadEnd:      key.CodeEnd,
+	xkKeypadInsert:   key.CodeInsert,
+	xkKeypadDelete:   key.CodeDeleteForward,
 
 	xkF1:  key.CodeF1,
 	xkF2:  key.CodeF2,
@@ -154,6 +219,7 @@ var nonUnicodeKeycodes = map[rune]key.Code{
 	xkShiftR:   key.CodeRightShift,
 	xkControlL: key.CodeLeftControl,
 	xkControlR: key.CodeRightControl,
+	xkCapsLock: key.CodeCapsLock,
 	xkAltL:     key.CodeLeftAlt,
 	xkAltR:     key.CodeRightAlt,
 	xkSuperL:   key.CodeLeftGUI,
@@ -218,7 +284,28 @@ var asciiKeycodes = [0x80]key.Code{
 	',':  key.CodeComma,
 	'.':  key.CodeFullStop,
 	'/':  key.CodeSlash,
+}
 
-	// TODO: distinguish CodeKeypadSlash vs CodeSlash, and similarly for other
-	// keypad codes.
+type keypadKeysym struct {
+	rune rune
+	code key.Code
+}
+
+var keypadKeysyms = map[rune]keypadKeysym{
+	xkKeypadEqual:    {'=', key.CodeKeypadEqualSign},
+	xkKeypadMultiply: {'*', key.CodeKeypadAsterisk},
+	xkKeypadAdd:      {'+', key.CodeKeypadPlusSign},
+	xkKeypadSubtract: {'-', key.CodeKeypadHyphenMinus},
+	xkKeypadDecimal:  {'.', key.CodeKeypadFullStop},
+	xkKeypadDivide:   {'/', key.CodeKeypadSlash},
+	xkKeypad0:        {'0', key.CodeKeypad0},
+	xkKeypad1:        {'1', key.CodeKeypad1},
+	xkKeypad2:        {'2', key.CodeKeypad2},
+	xkKeypad3:        {'3', key.CodeKeypad3},
+	xkKeypad4:        {'4', key.CodeKeypad4},
+	xkKeypad5:        {'5', key.CodeKeypad5},
+	xkKeypad6:        {'6', key.CodeKeypad6},
+	xkKeypad7:        {'7', key.CodeKeypad7},
+	xkKeypad8:        {'8', key.CodeKeypad8},
+	xkKeypad9:        {'9', key.CodeKeypad9},
 }

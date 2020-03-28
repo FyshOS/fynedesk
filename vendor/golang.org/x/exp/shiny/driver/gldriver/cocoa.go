@@ -9,7 +9,7 @@
 package gldriver
 
 /*
-#cgo CFLAGS: -x objective-c
+#cgo CFLAGS: -x objective-c -DGL_SILENCE_DEPRECATION
 #cgo LDFLAGS: -framework Cocoa -framework OpenGL
 #include <OpenGL/gl3.h>
 #import <Carbon/Carbon.h> // for HIToolbox/Events.h
@@ -231,11 +231,11 @@ var mods = [...]struct {
 	{1<<17 | 0x102, C.kVK_Shift, key.ModShift},
 	{1<<17 | 0x104, C.kVK_RightShift, key.ModShift},
 	{1<<18 | 0x101, C.kVK_Control, key.ModControl},
-	// TODO key.ControlRight
+	{33<<13 | 0x100, C.kVK_RightControl, key.ModControl},
 	{1<<19 | 0x120, C.kVK_Option, key.ModAlt},
 	{1<<19 | 0x140, C.kVK_RightOption, key.ModAlt},
 	{1<<20 | 0x108, C.kVK_Command, key.ModMeta},
-	{1<<20 | 0x110, C.kVK_Command, key.ModMeta}, // TODO: missing kVK_RightCommand
+	{1<<20 | 0x110, 0x36 /* kVK_RightCommand */, key.ModMeta},
 }
 
 func cocoaMods(flags uint32) (m key.Modifiers) {

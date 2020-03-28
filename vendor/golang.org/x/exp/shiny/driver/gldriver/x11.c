@@ -151,6 +151,7 @@ startDriver() {
 			keysyms[(k-key_lo)*keysyms_per_keycode + 0],
 			keysyms[(k-key_lo)*keysyms_per_keycode + 1]);
 	}
+	//TODO: use GetModifierMapping to figure out which modifier is the numlock modifier.
 }
 
 void

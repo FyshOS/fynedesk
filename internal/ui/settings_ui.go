@@ -5,6 +5,7 @@ import (
 	"os/exec"
 	"strconv"
 
+	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/dialog"
 
 	"fyne.io/desktop"
@@ -96,6 +97,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) {
 	var icons []fyne.CanvasObject
+	iconSize := desktop.Instance().Settings().LauncherIconSize()
 	for i, appName := range d.launcherIcons {
 		index := i // capture
 		appData := desktop.Instance().IconProvider().FindAppFromName(appName)
@@ -126,7 +128,9 @@ func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) 
 			right.Disable()
 		}
 		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desktop.Instance().Screens().Primary().CanvasScale())))
-		icon := widget.NewIcon(iconRes)
+		icon := canvas.NewImageFromResource(iconRes)
+		icon.FillMode = canvas.ImageFillContain
+		icon.SetMinSize(fyne.NewSize(iconSize, iconSize))
 		label := widget.NewLabelWithStyle(appName, fyne.TextAlignCenter, fyne.TextStyle{})
 		hbox := widget.NewVBox(icon, label, widget.NewHBox(left, remove, right))
 		icons = append(icons, hbox)
@@ -138,8 +142,12 @@ func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) 
 }
 
 func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
+	iconWidth := desktop.Instance().Settings().LauncherIconSize()
 	addButton := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {})
-	addItem := widget.NewVBox(widget.NewIcon(theme.ContentAddIcon()), widget.NewLabel("Add Icon"), addButton)
+	addIcon := canvas.NewImageFromResource(theme.ContentAddIcon())
+	addIcon.FillMode = canvas.ImageFillContain
+	addIcon.SetMinSize(fyne.NewSize(iconWidth, iconWidth))
+	addItem := widget.NewVBox(addIcon, widget.NewLabel("Add Icon"), addButton)
 	orderList := widget.NewHBox()
 	d.populateOrderList(orderList, addItem)
 
@@ -150,7 +158,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 		}).Show()
 	}
 
-	bar := widget.NewScrollContainer(orderList)
+	bar := widget.NewHorizontalScrollContainer(orderList)
 
 	iconSize := widget.NewEntry()
 	iconSize.SetText(fmt.Sprintf("%d", d.settings.LauncherIconSize()))
@@ -170,8 +178,6 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	details := widget.NewGroup("Configuration",
 		fyne.NewContainerWithLayout(layout.NewGridLayout(2),
 			sizeCell, zoomCell, disableTaskbar, disableZoom))
-	barSettings := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, details, nil, nil),
-		bar, details)
 
 	applyButton := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
@@ -196,7 +202,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 
 	header := widget.NewGroup("Icons")
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(header, applyButton, nil, nil),
-		header, applyButton, barSettings)
+		header, applyButton, widget.NewVBox(bar, details))
 }
 
 func loadScreensTable() fyne.CanvasObject {

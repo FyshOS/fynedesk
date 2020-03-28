@@ -62,6 +62,7 @@ var (
 	procScreenToClient    = moduser32.NewProc("ScreenToClient")
 	procToUnicodeEx       = moduser32.NewProc("ToUnicodeEx")
 	procTranslateMessage  = moduser32.NewProc("TranslateMessage")
+	procUnregisterClassW  = moduser32.NewProc("UnregisterClassW")
 )
 
 func GetDC(hwnd syscall.Handle) (dc syscall.Handle, err error) {
@@ -281,6 +282,12 @@ func _ToUnicodeEx(wVirtKey uint32, wScanCode uint32, lpKeyState *byte, pwszBuff 
 
 func _TranslateMessage(msg *_MSG) (done bool) {
 	r0, _, _ := syscall.Syscall(procTranslateMessage.Addr(), 1, uintptr(unsafe.Pointer(msg)), 0, 0)
+	done = r0 != 0
+	return
+}
+
+func _UnregisterClass(lpClassName *uint16, hInstance syscall.Handle) (done bool) {
+	r0, _, _ := syscall.Syscall(procUnregisterClassW.Addr(), 2, uintptr(unsafe.Pointer(lpClassName)), uintptr(hInstance), 0)
 	done = r0 != 0
 	return
 }

@@ -57,10 +57,16 @@ uint64 threadID() {
 
 @implementation ScreenGLView
 - (void)prepareOpenGL {
+	[super prepareOpenGL];
+
 	[self setWantsBestResolutionOpenGLSurface:YES];
 	GLint swapInt = 1;
 	NSOpenGLContext *ctx = [self openGLContext];
+
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
 	[ctx setValues:&swapInt forParameter:NSOpenGLCPSwapInterval];
+#pragma clang diagnostic pop
 
 	// Using attribute arrays in OpenGL 3.3 requires the use of a VBA.
 	// But VBAs don't exist in ES 2. So we bind a default one.

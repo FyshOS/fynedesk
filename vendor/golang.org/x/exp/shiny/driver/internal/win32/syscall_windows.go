@@ -183,3 +183,4 @@ func _HIWORD(l uintptr) uint16 {
 //sys	_ScreenToClient(hwnd syscall.Handle, lpPoint *_POINT) (ok bool) = user32.ScreenToClient
 //sys   _ToUnicodeEx(wVirtKey uint32, wScanCode uint32, lpKeyState *byte, pwszBuff *uint16, cchBuff int32, wFlags uint32, dwhkl syscall.Handle) (ret int32) = user32.ToUnicodeEx
 //sys	_TranslateMessage(msg *_MSG) (done bool) = user32.TranslateMessage
+//sys	_UnregisterClass(lpClassName *uint16, hInstance syscall.Handle) (done bool) = user32.UnregisterClassW
