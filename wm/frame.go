@@ -351,7 +351,7 @@ func (f *frame) decorate(force bool) {
 	depth := f.client.wm.x.Screen().RootDepth
 	refresh := force
 
-	if f.borderTop == 0 {
+	if f.borderTop == 0 || refresh {
 		err := f.createPixmaps(depth)
 		if err != nil {
 			fyne.LogError("New Pixmap Error", err)
@@ -379,6 +379,12 @@ func (f *frame) decorate(force bool) {
 	xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 
 	iconAndBorderSizePix := iconSizePix + f.borderWidth()*2
+	if f.borderTopWidth+iconAndBorderSizePix < f.width {
+		rect := xproto.Rectangle{X: int16(f.borderTopWidth), Y: 0,
+			Width: f.width - f.borderTopWidth - iconAndBorderSizePix, Height: iconSizePix}
+		xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
+	}
+
 	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), drawTop,
 		0, 0, 0, 0, f.borderTopWidth, iconSizePix)
 	xproto.CopyArea(f.client.wm.x.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), drawTopRight,
@@ -386,15 +392,6 @@ func (f *frame) decorate(force bool) {
 }
 
 func (f *frame) applyBorderlessTheme() {
-	if !f.client.Decorated() {
-		backR, backG, backB, _ := theme.BackgroundColor().RGBA()
-
-		bgColor := backR<<16 | backG<<8 | backB
-		draw, _ := xproto.NewGcontextId(f.client.wm.x.Conn())
-		xproto.CreateGC(f.client.wm.x.Conn(), draw, xproto.Drawable(f.client.id), xproto.GcForeground, []uint32{bgColor})
-		rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
-		xproto.PolyFillRectangleChecked(f.client.wm.x.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
-	}
 	err := xproto.ConfigureWindowChecked(f.client.wm.x.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 		[]uint32{uint32(0), uint32(0), uint32(f.width), uint32(f.height)}).Check()
@@ -404,11 +401,12 @@ func (f *frame) applyBorderlessTheme() {
 }
 
 func (f *frame) applyTheme(force bool) {
-	if !f.client.Fullscreened() && f.client.Decorated() {
-		f.decorate(force)
+	if f.client.Fullscreened() || !f.client.Decorated() {
+		f.applyBorderlessTheme()
 		return
 	}
-	f.applyBorderlessTheme()
+
+	f.decorate(force)
 }
 
 func (f *frame) updateTitle() {
