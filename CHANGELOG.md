@@ -5,20 +5,23 @@ More detailed release notes can be found on the [releases page](https://github.c
 
 ## 0.1.2 - Ongoing
 
-Additional bug fixes on 0.1 release
+Additional bug fixes and graphical tweaks on 0.1 release
 
 ### Added
 
 * Initial support for BSD systems
+* Updated the icon bar to have a background gradient
 
 ### Changed
 
 * Improved wording for account menu in embedded mode
 * Simpler app bar configuration screen
+* Updated default background for a winter scene
 
 ### Fixed
 
 * GoLand editor loses focus on mouse click (#69)
+* Fix a flicker on window borders when uncovered
 
 
 ## 0.1.1 - 30 December 2019
