@@ -45,10 +45,10 @@ func (xsp *x11ScreensProvider) Scale() float32 {
 }
 
 func (xsp *x11ScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
-	if len(xsp.screens) <= 1 {
+	fr := win.(*client).frame
+	if fr == nil || len(xsp.screens) <= 1 {
 		return xsp.screens[0]
 	}
-	fr := win.(*client).frame
 	return xsp.ScreenForGeometry(int(fr.x), int(fr.y), int(fr.width), int(fr.height))
 }
 
