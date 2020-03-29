@@ -1,24 +1,24 @@
-# fyne.io/fyne v1.2.2-0.20191229160036-744664dbec4e
+# fyne.io/fyne v1.2.3
 fyne.io/fyne
 fyne.io/fyne/app
-fyne.io/fyne/theme
 fyne.io/fyne/canvas
 fyne.io/fyne/cmd/fyne_settings/settings
 fyne.io/fyne/driver/desktop
-fyne.io/fyne/layout
-fyne.io/fyne/widget
-fyne.io/fyne/tools/playground
+fyne.io/fyne/driver/mobile
 fyne.io/fyne/internal
 fyne.io/fyne/internal/app
-fyne.io/fyne/internal/driver/glfw
-fyne.io/fyne/internal/driver/gomobile
-fyne.io/fyne/internal/painter/software
-fyne.io/fyne/test
 fyne.io/fyne/internal/cache
 fyne.io/fyne/internal/driver
+fyne.io/fyne/internal/driver/glfw
+fyne.io/fyne/internal/driver/gomobile
 fyne.io/fyne/internal/painter
 fyne.io/fyne/internal/painter/gl
-fyne.io/fyne/driver/mobile
+fyne.io/fyne/internal/painter/software
+fyne.io/fyne/layout
+fyne.io/fyne/test
+fyne.io/fyne/theme
+fyne.io/fyne/tools/playground
+fyne.io/fyne/widget
 # github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298
 github.com/BurntSushi/freetype-go/freetype
 github.com/BurntSushi/freetype-go/freetype/raster

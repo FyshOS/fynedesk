@@ -4,14 +4,13 @@ package wm // import "fyne.io/desktop/wm"
 
 import (
 	"math"
-	"os"
-	"strconv"
 
-	"fyne.io/desktop"
 	"fyne.io/fyne"
 	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xwindow"
+
+	"fyne.io/desktop"
 )
 
 type x11ScreensProvider struct {
@@ -73,35 +72,11 @@ func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height
 }
 
 func getScale(widthPx uint16, widthMm uint32) float32 {
-	env := os.Getenv("FYNE_SCALE")
-
-	if env != "" && env != "auto" {
-		scale, err := strconv.ParseFloat(env, 32)
-		if err == nil && scale != 0 {
-			return float32(scale)
-		}
-		fyne.LogError("Error reading scale", err)
-	}
-
-	if env != "auto" {
-		setting := fyne.CurrentApp().Settings().Scale()
-		switch setting {
-		case fyne.SettingsScaleAuto:
-			// fall through
-		case 0.0:
-			if env == "" {
-				return 1.0
-			}
-			// fall through
-		default:
-			return setting
-		}
-	}
 	dpi := float32(widthPx) / (float32(widthMm) / 25.4)
 	if dpi > 1000 || dpi < 10 {
 		dpi = 96
 	}
-	return float32(math.Round(float64(dpi)/144.0*10.0)) / 10.0
+	return float32(math.Round(float64(dpi)/96.0*10.0)) / 10.0
 }
 
 func (xsp *x11ScreensProvider) setupScreens(x *x11WM) {

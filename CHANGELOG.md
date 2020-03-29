@@ -23,6 +23,7 @@ Additional bug fixes and graphical tweaks on 0.1 release
 * GoLand editor loses focus on mouse click (#69)
 * Fix a flicker on window borders when uncovered (#83)
 * Respect the min and max hints of windows (#85)
+* Update to latest Fyne release to match new scale calculations
 
 
 ## 0.1.1 - 30 December 2019

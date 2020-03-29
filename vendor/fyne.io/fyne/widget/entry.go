@@ -51,7 +51,7 @@ func (e *entryRenderer) MinSize() fyne.Size {
 // This process could be optimized in the scenario where the user is selecting upwards:
 // If the upwards case instead produces an order-reversed slice then only the newest rectangle would
 // require movement and resizing. The existing solution creates a new rectangle and then moves/resizes
-// all rectangles to comply with the occurance order as stated above.
+// all rectangles to comply with the occurrence order as stated above.
 func (e *entryRenderer) buildSelection() {
 	e.entry.RLock()
 	cursorRow, cursorCol := e.entry.CursorRow, e.entry.CursorColumn
@@ -165,8 +165,6 @@ func (e *entryRenderer) Layout(size fyne.Size) {
 
 	e.entry.placeholder.Resize(entrySize)
 	e.entry.placeholder.Move(fyne.NewPos(theme.Padding(), theme.Padding()))
-
-	e.moveCursor()
 }
 
 func (e *entryRenderer) BackgroundColor() color.Color {
@@ -174,6 +172,9 @@ func (e *entryRenderer) BackgroundColor() color.Color {
 }
 
 func (e *entryRenderer) Refresh() {
+	if e.entry.Text != string(e.entry.textProvider().buffer) {
+		e.entry.textProvider().SetText(e.entry.Text)
+	}
 	if e.entry.textProvider().len() == 0 && e.entry.Visible() {
 		e.entry.placeholderProvider().Show()
 	} else if e.entry.placeholderProvider().Visible() {
@@ -192,6 +193,7 @@ func (e *entryRenderer) Refresh() {
 			e.line.FillColor = theme.ButtonColor()
 		}
 	}
+	e.moveCursor()
 
 	for _, selection := range e.selection {
 		selection.(*canvas.Rectangle).Hidden = !e.entry.focused && !e.entry.disabled
@@ -274,7 +276,7 @@ func (e *Entry) SetText(text string) {
 		e.CursorColumn = 0
 		e.CursorRow = 0
 		e.Unlock()
-		cache.Renderer(e).(*entryRenderer).moveCursor()
+		e.Refresh()
 	} else {
 		provider := e.textProvider()
 		if e.CursorRow >= provider.rows() {
@@ -361,9 +363,9 @@ func (e *Entry) selection() (int, int) {
 	return e.textPosFromRowCol(rowA, colA), e.textPosFromRowCol(rowB, colB)
 }
 
-// selectedText returns the text currently selected in this Entry.
+// SelectedText returns the text currently selected in this Entry.
 // If there is no selection it will return the empty string.
-func (e *Entry) selectedText() string {
+func (e *Entry) SelectedText() string {
 	if e.selecting == false {
 		return ""
 	}
@@ -468,7 +470,7 @@ func (e *Entry) copyToClipboard(clipboard fyne.Clipboard) {
 		return
 	}
 
-	clipboard.SetContent(e.selectedText())
+	clipboard.SetContent(e.SelectedText())
 }
 
 // pasteFromClipboard inserts text from the clipboard content,
@@ -491,11 +493,16 @@ func (e *Entry) pasteFromClipboard(clipboard fyne.Clipboard) {
 		e.CursorColumn += len(runes)
 	} else {
 		e.CursorRow += newlines
-		lastNewline := strings.LastIndex(text, "\n")
-		e.CursorColumn = len(runes) - lastNewline - 1
+		lastNewlineIndex := 0
+		for i, r := range runes {
+			if r == '\n' {
+				lastNewlineIndex = i
+			}
+		}
+		e.CursorColumn = len(runes) - lastNewlineIndex - 1
 	}
 	e.updateText(provider.String())
-	cache.Renderer(e).(*entryRenderer).moveCursor()
+	e.Refresh()
 }
 
 // selectAll selects all text in entry
@@ -510,7 +517,6 @@ func (e *Entry) selectAll() {
 	e.selecting = true
 	e.Unlock()
 
-	cache.Renderer(e).(*entryRenderer).moveCursor()
 	e.Refresh()
 }
 
@@ -610,7 +616,6 @@ func (e *Entry) updateMousePointer(ev *fyne.PointEvent, rightClick bool) {
 		e.selectColumn = col
 	}
 	e.Unlock()
-	cache.Renderer(e).(*entryRenderer).moveCursor()
 	e.Refresh()
 }
 
@@ -684,7 +689,6 @@ func (e *Entry) DoubleTapped(ev *fyne.PointEvent) {
 	}
 	e.selecting = true
 	e.Unlock()
-	cache.Renderer(e).(*entryRenderer).moveCursor()
 	e.Refresh()
 }
 
@@ -712,7 +716,7 @@ func (e *Entry) TypedRune(r rune) {
 	e.CursorColumn += len(runes)
 	e.Unlock()
 	e.updateText(provider.String())
-	cache.Renderer(e.super()).(*entryRenderer).moveCursor()
+	e.Refresh()
 }
 
 // KeyDown handler for keypress events - used to store shift modifier state for text selection
@@ -829,8 +833,7 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 
 	if e.selectKeyDown || e.selecting {
 		if e.selectingKeyHandler(key) {
-			e.updateText(provider.String())
-			cache.Renderer(e).(*entryRenderer).moveCursor()
+			e.Refresh()
 			return
 		}
 	}
@@ -955,12 +958,12 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 	}
 
 	e.updateText(provider.String())
-	cache.Renderer(e).(*entryRenderer).moveCursor()
+	e.Refresh()
 }
 
 // TypedShortcut implements the Shortcutable interface
-func (e *Entry) TypedShortcut(shortcut fyne.Shortcut) bool {
-	return e.shortcut.TypedShortcut(shortcut)
+func (e *Entry) TypedShortcut(shortcut fyne.Shortcut) {
+	e.shortcut.TypedShortcut(shortcut)
 }
 
 // textProvider returns the text handler for this entry
@@ -1065,6 +1068,18 @@ func (e *Entry) CreateRenderer() fyne.WidgetRenderer {
 
 	objects := []fyne.CanvasObject{line, e.placeholderProvider(), e.textProvider(), cursor}
 
+	if e.Password && e.passwordRevealer == nil {
+		// An entry widget has been created via struct setting manually
+		// the Password field to true. Going to enable the password revealer.
+		pr := &passwordRevealer{
+			icon:  canvas.NewImageFromResource(theme.VisibilityOffIcon()),
+			entry: e,
+		}
+		pr.ExtendBaseWidget(pr)
+
+		e.passwordRevealer = pr
+	}
+
 	if e.passwordRevealer != nil {
 		objects = append(objects, e.passwordRevealer)
 	}
@@ -1089,18 +1104,26 @@ func (e *Entry) registerShortcut() {
 	})
 }
 
+// ExtendBaseWidget is used by an extending widget to make use of BaseWidget functionality.
+func (e *Entry) ExtendBaseWidget(wid fyne.Widget) {
+	if e.BaseWidget.impl != nil {
+		return
+	}
+
+	e.BaseWidget.impl = wid
+	e.registerShortcut()
+}
+
 // NewEntry creates a new single line entry widget.
 func NewEntry() *Entry {
 	e := &Entry{}
 	e.ExtendBaseWidget(e)
-	e.registerShortcut()
 	return e
 }
 
 // NewMultiLineEntry creates a new entry that allows multiple lines
 func NewMultiLineEntry() *Entry {
 	e := &Entry{MultiLine: true}
-	e.registerShortcut()
 	e.ExtendBaseWidget(e)
 	return e
 }
@@ -1109,7 +1132,6 @@ func NewMultiLineEntry() *Entry {
 func NewPasswordEntry() *Entry {
 	e := &Entry{Password: true}
 	e.ExtendBaseWidget(e)
-	e.registerShortcut()
 
 	pr := &passwordRevealer{
 		icon:  canvas.NewImageFromResource(theme.VisibilityOffIcon()),

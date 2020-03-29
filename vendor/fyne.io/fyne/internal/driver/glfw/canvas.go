@@ -2,6 +2,7 @@ package glfw
 
 import (
 	"image"
+	"math"
 	"sync"
 
 	"fyne.io/fyne"
@@ -32,8 +33,8 @@ type glCanvas struct {
 	onKeyUp     func(*fyne.KeyEvent)
 	shortcut    fyne.ShortcutHandler
 
-	scale, detectedScale float32
-	painter              gl.Painter
+	scale, detectedScale, texScale float32
+	painter                        gl.Painter
 
 	dirty                              bool
 	dirtyMutex                         *sync.Mutex
@@ -180,22 +181,31 @@ func (c *glCanvas) Scale() float32 {
 
 // SetScale sets the render scale for this specific canvas
 //
-// Deprecated: SetScale will be replaced by system wide settings in the future
-func (c *glCanvas) SetScale(scale float32) {
-	c.setScaleValue(scale)
+// Deprecated: Settings are now calculated solely on the user configuration and system setup.
+func (c *glCanvas) SetScale(_ float32) {
+	if !c.context.(*window).visible {
+		return
+	}
+
+	c.scale = c.context.(*window).calculatedScale()
+	c.setDirty(true)
 
 	c.context.RescaleContext()
 }
 
-func (c *glCanvas) setScaleValue(scale float32) {
-	if scale == fyne.SettingsScaleAuto {
-		c.scale = c.detectedScale
-	} else if scale == 0 {
-		return
-	} else {
-		c.scale = scale
+func (c *glCanvas) setTextureScale(scale float32) {
+	c.texScale = scale
+	c.painter.SetFrameBufferScale(scale)
+}
+
+func (c *glCanvas) PixelCoordinateForPosition(pos fyne.Position) (int, int) {
+	texScale := c.texScale
+	multiple := float64(c.Scale() * texScale)
+	scaleInt := func(x int) int {
+		return int(math.Round(float64(x) * multiple))
 	}
-	c.setDirty(true)
+
+	return scaleInt(pos.X), scaleInt(pos.Y)
 }
 
 func (c *glCanvas) OnTypedRune() func(rune) {
@@ -260,7 +270,7 @@ func (c *glCanvas) ensureMinSize() bool {
 				windowNeedsMinSizeUpdate = true
 				size := obj.Size()
 				expectedSize := minSize.Union(size)
-				if expectedSize != size {
+				if expectedSize != size && size != c.size {
 					objToLayout = nil
 					obj.Resize(expectedSize)
 				}
@@ -469,7 +479,7 @@ func (c *glCanvas) contentPos() fyne.Position {
 }
 
 func newCanvas() *glCanvas {
-	c := &glCanvas{scale: 1.0}
+	c := &glCanvas{scale: 1.0, texScale: 1.0}
 	c.content = &canvas.Rectangle{FillColor: theme.BackgroundColor()}
 	c.contentTree = &renderCacheTree{root: &renderCacheNode{obj: c.content}}
 	c.padded = true
