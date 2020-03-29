@@ -24,6 +24,7 @@ Additional bug fixes and graphical tweaks on 0.1 release
 * Fix a flicker on window borders when uncovered (#83)
 * Respect the min and max hints of windows (#85)
 * Update to latest Fyne release to match new scale calculations
+* Drag and drop targets not found for many applications (#49)
 
 
 ## 0.1.1 - 30 December 2019
