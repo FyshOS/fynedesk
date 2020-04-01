@@ -10,7 +10,6 @@ Additional bug fixes and graphical tweaks on 0.1 release
 ### Added
 
 * Initial support for BSD systems
-* Updated the icon bar to have a background gradient
 
 ### Changed
 

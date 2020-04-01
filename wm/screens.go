@@ -76,7 +76,10 @@ func getScale(widthPx uint16, widthMm uint32) float32 {
 	if dpi > 1000 || dpi < 10 {
 		dpi = 96
 	}
-	return float32(math.Round(float64(dpi)/96.0*10.0)) / 10.0
+
+	screenScale := float64(dpi)/96.0*10.0
+	userScale := float64(fyne.CurrentApp().Settings().Scale())
+	return float32(math.Round(screenScale * userScale)) / 10.0
 }
 
 func (xsp *x11ScreensProvider) setupScreens(x *x11WM) {
