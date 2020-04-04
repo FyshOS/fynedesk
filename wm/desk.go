@@ -15,6 +15,7 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
@@ -41,7 +42,8 @@ type x11WM struct {
 	allowedActions []string
 	supportedHints []string
 
-	rootIDs []xproto.Window
+	rootIDs      []xproto.Window
+	transientMap map[xproto.Window][]xproto.Window
 }
 
 type moveResizeType uint32
@@ -82,15 +84,14 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	mgr := &x11WM{x: conn}
 	root := conn.RootWin()
 	mgr.takeSelectionOwnership()
+	mgr.transientMap = make(map[xproto.Window][]xproto.Window)
 
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
 		xproto.EventMaskButtonPress |
 		xproto.EventMaskButtonRelease |
 		xproto.EventMaskKeyPress |
-		xproto.EventMaskVisibilityChange |
 		xproto.EventMaskStructureNotify |
-		xproto.EventMaskSubstructureNotify |
 		xproto.EventMaskSubstructureRedirect
 	if err := xproto.ChangeWindowAttributesChecked(conn.Conn(), root, xproto.CwEventMask,
 		[]uint32{uint32(eventMask)}).Check(); err != nil {
@@ -198,12 +199,12 @@ func (x *x11WM) runLoop() {
 			x.handleButtonRelease(ev)
 		case xproto.ClientMessageEvent:
 			x.handleClientMessage(ev)
-		case xproto.CreateNotifyEvent:
-			x.setInitialWindowAttributes(ev.Window)
 		case xproto.ConfigureNotifyEvent:
 			x.configureRoots(ev.Window)
 		case xproto.ConfigureRequestEvent:
 			x.configureWindow(ev.Window, ev)
+		case xproto.CreateNotifyEvent:
+			x.setInitialWindowAttributes(ev.Window)
 		case xproto.DestroyNotifyEvent:
 			x.destroyWindow(ev.Window)
 		case xproto.EnterNotifyEvent:
@@ -221,7 +222,7 @@ func (x *x11WM) runLoop() {
 		case xproto.LeaveNotifyEvent:
 			x.handleMouseLeave(ev)
 		case xproto.MapRequestEvent:
-			x.showWindow(ev.Window)
+			x.showWindow(ev.Window, ev.Parent)
 		case xproto.MotionNotifyEvent:
 			x.handleMouseMotion(ev)
 		case xproto.PropertyNotifyEvent:
@@ -230,6 +231,8 @@ func (x *x11WM) runLoop() {
 			x.handleScreenChange(ev.Timestamp)
 		case xproto.UnmapNotifyEvent:
 			x.hideWindow(ev.Window)
+		case xproto.VisibilityNotifyEvent:
+			x.handleVisibilityChange(ev)
 		}
 	}
 
@@ -322,7 +325,6 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 		break
 	}
-
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 		[]uint32{uint32(xcoord), uint32(ycoord), uint32(width), uint32(height)}).Check()
@@ -340,6 +342,12 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 			}
 		}
 		return
+	}
+	transient := windowTransientForGet(x.x, win)
+	if transient > 0 && transient != win {
+		x.transientChildRemove(transient, win)
+	} else if transient > 0 && transient == win {
+		x.transientLeaderRemove(transient)
 	}
 	x.RemoveWindow(c)
 	windowClientListUpdate(x)
@@ -438,7 +446,7 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	windowClientListStackingUpdate(x)
 }
 
-func (x *x11WM) showWindow(win xproto.Window) {
+func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 	name := windowName(x.x, win)
 	if x.isRootTitle(name) {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
@@ -453,7 +461,15 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		}
 		return
 	}
-	override := windowOverrideGet(x.x, win)
+
+	hints, err := icccm.WmHintsGet(x.x, win)
+	if err == nil {
+		if hints.Flags&icccm.HintState > 0 && hints.InitialState == icccm.StateWithdrawn { // We don't want to manage windows that are not mapped
+			return
+		}
+	}
+
+	override := windowOverrideGet(x.x, win) // We don't want to manage windows that have an override on the WM
 	if override {
 		return
 	}
@@ -465,6 +481,12 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	default:
 		return
 	}
+
+	transient := windowTransientForGet(x.x, win)
+	if transient > 0 && transient != win {
+		x.transientChildAdd(transient, win)
+	}
+
 	x.setupWindow(win)
 }
 

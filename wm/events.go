@@ -159,7 +159,6 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 	switch clientMessageStateAction(ev.Data.Data32[0]) {
 	case clientMessageStateActionRemove:
 		windowExtendedHintsRemove(x.x, ev.Window, hint)
-		x.showWindow(ev.Window)
 	case clientMessageStateActionAdd:
 		windowExtendedHintsAdd(x.x, ev.Window, hint)
 	}
@@ -261,6 +260,10 @@ func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
 		c.(*client).updateTitle()
 	case "WM_NAME":
 		c.(*client).updateTitle()
+	case "WM_NORMAL_HINTS":
+		// Force a reconfigure to make sure the client is constrained to the new size hints
+		x, y, width, height := c.(*client).getWindowGeometry()
+		c.(*client).setWindowGeometry(x, y, width, height)
 	case "_MOTIF_WM_HINTS":
 		c.(*client).setupBorder()
 	}
@@ -290,6 +293,30 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 			removeState()
 		} else {
 			addState()
+		}
+	}
+}
+
+func (x *x11WM) handleVisibilityChange(ev xproto.VisibilityNotifyEvent) {
+	attrs, err := xproto.GetWindowAttributes(x.x.Conn(), ev.Window).Reply()
+	if err == nil && attrs.Colormap != 0 {
+		if ev.State != xproto.VisibilityFullyObscured {
+			xproto.InstallColormap(x.x.Conn(), attrs.Colormap)
+		} else {
+			xproto.UninstallColormap(x.x.Conn(), attrs.Colormap)
+		}
+	}
+	colormaps, err := icccm.WmColormapWindowsGet(x.x, ev.Window)
+	if err == nil {
+		for _, child := range colormaps {
+			chAttrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
+			if err == nil && chAttrs.Colormap != 0 {
+				if ev.State != xproto.VisibilityFullyObscured {
+					xproto.InstallColormap(x.x.Conn(), chAttrs.Colormap)
+				} else {
+					xproto.UninstallColormap(x.x.Conn(), chAttrs.Colormap)
+				}
+			}
 		}
 	}
 }

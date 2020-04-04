@@ -279,10 +279,16 @@ func windowStateSet(x *xgbutil.XUtil, win xproto.Window, state uint) {
 
 func windowTransientForGet(x *xgbutil.XUtil, win xproto.Window) xproto.Window {
 	transient, err := icccm.WmTransientForGet(x, win)
-	if err != nil {
-		return 0
+	if err == nil {
+		return transient
 	}
-	return transient
+	hints, err := icccm.WmHintsGet(x, win)
+	if err == nil {
+		if hints.Flags&icccm.HintWindowGroup > 0 {
+			return hints.WindowGroup
+		}
+	}
+	return 0
 }
 
 func windowTypeGet(x *xgbutil.XUtil, win xproto.Window) []string {

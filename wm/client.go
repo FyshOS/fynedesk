@@ -38,7 +38,8 @@ type client struct {
 func newClient(win xproto.Window, wm *x11WM) *client {
 	c := &client{win: win, wm: wm}
 	err := xproto.ChangeWindowAttributesChecked(wm.x.Conn(), win, xproto.CwEventMask,
-		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow}).Check()
+		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow |
+			xproto.EventMaskVisibilityChange}).Check()
 	if err != nil {
 		fyne.LogError("Could not change window attributes", err)
 	}
