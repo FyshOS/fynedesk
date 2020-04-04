@@ -43,6 +43,7 @@ type x11WM struct {
 
 	allowedActions []string
 	supportedHints []string
+	transientMap map[xproto.Window][]xproto.Window
 }
 
 type moveResizeType uint32
@@ -102,15 +103,14 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	mgr := &x11WM{x: conn}
 	root := conn.RootWin()
 	mgr.takeSelectionOwnership()
+	mgr.transientMap = make(map[xproto.Window][]xproto.Window)
 
 	eventMask := xproto.EventMaskPropertyChange |
 		xproto.EventMaskFocusChange |
 		xproto.EventMaskButtonPress |
 		xproto.EventMaskButtonRelease |
 		xproto.EventMaskKeyPress |
-		xproto.EventMaskVisibilityChange |
 		xproto.EventMaskStructureNotify |
-		xproto.EventMaskSubstructureNotify |
 		xproto.EventMaskSubstructureRedirect
 	if err := xproto.ChangeWindowAttributesChecked(conn.Conn(), root, xproto.CwEventMask,
 		[]uint32{uint32(eventMask)}).Check(); err != nil {
@@ -191,9 +191,11 @@ func (x *x11WM) runLoop() {
 		}
 		switch ev := ev.(type) {
 		case xproto.MapRequestEvent:
-			x.showWindow(ev.Window)
+			x.showWindow(ev.Window, ev.Parent)
 		case xproto.UnmapNotifyEvent:
 			x.hideWindow(ev.Window)
+		case xproto.VisibilityNotifyEvent:
+			x.handleVisibilityChange(ev)
 		case xproto.ConfigureRequestEvent:
 			x.configureWindow(ev.Window, ev)
 		case xproto.ConfigureNotifyEvent:
@@ -356,7 +358,6 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: int(width), Height: int(height)})    // The array will grow when virtual desktops are supported
 		ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(width), Height: uint(height)}}) // The array will grow when virtual desktops are supported
 	}
-
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 		[]uint32{uint32(ev.X), uint32(ev.Y), uint32(width), uint32(height)}).Check()
@@ -396,6 +397,10 @@ func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
 		c.(*client).updateTitle()
 	case "WM_NAME":
 		c.(*client).updateTitle()
+	case "WM_NORMAL_HINTS":
+		// Force a reconfigure to make sure the client is constrained to the new size hints
+		x, y, width, height := c.(*client).getWindowGeometry()
+		c.(*client).setWindowGeometry(x, y, width, height)
 	case "_MOTIF_WM_HINTS":
 		c.(*client).setupBorder()
 	}
@@ -496,11 +501,34 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 	}
 }
 
+func (x *x11WM) handleVisibilityChange(ev xproto.VisibilityNotifyEvent) {
+	attrs, err := xproto.GetWindowAttributes(x.x.Conn(), ev.Window).Reply()
+	if err == nil && attrs.Colormap != 0 {
+		if ev.State != xproto.VisibilityFullyObscured {
+			xproto.InstallColormap(x.x.Conn(), attrs.Colormap)
+		} else {
+			xproto.UninstallColormap(x.x.Conn(), attrs.Colormap)
+		}
+	}
+	colormaps, err := icccm.WmColormapWindowsGet(x.x, ev.Window)
+	if err == nil {
+		for _, child := range colormaps {
+			chAttrs, err := xproto.GetWindowAttributes(x.x.Conn(), child).Reply()
+			if err == nil && chAttrs.Colormap != 0 {
+				if ev.State != xproto.VisibilityFullyObscured {
+					xproto.InstallColormap(x.x.Conn(), chAttrs.Colormap)
+				} else {
+					xproto.UninstallColormap(x.x.Conn(), chAttrs.Colormap)
+				}
+			}
+		}
+	}
+}
+
 func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 	switch clientMessageStateAction(ev.Data.Data32[0]) {
 	case clientMessageStateActionRemove:
 		windowExtendedHintsRemove(x.x, ev.Window, hint)
-		x.showWindow(ev.Window)
 	case clientMessageStateActionAdd:
 		windowExtendedHintsAdd(x.x, ev.Window, hint)
 	}
@@ -577,7 +605,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 	}
 }
 
-func (x *x11WM) showWindow(win xproto.Window) {
+func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 	name := windowName(x.x, win)
 
 	if name == x.root.Title() {
@@ -593,7 +621,14 @@ func (x *x11WM) showWindow(win xproto.Window) {
 	if x.rootID == 0 {
 		return
 	}
-	override := windowOverrideGet(x.x, win)
+	hints, err := icccm.WmHintsGet(x.x, win)
+	if err == nil {
+		if hints.Flags&icccm.HintState > 0 && hints.InitialState == icccm.StateWithdrawn { // We don't want to manage windows that are not mapped
+			return
+		}
+	}
+
+	override := windowOverrideGet(x.x, win) // We don't want to manage windows that have an override on the WM
 	if override {
 		return
 	}
@@ -604,6 +639,11 @@ func (x *x11WM) showWindow(win xproto.Window) {
 		break
 	default:
 		return
+	}
+
+	transient := windowTransientForGet(x.x, win)
+	if transient > 0 && transient != win {
+		x.transientChildAdd(transient, win)
 	}
 
 	x.setupWindow(win)
@@ -640,6 +680,13 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
 		return
+	}
+
+	transient := windowTransientForGet(x.x, win)
+	if transient > 0 && transient != win {
+		x.transientChildRemove(transient, win)
+	} else if transient > 0 && transient == win {
+		x.transientLeaderRemove(transient)
 	}
 	x.RemoveWindow(c)
 	windowClientListUpdate(x)
