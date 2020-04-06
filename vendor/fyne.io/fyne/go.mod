@@ -13,12 +13,14 @@ require (
 	github.com/josephspurrier/goversioninfo v0.0.0-20190124120936-8611f5a5ff3f
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/pkg/errors v0.8.1
-	github.com/srwiley/oksvg v0.0.0-20190829233741-58e08c8fe40e
+	github.com/srwiley/oksvg v0.0.0-20200311192757-870daf9aa564
 	github.com/srwiley/rasterx v0.0.0-20181219215540-696f7edb7a7e
 	github.com/stretchr/testify v1.3.1-0.20190311161405-34c6fa2dc709
 	golang.org/x/image v0.0.0-20190802002840-cff245a6509b
 	golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028
+	golang.org/x/mod v0.1.1-0.20191105210325-c90efee705ee
 	golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb // indirect
+	golang.org/x/tools v0.0.0-20190808195139-e713427fea3f
 )
 
-replace golang.org/x/mobile => github.com/fyne-io/mobile v0.0.0-20200218100723-2a24c20a57c6
+replace golang.org/x/mobile => github.com/fyne-io/mobile v0.0.0-20200403124556-ac83d645d551
