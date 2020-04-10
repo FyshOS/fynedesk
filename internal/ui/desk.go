@@ -199,9 +199,11 @@ func (l *deskLayout) WindowManager() desktop.WindowManager {
 
 func (l *deskLayout) scaleVars(scale float32) []string {
 	intScale := int(math.Round(float64(scale)))
+	// Qt toolkit cannot handle scale < 1
+	positiveScale := math.Max(1.0, float64(scale))
 
 	return []string{
-		fmt.Sprintf("QT_SCALE_FACTOR=%1.1f", scale),
+		fmt.Sprintf("QT_SCALE_FACTOR=%1.1f", positiveScale),
 		fmt.Sprintf("GDK_SCALE=%d", intScale),
 		fmt.Sprintf("ELM_SCALE=%1.1f", scale),
 	}
