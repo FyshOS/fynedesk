@@ -43,7 +43,7 @@ type x11WM struct {
 
 	allowedActions []string
 	supportedHints []string
-	transientMap map[xproto.Window][]xproto.Window
+	transientMap   map[xproto.Window][]xproto.Window
 }
 
 type moveResizeType uint32
