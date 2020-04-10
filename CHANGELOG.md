@@ -24,6 +24,7 @@ Additional bug fixes and graphical tweaks on 0.1 release
 * Respect the min and max hints of windows (#85)
 * Update to latest Fyne release to match new scale calculations
 * Drag and drop targets not found for many applications (#49)
+* VLC opens a lot of windows (#70)
 
 
 ## 0.1.1 - 30 December 2019
