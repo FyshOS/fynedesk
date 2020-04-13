@@ -23,6 +23,8 @@ type mobileCanvas struct {
 	scale            float32
 	size             fyne.Size
 
+	insetTop, insetBottom, insetLeft, insetRight int
+
 	focused fyne.Focusable
 	touched map[int]mobile.Touchable
 	padded  bool
@@ -74,9 +76,25 @@ func (c *mobileCanvas) Refresh(obj fyne.CanvasObject) {
 	}
 }
 
+func (c *mobileCanvas) edgePadding() (topLeft, bottomRight fyne.Size) {
+	scale := fyne.CurrentDevice().SystemScaleForWindow(nil) // we don't need a window parameter on mobile
+
+	dev, ok := fyne.CurrentDevice().(*device)
+	if !ok {
+		return fyne.NewSize(0, 0), fyne.NewSize(0, 0) // running in test mode
+	}
+
+	return fyne.NewSize(int(float32(dev.insetLeft)/scale), int(float32(dev.insetTop)/scale)),
+		fyne.NewSize(int(float32(dev.insetRight)/scale), int(float32(dev.insetBottom)/scale))
+}
+
 func (c *mobileCanvas) sizeContent(size fyne.Size) {
+	if c.content == nil { // window may not be configured yet
+		return
+	}
+
 	offset := fyne.NewPos(0, 0)
-	devicePadTopLeft, devicePadBottomRight := devicePadding()
+	devicePadTopLeft, devicePadBottomRight := c.edgePadding()
 
 	if c.windowHead != nil {
 		topHeight := c.windowHead.MinSize().Height
@@ -120,7 +138,7 @@ func (c *mobileCanvas) Focus(obj fyne.Focusable) {
 	if obj != nil {
 		obj.FocusGained()
 
-		if _, ok := obj.(*widget.Entry); ok {
+		if isEntry(obj) {
 			showVirtualKeyboard()
 		}
 	}
@@ -148,7 +166,7 @@ func (c *mobileCanvas) Scale() float32 {
 
 // Deprecated: Settings are now calculated solely on the user configuration and system setup.
 func (c *mobileCanvas) SetScale(_ float32) {
-	c.scale = fyne.CurrentDevice().SystemScale()
+	c.scale = fyne.CurrentDevice().SystemScaleForWindow(nil) // we don't need a window parameter on mobile
 }
 
 func (c *mobileCanvas) PixelCoordinateForPosition(pos fyne.Position) (int, int) {
@@ -375,10 +393,18 @@ func (c *mobileCanvas) setupThemeListener() {
 	}()
 }
 
+func isEntry(obj fyne.Focusable) bool {
+	if _, ok := obj.(*widget.Entry); ok {
+		return true
+	}
+	_, ok := obj.(*widget.SelectEntry)
+	return ok
+}
+
 // NewCanvas creates a new gomobile mobileCanvas. This is a mobileCanvas that will render on a mobile device using OpenGL.
 func NewCanvas() fyne.Canvas {
 	ret := &mobileCanvas{padded: true}
-	ret.scale = fyne.CurrentDevice().SystemScale()
+	ret.scale = fyne.CurrentDevice().SystemScaleForWindow(nil) // we don't need a window parameter on mobile
 	ret.refreshQueue = make(chan fyne.CanvasObject, 1024)
 	ret.touched = make(map[int]mobile.Touchable)
 	ret.lastTapDownPos = make(map[int]fyne.Position)

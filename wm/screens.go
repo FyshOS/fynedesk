@@ -5,13 +5,12 @@ package wm // import "fyne.io/desktop/wm"
 import (
 	"math"
 
+	"fyne.io/desktop"
+	"fyne.io/fyne"
+
 	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xwindow"
-
-	"fyne.io/desktop"
-
-	"fyne.io/fyne"
 )
 
 type x11ScreensProvider struct {
@@ -103,7 +102,13 @@ func getScale(widthPx, widthMm uint16) float32 {
 	if dpi > 1000 || dpi < 10 {
 		dpi = 96
 	}
-	return float32(math.Round(float64(dpi)/96.0*10.0)) / 10.0
+
+	screenScale := dpi / 96.0 * 10.0
+	userScale := fyne.CurrentApp().Settings().Scale()
+	if userScale == fyne.SettingsScaleAuto || userScale == 0.0 { // 0.0 is the old auto, or the missing config
+		userScale = 1.0
+	}
+	return float32(math.Round(float64(screenScale*userScale))) / 10.0
 }
 
 func (xsp *x11ScreensProvider) insertInOrder(tmpScreens []*desktop.Screen, outputInfo *randr.GetOutputInfoReply, crtcInfo *randr.GetCrtcInfoReply) ([]*desktop.Screen, int) {

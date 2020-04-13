@@ -233,13 +233,22 @@ func TestDeskLayout_Layout(t *testing.T) {
 	assert.Equal(t, l.bar.Position().Y+l.bar.Size().Height, deskSize.Height)
 }
 
-func TestScaleVars(t *testing.T) {
+func TestScaleVars_Up(t *testing.T) {
 	l := &deskLayout{}
 	l.screens = &testScreensProvider{}
 	env := l.scaleVars(1.8)
 	assert.Contains(t, env, "QT_SCALE_FACTOR=1.8")
 	assert.Contains(t, env, "GDK_SCALE=2")
 	assert.Contains(t, env, "ELM_SCALE=1.8")
+}
+
+func TestScaleVars_Down(t *testing.T) {
+	l := &deskLayout{}
+	l.screens = &testScreensProvider{}
+	env := l.scaleVars(0.9)
+	assert.Contains(t, env, "QT_SCALE_FACTOR=1.0")
+	assert.Contains(t, env, "GDK_SCALE=1")
+	assert.Contains(t, env, "ELM_SCALE=0.9")
 }
 
 func TestBackgroundChange(t *testing.T) {

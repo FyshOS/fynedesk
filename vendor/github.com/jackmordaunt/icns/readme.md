@@ -19,9 +19,9 @@ Note: All icons within the `icns` are sized for high dpi retina screens, using t
 
 Pipe it
 
-`cat icon.png | icnsify | cat > icon.icns`
+`cat icon.png | icnsify > icon.icns`
 
-`cat icon.icns | icnsify | cat > icon.png`
+`cat icon.icns | icnsify > icon.png`
 
 Standard
 

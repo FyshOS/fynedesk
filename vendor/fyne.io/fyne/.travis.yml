@@ -51,7 +51,7 @@ script:
   - gocyclo -over 50 $GO_FILES
   - |
     set -e
-    if [[ "$TRAVIS_PULL_REQUEST" == "false" && -n "$COVERALLS_TOKEN" ]]
+    if [[ "$TRAVIS_OS_NAME" == "linux" && "$TRAVIS_PULL_REQUEST" == "false" && -n "$COVERALLS_TOKEN" ]]
     then
       go test -tags ci -covermode=atomic -coverprofile=coverage.out ./...
       $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
@@ -66,18 +66,21 @@ matrix:
     - go: 1.12.x
       os: linux
       env: GO111MODULE=on GOFLAGS=
-    - go: 1.12.x
-      os: osx
-      env: GO111MODULE=off GOFLAGS=
-    - go: 1.12.x
-      os: windows
-      env: GO111MODULE=off GOFLAGS=
     - go: 1.13.x
       os: linux
       env: GO111MODULE=off GOFLAGS=
     - go: 1.13.x
       os: osx
-      env: GO111MODULE=on GOFLAGS=-mod=vendor
+      env: GO111MODULE=off GOFLAGS=
     - go: 1.13.x
+      os: windows
+      env: GO111MODULE=off GOFLAGS=
+    - go: 1.14.x
+      os: linux
+      env: GO111MODULE=on GOFLAGS=
+    - go: 1.14.x
+      os: osx
+      env: GO111MODULE=on GOFLAGS=-mod=vendor
+    - go: 1.14.x
       os: windows
       env: GO111MODULE=off GOFLAGS=

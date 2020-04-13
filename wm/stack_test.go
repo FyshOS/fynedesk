@@ -3,10 +3,10 @@ package wm
 import (
 	"testing"
 
-	"fyne.io/fyne"
-	"github.com/stretchr/testify/assert"
-
 	"fyne.io/desktop"
+	"fyne.io/fyne"
+
+	"github.com/stretchr/testify/assert"
 )
 
 type dummyWindow struct {

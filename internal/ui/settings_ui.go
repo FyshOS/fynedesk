@@ -158,7 +158,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 		}).Show()
 	}
 
-	bar := widget.NewHorizontalScrollContainer(orderList)
+	bar := widget.NewHScrollContainer(orderList)
 
 	iconSize := widget.NewEntry()
 	iconSize.SetText(fmt.Sprintf("%d", d.settings.LauncherIconSize()))

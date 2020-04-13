@@ -81,7 +81,7 @@ func loadAppBundle(name, path string) desktop.AppData {
 }
 
 type macOSAppProvider struct {
-	rootDir string
+	rootDirs []string
 }
 
 func (m *macOSAppProvider) FindIconsMatchingAppName(theme string, size int, appName string) []desktop.AppData {
@@ -89,15 +89,20 @@ func (m *macOSAppProvider) FindIconsMatchingAppName(theme string, size int, appN
 }
 
 func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
-	files, err := ioutil.ReadDir(m.rootDir)
-	if err != nil {
-		fyne.LogError("Could not read applications directory "+m.rootDir, err)
-		return
-	}
-	for _, file := range files {
-		appDir := filepath.Join(m.rootDir, file.Name())
-		if f(file.Name()[0:len(file.Name())-4], appDir) {
-			break
+	for _, root := range m.rootDirs {
+		files, err := ioutil.ReadDir(root)
+		if err != nil {
+			fyne.LogError("Could not read applications directory "+root, err)
+			return
+		}
+		for _, file := range files {
+			if !file.IsDir() || !strings.HasSuffix(file.Name(), ".app") {
+				continue // skip non-app bundles
+			}
+			appDir := filepath.Join(root, file.Name())
+			if f(file.Name()[0:len(file.Name())-4], appDir) {
+				break
+			}
 		}
 	}
 }
@@ -170,5 +175,6 @@ func (m *macOSAppProvider) FindAppsMatching(pattern string) []desktop.AppData {
 
 // NewMacOSAppProvider creates an instance of an ApplicationProvider that can find and decode macOS apps
 func NewMacOSAppProvider() desktop.ApplicationProvider {
-	return &macOSAppProvider{rootDir: "/Applications"}
+	return &macOSAppProvider{rootDirs: []string{"/Applications", "/Applications/Utilities",
+		"/System/Applications", "/System/Applications/Utilities"}}
 }
