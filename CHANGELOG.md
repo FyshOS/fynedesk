@@ -3,7 +3,7 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
-## 0.1.2 - Ongoing
+## 0.1.2 - 13 April 2020
 
 Additional bug fixes and graphical tweaks on 0.1 release
 
@@ -25,6 +25,8 @@ Additional bug fixes and graphical tweaks on 0.1 release
 * Update to latest Fyne release to match new scale calculations
 * Drag and drop targets not found for many applications (#49)
 * VLC opens a lot of windows (#70)
+* Graphical glitches when Qt apps when scale < 1.0
+* Improve loading of macOS apps and icons in embedded mode on darwin
 
 
 ## 0.1.1 - 30 December 2019
