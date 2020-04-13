@@ -4,6 +4,7 @@ import (
 	"errors"
 	"image"
 	"io"
+	"sync"
 
 	"github.com/nfnt/resize"
 )
@@ -61,19 +62,26 @@ func NewIconSet(img image.Image, interp InterpolationFunction) (*IconSet, error)
 	if biggest == 0 {
 		return nil, ErrImageTooSmall{image: img, need: 16}
 	}
-	icons := []*Icon{}
-	for _, size := range sizesFrom(biggest) {
+	icons := make([]*Icon, len(osTypes))
+	work := sync.WaitGroup{}
+	for ii, size := range sizesFrom(biggest) {
 		t, ok := getTypeFromSize(size)
 		if !ok {
 			continue
 		}
-		iconImg := resize.Resize(size, size, img, interp)
-		icon := &Icon{
-			Type:  t,
-			Image: iconImg,
-		}
-		icons = append(icons, icon)
+		ii := ii
+		size := size
+		work.Add(1)
+		go func() {
+			iconImg := resize.Resize(size, size, img, interp)
+			icons[ii] = &Icon{
+				Type:  t,
+				Image: iconImg,
+			}
+			work.Done()
+		}()
 	}
+	work.Wait()
 	iconset := &IconSet{
 		Icons: icons,
 	}
@@ -93,6 +101,7 @@ var sizes = []uint{
 	1024,
 	512,
 	256,
+	128,
 	64,
 	32,
 }
@@ -138,7 +147,9 @@ type OsType struct {
 var osTypes = []OsType{
 	{ID: "ic10", Size: uint(1024)},
 	{ID: "ic14", Size: uint(512)},
+	{ID: "ic09", Size: uint(512)},
 	{ID: "ic13", Size: uint(256)},
+	{ID: "ic08", Size: uint(256)},
 	{ID: "ic07", Size: uint(128)},
 	{ID: "ic12", Size: uint(64)},
 	{ID: "ic11", Size: uint(32)},

@@ -1,4 +1,4 @@
-# fyne.io/fyne v1.2.4-0.20200410113443-b99a3dd0d331
+# fyne.io/fyne v1.2.4
 fyne.io/fyne
 fyne.io/fyne/app
 fyne.io/fyne/canvas
@@ -51,7 +51,7 @@ github.com/BurntSushi/xgbutil/xwindow
 github.com/davecgh/go-spew/spew
 # github.com/fsnotify/fsnotify v1.4.7
 github.com/fsnotify/fsnotify
-# github.com/fyne-io/mobile v0.0.0-20200408112643-2d6e8ba97390
+# github.com/fyne-io/mobile v0.0.1
 github.com/fyne-io/mobile/app
 github.com/fyne-io/mobile/app/internal/callfn
 github.com/fyne-io/mobile/event/key
@@ -72,7 +72,7 @@ github.com/go-gl/glfw/v3.2/glfw
 github.com/goki/freetype
 github.com/goki/freetype/raster
 github.com/goki/freetype/truetype
-# github.com/jackmordaunt/icns v1.0.0
+# github.com/jackmordaunt/icns v1.0.1-0.20200413110149-9e181b441ab2
 github.com/jackmordaunt/icns
 # github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 github.com/nfnt/resize
