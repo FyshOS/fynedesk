@@ -16,6 +16,11 @@ More detailed release notes can be found on the [releases page](https://github.c
 ### Fixed
 
 
+## 0.1.3 - 15 April 2020
+
+Renamed package to fyne.io/fynedesk and repository to github.com/fyne-io/fynedesk.s
+
+
 ## 0.1.2 - 13 April 2020
 
 Additional bug fixes and graphical tweaks on 0.1 release
