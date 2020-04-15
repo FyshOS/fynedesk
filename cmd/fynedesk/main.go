@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	a := app.NewWithID("io.fyne.desktop")
+	a := app.NewWithID("io.fyne.fynedesk")
 	a.SetIcon(theme.FyneLogo())
 	desk := setupDesktop(a)
 
