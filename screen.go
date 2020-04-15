@@ -1,4 +1,4 @@
-package desktop
+package fynedesk
 
 import (
 	"math"

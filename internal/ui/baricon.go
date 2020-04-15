@@ -8,19 +8,19 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 // appWindow describes a type of icon that refers to an open window rather than an app.
 // The findApp function can be used to attempt looking up the application from it's window.
 type appWindow struct {
-	win desktop.Window
+	win fynedesk.Window
 	bar *bar
 }
 
 // findApp will try to return an application data associated with a window.
 // This may fail for many reasons, usually related too bad window metadata, and will then return nil.
-func (a *appWindow) findApp() desktop.AppData {
+func (a *appWindow) findApp() fynedesk.AppData {
 	if a.win == nil {
 		return nil
 	}
@@ -76,10 +76,10 @@ func (bi *barIconRenderer) Destroy() {
 type barIcon struct {
 	widget.BaseWidget
 
-	onTapped   func()          // The function that will be called when the icon is clicked
-	resource   fyne.Resource   // The image data of the image that the icon uses
-	appData    desktop.AppData // The application data corresponding to this icon.(if it is a launcher)
-	windowData *appWindow      // The window data associated with this icon (if it is a task window)
+	onTapped   func()           // The function that will be called when the icon is clicked
+	resource   fyne.Resource    // The image data of the image that the icon uses
+	appData    fynedesk.AppData // The application data corresponding to this icon.(if it is a launcher)
+	windowData *appWindow       // The window data associated with this icon (if it is a task window)
 }
 
 //Tapped means barIcon has been clicked
@@ -87,16 +87,16 @@ func (bi *barIcon) Tapped(*fyne.PointEvent) {
 	bi.onTapped()
 }
 
-func addToBar(icon desktop.AppData) {
-	settings := desktop.Instance().Settings()
+func addToBar(icon fynedesk.AppData) {
+	settings := fynedesk.Instance().Settings()
 	icons := settings.LauncherIcons()
 	icons = append(icons, icon.Name())
 
 	settings.(*deskSettings).setLauncherIcons(icons)
 }
 
-func removeFromBar(icon desktop.AppData) {
-	settings := desktop.Instance().Settings()
+func removeFromBar(icon fynedesk.AppData) {
+	settings := fynedesk.Instance().Settings()
 	icons := settings.LauncherIcons()
 
 	index := -1
@@ -149,7 +149,7 @@ func (bi *barIcon) CreateRenderer() fyne.WidgetRenderer {
 	return render
 }
 
-func newBarIcon(res fyne.Resource, appData desktop.AppData, winData *appWindow) *barIcon {
+func newBarIcon(res fyne.Resource, appData fynedesk.AppData, winData *appWindow) *barIcon {
 	barIcon := &barIcon{resource: res, appData: appData, windowData: winData}
 	barIcon.ExtendBaseWidget(barIcon)
 

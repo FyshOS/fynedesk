@@ -5,7 +5,7 @@ go:
 os:
   - linux
   - osx
-go_import_path: fyne.io/desktop
+go_import_path: fyne.io/fynedesk
 gobuild_args: "-v"
 
 addons:

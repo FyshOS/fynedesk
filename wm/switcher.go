@@ -3,10 +3,10 @@
 package wm
 
 import (
-	"fyne.io/desktop"
-	"fyne.io/desktop/internal/ui"
-
 	"github.com/BurntSushi/xgb/xproto"
+
+	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/internal/ui"
 )
 
 // switcherInstance and the methods below manage the X to ui.Switcher bindings.
@@ -66,9 +66,9 @@ func (x *x11WM) showOrSelectAppSwitcher(reverse bool) {
 
 	go func() {
 		if reverse {
-			switcherInstance = ui.ShowAppSwitcherReverse(x.Windows(), desktop.Instance().IconProvider())
+			switcherInstance = ui.ShowAppSwitcherReverse(x.Windows(), fynedesk.Instance().IconProvider())
 		} else {
-			switcherInstance = ui.ShowAppSwitcher(x.Windows(), desktop.Instance().IconProvider())
+			switcherInstance = ui.ShowAppSwitcher(x.Windows(), fynedesk.Instance().IconProvider())
 		}
 	}()
 }

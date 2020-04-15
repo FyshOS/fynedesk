@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 type battery struct {
@@ -60,13 +60,13 @@ func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, b.bar)
 }
 
-func (b *battery) Metadata() desktop.ModuleMetadata {
-	return desktop.ModuleMetadata{
+func (b *battery) Metadata() fynedesk.ModuleMetadata {
+	return fynedesk.ModuleMetadata{
 		Name: "Battery",
 	}
 }
 
 // NewBattery creates a new module that will show battery level in the status area
-func NewBattery() desktop.Module {
+func NewBattery() fynedesk.Module {
 	return &battery{}
 }

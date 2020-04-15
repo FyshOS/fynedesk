@@ -1,4 +1,4 @@
-package desktop
+package fynedesk
 
 // DeskSettings describes the configuration options available for Fyne desktop
 type DeskSettings interface {

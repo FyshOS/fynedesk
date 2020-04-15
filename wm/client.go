@@ -9,8 +9,9 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/desktop"
 	"fyne.io/fyne"
+
+	"fyne.io/fynedesk"
 )
 
 type clientMessageStateAction int
@@ -173,8 +174,8 @@ func (c *client) Maximized() bool {
 	return c.maximized
 }
 
-func (c *client) RaiseAbove(win desktop.Window) {
-	screen := desktop.Instance().Screens().ScreenForWindow(c)
+func (c *client) RaiseAbove(win fynedesk.Window) {
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
 	topID := c.wm.getWindowFromScreenName(screen.Name)
 	if win != nil {
 		topID = win.(*client).id
@@ -227,7 +228,7 @@ func (c *client) Unmaximize() {
 	c.maximizeMessage(clientMessageStateActionRemove)
 }
 
-func (s *stack) clientForWin(id xproto.Window) desktop.Window {
+func (s *stack) clientForWin(id xproto.Window) fynedesk.Window {
 	for _, w := range s.clients {
 		if w.(*client).id == id || w.(*client).win == id {
 			return w
@@ -246,7 +247,7 @@ func (c *client) fullscreenMessage(action clientMessageStateAction) {
 	ewmh.WmStateReq(c.wm.x, c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
 }
 
-func (s *stack) getWindowsFromClients(clients []desktop.Window) []xproto.Window {
+func (s *stack) getWindowsFromClients(clients []fynedesk.Window) []xproto.Window {
 	var wins []xproto.Window
 	for _, cli := range clients {
 		wins = append(wins, cli.(*client).id)

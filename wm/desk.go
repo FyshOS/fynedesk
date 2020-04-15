@@ -1,6 +1,6 @@
 // +build linux
 
-package wm // import "fyne.io/desktop/wm"
+package wm // import "fyne.io/fynedesk/wm"
 
 import (
 	"errors"
@@ -19,10 +19,10 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/desktop"
-	"fyne.io/desktop/internal/ui"
-
 	"fyne.io/fyne"
+
+	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/internal/ui"
 )
 
 type x11WM struct {
@@ -74,7 +74,7 @@ const (
 )
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
-func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
+func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	conn, err := xgbutil.NewConn()
 	if err != nil {
 		fyne.LogError("Failed to connect to the XServer", err)
@@ -159,7 +159,7 @@ func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
 	return mgr, nil
 }
 
-func (x *x11WM) AddStackListener(l desktop.StackListener) {
+func (x *x11WM) AddStackListener(l fynedesk.StackListener) {
 	x.stack.listeners = append(x.stack.listeners, l)
 }
 
@@ -246,11 +246,11 @@ func (x *x11WM) bindKeys(win xproto.Window) {
 }
 
 func (x *x11WM) configureRoots(win xproto.Window) {
-	if win != x.x.RootWin() || desktop.Instance() == nil {
+	if win != x.x.RootWin() || fynedesk.Instance() == nil {
 		return
 	}
 	width, height := 0, 0
-	for _, screen := range desktop.Instance().Screens().Screens() {
+	for _, screen := range fynedesk.Instance().Screens().Screens() {
 		win := x.getWindowFromScreenName(screen.Name)
 		if win == 0 {
 			continue
@@ -302,7 +302,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 
 	name := windowName(x.x, win)
-	for _, screen := range desktop.Instance().Screens().Screens() {
+	for _, screen := range fynedesk.Instance().Screens().Screens() {
 		if !x.isRootTitle(name) || screenNameFromRootTitle(name) != screen.Name {
 			continue
 		}
@@ -410,7 +410,7 @@ func (x *x11WM) isRootTitle(title string) bool {
 	return strings.Index(title, ui.RootWindowName) == 0
 }
 
-func (x *x11WM) scaleToPixels(i int, screen *desktop.Screen) uint16 {
+func (x *x11WM) scaleToPixels(i int, screen *fynedesk.Screen) uint16 {
 	return uint16(float32(i) * screen.CanvasScale())
 }
 

@@ -1,9 +1,6 @@
 package wm
 
 import (
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
-
 	"image/color"
 
 	"fyne.io/fyne"
@@ -11,6 +8,9 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
+
+	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 var iconSize = 32
@@ -22,8 +22,8 @@ func makeFiller(width int) fyne.CanvasObject {
 	return filler
 }
 
-func newBorder(win desktop.Window, icon fyne.Resource, canMaximize bool) fyne.CanvasObject {
-	desk := desktop.Instance()
+func newBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.CanvasObject {
+	desk := fynedesk.Instance()
 
 	if icon == nil {
 		iconTheme := desk.Settings().IconTheme()

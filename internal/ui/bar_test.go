@@ -13,8 +13,8 @@ import (
 	_ "fyne.io/fyne/test"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 type dummyWindow struct {
@@ -106,7 +106,7 @@ func (w *dummyWindow) Unmaximize() {
 	// no-op
 }
 
-func (w *dummyWindow) RaiseAbove(desktop.Window) {
+func (w *dummyWindow) RaiseAbove(fynedesk.Window) {
 	// no-op (this is instructing the window after stack changes)
 }
 
@@ -132,7 +132,7 @@ func (d *dummyIcon) Run([]string) error {
 }
 
 func testBar(icons []string) *bar {
-	testBar := newBar(&testDesk{settings: &testSettings{}, icons: &testAppProvider{}, screens: &testScreensProvider{screens: []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0,
+	testBar := newBar(&testDesk{settings: &testSettings{}, icons: &testAppProvider{}, screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
 		Width: 2000, Height: 1000, Scale: 1.0}}}})
 	testBar.children = []fyne.CanvasObject{} // remove divider, then we add it again later
 	for _, name := range icons {

@@ -8,14 +8,14 @@ import (
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/dialog"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
-
 	"fyne.io/fyne"
 	"fyne.io/fyne/cmd/fyne_settings/settings"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
+
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 const randrHelper = "arandr"
@@ -30,8 +30,8 @@ type settingsUI struct {
 func (d *settingsUI) populateThemeIcons(box *fyne.Container, theme string) {
 	box.Objects = nil
 	for _, appName := range d.launcherIcons {
-		appData := desktop.Instance().IconProvider().FindAppFromName(appName)
-		iconRes := appData.Icon(theme, int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desktop.Instance().Screens().Primary().CanvasScale())))
+		appData := fynedesk.Instance().IconProvider().FindAppFromName(appName)
+		iconRes := appData.Icon(theme, int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(fynedesk.Instance().Screens().Primary().CanvasScale())))
 		icon := widget.NewIcon(iconRes)
 		box.AddObject(icon)
 	}
@@ -70,7 +70,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 	themeIcons := fyne.NewContainerWithLayout(layout.NewHBoxLayout())
 	d.populateThemeIcons(themeIcons, d.settings.IconTheme())
 	themeList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
-	for _, themeName := range desktop.Instance().IconProvider().AvailableThemes() {
+	for _, themeName := range fynedesk.Instance().IconProvider().AvailableThemes() {
 		themeButton := widget.NewButton(themeName, nil)
 		themeButton.OnTapped = func() {
 			themeLabel.SetText(themeButton.Text)
@@ -97,10 +97,10 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) {
 	var icons []fyne.CanvasObject
-	iconSize := desktop.Instance().Settings().LauncherIconSize()
+	iconSize := fynedesk.Instance().Settings().LauncherIconSize()
 	for i, appName := range d.launcherIcons {
 		index := i // capture
-		appData := desktop.Instance().IconProvider().FindAppFromName(appName)
+		appData := fynedesk.Instance().IconProvider().FindAppFromName(appName)
 		left := widget.NewButtonWithIcon("", theme.NavigateBackIcon(), func() {
 			d.launcherIcons[index-1], d.launcherIcons[index] = d.launcherIcons[index], d.launcherIcons[index-1]
 			d.populateOrderList(list, add)
@@ -127,7 +127,7 @@ func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) 
 		if index >= len(d.launcherIcons)-1 {
 			right.Disable()
 		}
-		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(desktop.Instance().Screens().Primary().CanvasScale())))
+		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(fynedesk.Instance().Screens().Primary().CanvasScale())))
 		icon := canvas.NewImageFromResource(iconRes)
 		icon.FillMode = canvas.ImageFillContain
 		icon.SetMinSize(fyne.NewSize(iconSize, iconSize))
@@ -142,7 +142,7 @@ func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) 
 }
 
 func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
-	iconWidth := desktop.Instance().Settings().LauncherIconSize()
+	iconWidth := fynedesk.Instance().Settings().LauncherIconSize()
 	addButton := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {})
 	addIcon := canvas.NewImageFromResource(theme.ContentAddIcon())
 	addIcon.FillMode = canvas.ImageFillContain
@@ -152,7 +152,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	d.populateOrderList(orderList, addItem)
 
 	addButton.OnTapped = func() {
-		newAppPicker("Choose Application", func(data desktop.AppData) {
+		newAppPicker("Choose Application", func(data fynedesk.AppData) {
 			d.launcherIcons = append(d.launcherIcons, data.Name())
 			d.populateOrderList(orderList, addItem)
 		}).Show()
@@ -212,7 +212,7 @@ func loadScreensTable() fyne.CanvasObject {
 	labels2 := widget.NewVBox()
 	values2 := widget.NewVBox()
 
-	for _, screen := range desktop.Instance().Screens().Screens() {
+	for _, screen := range fynedesk.Instance().Screens().Screens() {
 		names.Append(widget.NewLabelWithStyle(screen.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
 		labels1.Append(widget.NewLabel("Width"))
 		values1.Append(widget.NewLabel(fmt.Sprintf("%dpx", screen.Width)))

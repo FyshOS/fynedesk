@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 const (
@@ -22,7 +22,7 @@ type switchIcon struct {
 	current bool
 
 	parent *Switcher
-	win    desktop.Window
+	win    fynedesk.Window
 }
 
 func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
@@ -30,7 +30,7 @@ func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 	title := s.win.Title()
 	app := s.parent.provider.FindAppFromWinInfo(s.win)
 	if app != nil {
-		res = app.Icon(desktop.Instance().Settings().IconTheme(), switcherIconSize*2)
+		res = app.Icon(fynedesk.Instance().Settings().IconTheme(), switcherIconSize*2)
 		title = app.Name()
 	} else {
 		res = s.win.Icon()
@@ -67,7 +67,7 @@ func (s *switchIcon) TypedRune(rune) {
 func (s *switchIcon) TypedKey(*fyne.KeyEvent) {
 }
 
-func newSwitchIcon(p *Switcher, win desktop.Window) *switchIcon {
+func newSwitchIcon(p *Switcher, win fynedesk.Window) *switchIcon {
 	ret := &switchIcon{
 		parent: p,
 		win:    win,
@@ -116,7 +116,7 @@ func (s switchIconRenderer) Destroy() {
 type Switcher struct {
 	win      fyne.Window
 	icons    []fyne.CanvasObject
-	provider desktop.ApplicationProvider
+	provider fynedesk.ApplicationProvider
 }
 
 func (s *Switcher) currentIndex() int {
@@ -187,7 +187,7 @@ func (s *Switcher) loadUI() fyne.Window {
 	return win
 }
 
-func (s *Switcher) loadIcons(list []desktop.Window) []fyne.CanvasObject {
+func (s *Switcher) loadIcons(list []fynedesk.Window) []fyne.CanvasObject {
 	var ret []fyne.CanvasObject
 
 	for _, item := range list {
@@ -209,7 +209,7 @@ func (s *Switcher) HideCancel() {
 	s.win.Close()
 }
 
-func showAppSwitcherAt(off int, wins []desktop.Window, prov desktop.ApplicationProvider) *Switcher {
+func showAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
 	if len(wins) <= 1 { // don't actually show
 		return nil
 	}
@@ -228,13 +228,13 @@ func showAppSwitcherAt(off int, wins []desktop.Window, prov desktop.ApplicationP
 // ShowAppSwitcher shows the application Switcher to change windows.
 // The most recently used not-top window will be selected by default.
 // If the Switcher was already visible then it will select the next window in order.
-func ShowAppSwitcher(wins []desktop.Window, prov desktop.ApplicationProvider) *Switcher {
+func ShowAppSwitcher(wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
 	return showAppSwitcherAt(1, wins, prov)
 }
 
 // ShowAppSwitcherReverse shows the application Switcher to change windows.
 // The least recently used window will be selected by default.
 // If the Switcher was already visible then it will select the last window in order.
-func ShowAppSwitcherReverse(wins []desktop.Window, prov desktop.ApplicationProvider) *Switcher {
+func ShowAppSwitcherReverse(wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
 	return showAppSwitcherAt(-1, wins, prov)
 }

@@ -5,18 +5,17 @@ package wm
 import (
 	"image"
 
-	"github.com/BurntSushi/xgbutil/ewmh"
-	"github.com/BurntSushi/xgbutil/icccm"
-
 	"fyne.io/fyne"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/tools/playground"
 
 	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xwindow"
 
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 type frame struct {
@@ -54,14 +53,14 @@ func newFrame(c *client) *frame {
 	decorated := c.Decorated()
 	maximized := c.Maximized()
 	if full || maximized {
-		activeHead := desktop.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
+		activeHead := fynedesk.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
 		x = int16(activeHead.X)
 		y = int16(activeHead.Y)
 		if full {
 			w = uint16(activeHead.Width)
 			h = uint16(activeHead.Height)
 		} else {
-			maxWidth, maxHeight := desktop.Instance().ContentSizePixels(activeHead)
+			maxWidth, maxHeight := fynedesk.Instance().ContentSizePixels(activeHead)
 			w = uint16(maxWidth)
 			h = uint16(maxHeight)
 		}
@@ -205,11 +204,11 @@ func (f *frame) borderWidth() uint16 {
 	if !f.client.Decorated() {
 		return 0
 	}
-	return uint16(f.client.wm.scaleToPixels(wmTheme.BorderWidth, desktop.Instance().Screens().ScreenForWindow(f.client)))
+	return uint16(f.client.wm.scaleToPixels(wmTheme.BorderWidth, fynedesk.Instance().Screens().ScreenForWindow(f.client)))
 }
 
 func (f *frame) buttonWidth() uint16 {
-	return uint16(f.client.wm.scaleToPixels(wmTheme.ButtonWidth, desktop.Instance().Screens().ScreenForWindow(f.client)))
+	return uint16(f.client.wm.scaleToPixels(wmTheme.ButtonWidth, fynedesk.Instance().Screens().ScreenForWindow(f.client)))
 }
 
 func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image.Image, pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
@@ -309,7 +308,7 @@ func (f *frame) decorate(force bool) {
 }
 
 func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pidTopRight xproto.Pixmap, drawTopRight xproto.Gcontext, depth byte) {
-	screen := desktop.Instance().Screens().ScreenForWindow(f.client)
+	screen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 	scale := screen.CanvasScale()
 
 	canvas := playground.NewSoftwareCanvas()
@@ -390,8 +389,8 @@ func (f *frame) maximizeApply() {
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
 
-	head := desktop.Instance().Screens().ScreenForWindow(f.client)
-	maxWidth, maxHeight := desktop.Instance().ContentSizePixels(head)
+	head := fynedesk.Instance().Screens().ScreenForWindow(f.client)
+	maxWidth, maxHeight := fynedesk.Instance().ContentSizePixels(head)
 	if f.client.Fullscreened() {
 		maxWidth = uint32(head.Width)
 		maxHeight = uint32(head.Height)
@@ -598,7 +597,7 @@ func (f *frame) show() {
 }
 
 func (f *frame) titleHeight() uint16 {
-	return uint16(f.client.wm.scaleToPixels(wmTheme.TitleHeight, desktop.Instance().Screens().ScreenForWindow(f.client)))
+	return uint16(f.client.wm.scaleToPixels(wmTheme.TitleHeight, fynedesk.Instance().Screens().ScreenForWindow(f.client)))
 }
 
 func (f *frame) unFrame() {
@@ -622,7 +621,7 @@ func (f *frame) unmaximizeApply() {
 		return
 	}
 	if f.client.restoreWidth == 0 && f.client.restoreHeight == 0 {
-		screen := desktop.Instance().Screens().ScreenForWindow(f.client)
+		screen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 		f.client.restoreWidth = uint16(screen.Width / 2)
 		f.client.restoreHeight = uint16(screen.Height / 2)
 	}
@@ -641,7 +640,7 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 		}
 	}
 
-	currentScreen := desktop.Instance().Screens().ScreenForWindow(f.client)
+	currentScreen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 
 	f.x = x
 	f.y = y
@@ -664,7 +663,7 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 		fyne.LogError("Configure Window Error", err)
 	}
 
-	newScreen := desktop.Instance().Screens().ScreenForWindow(f.client)
+	newScreen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 	if newScreen != currentScreen {
 		f.updateScale()
 	}

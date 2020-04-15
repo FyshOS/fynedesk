@@ -10,8 +10,8 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 type background struct {
@@ -22,11 +22,11 @@ type background struct {
 }
 
 func (b *background) CreateRenderer() fyne.WidgetRenderer {
-	mods := desktop.Instance().Modules()
+	mods := fynedesk.Instance().Modules()
 	objects := []fyne.CanvasObject{b.wallpaper}
 
 	for _, m := range mods {
-		if deskMod, ok := m.(desktop.ScreenAreaModule); ok {
+		if deskMod, ok := m.(fynedesk.ScreenAreaModule); ok {
 			wid := deskMod.ScreenAreaWidget()
 			if wid == nil {
 				continue
@@ -80,7 +80,7 @@ func (b *background) updateBackgroundPath(path string) {
 }
 
 func backgroundPath() string {
-	pathEnv := desktop.Instance().Settings().Background()
+	pathEnv := fynedesk.Instance().Settings().Background()
 	if pathEnv == "" {
 		return ""
 	}

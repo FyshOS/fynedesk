@@ -3,16 +3,15 @@
 package wm
 
 import (
+	"fyne.io/fyne"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/desktop"
-	"fyne.io/desktop/internal/notify"
-	"fyne.io/desktop/internal/ui"
-
-	"fyne.io/fyne"
+	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/internal/notify"
+	"fyne.io/fynedesk/internal/ui"
 )
 
 func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
@@ -201,14 +200,14 @@ func (x *x11WM) handleMouseEnter(ev xproto.EnterNotifyEvent) {
 	if err != nil {
 		fyne.LogError("Set Cursor Error", err)
 	}
-	if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
+	if mouseNotify, ok := fynedesk.Instance().(notify.MouseNotify); ok {
 		mouseNotify.MouseOutNotify()
 	}
 }
 
 func (x *x11WM) handleMouseLeave(ev xproto.LeaveNotifyEvent) {
-	if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
-		screen := desktop.Instance().Screens().ScreenForGeometry(int(ev.RootX), int(ev.RootY), 0, 0)
+	if mouseNotify, ok := fynedesk.Instance().(notify.MouseNotify); ok {
+		screen := fynedesk.Instance().Screens().ScreenForGeometry(int(ev.RootX), int(ev.RootY), 0, 0)
 		mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/screen.CanvasScale()),
 			int(float32(ev.RootY)/screen.CanvasScale())))
 	}
@@ -274,7 +273,7 @@ func (x *x11WM) handleScreenChange(timestamp xproto.Timestamp) {
 		return
 	}
 	x.screenChangeTimestamp = timestamp
-	desk := desktop.Instance()
+	desk := fynedesk.Instance()
 	if desk == nil {
 		return
 	}

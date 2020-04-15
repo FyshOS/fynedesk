@@ -1,20 +1,21 @@
 // +build linux
 
-package wm // import "fyne.io/desktop/wm"
+package wm // import "fyne.io/fynedesk/wm"
 
 import (
-	"fyne.io/desktop"
 	"fyne.io/fyne"
 
 	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/xwindow"
+
+	"fyne.io/fynedesk"
 )
 
 type x11ScreensProvider struct {
-	screens []*desktop.Screen
-	active  *desktop.Screen
-	primary *desktop.Screen
+	screens []*fynedesk.Screen
+	active  *fynedesk.Screen
+	primary *fynedesk.Screen
 	single  bool
 	x       *x11WM
 	root    xproto.Window
@@ -23,7 +24,7 @@ type x11ScreensProvider struct {
 }
 
 // NewX11ScreensProvider returns a screen provider for use in x11 desktop mode
-func NewX11ScreensProvider(mgr desktop.WindowManager) desktop.ScreenList {
+func NewX11ScreensProvider(mgr fynedesk.WindowManager) fynedesk.ScreenList {
 	screensProvider := &x11ScreensProvider{}
 	screensProvider.x = mgr.(*x11WM)
 	err := randr.Init(screensProvider.x.x.Conn())
@@ -37,7 +38,7 @@ func NewX11ScreensProvider(mgr desktop.WindowManager) desktop.ScreenList {
 	return screensProvider
 }
 
-func (xsp *x11ScreensProvider) Active() *desktop.Screen {
+func (xsp *x11ScreensProvider) Active() *fynedesk.Screen {
 	return xsp.active
 }
 
@@ -45,7 +46,7 @@ func (xsp *x11ScreensProvider) AddChangeListener(f func()) {
 	xsp.onChange = append(xsp.onChange, f)
 }
 
-func (xsp *x11ScreensProvider) Primary() *desktop.Screen {
+func (xsp *x11ScreensProvider) Primary() *fynedesk.Screen {
 	return xsp.primary
 }
 
@@ -61,11 +62,11 @@ func (xsp *x11ScreensProvider) RefreshScreens() {
 	}
 }
 
-func (xsp *x11ScreensProvider) Screens() []*desktop.Screen {
+func (xsp *x11ScreensProvider) Screens() []*fynedesk.Screen {
 	return xsp.screens
 }
 
-func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *desktop.Screen {
+func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *fynedesk.Screen {
 	if len(xsp.screens) <= 1 {
 		return xsp.screens[0]
 	}
@@ -84,7 +85,7 @@ func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height
 	return xsp.screens[0]
 }
 
-func (xsp *x11ScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
+func (xsp *x11ScreensProvider) ScreenForWindow(win fynedesk.Window) *fynedesk.Screen {
 	if len(xsp.screens) <= 1 {
 		return xsp.screens[0]
 	}
@@ -104,7 +105,7 @@ func getScale(widthPx, widthMm uint16) float32 {
 	return float32(float64(dpi) / 96.0)
 }
 
-func (xsp *x11ScreensProvider) insertInOrder(tmpScreens []*desktop.Screen, outputInfo *randr.GetOutputInfoReply, crtcInfo *randr.GetCrtcInfoReply) ([]*desktop.Screen, int) {
+func (xsp *x11ScreensProvider) insertInOrder(tmpScreens []*fynedesk.Screen, outputInfo *randr.GetOutputInfoReply, crtcInfo *randr.GetCrtcInfoReply) ([]*fynedesk.Screen, int) {
 	insertIndex := -1
 	for i, screen := range tmpScreens {
 		if screen.X >= int(crtcInfo.X) && screen.Y >= int(crtcInfo.Y) {
@@ -114,14 +115,14 @@ func (xsp *x11ScreensProvider) insertInOrder(tmpScreens []*desktop.Screen, outpu
 
 	}
 	if insertIndex == -1 {
-		tmpScreens = append(tmpScreens, &desktop.Screen{Name: string(outputInfo.Name),
+		tmpScreens = append(tmpScreens, &fynedesk.Screen{Name: string(outputInfo.Name),
 			X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height),
 			Scale: getScale(crtcInfo.Width, uint16(outputInfo.MmWidth))})
 		insertIndex = len(tmpScreens) - 1
 	} else {
 		tmpScreens = append(tmpScreens, nil)
 		copy(tmpScreens[insertIndex+1:], tmpScreens[insertIndex:])
-		tmpScreens[insertIndex] = &desktop.Screen{Name: string(outputInfo.Name),
+		tmpScreens[insertIndex] = &fynedesk.Screen{Name: string(outputInfo.Name),
 			X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height),
 			Scale: getScale(crtcInfo.Width, uint16(outputInfo.MmWidth))}
 	}
@@ -143,7 +144,7 @@ func (xsp *x11ScreensProvider) setupScreens() {
 		primaryInfo, _ = randr.GetOutputInfo(xsp.x.x.Conn(), primary.Output, 0).Reply()
 	}
 	primaryFound := false
-	var tmpScreens []*desktop.Screen
+	var tmpScreens []*fynedesk.Screen
 	for _, output := range resources.Outputs {
 		outputInfo, err := randr.GetOutputInfo(xsp.x.x.Conn(), output, 0).Reply()
 		if err != nil {
@@ -177,7 +178,7 @@ func (xsp *x11ScreensProvider) setupScreens() {
 
 func (xsp *x11ScreensProvider) setupSingleScreen() {
 	xsp.single = true
-	xsp.screens = []*desktop.Screen{{Name: "Screen0",
+	xsp.screens = []*fynedesk.Screen{{Name: "Screen0",
 		X: xwindow.RootGeometry(xsp.x.x).X(), Y: xwindow.RootGeometry(xsp.x.x).Y(),
 		Width: xwindow.RootGeometry(xsp.x.x).Width(), Height: xwindow.RootGeometry(xsp.x.x).Height(),
 		Scale: 1.0}}

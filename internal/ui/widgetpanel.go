@@ -12,8 +12,8 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 type widgetRenderer struct {
@@ -54,7 +54,7 @@ func (w *widgetRenderer) Destroy() {
 type widgetPanel struct {
 	widget.BaseWidget
 
-	desk       desktop.Desktop
+	desk       fynedesk.Desktop
 	appExecWin fyne.Window
 
 	clock *canvas.Text
@@ -159,7 +159,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 
 	objects = append(objects, layout.NewSpacer())
 	for _, m := range mods {
-		if statusMod, ok := m.(desktop.StatusAreaModule); ok {
+		if statusMod, ok := m.(fynedesk.StatusAreaModule); ok {
 			wid := statusMod.StatusAreaWidget()
 			if wid == nil {
 				continue
@@ -178,7 +178,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-func newWidgetPanel(rootDesk desktop.Desktop) *widgetPanel {
+func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 	w := &widgetPanel{
 		desk:       rootDesk,
 		appExecWin: nil,

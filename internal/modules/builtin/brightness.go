@@ -12,8 +12,8 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 type brightness struct {
@@ -73,13 +73,13 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright)
 }
 
-func (b *brightness) Metadata() desktop.ModuleMetadata {
-	return desktop.ModuleMetadata{
+func (b *brightness) Metadata() fynedesk.ModuleMetadata {
+	return fynedesk.ModuleMetadata{
 		Name: "Brightness",
 	}
 }
 
 // NewBrightness creates a new module that will show screen brightness in the status area
-func NewBrightness() desktop.Module {
+func NewBrightness() fynedesk.Module {
 	return &brightness{}
 }
