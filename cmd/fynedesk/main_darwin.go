@@ -11,7 +11,7 @@ import (
 	"fyne.io/fynedesk/internal/ui"
 )
 
-func setupDesktop(a fyne.App) desktop.Desktop {
+func setupDesktop(a fyne.App) fynedesk.Desktop {
 	log.Println("Full desktop not possible on", runtime.GOOS)
 	return ui.NewEmbeddedDesktop(a, internal.NewMacOSAppProvider())
 }
