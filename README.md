@@ -43,9 +43,6 @@ It should look like this:
   <img src="desktop-dark-current.png" alt="Fyne Desktop - Dark" />
 </p>
 
-(The default wallpaper is under Creative Commons by dave souza found on
-[Wikipedia](https://commons.wikimedia.org/wiki/File:Loch_Fyne_from_Tighcladich.jpg).)
-
 If you run the command when there is a window manager running, or on
 an operating system that does not support window managers (Windows or
 macOS) then the app will start in UI test mode.
