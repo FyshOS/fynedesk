@@ -3,6 +3,10 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
+## 0.1.3 - 15 April 2020
+
+Renamed package to fyne.io/fynedesk and repository to github.com/fyne-io/fynedesk.s
+
 ## 0.1.2 - 13 April 2020
 
 Additional bug fixes and graphical tweaks on 0.1 release
