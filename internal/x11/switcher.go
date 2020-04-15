@@ -1,6 +1,6 @@
 // +build linux
 
-package wm
+package x11
 
 import (
 	"github.com/BurntSushi/xgb/xproto"

@@ -1,4 +1,4 @@
-package wm
+package x11
 
 import (
 	"testing"

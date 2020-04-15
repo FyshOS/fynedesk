@@ -1,6 +1,6 @@
 // +build linux
 
-package wm
+package x11
 
 import (
 	"image"
@@ -16,6 +16,7 @@ import (
 
 	"fyne.io/fynedesk"
 	wmTheme "fyne.io/fynedesk/theme"
+	"fyne.io/fynedesk/wm"
 )
 
 type frame struct {
@@ -319,7 +320,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 		!windowSizeCanMaximize(f.client.wm.x, f.client) {
 		canMaximize = false
 	}
-	canvas.SetContent(newBorder(f.client, f.client.Icon(), canMaximize))
+	canvas.SetContent(wm.NewBorder(f.client, f.client.Icon(), canMaximize))
 
 	heightPix := f.titleHeight()
 	iconBorderPixWidth := heightPix + f.borderWidth()*2

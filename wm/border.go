@@ -13,8 +13,6 @@ import (
 	wmTheme "fyne.io/fynedesk/theme"
 )
 
-var iconSize = 32
-
 func makeFiller(width int) fyne.CanvasObject {
 	filler := canvas.NewRectangle(theme.BackgroundColor()) // make a border on the X axis only
 	filler.SetMinSize(fyne.NewSize(width, 2))              // width forced
@@ -22,14 +20,15 @@ func makeFiller(width int) fyne.CanvasObject {
 	return filler
 }
 
-func newBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.CanvasObject {
+// NewBorder creates a new window border for the given window details
+func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.CanvasObject {
 	desk := fynedesk.Instance()
 
 	if icon == nil {
 		iconTheme := desk.Settings().IconTheme()
 		app := desk.IconProvider().FindAppFromWinInfo(win)
 		if app != nil {
-			icon = app.Icon(iconTheme, iconSize)
+			icon = app.Icon(iconTheme, wmTheme.TitleHeight*2)
 		}
 	}
 

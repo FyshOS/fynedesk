@@ -1,6 +1,6 @@
 // +build linux
 
-package wm
+package x11
 
 import (
 	"github.com/BurntSushi/xgb/xproto"
@@ -142,6 +142,8 @@ func (c *client) Fullscreened() bool {
 }
 
 func (c *client) Icon() fyne.Resource {
+	settings := fynedesk.Instance().Settings()
+	iconSize := int(float64(settings.LauncherIconSize()) * settings.LauncherZoomScale())
 	xIcon := windowIcon(c.wm.x, c.win, iconSize, iconSize)
 	if len(xIcon.Bytes()) != 0 {
 		return fyne.NewStaticResource(c.Title(), xIcon.Bytes())

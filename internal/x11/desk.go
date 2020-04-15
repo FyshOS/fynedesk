@@ -1,6 +1,6 @@
 // +build linux
 
-package wm // import "fyne.io/fynedesk/wm"
+package x11 // import "fyne.io/fynedesk/internal/x11"
 
 import (
 	"errors"
