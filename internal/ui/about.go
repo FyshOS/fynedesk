@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/widget"
 
-	wmTheme "fyne.io/desktop/theme"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 func newURLButton(label, link string) *widget.Button {

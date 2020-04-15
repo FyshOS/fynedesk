@@ -7,7 +7,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 type dummyWindow struct {
@@ -93,7 +93,7 @@ func (*dummyWindow) Unmaximize() {
 	// no-op
 }
 
-func (*dummyWindow) RaiseAbove(desktop.Window) {
+func (*dummyWindow) RaiseAbove(fynedesk.Window) {
 	// no-op (this is instructing the window after stack changes)
 }
 

@@ -9,14 +9,14 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 //bar is the main widget housing the icon launcher
 type bar struct {
 	widget.BaseWidget
 
-	desk          desktop.Desktop     // The desktop instance we are holding icons for
+	desk          fynedesk.Desktop    // The desktop instance we are holding icons for
 	children      []fyne.CanvasObject // Icons that are laid out by the bar
 	mouseInside   bool                // Is the mouse inside of the bar?
 	mousePosition fyne.Position       // The current coordinates of the mouse cursor
@@ -91,7 +91,7 @@ func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 }
 
 //newAppBar returns a horizontal list of icons for an icon launcher
-func newAppBar(desk desktop.Desktop, children ...fyne.CanvasObject) *bar {
+func newAppBar(desk fynedesk.Desktop, children ...fyne.CanvasObject) *bar {
 	bar := &bar{desk: desk, children: children}
 	bar.ExtendBaseWidget(bar)
 	bar.iconSize = desk.Settings().LauncherIconSize()

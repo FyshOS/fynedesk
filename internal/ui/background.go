@@ -6,8 +6,8 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 func updateBackgroundPath(background *canvas.Image, path string) {
@@ -22,7 +22,7 @@ func updateBackgroundPath(background *canvas.Image, path string) {
 }
 
 func backgroundPath() string {
-	pathEnv := desktop.Instance().Settings().Background()
+	pathEnv := fynedesk.Instance().Settings().Background()
 	if pathEnv == "" {
 		return ""
 	}

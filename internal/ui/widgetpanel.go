@@ -18,8 +18,8 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 type widgetRenderer struct {
@@ -60,7 +60,7 @@ func (w *widgetRenderer) Destroy() {
 type widgetPanel struct {
 	widget.BaseWidget
 
-	desk       desktop.Desktop
+	desk       fynedesk.Desktop
 	root       fyne.Window
 	appExecWin fyne.Window
 
@@ -264,7 +264,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-func newWidgetPanel(rootDesk desktop.Desktop) *widgetPanel {
+func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 	w := &widgetPanel{
 		desk:       rootDesk,
 		root:       rootDesk.Root(),

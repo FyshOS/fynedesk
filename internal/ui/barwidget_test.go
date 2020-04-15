@@ -9,8 +9,8 @@ import (
 	_ "fyne.io/fyne/test"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 type dummyWindow struct {
@@ -96,7 +96,7 @@ func (*dummyWindow) Unmaximize() {
 	// no-op
 }
 
-func (*dummyWindow) RaiseAbove(desktop.Window) {
+func (*dummyWindow) RaiseAbove(fynedesk.Window) {
 	// no-op (this is instructing the window after stack changes)
 }
 

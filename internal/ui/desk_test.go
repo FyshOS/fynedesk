@@ -13,13 +13,13 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 type testDesk struct {
-	settings desktop.DeskSettings
-	icons    desktop.ApplicationProvider
+	settings fynedesk.DeskSettings
+	icons    fynedesk.ApplicationProvider
 }
 
 func (*testDesk) Root() fyne.Window {
@@ -29,27 +29,27 @@ func (*testDesk) Root() fyne.Window {
 func (*testDesk) Run() {
 }
 
-func (*testDesk) RunApp(app desktop.AppData) error {
+func (*testDesk) RunApp(app fynedesk.AppData) error {
 	return app.Run([]string{}) // no added env
 }
 
-func (td *testDesk) Settings() desktop.DeskSettings {
+func (td *testDesk) Settings() fynedesk.DeskSettings {
 	return td.settings
 }
 
-func (*testDesk) ContentSizePixels(screen *desktop.Screen) (uint32, uint32) {
+func (*testDesk) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32) {
 	return uint32(320), uint32(240)
 }
 
-func (td *testDesk) IconProvider() desktop.ApplicationProvider {
+func (td *testDesk) IconProvider() fynedesk.ApplicationProvider {
 	return td.icons
 }
 
-func (*testDesk) WindowManager() desktop.WindowManager {
+func (*testDesk) WindowManager() fynedesk.WindowManager {
 	return nil
 }
 
-func (*testDesk) Screens() desktop.ScreenList {
+func (*testDesk) Screens() fynedesk.ScreenList {
 	return nil
 }
 
@@ -97,26 +97,26 @@ func (ts *testSettings) LauncherZoomScale() float64 {
 	return ts.launcherZoomScale
 }
 
-func (*testSettings) AddChangeListener(listener chan desktop.DeskSettings) {
+func (*testSettings) AddChangeListener(listener chan fynedesk.DeskSettings) {
 	return
 }
 
 type testScreensProvider struct {
-	screens []*desktop.Screen
+	screens []*fynedesk.Screen
 }
 
-func (tsp testScreensProvider) Screens() []*desktop.Screen {
+func (tsp testScreensProvider) Screens() []*fynedesk.Screen {
 	if tsp.screens == nil {
-		tsp.screens = []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0, Width: 2000, Height: 1000}}
+		tsp.screens = []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0, Width: 2000, Height: 1000}}
 	}
 	return tsp.screens
 }
 
-func (tsp testScreensProvider) Active() *desktop.Screen {
+func (tsp testScreensProvider) Active() *fynedesk.Screen {
 	return tsp.Screens()[0]
 }
 
-func (tsp testScreensProvider) Primary() *desktop.Screen {
+func (tsp testScreensProvider) Primary() *fynedesk.Screen {
 	return tsp.Screens()[0]
 }
 
@@ -124,11 +124,11 @@ func (tsp testScreensProvider) Scale() float32 {
 	return 1.0
 }
 
-func (tsp testScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
+func (tsp testScreensProvider) ScreenForWindow(win fynedesk.Window) *fynedesk.Screen {
 	return tsp.Screens()[0]
 }
 
-func (tsp testScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *desktop.Screen {
+func (tsp testScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *fynedesk.Screen {
 	return tsp.Screens()[0]
 }
 
@@ -154,11 +154,11 @@ func (tad *testAppData) Icon(theme string, size int) fyne.Resource {
 }
 
 type testAppProvider struct {
-	screens []*desktop.Screen
-	apps    []desktop.AppData
+	screens []*fynedesk.Screen
+	apps    []fynedesk.AppData
 }
 
-func (tap *testAppProvider) AvailableApps() []desktop.AppData {
+func (tap *testAppProvider) AvailableApps() []fynedesk.AppData {
 	return tap.apps
 }
 
@@ -166,16 +166,16 @@ func (tap *testAppProvider) AvailableThemes() []string {
 	return nil
 }
 
-func (tap *testAppProvider) FindAppFromName(appName string) desktop.AppData {
+func (tap *testAppProvider) FindAppFromName(appName string) fynedesk.AppData {
 	return &testAppData{name: appName}
 }
 
-func (tap *testAppProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppData {
+func (tap *testAppProvider) FindAppFromWinInfo(win fynedesk.Window) fynedesk.AppData {
 	return &testAppData{}
 }
 
-func (tap *testAppProvider) FindAppsMatching(pattern string) []desktop.AppData {
-	var ret []desktop.AppData
+func (tap *testAppProvider) FindAppsMatching(pattern string) []fynedesk.AppData {
+	var ret []fynedesk.AppData
 	for _, app := range tap.apps {
 		if !strings.Contains(strings.ToLower(app.Name()), strings.ToLower(pattern)) {
 			continue
@@ -187,7 +187,7 @@ func (tap *testAppProvider) FindAppsMatching(pattern string) []desktop.AppData {
 	return ret
 }
 
-func (tap *testAppProvider) DefaultApps() []desktop.AppData {
+func (tap *testAppProvider) DefaultApps() []fynedesk.AppData {
 	return nil
 }
 
@@ -238,7 +238,7 @@ func TestScaleVars_Down(t *testing.T) {
 
 func TestBackgroundChange(t *testing.T) {
 	l := &deskLayout{}
-	desktop.SetInstance(l)
+	fynedesk.SetInstance(l)
 	l.screens = &testScreensProvider{}
 	l.settings = &testSettings{}
 	l.backgrounds = append(l.backgrounds, newBackground())

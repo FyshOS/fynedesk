@@ -1,17 +1,17 @@
 package ui
 
 import (
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
+	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 var (
 	appBar *bar
 )
 
-func barCreateIcon(b *bar, taskbar bool, data desktop.AppData, win desktop.Window) *barIcon {
+func barCreateIcon(b *bar, taskbar bool, data fynedesk.AppData, win fynedesk.Window) *barIcon {
 	if data == nil {
 		return nil
 	}
@@ -31,7 +31,7 @@ func barCreateIcon(b *bar, taskbar bool, data desktop.AppData, win desktop.Windo
 	return icon
 }
 
-func taskbarIconTapped(win desktop.Window) {
+func taskbarIconTapped(win fynedesk.Window) {
 	if !win.Iconic() && win.TopWindow() {
 		win.Iconify()
 		return
@@ -43,7 +43,7 @@ func taskbarIconTapped(win desktop.Window) {
 	win.Focus()
 }
 
-func (b *bar) WindowAdded(win desktop.Window) {
+func (b *bar) WindowAdded(win fynedesk.Window) {
 	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
 		return
 	}
@@ -60,7 +60,7 @@ func (b *bar) WindowAdded(win desktop.Window) {
 	}
 }
 
-func (b *bar) WindowRemoved(win desktop.Window) {
+func (b *bar) WindowRemoved(win fynedesk.Window) {
 	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
 		return
 	}
@@ -129,7 +129,7 @@ func (b *bar) updateIcons() {
 	b.Refresh()
 }
 
-func (b *bar) getIconResource(data desktop.AppData, win desktop.Window) fyne.Resource {
+func (b *bar) getIconResource(data fynedesk.AppData, win fynedesk.Window) fyne.Resource {
 	iconRes := data.Icon(b.desk.Settings().IconTheme(), int((float32(b.iconSize)*b.iconScale)*b.desk.Root().Canvas().Scale()))
 	if iconRes == nil || iconRes == wmTheme.BrokenImageIcon {
 		if win != nil {
@@ -158,7 +158,7 @@ func (b *bar) appendLauncherIcons() {
 	}
 }
 
-func newBar(desk desktop.Desktop) fyne.CanvasObject {
+func newBar(desk fynedesk.Desktop) fyne.CanvasObject {
 	appBar = newAppBar(desk)
 
 	if desk.WindowManager() != nil {

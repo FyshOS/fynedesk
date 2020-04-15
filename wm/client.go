@@ -9,8 +9,9 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/desktop"
 	"fyne.io/fyne"
+
+	"fyne.io/fynedesk"
 )
 
 type clientMessageStateAction int
@@ -35,7 +36,7 @@ type client struct {
 	wm    *x11WM
 }
 
-func (s *stack) getWindowsFromClients(clients []desktop.Window) []xproto.Window {
+func (s *stack) getWindowsFromClients(clients []fynedesk.Window) []xproto.Window {
 	var wins []xproto.Window
 	for _, cli := range clients {
 		wins = append(wins, cli.(*client).id)
@@ -43,7 +44,7 @@ func (s *stack) getWindowsFromClients(clients []desktop.Window) []xproto.Window 
 	return wins
 }
 
-func (s *stack) clientForWin(id xproto.Window) desktop.Window {
+func (s *stack) clientForWin(id xproto.Window) fynedesk.Window {
 	for _, w := range s.clients {
 		if w.(*client).id == id || w.(*client).win == id {
 			return w
@@ -224,7 +225,7 @@ func (c *client) RaiseToTop() {
 	windowClientListStackingUpdate(c.wm)
 }
 
-func (c *client) RaiseAbove(win desktop.Window) {
+func (c *client) RaiseAbove(win fynedesk.Window) {
 	topID := c.wm.rootID
 	if win != nil {
 		topID = win.(*client).id

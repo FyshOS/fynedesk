@@ -1,4 +1,4 @@
-package desktop
+package fynedesk
 
 import "fyne.io/fyne"
 

@@ -1,6 +1,6 @@
 // +build linux
 
-package wm // import "fyne.io/desktop/wm"
+package wm // import "fyne.io/fynedesk/wm"
 
 import (
 	"errors"
@@ -17,11 +17,11 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/desktop"
-	"fyne.io/desktop/internal/notify"
-	"fyne.io/desktop/internal/ui"
-
 	"fyne.io/fyne"
+
+	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/internal/notify"
+	"fyne.io/fynedesk/internal/ui"
 )
 
 type x11WM struct {
@@ -38,7 +38,7 @@ type x11WM struct {
 	moveResizingStartWidth  uint16
 	moveResizingStartHeight uint16
 	moveResizingType        moveResizeType
-	altTabList              []desktop.Window
+	altTabList              []fynedesk.Window
 	altTabIndex             int
 
 	allowedActions []string
@@ -77,7 +77,7 @@ func (x *x11WM) Close() {
 	x.x.Conn().Close()
 }
 
-func (x *x11WM) AddStackListener(l desktop.StackListener) {
+func (x *x11WM) AddStackListener(l fynedesk.StackListener) {
 	x.stack.listeners = append(x.stack.listeners, l)
 }
 
@@ -93,7 +93,7 @@ func (x *x11WM) Blank() {
 }
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
-func NewX11WindowManager(a fyne.App) (desktop.WindowManager, error) {
+func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	conn, err := xgbutil.NewConn()
 	if err != nil {
 		fyne.LogError("Failed to connect to the XServer", err)
@@ -263,11 +263,11 @@ func (x *x11WM) runLoop() {
 			if err != nil {
 				fyne.LogError("Set Cursor Error", err)
 			}
-			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
+			if mouseNotify, ok := fynedesk.Instance().(notify.MouseNotify); ok {
 				mouseNotify.MouseOutNotify()
 			}
 		case xproto.LeaveNotifyEvent:
-			if mouseNotify, ok := desktop.Instance().(notify.MouseNotify); ok {
+			if mouseNotify, ok := fynedesk.Instance().(notify.MouseNotify); ok {
 				mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/x.root.Canvas().Scale()),
 					int(float32(ev.RootY)/x.root.Canvas().Scale())))
 			}
@@ -279,7 +279,7 @@ func (x *x11WM) runLoop() {
 				break
 			}
 			if x.altTabList == nil {
-				x.altTabList = []desktop.Window{}
+				x.altTabList = []fynedesk.Window{}
 				for _, win := range x.Windows() {
 					if win.Iconic() {
 						continue

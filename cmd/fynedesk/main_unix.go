@@ -7,13 +7,13 @@ import (
 
 	"fyne.io/fyne"
 
-	"fyne.io/desktop"
-	"fyne.io/desktop/internal"
-	"fyne.io/desktop/internal/ui"
-	"fyne.io/desktop/wm"
+	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/internal"
+	"fyne.io/fynedesk/internal/ui"
+	"fyne.io/fynedesk/wm"
 )
 
-func setupDesktop(a fyne.App) desktop.Desktop {
+func setupDesktop(a fyne.App) fynedesk.Desktop {
 	icons := internal.NewFDOIconProvider()
 	mgr, err := wm.NewX11WindowManager(a)
 	if err != nil {

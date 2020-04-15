@@ -10,25 +10,25 @@ import (
 	"fyne.io/fyne/canvas"
 	deskDriver "fyne.io/fyne/driver/desktop"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 type deskLayout struct {
 	app      fyne.App
 	win      fyne.Window
-	wm       desktop.WindowManager
-	icons    desktop.ApplicationProvider
-	screens  desktop.ScreenList
-	settings desktop.DeskSettings
+	wm       fynedesk.WindowManager
+	icons    fynedesk.ApplicationProvider
+	screens  fynedesk.ScreenList
+	settings fynedesk.DeskSettings
 
 	backgrounds         []fyne.CanvasObject
 	bar, widgets, mouse fyne.CanvasObject
 	container           *fyne.Container
-	screenBackgroundMap map[*desktop.Screen]fyne.CanvasObject
+	screenBackgroundMap map[*fynedesk.Screen]fyne.CanvasObject
 }
 
 type embeddedScreensProvider struct {
-	screens []*desktop.Screen
+	screens []*fynedesk.Screen
 }
 
 func applyScale(coord int, scale float32) int {
@@ -171,16 +171,16 @@ func (l *deskLayout) Run() {
 	l.Root().ShowAndRun()
 }
 
-func (l *deskLayout) RunApp(app desktop.AppData) error {
+func (l *deskLayout) RunApp(app fynedesk.AppData) error {
 	vars := l.scaleVars(l.Root().Canvas().Scale())
 	return app.Run(vars)
 }
 
-func (l *deskLayout) Settings() desktop.DeskSettings {
+func (l *deskLayout) Settings() fynedesk.DeskSettings {
 	return l.settings
 }
 
-func (l *deskLayout) ContentSizePixels(screen *desktop.Screen) (uint32, uint32) {
+func (l *deskLayout) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32) {
 	screenW := uint32(screen.Width)
 	screenH := uint32(screen.Height)
 	if l.screens.Primary() == screen {
@@ -189,11 +189,11 @@ func (l *deskLayout) ContentSizePixels(screen *desktop.Screen) (uint32, uint32) 
 	return screenW, screenH
 }
 
-func (l *deskLayout) IconProvider() desktop.ApplicationProvider {
+func (l *deskLayout) IconProvider() fynedesk.ApplicationProvider {
 	return l.icons
 }
 
-func (l *deskLayout) WindowManager() desktop.WindowManager {
+func (l *deskLayout) WindowManager() fynedesk.WindowManager {
 	return l.wm
 }
 
@@ -226,7 +226,7 @@ func (l *deskLayout) MouseOutNotify() {
 	appBar.MouseOut()
 }
 
-func (l *deskLayout) startSettingsChangeListener(listener chan desktop.DeskSettings) {
+func (l *deskLayout) startSettingsChangeListener(listener chan fynedesk.DeskSettings) {
 	for {
 		_ = <-listener
 		l.updateBackgrounds(l.Settings().Background())
@@ -240,60 +240,60 @@ func (l *deskLayout) startSettingsChangeListener(listener chan desktop.DeskSetti
 }
 
 func (l *deskLayout) addSettingsChangeListener() {
-	listener := make(chan desktop.DeskSettings)
+	listener := make(chan fynedesk.DeskSettings)
 	l.Settings().AddChangeListener(listener)
 	go l.startSettingsChangeListener(listener)
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
-func (l *deskLayout) Screens() desktop.ScreenList {
+func (l *deskLayout) Screens() fynedesk.ScreenList {
 	return l.screens
 }
 
-func (esp embeddedScreensProvider) Screens() []*desktop.Screen {
-	l := desktop.Instance().(*deskLayout)
+func (esp embeddedScreensProvider) Screens() []*fynedesk.Screen {
+	l := fynedesk.Instance().(*deskLayout)
 	if esp.screens == nil {
-		esp.screens = []*desktop.Screen{{Name: "Screen0", X: 0, Y: 0,
+		esp.screens = []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
 			Width:  removeScale(int(l.Root().Canvas().Size().Width), esp.Scale()),
 			Height: removeScale(int(l.Root().Canvas().Size().Height), esp.Scale())}}
 	}
 	return esp.screens
 }
 
-func (esp embeddedScreensProvider) Active() *desktop.Screen {
+func (esp embeddedScreensProvider) Active() *fynedesk.Screen {
 	return esp.Screens()[0]
 }
 
-func (esp embeddedScreensProvider) Primary() *desktop.Screen {
+func (esp embeddedScreensProvider) Primary() *fynedesk.Screen {
 	return esp.Screens()[0]
 }
 
 func (esp embeddedScreensProvider) Scale() float32 {
-	return desktop.Instance().(*deskLayout).Root().Canvas().Scale()
+	return fynedesk.Instance().(*deskLayout).Root().Canvas().Scale()
 }
 
-func (esp embeddedScreensProvider) ScreenForWindow(win desktop.Window) *desktop.Screen {
+func (esp embeddedScreensProvider) ScreenForWindow(win fynedesk.Window) *fynedesk.Screen {
 	return esp.Screens()[0]
 }
 
-func (esp embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *desktop.Screen {
+func (esp embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *fynedesk.Screen {
 	return esp.Screens()[0]
 }
 
 // NewEmbeddedScreensProvider returns a screen provider for use in embedded desktop mode
-func NewEmbeddedScreensProvider() desktop.ScreenList {
+func NewEmbeddedScreensProvider() fynedesk.ScreenList {
 	return &embeddedScreensProvider{}
 }
 
 // NewDesktop creates a new desktop in fullscreen for main usage.
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An ApplicationProvider is used to lookup application icons from the operating system.
-func NewDesktop(app fyne.App, wm desktop.WindowManager, icons desktop.ApplicationProvider, screenProvider desktop.ScreenList) desktop.Desktop {
+func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider, screenProvider fynedesk.ScreenList) fynedesk.Desktop {
 	desk := &deskLayout{app: app, wm: wm, icons: icons, screens: screenProvider}
-	desktop.SetInstance(desk)
+	fynedesk.SetInstance(desk)
 	desk.settings = newDeskSettings()
 	desk.addSettingsChangeListener()
-	desk.screenBackgroundMap = make(map[*desktop.Screen]fyne.CanvasObject)
+	desk.screenBackgroundMap = make(map[*fynedesk.Screen]fyne.CanvasObject)
 	return desk
 }
 
@@ -301,11 +301,11 @@ func NewDesktop(app fyne.App, wm desktop.WindowManager, icons desktop.Applicatio
 // An ApplicationProvider is used to lookup application icons from the operating system.
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
-func NewEmbeddedDesktop(app fyne.App, icons desktop.ApplicationProvider) desktop.Desktop {
+func NewEmbeddedDesktop(app fyne.App, icons fynedesk.ApplicationProvider) fynedesk.Desktop {
 	desk := &deskLayout{app: app, icons: icons, screens: NewEmbeddedScreensProvider()}
-	desktop.SetInstance(desk)
+	fynedesk.SetInstance(desk)
 	desk.settings = newDeskSettings()
 	desk.addSettingsChangeListener()
-	desk.screenBackgroundMap = make(map[*desktop.Screen]fyne.CanvasObject)
+	desk.screenBackgroundMap = make(map[*fynedesk.Screen]fyne.CanvasObject)
 	return desk
 }

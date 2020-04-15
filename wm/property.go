@@ -7,6 +7,7 @@ import (
 	"math"
 
 	"fyne.io/fyne"
+
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -15,7 +16,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 const (
@@ -109,8 +110,8 @@ func windowBorderless(x *xgbutil.XUtil, win xproto.Window) bool {
 	return false
 }
 
-func windowSizeCanMaximize(x *xgbutil.XUtil, win desktop.Window) bool {
-	screen := desktop.Instance().Screens().ScreenForWindow(win)
+func windowSizeCanMaximize(x *xgbutil.XUtil, win fynedesk.Window) bool {
+	screen := fynedesk.Instance().Screens().ScreenForWindow(win)
 
 	maxWidth, maxHeight := windowSizeMax(x, win.(*client).win)
 	if maxWidth == -1 && maxHeight == -1 {

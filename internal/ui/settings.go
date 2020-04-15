@@ -7,7 +7,7 @@ import (
 
 	"fyne.io/fyne"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 type deskSettings struct {
@@ -20,7 +20,7 @@ type deskSettings struct {
 	launcherZoomScale      float64
 
 	listenerLock    sync.Mutex
-	changeListeners []chan desktop.DeskSettings
+	changeListeners []chan fynedesk.DeskSettings
 }
 
 func (d *deskSettings) Background() string {
@@ -51,7 +51,7 @@ func (d *deskSettings) LauncherZoomScale() float64 {
 	return d.launcherZoomScale
 }
 
-func (d *deskSettings) AddChangeListener(listener chan desktop.DeskSettings) {
+func (d *deskSettings) AddChangeListener(listener chan fynedesk.DeskSettings) {
 	d.listenerLock.Lock()
 	defer d.listenerLock.Unlock()
 	d.changeListeners = append(d.changeListeners, listener)
@@ -137,7 +137,7 @@ func (d *deskSettings) load() {
 		d.launcherIcons = strings.SplitN(fyne.CurrentApp().Preferences().String("launchericons"), "|", -1)
 	}
 	if len(d.launcherIcons) == 0 {
-		defaultApps := desktop.Instance().IconProvider().DefaultApps()
+		defaultApps := fynedesk.Instance().IconProvider().DefaultApps()
 		for _, appData := range defaultApps {
 			d.launcherIcons = append(d.launcherIcons, appData.Name())
 		}

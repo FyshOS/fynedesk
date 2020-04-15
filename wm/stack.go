@@ -1,27 +1,27 @@
 package wm
 
 import (
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 type stack struct {
-	clients      []desktop.Window
-	mappingOrder []desktop.Window
+	clients      []fynedesk.Window
+	mappingOrder []fynedesk.Window
 
-	listeners []desktop.StackListener
+	listeners []fynedesk.StackListener
 }
 
-func (s *stack) addToStack(win desktop.Window) {
-	s.clients = append([]desktop.Window{win}, s.clients...)
+func (s *stack) addToStack(win fynedesk.Window) {
+	s.clients = append([]fynedesk.Window{win}, s.clients...)
 	s.mappingOrder = append(s.mappingOrder, win)
 }
 
-func (s *stack) addToStackBottom(win desktop.Window) {
+func (s *stack) addToStackBottom(win fynedesk.Window) {
 	s.clients = append(s.clients, win)
 	s.mappingOrder = append(s.mappingOrder, win)
 }
 
-func (s *stack) removeFromStack(win desktop.Window) {
+func (s *stack) removeFromStack(win fynedesk.Window) {
 	pos := s.indexForWin(win)
 
 	if pos == -1 {
@@ -41,7 +41,7 @@ func (s *stack) removeFromStack(win desktop.Window) {
 	s.mappingOrder = append(s.mappingOrder[:pos], s.mappingOrder[pos+1:]...)
 }
 
-func (s *stack) indexForWin(win desktop.Window) int {
+func (s *stack) indexForWin(win fynedesk.Window) int {
 	pos := -1
 	for i, w := range s.clients {
 		if w == win {
@@ -51,15 +51,15 @@ func (s *stack) indexForWin(win desktop.Window) int {
 	return pos
 }
 
-func (s *stack) getMappingOrder() []desktop.Window {
+func (s *stack) getMappingOrder() []fynedesk.Window {
 	return s.mappingOrder
 }
 
-func (s *stack) getClients(clients []desktop.Window) []desktop.Window {
+func (s *stack) getClients(clients []fynedesk.Window) []fynedesk.Window {
 	return s.clients
 }
 
-func (s *stack) AddWindow(win desktop.Window) {
+func (s *stack) AddWindow(win fynedesk.Window) {
 	if win == nil {
 		return
 	}
@@ -70,7 +70,7 @@ func (s *stack) AddWindow(win desktop.Window) {
 	}
 }
 
-func (s *stack) RemoveWindow(win desktop.Window) {
+func (s *stack) RemoveWindow(win fynedesk.Window) {
 	s.removeFromStack(win)
 
 	if s.TopWindow() != nil {
@@ -82,18 +82,18 @@ func (s *stack) RemoveWindow(win desktop.Window) {
 	}
 }
 
-func (s *stack) TopWindow() desktop.Window {
+func (s *stack) TopWindow() fynedesk.Window {
 	if len(s.clients) == 0 {
 		return nil
 	}
 	return s.clients[0]
 }
 
-func (s *stack) Windows() []desktop.Window {
+func (s *stack) Windows() []fynedesk.Window {
 	return s.clients
 }
 
-func (s *stack) RaiseToTop(win desktop.Window) {
+func (s *stack) RaiseToTop(win fynedesk.Window) {
 	if win.Iconic() {
 		return
 	}

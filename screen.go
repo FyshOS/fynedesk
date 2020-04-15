@@ -1,4 +1,4 @@
-package desktop
+package fynedesk
 
 // ScreenList provides information about available physical screens for Fyne desktop
 type ScreenList interface {

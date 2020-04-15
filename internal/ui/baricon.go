@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 type barIconRenderer struct {
@@ -59,10 +59,10 @@ func (bi *barIconRenderer) Destroy() {
 type barIcon struct {
 	widget.BaseWidget
 
-	onTapped      func()          // The function that will be called when the icon is clicked
-	resource      fyne.Resource   // The image data of the image that the icon uses
-	appData       desktop.AppData // The application data corresponding to this icon.
-	taskbarWindow desktop.Window  // The window associated with this icon if it is a taskbar icon
+	onTapped      func()           // The function that will be called when the icon is clicked
+	resource      fyne.Resource    // The image data of the image that the icon uses
+	appData       fynedesk.AppData // The application data corresponding to this icon.
+	taskbarWindow fynedesk.Window  // The window associated with this icon if it is a taskbar icon
 }
 
 //Tapped means barIcon has been clicked
@@ -82,7 +82,7 @@ func (bi *barIcon) CreateRenderer() fyne.WidgetRenderer {
 	return render
 }
 
-func newBarIcon(res fyne.Resource, appData desktop.AppData) *barIcon {
+func newBarIcon(res fyne.Resource, appData fynedesk.AppData) *barIcon {
 	barIcon := &barIcon{resource: res, appData: appData}
 	barIcon.ExtendBaseWidget(barIcon)
 

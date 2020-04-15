@@ -1,6 +1,6 @@
 // +build linux
 
-package wm // import "fyne.io/desktop/wm"
+package wm
 
 import "github.com/BurntSushi/xgb/xproto"
 

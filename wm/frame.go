@@ -5,18 +5,17 @@ package wm
 import (
 	"image"
 
-	"github.com/BurntSushi/xgbutil/ewmh"
-	"github.com/BurntSushi/xgbutil/icccm"
-
 	"fyne.io/fyne"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/tools/playground"
 
 	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/ewmh"
+	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xwindow"
 
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 type frame struct {
@@ -277,8 +276,8 @@ func (f *frame) maximizeApply() {
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
 
-	head := desktop.Instance().Screens().ScreenForWindow(f.client)
-	maxWidth, maxHeight := desktop.Instance().ContentSizePixels(head)
+	head := fynedesk.Instance().Screens().ScreenForWindow(f.client)
+	maxWidth, maxHeight := fynedesk.Instance().ContentSizePixels(head)
 	if f.client.Fullscreened() {
 		maxWidth = uint32(head.Width)
 		maxHeight = uint32(head.Height)
@@ -294,7 +293,7 @@ func (f *frame) unmaximizeApply() {
 		return
 	}
 	if f.client.restoreWidth == 0 && f.client.restoreHeight == 0 {
-		screen := desktop.Instance().Screens().ScreenForWindow(f.client)
+		screen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 		f.client.restoreWidth = uint16(screen.Width / 2)
 		f.client.restoreHeight = uint16(screen.Height / 2)
 	}
@@ -313,7 +312,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	}
 	canvas.SetContent(newBorder(f.client, f.client.Icon(), canMaximize))
 
-	scale := desktop.Instance().Root().Canvas().Scale()
+	scale := fynedesk.Instance().Root().Canvas().Scale()
 	canvas.SetScale(scale)
 
 	heightPix := f.titleHeight()
@@ -571,14 +570,14 @@ func newFrame(c *client) *frame {
 	decorated := c.Decorated()
 	maximized := c.Maximized()
 	if full || maximized {
-		activeHead := desktop.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
+		activeHead := fynedesk.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
 		x = int16(activeHead.X)
 		y = int16(activeHead.Y)
 		if full {
 			w = uint16(activeHead.Width)
 			h = uint16(activeHead.Height)
 		} else {
-			maxWidth, maxHeight := desktop.Instance().ContentSizePixels(activeHead)
+			maxWidth, maxHeight := fynedesk.Instance().ContentSizePixels(activeHead)
 			w = uint16(maxWidth)
 			h = uint16(maxHeight)
 		}

@@ -1,4 +1,4 @@
-module fyne.io/desktop
+module fyne.io/fynedesk
 
 go 1.12
 
