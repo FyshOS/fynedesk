@@ -10,7 +10,7 @@ import (
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/modules/builtin"
+	"fyne.io/fynedesk/modules/builtin"
 )
 
 const (
