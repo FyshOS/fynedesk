@@ -25,7 +25,7 @@ func newURLButton(label, link string) *widget.Button {
 func showAbout() {
 	w := fyne.CurrentApp().NewWindow("About FyneDesk")
 
-	title := widget.NewLabelWithStyle("Fyne Desk 0.1.1", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	title := widget.NewLabelWithStyle("Fyne Desk 0.1.3", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	authors := widget.NewLabel("\nAuthors:\n\n    Andy Williams\n    Stephen Houston\n")
 	buttons := fyne.NewContainerWithLayout(layout.NewGridLayout(3),
 		newURLButton("Home Page", "https://fyne.io"),
