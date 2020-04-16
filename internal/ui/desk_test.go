@@ -67,6 +67,8 @@ type testSettings struct {
 	launcherZoomScale      float64
 	launcherDisableZoom    bool
 	launcherDisableTaskbar bool
+
+	moduleNames []string
 }
 
 func (ts *testSettings) IconTheme() string {
@@ -101,6 +103,10 @@ func (ts *testSettings) LauncherZoomScale() float64 {
 		return 1.0
 	}
 	return ts.launcherZoomScale
+}
+
+func (ts *testSettings) ModuleNames() []string {
+	return ts.moduleNames
 }
 
 func (*testSettings) AddChangeListener(listener chan fynedesk.DeskSettings) {

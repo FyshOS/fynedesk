@@ -205,6 +205,45 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 		header, applyButton, widget.NewVBox(bar, details))
 }
 
+func listContains(list []string, item string) bool {
+	for _, listItem := range list {
+		if listItem == item {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (d *settingsUI) loadModuleScreen() fyne.CanvasObject {
+	var modules []fyne.CanvasObject
+
+	for _, mod := range fynedesk.AvailableModules() {
+		name := mod.Name
+		enabled := listContains(d.settings.moduleNames, name)
+
+		check := widget.NewCheck(name, func(bool) {})
+		check.SetChecked(enabled)
+		modules = append(modules, check)
+	}
+
+	applyButton := widget.NewHBox(layout.NewSpacer(),
+		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+			var names []string
+			for _, item := range modules {
+				check := item.(*widget.Check)
+				if check.Checked {
+					names = append(names, check.Text)
+				}
+			}
+
+			d.settings.setModuleNames(names)
+		}})
+
+	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, applyButton, nil, nil),
+		applyButton, widget.NewVBox(modules...))
+}
+
 func loadScreensTable() fyne.CanvasObject {
 	names := widget.NewVBox()
 	labels1 := widget.NewVBox()
@@ -260,6 +299,7 @@ func showSettings(deskSettings *deskSettings) {
 		&widget.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
 			Content: ui.loadAppearanceScreen()},
 		&widget.TabItem{Text: "App Bar", Icon: wmtheme.IconifyIcon, Content: ui.loadBarScreen()},
+		&widget.TabItem{Text: "Modules", Icon: theme.FileIcon(), Content: ui.loadModuleScreen()},
 		&widget.TabItem{Text: "Advanced", Icon: theme.SettingsIcon(),
 			Content: loadAdvancedScreen()},
 	)

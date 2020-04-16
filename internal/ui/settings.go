@@ -19,6 +19,8 @@ type deskSettings struct {
 	launcherDisableZoom    bool
 	launcherZoomScale      float64
 
+	moduleNames []string
+
 	listenerLock    sync.Mutex
 	changeListeners []chan fynedesk.DeskSettings
 }
@@ -49,6 +51,10 @@ func (d *deskSettings) LauncherDisableZoom() bool {
 
 func (d *deskSettings) LauncherZoomScale() float64 {
 	return d.launcherZoomScale
+}
+
+func (d *deskSettings) ModuleNames() []string {
+	return d.moduleNames
 }
 
 func (d *deskSettings) AddChangeListener(listener chan fynedesk.DeskSettings) {
@@ -114,6 +120,13 @@ func (d *deskSettings) setLauncherZoomScale(scale float64) {
 	d.apply()
 }
 
+func (d *deskSettings) setModuleNames(names []string) {
+	newModuleNames := strings.Join(names, "|")
+	d.moduleNames = names
+	fyne.CurrentApp().Preferences().SetString("modulenames", newModuleNames)
+	d.apply()
+}
+
 func (d *deskSettings) load() {
 	env := os.Getenv("FYNEDESK_BACKGROUND")
 	if env != "" {
@@ -134,7 +147,7 @@ func (d *deskSettings) load() {
 
 	launcherIcons := fyne.CurrentApp().Preferences().String("launchericons")
 	if launcherIcons != "" {
-		d.launcherIcons = strings.SplitN(fyne.CurrentApp().Preferences().String("launchericons"), "|", -1)
+		d.launcherIcons = strings.Split(launcherIcons, "|")
 	}
 	if len(d.launcherIcons) == 0 {
 		defaultApps := fynedesk.Instance().IconProvider().DefaultApps()
@@ -154,6 +167,11 @@ func (d *deskSettings) load() {
 	d.launcherZoomScale = fyne.CurrentApp().Preferences().Float("launcherzoomscale")
 	if d.launcherZoomScale == 0.0 {
 		d.launcherZoomScale = 2.0
+	}
+
+	moduleNames := fyne.CurrentApp().Preferences().StringWithFallback("modulenames", "Battery|Brightness")
+	if moduleNames != "" {
+		d.moduleNames = strings.Split(moduleNames, "|")
 	}
 }
 

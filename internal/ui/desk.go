@@ -10,7 +10,6 @@ import (
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/modules/builtin"
 )
 
 const (
@@ -215,8 +214,26 @@ func (l *deskLayout) WindowManager() fynedesk.WindowManager {
 	return l.wm
 }
 
+func isModuleEnabled(name string, settings fynedesk.DeskSettings) bool {
+	for _, mod := range settings.ModuleNames() {
+		if mod == name {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (l *deskLayout) Modules() []fynedesk.Module {
-	return []fynedesk.Module{builtin.NewBattery(), builtin.NewBrightness()}
+	var mods []fynedesk.Module
+	for _, meta := range fynedesk.AvailableModules() {
+		if !isModuleEnabled(meta.Name, l.settings) {
+			continue
+		}
+		mods = append(mods, meta.NewInstance())
+	}
+
+	return mods
 }
 
 func (l *deskLayout) scaleVars(scale float32) []string {

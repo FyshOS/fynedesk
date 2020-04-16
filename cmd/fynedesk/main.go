@@ -3,6 +3,8 @@ package main
 import (
 	"fyne.io/fyne/app"
 	"fyne.io/fyne/theme"
+
+	_ "fyne.io/fynedesk/modules/builtin"
 )
 
 func main() {
