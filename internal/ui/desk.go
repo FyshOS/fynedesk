@@ -217,16 +217,6 @@ func (l *deskLayout) WindowManager() fynedesk.WindowManager {
 	return l.wm
 }
 
-func isModuleEnabled(name string, settings fynedesk.DeskSettings) bool {
-	for _, mod := range settings.ModuleNames() {
-		if mod == name {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (l *deskLayout) Modules() []fynedesk.Module {
 	var mods []fynedesk.Module
 	for _, meta := range fynedesk.AvailableModules() {

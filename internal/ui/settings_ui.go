@@ -205,22 +205,12 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 		header, applyButton, widget.NewVBox(bar, details))
 }
 
-func listContains(list []string, item string) bool {
-	for _, listItem := range list {
-		if listItem == item {
-			return true
-		}
-	}
-
-	return false
-}
-
 func (d *settingsUI) loadModuleScreen() fyne.CanvasObject {
 	var modules []fyne.CanvasObject
 
 	for _, mod := range fynedesk.AvailableModules() {
 		name := mod.Name
-		enabled := listContains(d.settings.moduleNames, name)
+		enabled := isModuleEnabled(name, d.settings)
 
 		check := widget.NewCheck(name, func(bool) {})
 		check.SetChecked(enabled)

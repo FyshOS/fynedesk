@@ -77,6 +77,16 @@ func (d *deskSettings) apply() {
 	}
 }
 
+func isModuleEnabled(name string, settings fynedesk.DeskSettings) bool {
+	for _, mod := range settings.ModuleNames() {
+		if mod == name {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (d *deskSettings) setBackground(name string) {
 	d.background = name
 	fyne.CurrentApp().Preferences().SetString("background", d.background)
