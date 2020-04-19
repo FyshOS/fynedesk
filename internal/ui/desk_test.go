@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"image/color"
 	"os"
 	"path/filepath"
 	"strings"
@@ -57,54 +56,6 @@ func (td *testDesk) Screens() fynedesk.ScreenList {
 
 func (*testDesk) Modules() []fynedesk.Module {
 	return nil
-}
-
-type testSettings struct {
-	background             string
-	iconTheme              string
-	launcherIcons          []string
-	launcherIconSize       int
-	launcherZoomScale      float64
-	launcherDisableZoom    bool
-	launcherDisableTaskbar bool
-}
-
-func (ts *testSettings) IconTheme() string {
-	return ts.iconTheme
-}
-
-func (ts *testSettings) Background() string {
-	return ts.background
-}
-
-func (ts *testSettings) LauncherIcons() []string {
-	return ts.launcherIcons
-}
-
-func (ts *testSettings) LauncherIconSize() int {
-	if ts.launcherIconSize == 0 {
-		return 32
-	}
-	return ts.launcherIconSize
-}
-
-func (ts *testSettings) LauncherDisableTaskbar() bool {
-	return ts.launcherDisableTaskbar
-}
-
-func (ts *testSettings) LauncherDisableZoom() bool {
-	return ts.launcherDisableZoom
-}
-
-func (ts *testSettings) LauncherZoomScale() float64 {
-	if ts.launcherZoomScale == 0 {
-		return 1.0
-	}
-	return ts.launcherZoomScale
-}
-
-func (*testSettings) AddChangeListener(listener chan fynedesk.DeskSettings) {
-	return
 }
 
 type testScreensProvider struct {
@@ -218,7 +169,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 	l := &deskLayout{screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
 		Width: 2000, Height: 1000, Scale: 1.0}}}}
 	l.bar = testBar([]string{})
-	l.widgets = canvas.NewRectangle(color.Black)
+	l.widgets = newWidgetPanel(l)
 	bg := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}
 	l.backgroundScreenMap = make(map[*background]*fynedesk.Screen)
 	l.backgroundScreenMap[bg] = l.screens.Primary()

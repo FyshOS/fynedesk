@@ -15,6 +15,11 @@ import (
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
+var batteryMeta = fynedesk.ModuleMetadata{
+	Name:        "Battery",
+	NewInstance: NewBattery,
+}
+
 type battery struct {
 	bar *widget.ProgressBar
 }
@@ -61,9 +66,7 @@ func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 }
 
 func (b *battery) Metadata() fynedesk.ModuleMetadata {
-	return fynedesk.ModuleMetadata{
-		Name: "Battery",
-	}
+	return batteryMeta
 }
 
 // NewBattery creates a new module that will show battery level in the status area

@@ -16,6 +16,11 @@ import (
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
+var brightnessMeta = fynedesk.ModuleMetadata{
+	Name:        "Brightness",
+	NewInstance: NewBrightness,
+}
+
 type brightness struct {
 	bar *widget.ProgressBar
 }
@@ -74,9 +79,7 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 }
 
 func (b *brightness) Metadata() fynedesk.ModuleMetadata {
-	return fynedesk.ModuleMetadata{
-		Name: "Brightness",
-	}
+	return brightnessMeta
 }
 
 // NewBrightness creates a new module that will show screen brightness in the status area
