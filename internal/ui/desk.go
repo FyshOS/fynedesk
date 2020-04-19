@@ -26,12 +26,13 @@ type deskLayout struct {
 
 	backgroundScreenMap map[*background]*fynedesk.Screen
 
-	bar            *bar
-	widgets, mouse fyne.CanvasObject
-	controlWin     fyne.Window
-	primaryWin     fyne.Window
-	roots          []fyne.Window
-	refreshing     bool
+	bar        *bar
+	widgets    *widgetPanel
+	mouse      fyne.CanvasObject
+	controlWin fyne.Window
+	primaryWin fyne.Window
+	roots      []fyne.Window
+	refreshing bool
 }
 
 func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
@@ -78,7 +79,7 @@ func (l *deskLayout) newDesktopWindow(outputName string) fyne.Window {
 
 func (l *deskLayout) updateBackgrounds(path string) {
 	for bg := range l.backgroundScreenMap {
-		bg.updateBackgroundPath(path)
+		bg.updateBackground(path)
 		canvas.Refresh(bg)
 	}
 }
@@ -97,11 +98,13 @@ func (l *deskLayout) createRoot(screen *fynedesk.Screen) {
 	if screen == l.screens.Primary() {
 		l.primaryWin = win
 		l.createPrimaryContent()
-		win.SetOnClosed(func() {
-			if !l.refreshing {
-				l.controlWin.Close()
-			}
-		})
+		if l.wm != nil {
+			win.SetOnClosed(func() {
+				if !l.refreshing {
+					l.controlWin.Close()
+				}
+			})
+		}
 		win.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
 		l.mouse.Hide()
 	} else {
@@ -277,10 +280,12 @@ func (l *deskLayout) MouseOutNotify() {
 	l.bar.MouseOut()
 }
 
-func (l *deskLayout) startSettingsChangeListener(listener chan fynedesk.DeskSettings) {
+func (l *deskLayout) startSettingsChangeListener(settings chan fynedesk.DeskSettings) {
 	for {
-		_ = <-listener
-		l.updateBackgrounds(l.Settings().Background())
+		s := <-settings
+		l.updateBackgrounds(s.Background())
+		l.widgets.reloadModules(l.Modules())
+
 		l.bar.iconSize = l.Settings().LauncherIconSize()
 		l.bar.iconScale = float32(l.Settings().LauncherZoomScale())
 		l.bar.disableZoom = l.Settings().LauncherDisableZoom()

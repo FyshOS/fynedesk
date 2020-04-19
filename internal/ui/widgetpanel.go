@@ -57,8 +57,9 @@ type widgetPanel struct {
 	desk       fynedesk.Desktop
 	appExecWin fyne.Window
 
-	clock *canvas.Text
-	date  *widget.Label
+	clock   *canvas.Text
+	date    *widget.Label
+	modules *fyne.Container
 }
 
 func (w *widgetPanel) clockTick() {
@@ -152,12 +153,28 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	})
 	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), ShowAppLauncher)
 
-	mods := w.desk.Modules()
 	objects := []fyne.CanvasObject{
 		w.clock,
 		w.date}
 
-	objects = append(objects, layout.NewSpacer())
+	w.modules = fyne.NewContainerWithLayout(layout.NewVBoxLayout())
+	objects = append(objects, layout.NewSpacer(), w.modules, appExecButton, account)
+	w.loadModules(w.desk.Modules())
+
+	return &widgetRenderer{
+		panel:   w,
+		layout:  layout.NewVBoxLayout(),
+		objects: objects,
+	}
+}
+
+func (w *widgetPanel) reloadModules(mods []fynedesk.Module) {
+	w.modules.Objects = nil
+	w.loadModules(mods)
+	w.modules.Refresh()
+}
+
+func (w *widgetPanel) loadModules(mods []fynedesk.Module) {
 	for _, m := range mods {
 		if statusMod, ok := m.(fynedesk.StatusAreaModule); ok {
 			wid := statusMod.StatusAreaWidget()
@@ -165,16 +182,8 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 				continue
 			}
 
-			objects = append(objects, wid)
+			w.modules.Objects = append(w.modules.Objects, wid)
 		}
-	}
-
-	objects = append(objects, appExecButton, account)
-
-	return &widgetRenderer{
-		panel:   w,
-		layout:  layout.NewVBoxLayout(),
-		objects: objects,
 	}
 }
 

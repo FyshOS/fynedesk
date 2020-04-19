@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"image/color"
 	"os"
 	"path/filepath"
 	"strings"
@@ -224,7 +223,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 	l := &deskLayout{screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
 		Width: 2000, Height: 1000, Scale: 1.0}}}}
 	l.bar = testBar([]string{})
-	l.widgets = canvas.NewRectangle(color.Black)
+	l.widgets = newWidgetPanel(l)
 	bg := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}
 	l.backgroundScreenMap = make(map[*background]*fynedesk.Screen)
 	l.backgroundScreenMap[bg] = l.screens.Primary()
