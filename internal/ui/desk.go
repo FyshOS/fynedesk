@@ -16,7 +16,7 @@ const (
 	RootWindowName = "Fyne Desktop"
 )
 
-type deskLayout struct {
+type desktop struct {
 	app      fyne.App
 	wm       fynedesk.WindowManager
 	icons    fynedesk.ApplicationProvider
@@ -36,7 +36,7 @@ type deskLayout struct {
 	refreshing bool
 }
 
-func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0].(*background)
 	screen := l.backgroundScreenMap[bg]
 	if screen == nil {
@@ -57,24 +57,24 @@ func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	}
 }
 
-func (l *deskLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
+func (l *desktop) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(1024, 576) // just for embed - a window manager will scale up to screen size
 }
 
-func (l *deskLayout) updateBackgrounds(path string) {
+func (l *desktop) updateBackgrounds(path string) {
 	for bg := range l.backgroundScreenMap {
 		bg.updateBackground(path)
 		canvas.Refresh(bg)
 	}
 }
 
-func (l *deskLayout) createPrimaryContent() {
+func (l *desktop) createPrimaryContent() {
 	l.bar = newBar(l)
 	l.widgets = newWidgetPanel(l)
 	l.mouse = newMouse()
 }
 
-func (l *deskLayout) createRoot(screen *fynedesk.Screen) {
+func (l *desktop) createRoot(screen *fynedesk.Screen) {
 	win := l.newDesktopWindow(screen.Name)
 	l.roots = append(l.roots, win)
 	bg := newBackground()
@@ -95,7 +95,7 @@ func (l *deskLayout) createRoot(screen *fynedesk.Screen) {
 	win.Show()
 }
 
-func (l *deskLayout) ensureSufficientRoots() {
+func (l *desktop) ensureSufficientRoots() {
 	if len(l.screens.Screens()) >= len(l.roots) {
 		diff := len(l.screens.Screens()) - len(l.roots)
 		count := len(l.screens.Screens()) - diff - 1
@@ -117,7 +117,7 @@ func (l *deskLayout) ensureSufficientRoots() {
 	}
 }
 
-func (l *deskLayout) setupRoots() {
+func (l *desktop) setupRoots() {
 	if len(l.roots) == 0 {
 		for _, screen := range l.screens.Screens() {
 			l.createRoot(screen)
@@ -151,20 +151,20 @@ func (l *deskLayout) setupRoots() {
 	}
 }
 
-func (l *deskLayout) Run() {
+func (l *desktop) Run() {
 	l.run() // use the configured run method
 }
 
-func (l *deskLayout) RunApp(app fynedesk.AppData) error {
+func (l *desktop) RunApp(app fynedesk.AppData) error {
 	vars := l.scaleVars(l.Screens().Active().CanvasScale())
 	return app.Run(vars)
 }
 
-func (l *deskLayout) Settings() fynedesk.DeskSettings {
+func (l *desktop) Settings() fynedesk.DeskSettings {
 	return l.settings
 }
 
-func (l *deskLayout) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32) {
+func (l *desktop) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32) {
 	screenW := uint32(screen.Width)
 	screenH := uint32(screen.Height)
 	if l.screens.Primary() == screen {
@@ -173,15 +173,15 @@ func (l *deskLayout) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32)
 	return screenW, screenH
 }
 
-func (l *deskLayout) IconProvider() fynedesk.ApplicationProvider {
+func (l *desktop) IconProvider() fynedesk.ApplicationProvider {
 	return l.icons
 }
 
-func (l *deskLayout) WindowManager() fynedesk.WindowManager {
+func (l *desktop) WindowManager() fynedesk.WindowManager {
 	return l.wm
 }
 
-func (l *deskLayout) Modules() []fynedesk.Module {
+func (l *desktop) Modules() []fynedesk.Module {
 	var mods []fynedesk.Module
 	for _, meta := range fynedesk.AvailableModules() {
 		if !isModuleEnabled(meta.Name, l.settings) {
@@ -193,7 +193,7 @@ func (l *deskLayout) Modules() []fynedesk.Module {
 	return mods
 }
 
-func (l *deskLayout) scaleVars(scale float32) []string {
+func (l *desktop) scaleVars(scale float32) []string {
 	intScale := int(math.Round(float64(scale)))
 	// Qt toolkit cannot handle scale < 1
 	positiveScale := math.Max(1.0, float64(scale))
@@ -205,14 +205,14 @@ func (l *deskLayout) scaleVars(scale float32) []string {
 	}
 }
 
-func (l *deskLayout) screensChanged() {
+func (l *desktop) screensChanged() {
 	l.refreshing = true
 	l.setupRoots()
 	l.refreshing = false
 }
 
 // MouseInNotify can be called by the window manager to alert the desktop that the cursor has entered the canvas
-func (l *deskLayout) MouseInNotify(pos fyne.Position) {
+func (l *desktop) MouseInNotify(pos fyne.Position) {
 	if l.bar == nil {
 		return
 	}
@@ -227,14 +227,14 @@ func (l *deskLayout) MouseInNotify(pos fyne.Position) {
 }
 
 // MouseOutNotify can be called by the window manager to alert the desktop that the cursor has left the canvas
-func (l *deskLayout) MouseOutNotify() {
+func (l *desktop) MouseOutNotify() {
 	if l.bar == nil {
 		return
 	}
 	l.bar.MouseOut()
 }
 
-func (l *deskLayout) startSettingsChangeListener(settings chan fynedesk.DeskSettings) {
+func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSettings) {
 	for {
 		s := <-settings
 		l.updateBackgrounds(s.Background())
@@ -249,14 +249,14 @@ func (l *deskLayout) startSettingsChangeListener(settings chan fynedesk.DeskSett
 	}
 }
 
-func (l *deskLayout) addSettingsChangeListener() {
+func (l *desktop) addSettingsChangeListener() {
 	listener := make(chan fynedesk.DeskSettings)
 	l.Settings().AddChangeListener(listener)
 	go l.startSettingsChangeListener(listener)
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
-func (l *deskLayout) Screens() fynedesk.ScreenList {
+func (l *desktop) Screens() fynedesk.ScreenList {
 	return l.screens
 }
 
@@ -294,8 +294,8 @@ func NewEmbeddedDesktop(app fyne.App, icons fynedesk.ApplicationProvider) fynede
 	return desk
 }
 
-func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider) *deskLayout {
-	desk := &deskLayout{app: app, wm: wm, icons: icons, screens: newEmbeddedScreensProvider()}
+func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider) *desktop {
+	desk := &desktop{app: app, wm: wm, icons: icons, screens: newEmbeddedScreensProvider()}
 
 	fynedesk.SetInstance(desk)
 	desk.settings = newDeskSettings()

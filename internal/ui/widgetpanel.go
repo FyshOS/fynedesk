@@ -105,7 +105,7 @@ func (w *widgetPanel) createClock() {
 }
 
 func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
-	isEmbed := w.desk.(*deskLayout).controlWin == nil
+	isEmbed := w.desk.(*desktop).controlWin == nil
 	items := []*fyne.MenuItem{
 		fyne.NewMenuItem("About", func() {
 			showAbout()
@@ -128,7 +128,7 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		closeLabel = "Quit"
 	}
 
-	root := w.desk.(*deskLayout).primaryWin
+	root := w.desk.(*desktop).primaryWin
 	items = append(items, fyne.NewMenuItem(closeLabel, func() {
 		root.Close()
 	}))

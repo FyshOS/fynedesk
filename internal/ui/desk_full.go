@@ -7,7 +7,7 @@ import (
 	"fyne.io/fyne"
 )
 
-func (l *deskLayout) newDesktopWindowFull(outputName string) fyne.Window {
+func (l *desktop) newDesktopWindowFull(outputName string) fyne.Window {
 	desk := l.app.NewWindow(fmt.Sprintf("%s%s", RootWindowName, outputName))
 	desk.SetPadded(false)
 	desk.SetFullScreen(true)
@@ -15,7 +15,7 @@ func (l *deskLayout) newDesktopWindowFull(outputName string) fyne.Window {
 	return desk
 }
 
-func (l *deskLayout) runFull() {
+func (l *desktop) runFull() {
 	debug.SetPanicOnFault(true)
 
 	defer func() {
