@@ -2,6 +2,8 @@ package widget
 
 import (
 	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/internal/cache"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 )
@@ -24,9 +26,11 @@ func NewFormItem(text string, widget fyne.CanvasObject) *FormItem {
 type Form struct {
 	BaseWidget
 
-	Items    []*FormItem
-	OnSubmit func()
-	OnCancel func()
+	Items      []*FormItem
+	OnSubmit   func()
+	OnCancel   func()
+	SubmitText string
+	CancelText string
 
 	itemGrid *fyne.Container
 }
@@ -51,20 +55,28 @@ func (f *Form) Append(text string, widget fyne.CanvasObject) {
 
 // AppendItem adds the specified row to the end of the Form
 func (f *Form) AppendItem(item *FormItem) {
-	// ensure we have a renderer set up
-	Renderer(f)
+	f.ExtendBaseWidget(f) // could be called before render
+
+	// ensure we have a renderer set up (that creates itemGrid)...
+	cache.Renderer(f.super())
 
 	f.Items = append(f.Items, item)
 	f.itemGrid.AddObject(f.createLabel(item.Text))
 	f.itemGrid.AddObject(item.Widget)
 
-	Refresh(f)
+	f.Refresh()
 }
 
 // MinSize returns the size that this widget should not shrink below
 func (f *Form) MinSize() fyne.Size {
 	f.ExtendBaseWidget(f)
 	return f.BaseWidget.MinSize()
+}
+
+// Refresh updates the widget state when requested.
+func (f *Form) Refresh() {
+	f.BaseWidget.Refresh()
+	canvas.Refresh(f) // refresh ourselves for BG color - the above updates the content
 }
 
 // CreateRenderer is a private method to Fyne which links this widget to its renderer
@@ -77,27 +89,34 @@ func (f *Form) CreateRenderer() fyne.WidgetRenderer {
 	}
 
 	if f.OnCancel == nil && f.OnSubmit == nil {
-		return Renderer(NewVBox(f.itemGrid))
+		return cache.Renderer(NewVBox(f.itemGrid))
 	}
 
 	buttons := NewHBox(layout.NewSpacer())
 	if f.OnCancel != nil {
-		buttons.Append(NewButtonWithIcon("Cancel", theme.CancelIcon(), f.OnCancel))
+		if f.CancelText == "" {
+			f.CancelText = "Cancel"
+		}
+
+		buttons.Append(NewButtonWithIcon(f.CancelText, theme.CancelIcon(), f.OnCancel))
 	}
 	if f.OnSubmit != nil {
-		submit := NewButtonWithIcon("Submit", theme.ConfirmIcon(), f.OnSubmit)
-		submit.Style = PrimaryButton
+		if f.SubmitText == "" {
+			f.SubmitText = "Submit"
+		}
 
-		buttons.Append(submit)
+		submitButton := NewButtonWithIcon(f.SubmitText, theme.ConfirmIcon(), f.OnSubmit)
+		submitButton.Style = PrimaryButton
+		buttons.Append(submitButton)
 	}
-	return Renderer(NewVBox(f.itemGrid, buttons))
+	return cache.Renderer(NewVBox(f.itemGrid, buttons))
 }
 
 // NewForm creates a new form widget with the specified rows of form items
 // and (if any of them should be shown) a form controls row at the bottom
 func NewForm(items ...*FormItem) *Form {
 	form := &Form{BaseWidget: BaseWidget{}, Items: items}
+	form.ExtendBaseWidget(form)
 
-	Renderer(form).Layout(form.MinSize())
 	return form
 }

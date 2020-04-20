@@ -19,3 +19,11 @@ func (d *device) IsMobile() bool {
 func (d *device) HasKeyboard() bool {
 	return false
 }
+
+func (d *device) SystemScale() float32 {
+	return d.SystemScaleForWindow(nil)
+}
+
+func (d *device) SystemScaleForWindow(fyne.Window) float32 {
+	return 1
+}

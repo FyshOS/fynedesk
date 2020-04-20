@@ -18,37 +18,72 @@ type svg struct {
 	ViewBox  string        `xml:"viewBox,attr"`
 	Paths    []*pathObj    `xml:"path"`
 	Rects    []*rectObj    `xml:"rect"`
+	Circles  []*circleObj  `xml:"circle"`
 	Polygons []*polygonObj `xml:"polygon"`
 	Groups   []*objGroup   `xml:"g"`
 }
 
 type pathObj struct {
-	XMLName xml.Name `xml:"path"`
-	Fill    string   `xml:"fill,attr"`
-	D       string   `xml:"d,attr"`
+	XMLName         xml.Name `xml:"path"`
+	Fill            string   `xml:"fill,attr,omitempty"`
+	Stroke          string   `xml:"stroke,attr,omitempty"`
+	StrokeWidth     string   `xml:"stroke-width,attr,omitempty"`
+	StrokeLineCap   string   `xml:"stroke-linecap,attr,omitempty"`
+	StrokeLineJoin  string   `xml:"stroke-linejoin,attr,omitempty"`
+	StrokeDashArray string   `xml:"stroke-dasharray,attr,omitempty"`
+	D               string   `xml:"d,attr"`
 }
 
 type rectObj struct {
-	XMLName xml.Name `xml:"rect"`
-	Fill    string   `xml:"fill,attr"`
-	X       string   `xml:"x,attr"`
-	Y       string   `xml:"y,attr"`
-	Width   string   `xml:"width,attr"`
-	Height  string   `xml:"height,attr"`
+	XMLName         xml.Name `xml:"rect"`
+	Fill            string   `xml:"fill,attr,omitempty"`
+	Stroke          string   `xml:"stroke,attr,omitempty"`
+	StrokeWidth     string   `xml:"stroke-width,attr,omitempty"`
+	StrokeLineCap   string   `xml:"stroke-linecap,attr,omitempty"`
+	StrokeLineJoin  string   `xml:"stroke-linejoin,attr,omitempty"`
+	StrokeDashArray string   `xml:"stroke-dasharray,attr,omitempty"`
+	X               string   `xml:"x,attr"`
+	Y               string   `xml:"y,attr"`
+	Width           string   `xml:"width,attr"`
+	Height          string   `xml:"height,attr"`
+}
+
+type circleObj struct {
+	XMLName         xml.Name `xml:"circle"`
+	Fill            string   `xml:"fill,attr,omitempty"`
+	Stroke          string   `xml:"stroke,attr,omitempty"`
+	StrokeWidth     string   `xml:"stroke-width,attr,omitempty"`
+	StrokeLineCap   string   `xml:"stroke-linecap,attr,omitempty"`
+	StrokeLineJoin  string   `xml:"stroke-linejoin,attr,omitempty"`
+	StrokeDashArray string   `xml:"stroke-dasharray,attr,omitempty"`
+	CX              string   `xml:"cx,attr"`
+	CY              string   `xml:"cy,attr"`
+	R               string   `xml:"r,attr"`
 }
 
 type polygonObj struct {
-	XMLName xml.Name `xml:"polygon"`
-	Fill    string   `xml:"fill,attr"`
-	Points  string   `xml:"points,attr"`
+	XMLName         xml.Name `xml:"polygon"`
+	Fill            string   `xml:"fill,attr,omitempty"`
+	Stroke          string   `xml:"stroke,attr,omitempty"`
+	StrokeWidth     string   `xml:"stroke-width,attr,omitempty"`
+	StrokeLineCap   string   `xml:"stroke-linecap,attr,omitempty"`
+	StrokeLineJoin  string   `xml:"stroke-linejoin,attr,omitempty"`
+	StrokeDashArray string   `xml:"stroke-dasharray,attr,omitempty"`
+	Points          string   `xml:"points,attr"`
 }
 
 type objGroup struct {
-	XMLName  xml.Name      `xml:"g"`
-	ID       string        `xml:"id,attr"`
-	Paths    []*pathObj    `xml:"path"`
-	Rects    []*rectObj    `xml:"rect"`
-	Polygons []*polygonObj `xml:"polygon"`
+	XMLName         xml.Name      `xml:"g"`
+	ID              string        `xml:"id,attr,omitempty"`
+	Fill            string        `xml:"fill,attr,omitempty"`
+	Stroke          string        `xml:"stroke,attr,omitempty"`
+	StrokeWidth     string        `xml:"stroke-width,attr,omitempty"`
+	StrokeLineCap   string        `xml:"stroke-linecap,attr,omitempty"`
+	StrokeLineJoin  string        `xml:"stroke-linejoin,attr,omitempty"`
+	StrokeDashArray string        `xml:"stroke-dasharray,attr,omitempty"`
+	Paths           []*pathObj    `xml:"path"`
+	Rects           []*rectObj    `xml:"rect"`
+	Polygons        []*polygonObj `xml:"polygon"`
 }
 
 func replacePathsFill(paths []*pathObj, hexColor string) {
@@ -63,6 +98,14 @@ func replaceRectsFill(rects []*rectObj, hexColor string) {
 	for _, rect := range rects {
 		if rect.Fill != "none" {
 			rect.Fill = hexColor
+		}
+	}
+}
+
+func replaceCirclesFill(circles []*circleObj, hexColor string) {
+	for _, circle := range circles {
+		if circle.Fill != "none" {
+			circle.Fill = hexColor
 		}
 	}
 }
@@ -89,6 +132,7 @@ func replaceGroupObjectFill(groups []*objGroup, hexColor string) {
 func (s *svg) replaceFillColor(reader io.Reader, color color.Color) error {
 	replacePathsFill(s.Paths, colorToHexString(color))
 	replaceRectsFill(s.Rects, colorToHexString(color))
+	replaceCirclesFill(s.Circles, colorToHexString(color))
 	replacePolygonsFill(s.Polygons, colorToHexString(color))
 	replaceGroupObjectFill(s.Groups, colorToHexString(color))
 	return nil

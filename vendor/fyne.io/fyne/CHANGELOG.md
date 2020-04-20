@@ -3,11 +3,104 @@
 This file lists the main changes with each version of the Fyne toolkit.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/fyne/releases). 
 
-## 1.2.2 - Ongoing
+## 1.3 - In Progress
+
+### Added
+ 
+* Desktop apps can now create splash windows
+* Support changing the text on form submit/cancel buttons
+
+### Changed
+
+* Upgraded underlying GLFW library to fix various issues (#183, #61)
 
 ### Fixed
 
-* Entries that are extended would crash on right click.
+*
+
+
+## 1.2.4 - 13 April 2020
+
+### Added
+
+ * Added Direction field to ScrollContainer and NewHScrollContainer, NewVScrollContainer constructors (#763)
+ * Added Scroller.SetMinSize() to enable better defaults for scrolled content
+ * Added "fyne vendor" subcommand to help packaging fyne dependencies in projects
+ * Added "fyne version" subcommand to help with bug reporting (#656)
+ * Clipboard (cut/copy/paste) is now supported on iOS and Android (#414)
+ * Preferences.RemoveValue() now allows deletion of a stored user preference
+
+### Changed
+
+ * Report keys based on name not key code - fixes issue with shortcuts with AZERTY (#790)
+
+### Fixed
+
+ * Mobile builds now support go modules (#660)
+ * Building for mobile would try to run desktop build first
+ * Mobile apps now draw the full safe area on a screen (#799)
+ * Preferences were not stored on mobile apps (#779)
+ * Window on Windows is not controllable after exiting FullScreen mode (#727)
+ * Soft keyboard not working on some Samsung/LG smart phones (#787)
+ * Selecting a tab on extended TabContainer doesn't refresh button (#810)
+ * Appending tab to empty TabContainer causes divide by zero on mobile (#820)
+ * Application crashes on startup (#816)
+ * Form does not always update on theme change (#842)
+
+
+## 1.2.3 - 2 March 2020
+
+### Added
+
+ * Add media and volume icons to default themes (#649)
+ * Add Canvas.PixelCoordinateForPosition to find pixel locations if required
+ * Add ProgressInfinite dialog
+
+### Changed
+
+ * Warn if -executable or -sourceDir flags are used for package on mobile (#652)
+ * Update scale based on device for mobile apps
+ * Windows without a title will now be named "Fyne Application"
+ * Revert fix to quit mobile apps - this is not allowed in guidelines
+
+### Fixed
+
+ * App.UniqueID() did not return current app ID
+ * Fyne package ignored -name flag for ios and android builds (#657)
+ * Possible crash when appending tabs to TabContainer
+ * FixedSize windows not rescaling when dragged between monitors (#654)
+ * Fix issues where older Android devices may not background or rotate (#677)
+ * Crash when setting theme before window content set (#688)
+ * Correct form extend behaviour (#694)
+ * Select drop-down width is wrong if the drop-down is too tall for the window (#706)
+
+
+## 1.2.2 - 29 January 2020
+
+### Added
+
+* Add SelectedText() function to Entry widget
+* New mobile.Device interface exposing ShowVirtualKeyboard() (and Hide...)
+
+### Changed
+
+* Scale calculations are now relative to system scale - the default "1" matches the system
+* Update scale on Linux to be "auto" by default (and numbers are relative to 96DPI standard) (#595)
+* When auto scaling check the monitor in the middle of the window, not top left
+* bundled files now have a standard header to optimise some tools like go report card
+* Shortcuts are now handled by the event queue - fixed possible deadlock
+
+### Fixed
+
+* Scroll horizontally when holding shift key (#579)
+* Updating text and calling refresh for widget doesn't work (#607)
+* Corrected visual behaviour of extended widgets including Entry, Select, Check, Radio and Icon (#615)
+* Entries and Selects that are extended would crash on right click.
+* PasswordEntry created from Entry with Password = true has no revealer
+* Dialog width not always sufficient for title
+* Pasting unicode characters could panic (#597)
+* Setting theme before application start panics on macOS (#626)
+* MenuItem type conflicts with other projects (#632)
 
 
 ## 1.2.1 - 24 December 2019

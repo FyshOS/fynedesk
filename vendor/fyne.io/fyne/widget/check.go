@@ -1,22 +1,19 @@
 package widget
 
 import (
-	"image/color"
-
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/driver/desktop"
+	"fyne.io/fyne/internal/widget"
 	"fyne.io/fyne/theme"
 )
 
 type checkRenderer struct {
-	icon  *canvas.Image
-	label *canvas.Text
-
+	widget.BaseRenderer
+	icon           *canvas.Image
+	label          *canvas.Text
 	focusIndicator *canvas.Circle
-
-	objects []fyne.CanvasObject
-	check   *Check
+	check          *Check
 }
 
 // MinSize calculates the minimum size of a check.
@@ -54,10 +51,6 @@ func (c *checkRenderer) applyTheme() {
 	}
 }
 
-func (c *checkRenderer) BackgroundColor() color.Color {
-	return theme.BackgroundColor()
-}
-
 func (c *checkRenderer) Refresh() {
 	c.applyTheme()
 	c.label.Text = c.check.Text
@@ -74,7 +67,7 @@ func (c *checkRenderer) Refresh() {
 
 	if c.check.Disabled() {
 		c.focusIndicator.FillColor = theme.BackgroundColor()
-	} else if c.check.Focused() {
+	} else if c.check.focused {
 		c.focusIndicator.FillColor = theme.FocusColor()
 	} else if c.check.hovered {
 		c.focusIndicator.FillColor = theme.HoverColor()
@@ -82,14 +75,7 @@ func (c *checkRenderer) Refresh() {
 		c.focusIndicator.FillColor = theme.BackgroundColor()
 	}
 
-	canvas.Refresh(c.check)
-}
-
-func (c *checkRenderer) Objects() []fyne.CanvasObject {
-	return c.objects
-}
-
-func (c *checkRenderer) Destroy() {
+	canvas.Refresh(c.check.super())
 }
 
 // Check widget has a text label and a checked (or unchecked) icon and triggers an event func when toggled
@@ -116,12 +102,12 @@ func (c *Check) SetChecked(checked bool) {
 		c.OnChanged(c.Checked)
 	}
 
-	Refresh(c)
+	c.Refresh()
 }
 
 // Hide this widget, if it was previously visible
 func (c *Check) Hide() {
-	if c.Focused() {
+	if c.focused {
 		c.FocusLost()
 		fyne.CurrentApp().Driver().CanvasForObject(c).Focus(nil)
 	}
@@ -135,13 +121,13 @@ func (c *Check) MouseIn(*desktop.MouseEvent) {
 		return
 	}
 	c.hovered = true
-	Refresh(c)
+	c.Refresh()
 }
 
 // MouseOut is called when a desktop pointer exits the widget
 func (c *Check) MouseOut() {
 	c.hovered = false
-	Refresh(c)
+	c.Refresh()
 }
 
 // MouseMoved is called when a desktop pointer hovers over the widget
@@ -150,16 +136,12 @@ func (c *Check) MouseMoved(*desktop.MouseEvent) {
 
 // Tapped is called when a pointer tapped event is captured and triggers any change handler
 func (c *Check) Tapped(*fyne.PointEvent) {
-	if !c.Focused() {
+	if !c.focused {
 		c.FocusGained()
 	}
 	if !c.Disabled() {
 		c.SetChecked(!c.Checked)
 	}
-}
-
-// TappedSecondary is called when a secondary pointer tapped event is captured
-func (c *Check) TappedSecondary(*fyne.PointEvent) {
 }
 
 // MinSize returns the size that this widget should not shrink below
@@ -177,7 +159,13 @@ func (c *Check) CreateRenderer() fyne.WidgetRenderer {
 	text.Alignment = fyne.TextAlignLeading
 
 	focusIndicator := canvas.NewCircle(theme.BackgroundColor())
-	return &checkRenderer{icon, text, focusIndicator, []fyne.CanvasObject{focusIndicator, icon, text}, c}
+	return &checkRenderer{
+		widget.NewBaseRenderer([]fyne.CanvasObject{focusIndicator, icon, text}),
+		icon,
+		text,
+		focusIndicator,
+		c,
+	}
 }
 
 // NewCheck creates a new check widget with the set label and change handler
@@ -202,17 +190,18 @@ func (c *Check) FocusGained() {
 	}
 	c.focused = true
 
-	Refresh(c)
+	c.Refresh()
 }
 
 // FocusLost is called when the Check has had focus removed.
 func (c *Check) FocusLost() {
 	c.focused = false
 
-	Refresh(c)
+	c.Refresh()
 }
 
 // Focused returns whether or not this Check has focus.
+// Deprecated: this method will be removed as it is no longer required, widgets do not expose their focus state.
 func (c *Check) Focused() bool {
 	if c.Disabled() {
 		return false

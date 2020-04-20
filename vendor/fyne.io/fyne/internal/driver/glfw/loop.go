@@ -1,6 +1,7 @@
 package glfw
 
 import (
+	"fmt"
 	"runtime"
 	"sync"
 	"time"
@@ -9,7 +10,7 @@ import (
 	"fyne.io/fyne/internal/driver"
 	"fyne.io/fyne/internal/painter"
 
-	"github.com/go-gl/glfw/v3.2/glfw"
+	"github.com/go-gl/glfw/v3.3/glfw"
 )
 
 type funcData struct {
@@ -21,6 +22,7 @@ type funcData struct {
 var funcQueue = make(chan funcData)
 var runFlag = false
 var runMutex = &sync.Mutex{}
+var initOnce = &sync.Once{}
 
 // Arrange that main.main runs on main thread.
 func init() {
@@ -48,13 +50,25 @@ func runOnMain(f func()) {
 }
 
 func (d *gLDriver) initGLFW() {
-	err := glfw.Init()
-	if err != nil {
-		fyne.LogError("failed to initialise GLFW", err)
-		return
-	}
+	initOnce.Do(func() {
+		err := glfw.Init()
+		if err != nil {
+			fyne.LogError("failed to initialise GLFW", err)
+			return
+		}
 
-	initCursors()
+		initCursors()
+	})
+}
+
+func (d *gLDriver) tryPollEvents() {
+	defer func() {
+		if r := recover(); r != nil {
+			fyne.LogError(fmt.Sprint("GLFW poll event error: ", r), nil)
+		}
+	}()
+
+	glfw.PollEvents() // This call blocks while window is being resized, which prevents freeDirtyTextures from being called
 }
 
 func (d *gLDriver) runGL() {
@@ -81,7 +95,7 @@ func (d *gLDriver) runGL() {
 		case <-settingsChange:
 			painter.ClearFontCache()
 		case <-fps.C:
-			glfw.PollEvents()
+			d.tryPollEvents()
 			newWindows := []fyne.Window{}
 			reassign := false
 			for _, win := range d.windows {
@@ -116,7 +130,7 @@ func (d *gLDriver) runGL() {
 func (d *gLDriver) repaintWindow(w *window) {
 	canvas := w.canvas
 	w.RunWithContext(func() {
-		d.freeDirtyTextures(canvas)
+		freeDirtyTextures(canvas)
 
 		updateGLContext(w)
 		if canvas.ensureMinSize() {
@@ -128,7 +142,7 @@ func (d *gLDriver) repaintWindow(w *window) {
 	})
 }
 
-func (d *gLDriver) freeDirtyTextures(canvas *glCanvas) {
+func freeDirtyTextures(canvas *glCanvas) {
 	for {
 		select {
 		case object := <-canvas.refreshQueue:

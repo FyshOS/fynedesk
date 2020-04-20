@@ -10,7 +10,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/internal/cache"
+	"fyne.io/fyne/internal/widget"
 	"fyne.io/fyne/theme"
 )
 
@@ -51,7 +51,7 @@ func (e *entryRenderer) MinSize() fyne.Size {
 // This process could be optimized in the scenario where the user is selecting upwards:
 // If the upwards case instead produces an order-reversed slice then only the newest rectangle would
 // require movement and resizing. The existing solution creates a new rectangle and then moves/resizes
-// all rectangles to comply with the occurance order as stated above.
+// all rectangles to comply with the occurrence order as stated above.
 func (e *entryRenderer) buildSelection() {
 	e.entry.RLock()
 	cursorRow, cursorCol := e.entry.CursorRow, e.entry.CursorColumn
@@ -152,21 +152,19 @@ func (e *entryRenderer) Layout(size fyne.Size) {
 	e.line.Resize(fyne.NewSize(size.Width, theme.Padding()))
 	e.line.Move(fyne.NewPos(0, size.Height-theme.Padding()))
 
-	revealIconSize := fyne.NewSize(0, 0)
-	if e.entry.passwordRevealer != nil {
-		revealIconSize = fyne.NewSize(theme.IconInlineSize(), theme.IconInlineSize())
-		e.entry.passwordRevealer.Resize(revealIconSize)
-		e.entry.passwordRevealer.Move(fyne.NewPos(size.Width-revealIconSize.Width-theme.Padding(), theme.Padding()*2))
+	actionIconSize := fyne.NewSize(0, 0)
+	if e.entry.ActionItem != nil {
+		actionIconSize = fyne.NewSize(theme.IconInlineSize(), theme.IconInlineSize())
+		e.entry.ActionItem.Resize(actionIconSize)
+		e.entry.ActionItem.Move(fyne.NewPos(size.Width-actionIconSize.Width-2*theme.Padding(), theme.Padding()*2))
 	}
 
-	entrySize := size.Subtract(fyne.NewSize(theme.Padding()*2-revealIconSize.Width, theme.Padding()*2))
+	entrySize := size.Subtract(fyne.NewSize(theme.Padding()*2-actionIconSize.Width, theme.Padding()*2))
+	entryPos := fyne.NewPos(theme.Padding(), theme.Padding())
 	e.entry.text.Resize(entrySize)
-	e.entry.text.Move(fyne.NewPos(theme.Padding(), theme.Padding()))
-
+	e.entry.text.Move(entryPos)
 	e.entry.placeholder.Resize(entrySize)
-	e.entry.placeholder.Move(fyne.NewPos(theme.Padding(), theme.Padding()))
-
-	e.moveCursor()
+	e.entry.placeholder.Move(entryPos)
 }
 
 func (e *entryRenderer) BackgroundColor() color.Color {
@@ -174,6 +172,9 @@ func (e *entryRenderer) BackgroundColor() color.Color {
 }
 
 func (e *entryRenderer) Refresh() {
+	if e.entry.Text != string(e.entry.textProvider().buffer) {
+		e.entry.textProvider().SetText(e.entry.Text)
+	}
 	if e.entry.textProvider().len() == 0 && e.entry.Visible() {
 		e.entry.placeholderProvider().Show()
 	} else if e.entry.placeholderProvider().Visible() {
@@ -192,15 +193,19 @@ func (e *entryRenderer) Refresh() {
 			e.line.FillColor = theme.ButtonColor()
 		}
 	}
+	e.moveCursor()
 
 	for _, selection := range e.selection {
 		selection.(*canvas.Rectangle).Hidden = !e.entry.focused && !e.entry.disabled
 		selection.(*canvas.Rectangle).FillColor = theme.FocusColor()
 	}
 
+	e.entry.text.updateRowBounds()
+	e.entry.placeholder.updateRowBounds()
 	e.entry.text.Refresh()
-	if e.entry.passwordRevealer != nil {
-		e.entry.passwordRevealer.Refresh()
+	e.entry.placeholder.Refresh()
+	if e.entry.ActionItem != nil {
+		e.entry.ActionItem.Refresh()
 	}
 	canvas.Refresh(e.entry.super())
 }
@@ -214,17 +219,13 @@ func (e *entryRenderer) Objects() []fyne.CanvasObject {
 }
 
 func (e *entryRenderer) Destroy() {
-	if e.entry.popUp != nil {
-		c := fyne.CurrentApp().Driver().CanvasForObject(e.entry.super())
-		c.SetOverlay(nil)
-		cache.Renderer(e.entry.popUp).Destroy()
-		e.entry.popUp = nil
-	}
 }
 
 // Declare conformity with interfaces
 var _ fyne.Draggable = (*Entry)(nil)
+var _ fyne.Focusable = (*Entry)(nil)
 var _ fyne.Tappable = (*Entry)(nil)
+var _ fyne.Widget = (*Entry)(nil)
 var _ desktop.Mouseable = (*Entry)(nil)
 var _ desktop.Keyable = (*Entry)(nil)
 
@@ -239,6 +240,7 @@ type Entry struct {
 	Password    bool
 	ReadOnly    bool // Deprecated: Use Disable() instead
 	MultiLine   bool
+	Wrapping    fyne.TextWrap
 
 	CursorRow, CursorColumn int
 	OnCursorChanged         func() `json:"-"`
@@ -260,8 +262,8 @@ type Entry struct {
 	popUp     *PopUp
 	// TODO: Add OnSelectChanged
 
-	// passwordRevealer represents the passwordRevealer widget
-	passwordRevealer *passwordRevealer
+	// ActionItem is a small item which is displayed at the outer right of the entry (like a password revealer)
+	ActionItem fyne.CanvasObject
 }
 
 // SetText manually sets the text of the Entry to the given text value.
@@ -274,7 +276,7 @@ func (e *Entry) SetText(text string) {
 		e.CursorColumn = 0
 		e.CursorRow = 0
 		e.Unlock()
-		cache.Renderer(e).(*entryRenderer).moveCursor()
+		e.Refresh()
 	} else {
 		provider := e.textProvider()
 		if e.CursorRow >= provider.rows() {
@@ -315,6 +317,15 @@ func (e *Entry) Disable() { // TODO remove this override after ReadOnly is remov
 	e.ReadOnly = true
 
 	e.DisableableWidget.Disable()
+}
+
+// Hide satisfies the fyne.CanvasObject interface.
+func (e *Entry) Hide() {
+	if e.popUp != nil {
+		e.popUp.Hide()
+		e.popUp = nil
+	}
+	e.DisableableWidget.Hide()
 }
 
 // updateText updates the internal text to the given value
@@ -361,9 +372,9 @@ func (e *Entry) selection() (int, int) {
 	return e.textPosFromRowCol(rowA, colA), e.textPosFromRowCol(rowB, colB)
 }
 
-// selectedText returns the text currently selected in this Entry.
+// SelectedText returns the text currently selected in this Entry.
 // If there is no selection it will return the empty string.
-func (e *Entry) selectedText() string {
+func (e *Entry) SelectedText() string {
 	if e.selecting == false {
 		return ""
 	}
@@ -374,42 +385,33 @@ func (e *Entry) selectedText() string {
 
 // Obtains row,col from a given textual position
 // expects a read or write lock to be held by the caller
-func (e *Entry) rowColFromTextPos(pos int) (int, int) {
+func (e *Entry) rowColFromTextPos(pos int) (row int, col int) {
 	provider := e.textProvider()
 	for i := 0; i < provider.rows(); i++ {
-		rowLength := provider.rowLength(i)
-		if rowLength+1 > pos {
-			return i, pos
+		b := provider.rowBoundary(i)
+		if b[0] <= pos {
+			if b[1] < pos {
+				row++
+			}
+			col = pos - b[0]
+		} else {
+			break
 		}
-		pos -= rowLength + 1 // +1 for newline
 	}
-	return 0, 0
+	return
 }
 
 // Obtains textual position from a given row and col
 // expects a read or write lock to be held by the caller
 func (e *Entry) textPosFromRowCol(row, col int) int {
-	pos := 0
-	provider := e.textProvider()
-	for i := 0; i < row; i++ {
-		rowLength := provider.rowLength(i)
-		pos += rowLength + 1
-	}
-	pos += col
-	return pos
+	return e.textProvider().rowBoundary(row)[0] + col
 }
 
-func (e *Entry) cursorTextPos() int {
-	pos := 0
+func (e *Entry) cursorTextPos() (pos int) {
 	e.RLock()
-	provider := e.textProvider()
-	for i := 0; i < e.CursorRow; i++ {
-		rowLength := provider.rowLength(i)
-		pos += rowLength + 1
-	}
-	pos += e.CursorColumn
+	pos = e.textPosFromRowCol(e.CursorRow, e.CursorColumn)
 	e.RUnlock()
-	return pos
+	return
 }
 
 // FocusGained is called when the Entry has been given focus.
@@ -430,6 +432,7 @@ func (e *Entry) FocusLost() {
 }
 
 // Focused returns whether or not this Entry has focus.
+// Deprecated: this method will be removed as it is no longer required, widgets do not expose their focus state.
 func (e *Entry) Focused() bool {
 	return e.focused
 }
@@ -437,7 +440,7 @@ func (e *Entry) Focused() bool {
 func (e *Entry) cursorColAt(text []rune, pos fyne.Position) int {
 	for i := 0; i < len(text); i++ {
 		str := string(text[0 : i+1])
-		wid := textMinSize(str, theme.TextSize(), e.textStyle()).Width + theme.Padding()
+		wid := fyne.MeasureText(str, theme.TextSize(), e.textStyle()).Width + theme.Padding()
 		if wid > pos.X {
 			return i
 		}
@@ -451,9 +454,9 @@ func (e *Entry) Tapped(ev *fyne.PointEvent) {
 }
 
 // copyToClipboard copies the current selection to a given clipboard and then removes the selected text.
-// This does nothing if it is a password entry.
+// This does nothing if it is a concealed entry.
 func (e *Entry) cutToClipboard(clipboard fyne.Clipboard) {
-	if !e.selecting || e.password() {
+	if !e.selecting || e.concealed() {
 		return
 	}
 
@@ -462,13 +465,13 @@ func (e *Entry) cutToClipboard(clipboard fyne.Clipboard) {
 }
 
 // copyToClipboard copies the current selection to a given clipboard.
-// This does nothing if it is a password entry.
+// This does nothing if it is a concealed entry.
 func (e *Entry) copyToClipboard(clipboard fyne.Clipboard) {
-	if !e.selecting || e.password() {
+	if !e.selecting || e.concealed() {
 		return
 	}
 
-	clipboard.SetContent(e.selectedText())
+	clipboard.SetContent(e.SelectedText())
 }
 
 // pasteFromClipboard inserts text from the clipboard content,
@@ -491,11 +494,16 @@ func (e *Entry) pasteFromClipboard(clipboard fyne.Clipboard) {
 		e.CursorColumn += len(runes)
 	} else {
 		e.CursorRow += newlines
-		lastNewline := strings.LastIndex(text, "\n")
-		e.CursorColumn = len(runes) - lastNewline - 1
+		lastNewlineIndex := 0
+		for i, r := range runes {
+			if r == '\n' {
+				lastNewlineIndex = i
+			}
+		}
+		e.CursorColumn = len(runes) - lastNewlineIndex - 1
 	}
 	e.updateText(provider.String())
-	cache.Renderer(e).(*entryRenderer).moveCursor()
+	e.Refresh()
 }
 
 // selectAll selects all text in entry
@@ -510,7 +518,6 @@ func (e *Entry) selectAll() {
 	e.selecting = true
 	e.Unlock()
 
-	cache.Renderer(e).(*entryRenderer).moveCursor()
 	e.Refresh()
 }
 
@@ -537,17 +544,22 @@ func (e *Entry) TappedSecondary(pe *fyne.PointEvent) {
 	popUpPos := entryPos.Add(fyne.NewPos(pe.Position.X, pe.Position.Y))
 	c := fyne.CurrentApp().Driver().CanvasForObject(super)
 
-	if e.Disabled() && e.password() {
-		return // no popup options for a disabled password field
+	if e.Disabled() && e.concealed() {
+		return // no popup options for a disabled concealed field
 	}
 
 	if e.Disabled() {
 		e.popUp = NewPopUpMenuAtPosition(fyne.NewMenu("", copyItem, selectAllItem), c, popUpPos)
-	} else if e.password() {
+	} else if e.concealed() {
 		e.popUp = NewPopUpMenuAtPosition(fyne.NewMenu("", pasteItem, selectAllItem), c, popUpPos)
 	} else {
 		e.popUp = NewPopUpMenuAtPosition(fyne.NewMenu("", cutItem, copyItem, pasteItem, selectAllItem), c, popUpPos)
 	}
+}
+
+// Cursor returns the cursor type of this widget
+func (e *Entry) Cursor() desktop.Cursor {
+	return desktop.TextCursor
 }
 
 // MouseDown called on mouse click, this triggers a mouse click which can move the cursor,
@@ -610,7 +622,6 @@ func (e *Entry) updateMousePointer(ev *fyne.PointEvent, rightClick bool) {
 		e.selectColumn = col
 	}
 	e.Unlock()
-	cache.Renderer(e).(*entryRenderer).moveCursor()
 	e.Refresh()
 }
 
@@ -684,7 +695,6 @@ func (e *Entry) DoubleTapped(ev *fyne.PointEvent) {
 	}
 	e.selecting = true
 	e.Unlock()
-	cache.Renderer(e).(*entryRenderer).moveCursor()
 	e.Refresh()
 }
 
@@ -707,12 +717,13 @@ func (e *Entry) TypedRune(r rune) {
 	}
 
 	runes := []rune{r}
-	provider.insertAt(e.cursorTextPos(), runes)
+	pos := e.cursorTextPos()
+	provider.insertAt(pos, runes)
 	e.Lock()
-	e.CursorColumn += len(runes)
+	e.CursorRow, e.CursorColumn = e.rowColFromTextPos(pos + len(runes))
 	e.Unlock()
 	e.updateText(provider.String())
-	cache.Renderer(e.super()).(*entryRenderer).moveCursor()
+	e.Refresh()
 }
 
 // KeyDown handler for keypress events - used to store shift modifier state for text selection
@@ -829,8 +840,7 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 
 	if e.selectKeyDown || e.selecting {
 		if e.selectingKeyHandler(key) {
-			e.updateText(provider.String())
-			cache.Renderer(e).(*entryRenderer).moveCursor()
+			e.Refresh()
 			return
 		}
 	}
@@ -845,14 +855,8 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 		}
 		pos := e.cursorTextPos()
 		e.Lock()
-		deleted := provider.deleteFromTo(pos-1, pos)
-		if deleted[0] == '\n' {
-			e.CursorRow--
-			rowLength := provider.rowLength(e.CursorRow)
-			e.CursorColumn = rowLength
-		} else {
-			e.CursorColumn--
-		}
+		provider.deleteFromTo(pos-1, pos)
+		e.CursorRow, e.CursorColumn = e.rowColFromTextPos(pos - 1)
 		e.Unlock()
 	case fyne.KeyDelete:
 		pos := e.cursorTextPos()
@@ -955,12 +959,17 @@ func (e *Entry) TypedKey(key *fyne.KeyEvent) {
 	}
 
 	e.updateText(provider.String())
-	cache.Renderer(e).(*entryRenderer).moveCursor()
+
+	if e.CursorRow == e.selectRow && e.CursorColumn == e.selectColumn {
+		e.selecting = false
+	}
+
+	e.Refresh()
 }
 
 // TypedShortcut implements the Shortcutable interface
-func (e *Entry) TypedShortcut(shortcut fyne.Shortcut) bool {
-	return e.shortcut.TypedShortcut(shortcut)
+func (e *Entry) TypedShortcut(shortcut fyne.Shortcut) {
+	e.shortcut.TypedShortcut(shortcut)
 }
 
 // textProvider returns the text handler for this entry
@@ -990,6 +999,19 @@ func (e *Entry) textAlign() fyne.TextAlign {
 	return fyne.TextAlignLeading
 }
 
+// textWrap tells the rendering textProvider our wrapping
+func (e *Entry) textWrap() fyne.TextWrap {
+	if e.Wrapping == fyne.TextTruncate {
+		fyne.LogError("Entry does not allow Truncation", nil)
+		e.Wrapping = fyne.TextWrapOff
+	}
+	if !e.MultiLine && e.Wrapping != fyne.TextWrapOff {
+		fyne.LogError("Entry cannot wrap single line", nil)
+		e.Wrapping = fyne.TextWrapOff
+	}
+	return e.Wrapping
+}
+
 // textStyle tells the rendering textProvider our style
 func (e *Entry) textStyle() fyne.TextStyle {
 	return fyne.TextStyle{}
@@ -1003,8 +1025,8 @@ func (e *Entry) textColor() color.Color {
 	return theme.TextColor()
 }
 
-// password tells the rendering textProvider if we are a password field
-func (e *Entry) password() bool {
+// concealed tells the rendering textProvider if we are a concealed field
+func (e *Entry) concealed() bool {
 	return e.Password
 }
 
@@ -1022,6 +1044,11 @@ func (p *placeholderPresenter) textAlign() fyne.TextAlign {
 	return fyne.TextAlignLeading
 }
 
+// textWrap tells the rendering textProvider our wrapping
+func (p *placeholderPresenter) textWrap() fyne.TextWrap {
+	return p.e.Wrapping
+}
+
 // textStyle tells the rendering textProvider our style
 func (p *placeholderPresenter) textStyle() fyne.TextStyle {
 	return fyne.TextStyle{}
@@ -1032,9 +1059,9 @@ func (p *placeholderPresenter) textColor() color.Color {
 	return theme.PlaceHolderColor()
 }
 
-// password tells the rendering textProvider if we are a password field
+// concealed tells the rendering textProvider if we are a concealed field
 // placeholder text is not obfuscated, returning false
-func (p *placeholderPresenter) password() bool {
+func (p *placeholderPresenter) concealed() bool {
 	return false
 }
 
@@ -1048,7 +1075,7 @@ func (e *Entry) MinSize() fyne.Size {
 	e.ExtendBaseWidget(e)
 
 	min := e.BaseWidget.MinSize()
-	if e.passwordRevealer != nil {
+	if e.ActionItem != nil {
 		min = min.Add(fyne.NewSize(theme.IconInlineSize()+theme.Padding(), 0))
 	}
 
@@ -1065,8 +1092,14 @@ func (e *Entry) CreateRenderer() fyne.WidgetRenderer {
 
 	objects := []fyne.CanvasObject{line, e.placeholderProvider(), e.textProvider(), cursor}
 
-	if e.passwordRevealer != nil {
-		objects = append(objects, e.passwordRevealer)
+	if e.Password && e.ActionItem == nil {
+		// An entry widget has been created via struct setting manually
+		// the Password field to true. Going to enable the password revealer.
+		e.ActionItem = newPasswordRevealer(e)
+	}
+
+	if e.ActionItem != nil {
+		objects = append(objects, e.ActionItem)
 	}
 	return &entryRenderer{line, cursor, []fyne.CanvasObject{}, objects, e}
 }
@@ -1089,18 +1122,26 @@ func (e *Entry) registerShortcut() {
 	})
 }
 
+// ExtendBaseWidget is used by an extending widget to make use of BaseWidget functionality.
+func (e *Entry) ExtendBaseWidget(wid fyne.Widget) {
+	if e.BaseWidget.impl != nil {
+		return
+	}
+
+	e.BaseWidget.impl = wid
+	e.registerShortcut()
+}
+
 // NewEntry creates a new single line entry widget.
 func NewEntry() *Entry {
 	e := &Entry{}
 	e.ExtendBaseWidget(e)
-	e.registerShortcut()
 	return e
 }
 
 // NewMultiLineEntry creates a new entry that allows multiple lines
 func NewMultiLineEntry() *Entry {
 	e := &Entry{MultiLine: true}
-	e.registerShortcut()
 	e.ExtendBaseWidget(e)
 	return e
 }
@@ -1109,19 +1150,12 @@ func NewMultiLineEntry() *Entry {
 func NewPasswordEntry() *Entry {
 	e := &Entry{Password: true}
 	e.ExtendBaseWidget(e)
-	e.registerShortcut()
-
-	pr := &passwordRevealer{
-		icon:  canvas.NewImageFromResource(theme.VisibilityOffIcon()),
-		entry: e,
-	}
-	pr.ExtendBaseWidget(pr)
-
-	e.passwordRevealer = pr
+	e.ActionItem = newPasswordRevealer(e)
 	return e
 }
 
 type passwordRevealerRenderer struct {
+	widget.BaseRenderer
 	entry *Entry
 	icon  *canvas.Image
 }
@@ -1133,10 +1167,6 @@ func (prr *passwordRevealerRenderer) MinSize() fyne.Size {
 func (prr *passwordRevealerRenderer) Layout(size fyne.Size) {
 	prr.icon.Resize(fyne.NewSize(theme.IconInlineSize(), theme.IconInlineSize()))
 	prr.icon.Move(fyne.NewPos((size.Width-theme.IconInlineSize())/2, (size.Height-theme.IconInlineSize())/2))
-}
-
-func (prr *passwordRevealerRenderer) BackgroundColor() color.Color {
-	return theme.BackgroundColor()
 }
 
 func (prr *passwordRevealerRenderer) Refresh() {
@@ -1151,13 +1181,6 @@ func (prr *passwordRevealerRenderer) Refresh() {
 	canvas.Refresh(prr.icon)
 }
 
-func (prr *passwordRevealerRenderer) Destroy() {
-}
-
-func (prr *passwordRevealerRenderer) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{prr.icon}
-}
-
 type passwordRevealer struct {
 	BaseWidget
 
@@ -1166,7 +1189,11 @@ type passwordRevealer struct {
 }
 
 func (pr *passwordRevealer) CreateRenderer() fyne.WidgetRenderer {
-	return &passwordRevealerRenderer{icon: pr.icon, entry: pr.entry}
+	return &passwordRevealerRenderer{
+		BaseRenderer: widget.NewBaseRenderer([]fyne.CanvasObject{pr.icon}),
+		icon:         pr.icon,
+		entry:        pr.entry,
+	}
 }
 
 func (pr *passwordRevealer) Tapped(*fyne.PointEvent) {
@@ -1177,5 +1204,15 @@ func (pr *passwordRevealer) Tapped(*fyne.PointEvent) {
 	fyne.CurrentApp().Driver().CanvasForObject(pr).Focus(pr.entry)
 }
 
-func (pr *passwordRevealer) TappedSecondary(*fyne.PointEvent) {
+func (pr *passwordRevealer) Cursor() desktop.Cursor {
+	return desktop.DefaultCursor
+}
+
+func newPasswordRevealer(e *Entry) *passwordRevealer {
+	pr := &passwordRevealer{
+		icon:  canvas.NewImageFromResource(theme.VisibilityOffIcon()),
+		entry: e,
+	}
+	pr.ExtendBaseWidget(pr)
+	return pr
 }

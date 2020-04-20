@@ -26,14 +26,17 @@ func main() {
 			return
 		}
 
-		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok && status == 0 {
-			log.Println("Exiting Error 0")
-			return
-		} else if status == 512 { // X server unavailable
-			log.Println("X server went away")
-			return
-		} else {
-			log.Println("Restart from status", status)
+		if exit, ok := exitErr.Sys().(syscall.WaitStatus); ok {
+			status := exit.ExitStatus()
+			if status == 0 {
+				log.Println("Exiting Error 0")
+				return
+			} else if status == 512 { // X server unavailable
+				log.Println("X server went away")
+				return
+			} else {
+				log.Println("Restart from status", status)
+			}
 		}
 	}
 }

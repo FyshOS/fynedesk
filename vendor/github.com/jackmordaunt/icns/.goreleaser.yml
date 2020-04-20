@@ -24,9 +24,8 @@ builds:
   - "6"
   targets:
   - linux_amd64
-  - linux_386
   - darwin_amd64
-  - darwin_386
+  - windows_amd64
   main: ./cmd/icnsify
   ldflags: -s -w -X main.version={{.Version}} -X main.commit={{.Commit}} -X main.date={{.Date}}
   binary: icnsify
@@ -44,7 +43,7 @@ archive:
   - README*
   - changelog*
   - CHANGELOG*
-fpm:
+nfpm:
   name_template: '{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}{{ if .Arm
     }}v{{ .Arm }}{{ end }}'
   bindir: /usr/local/bin

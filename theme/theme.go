@@ -1,8 +1,9 @@
-package theme // import "fyne.io/desktop/theme"
+package theme // import "fyne.io/fynedesk/theme"
 
 import (
-	"fyne.io/fyne/theme"
 	"image/color"
+
+	"fyne.io/fyne/theme"
 )
 
 var (

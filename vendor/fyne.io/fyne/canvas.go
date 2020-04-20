@@ -19,10 +19,22 @@ type Canvas interface {
 	Scale() float32
 	// SetScale sets ths scale for this canvas only, overriding system and user settings.
 	//
-	// Deprecated: SetScale will be replaced by system wide settings in the future
+	// Deprecated: Settings are now calculated solely on the user configuration and system setup.
 	SetScale(float32)
 
+	// Overlay returns the current overlay.
+	//
+	// Deprecated: Overlays are stacked now.
+	// This method returns the top of the overlay stack.
+	// Use Overlays() instead.
 	Overlay() CanvasObject
+	// Overlays returns the overlay stack.
+	Overlays() OverlayStack
+	// SetOverlay sets the overlay for the canvas.
+	//
+	// Deprecated: Overlays are stacked now.
+	// This method replaces the whole stack by the given overlay.
+	// Use Overlays() instead.
 	SetOverlay(CanvasObject)
 
 	OnTypedRune() func(rune)
@@ -32,4 +44,8 @@ type Canvas interface {
 	AddShortcut(shortcut Shortcut, handler func(shortcut Shortcut))
 
 	Capture() image.Image
+
+	// PixelCoordinateForPosition returns the x and y pixel coordinate for a given position on this canvas.
+	// This can be used to find absolute pixel positions or pixel offsets relative to an object top left.
+	PixelCoordinateForPosition(Position) (int, int)
 }

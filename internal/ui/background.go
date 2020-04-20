@@ -10,8 +10,8 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 type background struct {
@@ -22,21 +22,7 @@ type background struct {
 }
 
 func (b *background) CreateRenderer() fyne.WidgetRenderer {
-	mods := desktop.Instance().Modules()
-	objects := []fyne.CanvasObject{b.wallpaper}
-
-	for _, m := range mods {
-		if deskMod, ok := m.(desktop.ScreenAreaModule); ok {
-			wid := deskMod.ScreenAreaWidget()
-			if wid == nil {
-				continue
-			}
-
-			objects = append(objects, wid)
-		}
-	}
-
-	c := fyne.NewContainerWithLayout(layout.NewMaxLayout(), objects...)
+	c := fyne.NewContainerWithLayout(layout.NewMaxLayout(), b.loadModules()...)
 	return &backgroundRenderer{b: b, c: c}
 }
 
@@ -67,7 +53,24 @@ func (b *backgroundRenderer) Objects() []fyne.CanvasObject {
 func (b *backgroundRenderer) Destroy() {
 }
 
-func (b *background) updateBackgroundPath(path string) {
+func (b *background) loadModules() []fyne.CanvasObject {
+	objects := []fyne.CanvasObject{b.wallpaper}
+
+	for _, m := range fynedesk.Instance().Modules() {
+		if deskMod, ok := m.(fynedesk.ScreenAreaModule); ok {
+			wid := deskMod.ScreenAreaWidget()
+			if wid == nil {
+				continue
+			}
+
+			objects = append(objects, wid)
+		}
+	}
+
+	return objects
+}
+
+func (b *background) updateBackground(path string) {
 	_, err := os.Stat(path)
 	if path == "" || os.IsNotExist(err) {
 		b.wallpaper.Resource = wmtheme.Background
@@ -77,10 +80,11 @@ func (b *background) updateBackgroundPath(path string) {
 
 	b.wallpaper.Resource = nil
 	b.wallpaper.File = path
+	b.loadModules()
 }
 
 func backgroundPath() string {
-	pathEnv := desktop.Instance().Settings().Background()
+	pathEnv := fynedesk.Instance().Settings().Background()
 	if pathEnv == "" {
 		return ""
 	}
@@ -101,5 +105,7 @@ func newBackground() *background {
 		bg = canvas.NewImageFromResource(wmtheme.Background)
 	}
 
-	return &background{wallpaper: bg}
+	ret := &background{wallpaper: bg}
+	ret.ExtendBaseWidget(ret)
+	return ret
 }
