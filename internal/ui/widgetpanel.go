@@ -105,6 +105,7 @@ func (w *widgetPanel) createClock() {
 }
 
 func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
+	isEmbed := w.desk.(*deskLayout).controlWin == nil
 	items := []*fyne.MenuItem{
 		fyne.NewMenuItem("About", func() {
 			showAbout()
@@ -113,17 +114,17 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 			showSettings(w.desk.Settings().(*deskSettings))
 		}),
 	}
-	if w.desk.WindowManager() != nil {
+	if !isEmbed {
 		items = append(items, fyne.NewMenuItem("Blank Screen", w.desk.WindowManager().Blank))
-	}
-	if os.Getenv("FYNE_DESK_RUNNER") != "" && w.desk.(*deskLayout).wm != nil {
-		items = append(items, fyne.NewMenuItem("Reload", func() {
-			os.Exit(5)
-		}))
+		if os.Getenv("FYNE_DESK_RUNNER") != "" {
+			items = append(items, fyne.NewMenuItem("Reload", func() {
+				os.Exit(5)
+			}))
+		}
 	}
 
 	closeLabel := "Log Out"
-	if w.desk.(*deskLayout).wm == nil {
+	if isEmbed {
 		closeLabel = "Quit"
 	}
 

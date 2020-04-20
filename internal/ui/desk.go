@@ -3,7 +3,6 @@ package ui
 import (
 	"fmt"
 	"math"
-	"runtime/debug"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
@@ -24,6 +23,8 @@ type deskLayout struct {
 	screens  fynedesk.ScreenList
 	settings fynedesk.DeskSettings
 
+	run                 func()
+	newDesktopWindow    func(string) fyne.Window
 	backgroundScreenMap map[*background]*fynedesk.Screen
 
 	bar        *bar
@@ -56,25 +57,8 @@ func (l *deskLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	}
 }
 
-func (l *deskLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	if l.wm == nil {
-		return fyne.NewSize(1024, 576)
-	}
-	return fyne.NewSize(640, 480) // tiny - the window manager will scale up to screen size
-}
-
-func (l *deskLayout) newDesktopWindow(outputName string) fyne.Window {
-	if l.wm == nil {
-		win := l.app.NewWindow("Embedded " + RootWindowName)
-		win.SetPadded(false)
-		return win
-	}
-
-	desk := l.app.NewWindow(fmt.Sprintf("%s%s", RootWindowName, outputName))
-	desk.SetPadded(false)
-	desk.SetFullScreen(true)
-
-	return desk
+func (l *deskLayout) MinSize(_ []fyne.CanvasObject) fyne.Size {
+	return fyne.NewSize(1024, 576) // just for embed - a window manager will scale up to screen size
 }
 
 func (l *deskLayout) updateBackgrounds(path string) {
@@ -98,13 +82,11 @@ func (l *deskLayout) createRoot(screen *fynedesk.Screen) {
 	if screen == l.screens.Primary() {
 		l.primaryWin = win
 		l.createPrimaryContent()
-		if l.wm != nil {
-			win.SetOnClosed(func() {
-				if !l.refreshing {
-					l.controlWin.Close()
-				}
-			})
-		}
+		win.SetOnClosed(func() {
+			if l.controlWin != nil && !l.refreshing {
+				l.controlWin.Close()
+			}
+		})
 		win.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
 		l.mouse.Hide()
 	} else {
@@ -170,25 +152,7 @@ func (l *deskLayout) setupRoots() {
 }
 
 func (l *deskLayout) Run() {
-	if l.wm == nil {
-		l.roots[0].ShowAndRun()
-		return
-	}
-	if l.controlWin == nil {
-		return
-	}
-	debug.SetPanicOnFault(true)
-
-	defer func() {
-		if r := recover(); r != nil {
-			debug.PrintStack()
-			if l.wm != nil {
-				l.wm.Close() // attempt to close cleanly to leave X server running
-			}
-		}
-	}()
-
-	l.controlWin.ShowAndRun()
+	l.run() // use the configured run method
 }
 
 func (l *deskLayout) RunApp(app fynedesk.AppData) error {
@@ -296,31 +260,24 @@ func (l *deskLayout) Screens() fynedesk.ScreenList {
 	return l.screens
 }
 
-func (l *deskLayout) setupInitialVars() {
-	fynedesk.SetInstance(l)
-	l.settings = newDeskSettings()
-	l.addSettingsChangeListener()
-	l.backgroundScreenMap = make(map[*background]*fynedesk.Screen)
-
-	if l.wm != nil {
-		l.controlWin = l.app.NewWindow(RootWindowName)
-		l.controlWin.Resize(fyne.NewSize(1, 1))
-		l.controlWin.SetMaster()
-		l.controlWin.SetOnClosed(func() {
-			l.wm.Close()
-		})
-	}
-
-	l.setupRoots()
-}
-
 // NewDesktop creates a new desktop in fullscreen for main usage.
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An ApplicationProvider is used to lookup application icons from the operating system.
 func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider, screenProvider fynedesk.ScreenList) fynedesk.Desktop {
-	desk := &deskLayout{app: app, wm: wm, icons: icons, screens: screenProvider}
+	desk := newDesktop(app, wm, icons)
+	desk.run = desk.runFull
+	desk.newDesktopWindow = desk.newDesktopWindowFull
 	screenProvider.AddChangeListener(desk.screensChanged)
-	desk.setupInitialVars()
+	desk.screens = screenProvider
+
+	desk.controlWin = desk.app.NewWindow(RootWindowName)
+	desk.controlWin.Resize(fyne.NewSize(1, 1))
+	desk.controlWin.SetMaster()
+	desk.controlWin.SetOnClosed(func() {
+		desk.wm.Close()
+	})
+
+	desk.setupRoots()
 	return desk
 }
 
@@ -329,7 +286,21 @@ func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
 func NewEmbeddedDesktop(app fyne.App, icons fynedesk.ApplicationProvider) fynedesk.Desktop {
-	desk := &deskLayout{app: app, icons: icons, screens: newEmbeddedScreensProvider()}
-	desk.setupInitialVars()
+	desk := newDesktop(app, &embededWM{}, icons)
+	desk.run = desk.runEmbed
+	desk.newDesktopWindow = desk.newDesktopWindowEmbed
+
+	desk.setupRoots()
+	return desk
+}
+
+func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider) *deskLayout {
+	desk := &deskLayout{app: app, wm: wm, icons: icons, screens: newEmbeddedScreensProvider()}
+
+	fynedesk.SetInstance(desk)
+	desk.settings = newDeskSettings()
+	desk.addSettingsChangeListener()
+	desk.backgroundScreenMap = make(map[*background]*fynedesk.Screen)
+
 	return desk
 }
