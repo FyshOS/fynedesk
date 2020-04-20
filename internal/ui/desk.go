@@ -6,7 +6,6 @@ import (
 	"runtime/debug"
 
 	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/fynedesk"
@@ -81,7 +80,6 @@ func (l *deskLayout) newDesktopWindow(outputName string) fyne.Window {
 func (l *deskLayout) updateBackgrounds(path string) {
 	for bg := range l.backgroundScreenMap {
 		bg.updateBackground(path)
-		canvas.Refresh(bg)
 	}
 }
 
