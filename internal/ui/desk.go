@@ -25,6 +25,7 @@ type deskLayout struct {
 	settings fynedesk.DeskSettings
 
 	backgroundScreenMap map[*background]*fynedesk.Screen
+	moduleCache         []fynedesk.Module
 
 	bar        *bar
 	widgets    *widgetPanel
@@ -217,15 +218,29 @@ func (l *deskLayout) WindowManager() fynedesk.WindowManager {
 	return l.wm
 }
 
+func (l *deskLayout) clearModuleCache() {
+	for _, mod := range l.moduleCache {
+		mod.Destroy()
+	}
+
+	l.moduleCache = nil
+}
 func (l *deskLayout) Modules() []fynedesk.Module {
+	if l.moduleCache != nil {
+		return l.moduleCache
+	}
+
 	var mods []fynedesk.Module
 	for _, meta := range fynedesk.AvailableModules() {
 		if !isModuleEnabled(meta.Name, l.settings) {
 			continue
 		}
-		mods = append(mods, meta.NewInstance())
+
+		instance := meta.NewInstance()
+		mods = append(mods, instance)
 	}
 
+	l.moduleCache = mods
 	return mods
 }
 
@@ -273,6 +288,7 @@ func (l *deskLayout) MouseOutNotify() {
 func (l *deskLayout) startSettingsChangeListener(settings chan fynedesk.DeskSettings) {
 	for {
 		s := <-settings
+		l.clearModuleCache()
 		l.updateBackgrounds(s.Background())
 		l.widgets.reloadModules(l.Modules())
 

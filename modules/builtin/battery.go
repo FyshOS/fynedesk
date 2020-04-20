@@ -21,7 +21,8 @@ var batteryMeta = fynedesk.ModuleMetadata{
 }
 
 type battery struct {
-	bar *widget.ProgressBar
+	bar  *widget.ProgressBar
+	done bool
 }
 
 func (b *battery) value() (float64, error) {
@@ -45,12 +46,16 @@ func (b *battery) value() (float64, error) {
 func (b *battery) batteryTick() {
 	tick := time.NewTicker(time.Second * 10)
 	go func() {
-		for {
+		for !b.done {
 			val, _ := b.value()
 			b.bar.SetValue(val)
 			<-tick.C
 		}
 	}()
+}
+
+func (b *battery) Destroy() {
+	b.done = true
 }
 
 func (b *battery) StatusAreaWidget() fyne.CanvasObject {
