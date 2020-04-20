@@ -26,6 +26,9 @@ type network struct {
 	icon *widget.Icon
 }
 
+func (n *network) Destroy() {
+}
+
 func (n *network) wirelessName() (string, error) {
 	out, err := exec.Command("bash", []string{"-c", "iw dev `iw dev | grep Interface | cut -d \" \" -f2` info | grep ssid | cut -d \" \" -f 2"}...).Output()
 	if err != nil {
