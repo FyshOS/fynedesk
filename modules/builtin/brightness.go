@@ -25,6 +25,9 @@ type brightness struct {
 	bar *widget.ProgressBar
 }
 
+func (b *brightness) Destroy() {
+}
+
 func (b *brightness) value() (float64, error) {
 	out, err := exec.Command("xbacklight").Output()
 	if err != nil {
