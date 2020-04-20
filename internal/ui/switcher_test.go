@@ -5,14 +5,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
-func testWindows() []desktop.Window {
+func testWindows() []fynedesk.Window {
 	desk := &deskLayout{}
 	desk.settings = &testSettings{}
-	desktop.SetInstance(desk)
-	return []desktop.Window{
+	fynedesk.SetInstance(desk)
+	return []fynedesk.Window{
 		&dummyWindow{name: "App1"},
 		&dummyWindow{name: "App2"},
 		&dummyWindow{name: "App3"},

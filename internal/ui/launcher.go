@@ -6,7 +6,7 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 )
 
 var appExec *picker
@@ -34,8 +34,8 @@ func (e *appEntry) TypedKey(ev *fyne.KeyEvent) {
 
 type picker struct {
 	win      fyne.Window
-	desk     desktop.Desktop
-	callback func(data desktop.AppData)
+	desk     fynedesk.Desktop
+	callback func(data fynedesk.AppData)
 
 	entry       *appEntry
 	appList     *fyne.Container
@@ -97,7 +97,7 @@ func (l *picker) Show() {
 	l.win.Show()
 }
 
-func newAppPicker(title string, callback func(desktop.AppData)) *picker {
+func newAppPicker(title string, callback func(fynedesk.AppData)) *picker {
 	win := fyne.CurrentApp().NewWindow(title)
 	win.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 		if ev.Name == fyne.KeyEscape {
@@ -108,7 +108,7 @@ func newAppPicker(title string, callback func(desktop.AppData)) *picker {
 
 	appList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 	appScroller := widget.NewScrollContainer(appList)
-	l := &picker{win: win, desk: desktop.Instance(), appList: appList, callback: callback}
+	l := &picker{win: win, desk: fynedesk.Instance(), appList: appList, callback: callback}
 
 	entry := &appEntry{pick: l}
 	entry.ExtendBaseWidget(entry)
@@ -143,8 +143,8 @@ func ShowAppLauncher() {
 		return
 	}
 
-	appExec = newAppPicker("Application Launcher", func(app desktop.AppData) {
-		err := desktop.Instance().RunApp(app)
+	appExec = newAppPicker("Application Launcher", func(app fynedesk.AppData) {
+		err := fynedesk.Instance().RunApp(app)
 		if err != nil {
 			fyne.LogError("Failed to start app", err)
 			return

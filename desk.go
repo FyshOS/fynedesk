@@ -1,4 +1,4 @@
-package desktop // import "fyne.io/desktop"
+package fynedesk // import "fyne.io/fynedesk"
 
 // Desktop defines an embedded or full desktop environment that we can run.
 type Desktop interface {

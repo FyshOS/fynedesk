@@ -55,7 +55,7 @@ type TabContainer struct {
 func (t *TabContainer) Show() {
 	t.BaseWidget.Show()
 	t.SelectTabIndex(t.current)
-	t.refresh(t)
+	t.Refresh()
 }
 
 // SelectTab sets the specified TabItem to be selected and its content visible.
@@ -94,7 +94,7 @@ func (t *TabContainer) SelectTabIndex(index int) {
 
 	r := cache.Renderer(t).(*tabContainerRenderer)
 	r.Layout(t.size)
-	t.refresh(t)
+	t.Refresh()
 }
 
 // CurrentTabIndex returns the index of the currently selected TabItem.
@@ -134,7 +134,11 @@ func (t *TabContainer) MinSize() fyne.Size {
 func (t *TabContainer) buildTabBar(buttons []fyne.CanvasObject) *fyne.Container {
 	var lay fyne.Layout
 	if fyne.CurrentDevice().IsMobile() {
-		lay = layout.NewGridLayout(len(buttons))
+		cells := len(buttons)
+		if cells == 0 {
+			cells = 1
+		}
+		lay = layout.NewGridLayout(cells)
 	} else if t.tabLocation == TabLocationLeading || t.tabLocation == TabLocationTrailing {
 		lay = layout.NewVBoxLayout()
 	} else {
@@ -318,7 +322,7 @@ func (t *tabContainerRenderer) Layout(size fyne.Size) {
 	t.tabBar.Resize(tabBarSize)
 	t.line.Move(linePos)
 	t.line.Resize(lineSize)
-	if t.container.current < len(t.container.Items) {
+	if t.container.current >= 0 && t.container.current < len(t.container.Items) {
 		child := t.container.Items[t.container.current].Content
 		child.Move(childPos)
 		child.Resize(childSize)

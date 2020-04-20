@@ -13,9 +13,10 @@ import (
 	"github.com/jackmordaunt/icns"
 	"howett.net/plist"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
+
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 type macOSAppBundle struct {
@@ -55,7 +56,7 @@ func (m *macOSAppBundle) Run([]string) error {
 	return exec.Command("open", "-a", m.runPath).Start()
 }
 
-func loadAppBundle(name, path string) desktop.AppData {
+func loadAppBundle(name, path string) fynedesk.AppData {
 	buf, err := os.Open(filepath.Join(path, "Contents", "Info.plist"))
 	if err != nil {
 		fyne.LogError("Unable to read application plist", err)
@@ -81,29 +82,34 @@ func loadAppBundle(name, path string) desktop.AppData {
 }
 
 type macOSAppProvider struct {
-	rootDir string
+	rootDirs []string
 }
 
-func (m *macOSAppProvider) FindIconsMatchingAppName(theme string, size int, appName string) []desktop.AppData {
+func (m *macOSAppProvider) FindIconsMatchingAppName(theme string, size int, appName string) []fynedesk.AppData {
 	panic("implement me")
 }
 
 func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
-	files, err := ioutil.ReadDir(m.rootDir)
-	if err != nil {
-		fyne.LogError("Could not read applications directory "+m.rootDir, err)
-		return
-	}
-	for _, file := range files {
-		appDir := filepath.Join(m.rootDir, file.Name())
-		if f(file.Name()[0:len(file.Name())-4], appDir) {
-			break
+	for _, root := range m.rootDirs {
+		files, err := ioutil.ReadDir(root)
+		if err != nil {
+			fyne.LogError("Could not read applications directory "+root, err)
+			return
+		}
+		for _, file := range files {
+			if !file.IsDir() || !strings.HasSuffix(file.Name(), ".app") {
+				continue // skip non-app bundles
+			}
+			appDir := filepath.Join(root, file.Name())
+			if f(file.Name()[0:len(file.Name())-4], appDir) {
+				break
+			}
 		}
 	}
 }
 
-func (m *macOSAppProvider) AvailableApps() []desktop.AppData {
-	var icons []desktop.AppData
+func (m *macOSAppProvider) AvailableApps() []fynedesk.AppData {
+	var icons []fynedesk.AppData
 	m.forEachApplication(func(name, path string) bool {
 		app := loadAppBundle(name, path)
 		if app != nil {
@@ -119,8 +125,8 @@ func (m *macOSAppProvider) AvailableThemes() []string {
 	return []string{}
 }
 
-func (m *macOSAppProvider) FindAppFromName(appName string) desktop.AppData {
-	var icon desktop.AppData
+func (m *macOSAppProvider) FindAppFromName(appName string) fynedesk.AppData {
+	var icon fynedesk.AppData
 	m.forEachApplication(func(name, path string) bool {
 		if name == appName {
 			icon = loadAppBundle(name, path)
@@ -135,12 +141,12 @@ func (m *macOSAppProvider) FindAppFromName(appName string) desktop.AppData {
 	return icon
 }
 
-func (m *macOSAppProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppData {
+func (m *macOSAppProvider) FindAppFromWinInfo(win fynedesk.Window) fynedesk.AppData {
 	return m.FindAppFromName(win.Title())
 }
 
-func (m *macOSAppProvider) DefaultApps() []desktop.AppData {
-	var apps []desktop.AppData
+func (m *macOSAppProvider) DefaultApps() []fynedesk.AppData {
+	var apps []fynedesk.AppData
 
 	apps = appendAppIfExists(apps, findOneAppFromNames(m, "Terminal", "iTerm"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(m, "Google Chrome", "Firefox", "Safari"))
@@ -151,8 +157,8 @@ func (m *macOSAppProvider) DefaultApps() []desktop.AppData {
 	return apps
 }
 
-func (m *macOSAppProvider) FindAppsMatching(pattern string) []desktop.AppData {
-	var icons []desktop.AppData
+func (m *macOSAppProvider) FindAppsMatching(pattern string) []fynedesk.AppData {
+	var icons []fynedesk.AppData
 	m.forEachApplication(func(name, path string) bool {
 		if !strings.Contains(strings.ToLower(name), strings.ToLower(pattern)) {
 			return false
@@ -169,6 +175,7 @@ func (m *macOSAppProvider) FindAppsMatching(pattern string) []desktop.AppData {
 }
 
 // NewMacOSAppProvider creates an instance of an ApplicationProvider that can find and decode macOS apps
-func NewMacOSAppProvider() desktop.ApplicationProvider {
-	return &macOSAppProvider{rootDir: "/Applications"}
+func NewMacOSAppProvider() fynedesk.ApplicationProvider {
+	return &macOSAppProvider{rootDirs: []string{"/Applications", "/Applications/Utilities",
+		"/System/Applications", "/System/Applications/Utilities"}}
 }

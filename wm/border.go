@@ -1,9 +1,6 @@
 package wm
 
 import (
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
-
 	"image/color"
 
 	"fyne.io/fyne"
@@ -11,9 +8,10 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-)
 
-var iconSize = 32
+	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
+)
 
 func makeFiller(width int) fyne.CanvasObject {
 	filler := canvas.NewRectangle(theme.BackgroundColor()) // make a border on the X axis only
@@ -22,14 +20,15 @@ func makeFiller(width int) fyne.CanvasObject {
 	return filler
 }
 
-func newBorder(win desktop.Window, icon fyne.Resource) fyne.CanvasObject {
-	desk := desktop.Instance()
+// NewBorder creates a new window border for the given window details
+func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.CanvasObject {
+	desk := fynedesk.Instance()
 
 	if icon == nil {
 		iconTheme := desk.Settings().IconTheme()
 		app := desk.IconProvider().FindAppFromWinInfo(win)
 		if app != nil {
-			icon = app.Icon(iconTheme, iconSize)
+			icon = app.Icon(iconTheme, wmTheme.TitleHeight*2)
 		}
 	}
 
@@ -38,6 +37,9 @@ func newBorder(win desktop.Window, icon fyne.Resource) fyne.CanvasObject {
 	max := widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {})
 	if win.Maximized() {
 		max.Icon = theme.ViewRestoreIcon()
+	}
+	if !canMaximize {
+		max.Disable()
 	}
 	titleBar := newColoredHBox(win.Focused(), makeFiller(0),
 		exit,

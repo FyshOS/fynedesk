@@ -9,10 +9,10 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"fyne.io/desktop"
-
 	"fyne.io/fyne"
 	_ "fyne.io/fyne/test"
+
+	"fyne.io/fynedesk"
 )
 
 var iconTheme = "default_theme"
@@ -105,7 +105,7 @@ func (*dummyWindow) Unmaximize() {
 	// no-op
 }
 
-func (*dummyWindow) RaiseAbove(desktop.Window) {
+func (*dummyWindow) RaiseAbove(fynedesk.Window) {
 	// no-op (this is instructing the window after stack changes)
 }
 
@@ -113,7 +113,7 @@ func (*dummyWindow) RaiseToTop() {
 	// no-op
 }
 
-func exists(data desktop.AppData) bool {
+func exists(data fynedesk.AppData) bool {
 	return data != nil && data.Icon(iconTheme, iconSize) != nil
 }
 

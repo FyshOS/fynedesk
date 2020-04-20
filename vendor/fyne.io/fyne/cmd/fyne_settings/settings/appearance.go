@@ -39,7 +39,7 @@ func (s *Settings) saveToFile(path string) error {
 		if !os.IsExist(err) {
 			return err
 		}
-		file, err = os.Open(path)
+		file, err = os.Open(path) // #nosec
 		if err != nil {
 			return err
 		}
@@ -57,10 +57,13 @@ func (s *Settings) load() {
 }
 
 func (s *Settings) loadFromFile(path string) error {
-	file, err := os.Open(path)
+	file, err := os.Open(path) // #nosec
 	if err != nil {
 		if os.IsNotExist(err) {
-			os.MkdirAll(filepath.Dir(path), 0700)
+			err := os.MkdirAll(filepath.Dir(path), 0700)
+			if err != nil {
+				return err
+			}
 			return nil
 		}
 		return err
@@ -115,7 +118,10 @@ func (s *Settings) LoadAppearanceScreen() fyne.CanvasObject {
 		&widget.FormItem{Text: "Theme", Widget: themes})
 	bottom := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
-			s.save()
+			err := s.save()
+			if err != nil {
+				fyne.LogError("Failed on saving", err)
+			}
 		}})
 
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, bottom, nil, nil),

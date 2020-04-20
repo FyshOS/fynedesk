@@ -3,7 +3,7 @@ package ui
 import (
 	"testing"
 
-	"fyne.io/desktop"
+	"fyne.io/fynedesk"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/test"
@@ -13,8 +13,8 @@ import (
 
 func TestLauncher_ListMatches(t *testing.T) {
 	names := []string{"App 1", "App 2", "Another"}
-	desktop.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
-	launcher := newAppPicker("Test", func(data desktop.AppData) {})
+	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	apps := launcher.appButtonListMatching("App")
 	assert.Equal(t, 2, len(apps))
@@ -31,8 +31,8 @@ func TestLauncher_ListMatches(t *testing.T) {
 
 func TestLauncher_ListTyped(t *testing.T) {
 	names := []string{"App 1", "App 2", "Another"}
-	desktop.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
-	launcher := newAppPicker("Test", func(data desktop.AppData) {})
+	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	assert.Equal(t, 0, len(launcher.appList.Objects))
 	test.Type(launcher.entry, "App")
@@ -43,8 +43,8 @@ func TestLauncher_ListTyped(t *testing.T) {
 
 func TestLauncher_ListActive(t *testing.T) {
 	names := []string{"App 1", "App 2", "Another"}
-	desktop.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
-	launcher := newAppPicker("Test", func(data desktop.AppData) {})
+	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	assert.Equal(t, 0, len(launcher.appList.Objects))
 	assert.Equal(t, 0, launcher.activeIndex)
@@ -57,8 +57,8 @@ func TestLauncher_ListActive(t *testing.T) {
 
 func TestLauncher_setActiveIndex(t *testing.T) {
 	names := []string{"App 1", "App 2", "Another"}
-	desktop.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
-	launcher := newAppPicker("Test", func(data desktop.AppData) {})
+	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	launcher.appList.Objects = launcher.appButtonListMatching("App")
 	assert.Equal(t, 0, launcher.activeIndex)

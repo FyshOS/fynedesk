@@ -1,8 +1,9 @@
-# fyne.io/fyne v1.2.4-0.20200325121629-6b8cdee31b7f
+# fyne.io/fyne v1.2.4-0.20200413100731-0338eba4bf40
 fyne.io/fyne
 fyne.io/fyne/app
 fyne.io/fyne/canvas
 fyne.io/fyne/cmd/fyne_settings/settings
+fyne.io/fyne/dialog
 fyne.io/fyne/driver/desktop
 fyne.io/fyne/driver/mobile
 fyne.io/fyne/internal
@@ -47,66 +48,55 @@ github.com/BurntSushi/xgbutil/xgraphics
 github.com/BurntSushi/xgbutil/xprop
 github.com/BurntSushi/xgbutil/xrect
 github.com/BurntSushi/xgbutil/xwindow
-# github.com/davecgh/go-spew v1.1.0
+# github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
-# github.com/fsnotify/fsnotify v1.4.7
+# github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
+# github.com/fyne-io/mobile v0.0.1
+github.com/fyne-io/mobile/app
+github.com/fyne-io/mobile/app/internal/callfn
+github.com/fyne-io/mobile/event/key
+github.com/fyne-io/mobile/event/lifecycle
+github.com/fyne-io/mobile/event/paint
+github.com/fyne-io/mobile/event/size
+github.com/fyne-io/mobile/event/touch
+github.com/fyne-io/mobile/exp/f32
+github.com/fyne-io/mobile/geom
+github.com/fyne-io/mobile/gl
+github.com/fyne-io/mobile/internal/mobileinit
 # github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7
 github.com/go-gl/gl/v3.1/gles2
 github.com/go-gl/gl/v3.2-core/gl
-# github.com/go-gl/glfw/v3.3/glfw v0.0.0-20191125211704-12ad95a8df72
+# github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4
 github.com/go-gl/glfw/v3.3/glfw
 # github.com/goki/freetype v0.0.0-20181231101311-fa8a33aabaff
 github.com/goki/freetype
 github.com/goki/freetype/raster
 github.com/goki/freetype/truetype
-# github.com/jackmordaunt/icns v1.0.0
+# github.com/jackmordaunt/icns v1.0.1-0.20200413110149-9e181b441ab2
 github.com/jackmordaunt/icns
 # github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 github.com/nfnt/resize
-# github.com/pkg/errors v0.8.1
+# github.com/pkg/errors v0.9.1
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/srwiley/oksvg v0.0.0-20200311192757-870daf9aa564
 github.com/srwiley/oksvg
-# github.com/srwiley/rasterx v0.0.0-20181219215540-696f7edb7a7e
+# github.com/srwiley/rasterx v0.0.0-20200120212402-85cb7272f5e9
 github.com/srwiley/rasterx
-# github.com/stretchr/testify v1.4.0
+# github.com/stretchr/testify v1.5.1
 github.com/stretchr/testify/assert
-# golang.org/x/exp v0.0.0-20190306152737-a1d7652674e8
-golang.org/x/exp/shiny/driver/gldriver
-golang.org/x/exp/shiny/driver/internal/drawer
-golang.org/x/exp/shiny/driver/internal/errscreen
-golang.org/x/exp/shiny/driver/internal/event
-golang.org/x/exp/shiny/driver/internal/lifecycler
-golang.org/x/exp/shiny/driver/internal/win32
-golang.org/x/exp/shiny/driver/internal/x11key
-golang.org/x/exp/shiny/screen
-# golang.org/x/image v0.0.0-20190802002840-cff245a6509b
+# golang.org/x/image v0.0.0-20200119044424-58c23975cae1
 golang.org/x/image/colornames
 golang.org/x/image/font
-golang.org/x/image/math/f64
 golang.org/x/image/math/fixed
 golang.org/x/image/vector
-# golang.org/x/mobile v0.0.0-20190719004257-d2bd2a29d028
-golang.org/x/mobile/app
-golang.org/x/mobile/app/internal/callfn
-golang.org/x/mobile/event/key
-golang.org/x/mobile/event/lifecycle
-golang.org/x/mobile/event/mouse
-golang.org/x/mobile/event/paint
-golang.org/x/mobile/event/size
-golang.org/x/mobile/event/touch
-golang.org/x/mobile/exp/f32
-golang.org/x/mobile/geom
-golang.org/x/mobile/gl
-golang.org/x/mobile/internal/mobileinit
-# golang.org/x/net v0.0.0-20190909003024-a7b16738d86b
+# golang.org/x/net v0.0.0-20200324143707-d3edc9973b7e
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.0.0-20190626221950-04f50cda93cb
+# golang.org/x/sys v0.0.0-20200327173247-9dae0f8f5775
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 # golang.org/x/text v0.3.2
@@ -127,7 +117,7 @@ golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/transform
-# gopkg.in/yaml.v2 v2.2.2
+# gopkg.in/yaml.v2 v2.2.8
 gopkg.in/yaml.v2
 # howett.net/plist v0.0.0-20181124034731-591f970eefbb
 howett.net/plist

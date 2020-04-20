@@ -16,6 +16,36 @@ More detailed release notes can be found on the [releases page](https://github.c
 ### Fixed
 
 
+## 0.1.3 - 15 April 2020
+
+Renamed package to fyne.io/fynedesk and repository to github.com/fyne-io/fynedesk.s
+
+
+## 0.1.2 - 13 April 2020
+
+Additional bug fixes and graphical tweaks on 0.1 release
+
+### Added
+
+* Initial support for BSD systems
+
+### Changed
+
+* Improved wording for account menu in embedded mode
+* Simpler app bar configuration screen
+* Updated default background for a winter scene
+
+### Fixed
+
+* GoLand editor loses focus on mouse click (#69)
+* Fix a flicker on window borders when uncovered (#83)
+* Respect the min and max hints of windows (#85)
+* Update to latest Fyne release to match new scale calculations
+* Drag and drop targets not found for many applications (#49)
+* VLC opens a lot of windows (#70)
+* Graphical glitches when Qt apps when scale < 1.0
+* Improve loading of macOS apps and icons in embedded mode on darwin
+
 
 ## 0.1.1 - 30 December 2019
 

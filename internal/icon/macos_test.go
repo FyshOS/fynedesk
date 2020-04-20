@@ -17,7 +17,7 @@ func TestLoadAppBundle(t *testing.T) {
 
 func TestMacOSAppProvider_FindAppFromName(t *testing.T) {
 	provider := NewMacOSAppProvider()
-	provider.(*macOSAppProvider).rootDir = "testdata"
+	provider.(*macOSAppProvider).rootDirs = []string{"testdata"}
 
 	app := provider.FindAppFromName("Test")
 	assert.NotNil(t, app)
@@ -26,7 +26,7 @@ func TestMacOSAppProvider_FindAppFromName(t *testing.T) {
 
 func TestMacOSAppProvider_FindAppFromWinInfo(t *testing.T) {
 	provider := NewMacOSAppProvider()
-	provider.(*macOSAppProvider).rootDir = "testdata"
+	provider.(*macOSAppProvider).rootDirs = []string{"testdata"}
 
 	win := &dummyWindow{title: "Test"}
 	app := provider.FindAppFromWinInfo(win)

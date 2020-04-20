@@ -1,4 +1,4 @@
-package icon // import "fyne.io/desktop/internal/icon"
+package icon // import "fyne.io/fynedesk/internal/icon"
 
 import (
 	"bufio"
@@ -11,9 +11,10 @@ import (
 	"strconv"
 	"strings"
 
-	"fyne.io/desktop"
-	wmTheme "fyne.io/desktop/theme"
 	"fyne.io/fyne"
+
+	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 var iconExtensions = []string{".png", ".svg"}
@@ -105,7 +106,7 @@ func fdoLookupXdgDataDirs() []string {
 	return locationLookup
 }
 
-func fdoForEachApplicationFile(f func(data desktop.AppData) bool) {
+func fdoForEachApplicationFile(f func(data fynedesk.AppData) bool) {
 	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
 		testLocation := filepath.Join(dataDir, "applications")
@@ -131,9 +132,9 @@ func fdoForEachApplicationFile(f func(data desktop.AppData) bool) {
 }
 
 //fdoLookupApplicationByMetadata looks up an application by comparing the requested name to the contents of .desktop files
-func fdoLookupApplicationByMetadata(appName string) desktop.AppData {
-	var returnIcon desktop.AppData
-	fdoForEachApplicationFile(func(icon desktop.AppData) bool {
+func fdoLookupApplicationByMetadata(appName string) fynedesk.AppData {
+	var returnIcon fynedesk.AppData
+	fdoForEachApplicationFile(func(icon fynedesk.AppData) bool {
 		if icon.(*fdoApplicationData).name == appName || icon.(*fdoApplicationData).exec == appName {
 			returnIcon = icon
 			return true
@@ -144,7 +145,7 @@ func fdoLookupApplicationByMetadata(appName string) desktop.AppData {
 }
 
 //fdoLookupApplication looks up an application by name and returns an fdoApplicationData struct
-func fdoLookupApplication(appName string) desktop.AppData {
+func fdoLookupApplication(appName string) fynedesk.AppData {
 	if appName == "" {
 		return nil
 	}
@@ -160,9 +161,9 @@ func fdoLookupApplication(appName string) desktop.AppData {
 }
 
 //fdoLookupApplicationPartial looks up an application by a partial name and returns all matches in an fdoApplicationData struct slice
-func fdoLookupApplicationsMatching(appName string) []desktop.AppData {
-	var icons []desktop.AppData
-	fdoForEachApplicationFile(func(icon desktop.AppData) bool {
+func fdoLookupApplicationsMatching(appName string) []fynedesk.AppData {
+	var icons []fynedesk.AppData
+	fdoForEachApplicationFile(func(icon fynedesk.AppData) bool {
 		if icon == nil {
 			return false
 		}
@@ -177,9 +178,9 @@ func fdoLookupApplicationsMatching(appName string) []desktop.AppData {
 	return icons
 }
 
-func fdoLookupApplications() []desktop.AppData {
-	var icons []desktop.AppData
-	fdoForEachApplicationFile(func(icon desktop.AppData) bool {
+func fdoLookupApplications() []fynedesk.AppData {
+	var icons []fynedesk.AppData
+	fdoForEachApplicationFile(func(icon fynedesk.AppData) bool {
 		if icon == nil {
 			return false
 		}
@@ -420,7 +421,7 @@ func fdoLookupAvailableThemes() []string {
 }
 
 //newFdoIconData creates and returns a struct that contains needed fields from a .desktop file
-func newFdoIconData(desktopPath string) desktop.AppData {
+func newFdoIconData(desktopPath string) fynedesk.AppData {
 	file, err := os.Open(desktopPath)
 	if err != nil {
 		fyne.LogError("Could not open file", err)
@@ -464,7 +465,7 @@ type fdoIconProvider struct {
 }
 
 //AllApplications returns all of the available applications in a AppData slice
-func (f *fdoIconProvider) AvailableApps() []desktop.AppData {
+func (f *fdoIconProvider) AvailableApps() []fynedesk.AppData {
 	return fdoLookupApplications()
 }
 
@@ -474,17 +475,17 @@ func (f *fdoIconProvider) AvailableThemes() []string {
 }
 
 //FindAppFromName matches an icon name to a location and returns an AppData interface
-func (f *fdoIconProvider) FindAppFromName(appName string) desktop.AppData {
+func (f *fdoIconProvider) FindAppFromName(appName string) fynedesk.AppData {
 	return fdoLookupApplication(appName)
 }
 
 //FindIconFromPartialAppName returns a list of icons that match a partial name of an app and returns an AppData slice
-func (f *fdoIconProvider) FindAppsMatching(appName string) []desktop.AppData {
+func (f *fdoIconProvider) FindAppsMatching(appName string) []fynedesk.AppData {
 	return fdoLookupApplicationsMatching(appName)
 }
 
 //FindAppFromWinInfo matches window information to an icon location and returns an AppData interface
-func (f *fdoIconProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppData {
+func (f *fdoIconProvider) FindAppFromWinInfo(win fynedesk.Window) fynedesk.AppData {
 	app := fdoLookupApplication(win.Command())
 	if app != nil {
 		return app
@@ -500,7 +501,7 @@ func (f *fdoIconProvider) FindAppFromWinInfo(win desktop.Window) desktop.AppData
 	return fdoLookupApplication(win.IconName())
 }
 
-func findOneAppFromNames(f desktop.ApplicationProvider, names ...string) desktop.AppData {
+func findOneAppFromNames(f fynedesk.ApplicationProvider, names ...string) fynedesk.AppData {
 	for _, name := range names {
 		app := f.FindAppFromName(name)
 		if app != nil {
@@ -511,7 +512,7 @@ func findOneAppFromNames(f desktop.ApplicationProvider, names ...string) desktop
 	return nil
 }
 
-func appendAppIfExists(apps []desktop.AppData, app desktop.AppData) []desktop.AppData {
+func appendAppIfExists(apps []fynedesk.AppData, app fynedesk.AppData) []fynedesk.AppData {
 	if app == nil {
 		return apps
 	}
@@ -519,8 +520,8 @@ func appendAppIfExists(apps []desktop.AppData, app desktop.AppData) []desktop.Ap
 	return append(apps, app)
 }
 
-func (f *fdoIconProvider) DefaultApps() []desktop.AppData {
-	var apps []desktop.AppData
+func (f *fdoIconProvider) DefaultApps() []fynedesk.AppData {
+	var apps []fynedesk.AppData
 
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "xfce4-terminal", "gnome-terminal", "xterm"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "chromium", "google-chrome", "firefox"))
@@ -531,6 +532,6 @@ func (f *fdoIconProvider) DefaultApps() []desktop.AppData {
 }
 
 // NewFDOIconProvider returns a new icon provider following the FreeDesktop.org specifications
-func NewFDOIconProvider() desktop.ApplicationProvider {
+func NewFDOIconProvider() fynedesk.ApplicationProvider {
 	return &fdoIconProvider{}
 }

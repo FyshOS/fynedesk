@@ -12,8 +12,8 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/desktop"
-	wmtheme "fyne.io/desktop/theme"
+	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 type widgetRenderer struct {
@@ -54,11 +54,12 @@ func (w *widgetRenderer) Destroy() {
 type widgetPanel struct {
 	widget.BaseWidget
 
-	desk       desktop.Desktop
+	desk       fynedesk.Desktop
 	appExecWin fyne.Window
 
-	clock *canvas.Text
-	date  *widget.Label
+	clock   *canvas.Text
+	date    *widget.Label
+	modules *fyne.Container
 }
 
 func (w *widgetPanel) clockTick() {
@@ -152,24 +153,13 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	})
 	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), ShowAppLauncher)
 
-	mods := w.desk.Modules()
 	objects := []fyne.CanvasObject{
 		w.clock,
 		w.date}
 
-	objects = append(objects, layout.NewSpacer())
-	for _, m := range mods {
-		if statusMod, ok := m.(desktop.StatusAreaModule); ok {
-			wid := statusMod.StatusAreaWidget()
-			if wid == nil {
-				continue
-			}
-
-			objects = append(objects, wid)
-		}
-	}
-
-	objects = append(objects, appExecButton, account)
+	w.modules = fyne.NewContainerWithLayout(layout.NewVBoxLayout())
+	objects = append(objects, layout.NewSpacer(), w.modules, appExecButton, account)
+	w.loadModules(w.desk.Modules())
 
 	return &widgetRenderer{
 		panel:   w,
@@ -178,7 +168,26 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-func newWidgetPanel(rootDesk desktop.Desktop) *widgetPanel {
+func (w *widgetPanel) reloadModules(mods []fynedesk.Module) {
+	w.modules.Objects = nil
+	w.loadModules(mods)
+	w.modules.Refresh()
+}
+
+func (w *widgetPanel) loadModules(mods []fynedesk.Module) {
+	for _, m := range mods {
+		if statusMod, ok := m.(fynedesk.StatusAreaModule); ok {
+			wid := statusMod.StatusAreaWidget()
+			if wid == nil {
+				continue
+			}
+
+			w.modules.Objects = append(w.modules.Objects, wid)
+		}
+	}
+}
+
+func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 	w := &widgetPanel{
 		desk:       rootDesk,
 		appExecWin: nil,
