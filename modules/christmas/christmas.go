@@ -14,7 +14,7 @@ func init() {
 	fynedesk.RegisterModule(christmasMeta)
 }
 
-var christmasMeta = fynedesk.ModuleMetadata {
+var christmasMeta = fynedesk.ModuleMetadata{
 	Name:        "Christmas",
 	NewInstance: NewChristmas,
 }
@@ -27,7 +27,7 @@ func NewChristmas() fynedesk.Module {
 	return &christmas{}
 }
 
-func (c* christmas) Destroy() {
+func (c *christmas) Destroy() {
 }
 
 func (c *christmas) Metadata() fynedesk.ModuleMetadata {
