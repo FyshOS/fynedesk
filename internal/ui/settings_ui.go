@@ -31,6 +31,9 @@ func (d *settingsUI) populateThemeIcons(box *fyne.Container, theme string) {
 	box.Objects = nil
 	for _, appName := range d.launcherIcons {
 		appData := fynedesk.Instance().IconProvider().FindAppFromName(appName)
+		if appData == nil { // if app was removed!
+			continue
+		}
 		iconRes := appData.Icon(theme, int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(fynedesk.Instance().Screens().Primary().CanvasScale())))
 		icon := widget.NewIcon(iconRes)
 		box.AddObject(icon)
@@ -101,6 +104,9 @@ func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) 
 	for i, appName := range d.launcherIcons {
 		index := i // capture
 		appData := fynedesk.Instance().IconProvider().FindAppFromName(appName)
+		if appData == nil {
+			continue // uninstalled?
+		}
 		left := widget.NewButtonWithIcon("", theme.NavigateBackIcon(), func() {
 			d.launcherIcons[index-1], d.launcherIcons[index] = d.launcherIcons[index], d.launcherIcons[index-1]
 			d.populateOrderList(list, add)
