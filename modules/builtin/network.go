@@ -15,7 +15,7 @@ import (
 )
 
 var networkMeta = fynedesk.ModuleMetadata{
-	Name: "Network",
+	Name:        "Network",
 	NewInstance: NewNetwork,
 }
 
