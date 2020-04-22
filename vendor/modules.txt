@@ -1,4 +1,4 @@
-# fyne.io/fyne v1.2.4-0.20200413100731-0338eba4bf40
+# fyne.io/fyne v1.2.5-0.20200420151207-161ff44ec2a7
 fyne.io/fyne
 fyne.io/fyne/app
 fyne.io/fyne/canvas
@@ -15,6 +15,7 @@ fyne.io/fyne/internal/driver/gomobile
 fyne.io/fyne/internal/painter
 fyne.io/fyne/internal/painter/gl
 fyne.io/fyne/internal/painter/software
+fyne.io/fyne/internal/widget
 fyne.io/fyne/layout
 fyne.io/fyne/test
 fyne.io/fyne/theme

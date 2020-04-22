@@ -486,19 +486,19 @@ func (f *fdoIconProvider) FindAppsMatching(appName string) []fynedesk.AppData {
 
 //FindAppFromWinInfo matches window information to an icon location and returns an AppData interface
 func (f *fdoIconProvider) FindAppFromWinInfo(win fynedesk.Window) fynedesk.AppData {
-	app := fdoLookupApplication(win.Command())
+	app := fdoLookupApplication(win.Properties().Command())
 	if app != nil {
 		return app
 	}
 
-	for _, class := range win.Class() {
+	for _, class := range win.Properties().Class() {
 		icon := fdoLookupApplication(class)
 		if icon != nil {
 			return icon
 		}
 	}
 
-	return fdoLookupApplication(win.IconName())
+	return fdoLookupApplication(win.Properties().IconName())
 }
 
 func findOneAppFromNames(f fynedesk.ApplicationProvider, names ...string) fynedesk.AppData {

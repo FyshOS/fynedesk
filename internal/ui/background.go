@@ -17,6 +17,7 @@ import (
 type background struct {
 	widget.BaseWidget
 
+	objects       []fyne.CanvasObject
 	wallpaper     *canvas.Image
 	wallpaperPath string
 }
@@ -40,6 +41,7 @@ func (b *backgroundRenderer) MinSize() fyne.Size {
 }
 
 func (b *backgroundRenderer) Refresh() {
+	b.c.Objects = b.b.objects
 }
 
 func (b *backgroundRenderer) BackgroundColor() color.Color {
@@ -67,6 +69,7 @@ func (b *background) loadModules() []fyne.CanvasObject {
 		}
 	}
 
+	b.objects = objects
 	return objects
 }
 
@@ -75,12 +78,13 @@ func (b *background) updateBackground(path string) {
 	if path == "" || os.IsNotExist(err) {
 		b.wallpaper.Resource = wmtheme.Background
 		b.wallpaper.File = ""
-		return
+	} else {
+		b.wallpaper.Resource = nil
+		b.wallpaper.File = path
 	}
-
-	b.wallpaper.Resource = nil
-	b.wallpaper.File = path
 	b.loadModules()
+	canvas.Refresh(b.wallpaper)
+	b.Refresh()
 }
 
 func backgroundPath() string {

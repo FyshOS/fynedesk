@@ -3,6 +3,8 @@ package icon
 import (
 	"testing"
 
+	"fyne.io/fynedesk/test"
+
 	"github.com/stretchr/testify/assert"
 )
 
@@ -28,7 +30,7 @@ func TestMacOSAppProvider_FindAppFromWinInfo(t *testing.T) {
 	provider := NewMacOSAppProvider()
 	provider.(*macOSAppProvider).rootDirs = []string{"testdata"}
 
-	win := &dummyWindow{title: "Test"}
+	win := test.NewWindow("Test")
 	app := provider.FindAppFromWinInfo(win)
 	assert.NotNil(t, app)
 	assert.Equal(t, "Test", app.Name())

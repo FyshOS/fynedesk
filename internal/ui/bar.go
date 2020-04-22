@@ -131,7 +131,7 @@ func (b *bar) taskbarIconTapped(win fynedesk.Window) {
 }
 
 func (b *bar) WindowAdded(win fynedesk.Window) {
-	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
+	if win.Properties().SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
 		return
 	}
 	icon := b.createIcon(nil, win)
@@ -144,7 +144,7 @@ func (b *bar) WindowAdded(win fynedesk.Window) {
 }
 
 func (b *bar) WindowRemoved(win fynedesk.Window) {
-	if win.SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
+	if win.Properties().SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
 		return
 	}
 	for i, icon := range b.icons {
@@ -226,7 +226,7 @@ func (b *bar) winIcon(win *appWindow) fyne.Resource {
 		}
 	}
 
-	iconRes := win.win.Icon()
+	iconRes := win.win.Properties().Icon()
 	if iconRes == nil {
 		return wmTheme.BrokenImageIcon
 	}

@@ -5,7 +5,6 @@ import (
 	"math"
 
 	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/fynedesk"
@@ -26,6 +25,7 @@ type desktop struct {
 	run                 func()
 	newDesktopWindow    func(string) fyne.Window
 	backgroundScreenMap map[*background]*fynedesk.Screen
+	moduleCache         []fynedesk.Module
 
 	bar        *bar
 	widgets    *widgetPanel
@@ -64,7 +64,6 @@ func (l *desktop) MinSize(_ []fyne.CanvasObject) fyne.Size {
 func (l *desktop) updateBackgrounds(path string) {
 	for bg := range l.backgroundScreenMap {
 		bg.updateBackground(path)
-		canvas.Refresh(bg)
 	}
 }
 
@@ -181,15 +180,30 @@ func (l *desktop) WindowManager() fynedesk.WindowManager {
 	return l.wm
 }
 
+func (l *desktop) clearModuleCache() {
+	for _, mod := range l.moduleCache {
+		mod.Destroy()
+	}
+
+	l.moduleCache = nil
+}
+
 func (l *desktop) Modules() []fynedesk.Module {
+	if l.moduleCache != nil {
+		return l.moduleCache
+	}
+
 	var mods []fynedesk.Module
 	for _, meta := range fynedesk.AvailableModules() {
 		if !isModuleEnabled(meta.Name, l.settings) {
 			continue
 		}
-		mods = append(mods, meta.NewInstance())
+
+		instance := meta.NewInstance()
+		mods = append(mods, instance)
 	}
 
+	l.moduleCache = mods
 	return mods
 }
 
@@ -237,6 +251,7 @@ func (l *desktop) MouseOutNotify() {
 func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSettings) {
 	for {
 		s := <-settings
+		l.clearModuleCache()
 		l.updateBackgrounds(s.Background())
 		l.widgets.reloadModules(l.Modules())
 

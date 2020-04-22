@@ -28,6 +28,7 @@ type client struct {
 	full      bool
 	iconic    bool
 	maximized bool
+	props     *clientProperties
 
 	restoreX, restoreY          int16
 	restoreWidth, restoreHeight uint16
@@ -64,10 +65,6 @@ func newClient(win xproto.Window, wm *x11WM) *client {
 	}
 
 	return c
-}
-
-func (c *client) Class() []string {
-	return windowClass(c.wm.x, c.win)
 }
 
 func (c *client) Close() {
@@ -112,14 +109,6 @@ func (c *client) Close() {
 	}
 }
 
-func (c *client) Command() string {
-	return windowCommand(c.wm.x, c.win)
-}
-
-func (c *client) Decorated() bool {
-	return !windowBorderless(c.wm.x, c.win)
-}
-
 func (c *client) Focus() {
 	windowActiveReq(c.wm.x, c.win)
 }
@@ -141,27 +130,9 @@ func (c *client) Fullscreened() bool {
 	return c.full
 }
 
-func (c *client) Icon() fyne.Resource {
-	settings := fynedesk.Instance().Settings()
-	iconSize := int(float64(settings.LauncherIconSize()) * settings.LauncherZoomScale())
-	xIcon := windowIcon(c.wm.x, c.win, iconSize, iconSize)
-	if len(xIcon.Bytes()) != 0 {
-		return fyne.NewStaticResource(c.Title(), xIcon.Bytes())
-	}
-	return nil
-}
-
 func (c *client) Iconify() {
 	c.stateMessage(icccm.StateIconic)
 	windowStateSet(c.wm.x, c.win, icccm.StateIconic)
-}
-
-func (c *client) IconName() string {
-	return windowIconName(c.wm.x, c.win)
-}
-
-func (c *client) Title() string {
-	return windowName(c.wm.x, c.win)
 }
 
 func (c *client) Iconic() bool {
@@ -194,19 +165,6 @@ func (c *client) RaiseAbove(win fynedesk.Window) {
 func (c *client) RaiseToTop() {
 	c.wm.RaiseToTop(c)
 	windowClientListStackingUpdate(c.wm)
-}
-
-func (c *client) SkipTaskbar() bool {
-	extendedHints := windowExtendedHintsGet(c.wm.x, c.win)
-	if extendedHints == nil {
-		return false
-	}
-	for _, hint := range extendedHints {
-		if hint == "_NET_WM_STATE_SKIP_TASKBAR" {
-			return true
-		}
-	}
-	return false
 }
 
 func (c *client) TopWindow() bool {
@@ -292,7 +250,7 @@ func (x *x11WM) raiseWinAboveID(win, top xproto.Window) {
 }
 
 func (c *client) setupBorder() {
-	if c.Decorated() {
+	if c.Properties().Decorated() {
 		c.frame.addBorder()
 	} else {
 		c.frame.removeBorder()

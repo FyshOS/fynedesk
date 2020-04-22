@@ -6,6 +6,7 @@ import (
 	"github.com/stretchr/testify/assert"
 
 	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/test"
 )
 
 func testWindows() []fynedesk.Window {
@@ -13,9 +14,9 @@ func testWindows() []fynedesk.Window {
 	desk.settings = &testSettings{}
 	fynedesk.SetInstance(desk)
 	return []fynedesk.Window{
-		&dummyWindow{name: "App1"},
-		&dummyWindow{name: "App2"},
-		&dummyWindow{name: "App3"},
+		test.NewWindow("App1"),
+		test.NewWindow("App2"),
+		test.NewWindow("App3"),
 	}
 }
 
@@ -66,7 +67,7 @@ func TestSwitcher_HideApply(t *testing.T) {
 	s := ShowAppSwitcher(wins, &testAppProvider{})
 
 	s.HideApply()
-	assert.True(t, wins[s.currentIndex()].(*dummyWindow).raised)
+	assert.True(t, wins[s.currentIndex()].(*test.Window).TopWindow())
 }
 
 func TestSwitcher_HideCancel(t *testing.T) {
@@ -74,5 +75,5 @@ func TestSwitcher_HideCancel(t *testing.T) {
 	s := ShowAppSwitcher(wins, &testAppProvider{})
 
 	s.HideCancel()
-	assert.False(t, wins[s.currentIndex()].(*dummyWindow).raised)
+	assert.False(t, wins[s.currentIndex()].(*test.Window).TopWindow())
 }

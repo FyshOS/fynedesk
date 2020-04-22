@@ -2,117 +2,19 @@ package ui
 
 import (
 	"image/color"
-	"strings"
 	"testing"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
-	"github.com/stretchr/testify/assert"
-
-	_ "fyne.io/fyne/test"
 	"fyne.io/fyne/widget"
 
 	"fyne.io/fynedesk"
+	wmTest "fyne.io/fynedesk/test"
 	wmTheme "fyne.io/fynedesk/theme"
+
+	"github.com/stretchr/testify/assert"
 )
-
-type dummyWindow struct {
-	name   string // a name to override the dummy default
-	raised bool   // this flag shows we were requested to raise above the other windows
-}
-
-func (w *dummyWindow) Decorated() bool {
-	return true
-}
-
-func (w *dummyWindow) Title() string {
-	if w.name == "" {
-		return "Xterm"
-	}
-
-	return w.name
-}
-
-func (w *dummyWindow) Class() []string {
-	return []string{w.Title(), "xterm"}
-}
-
-func (w *dummyWindow) Command() string {
-	return strings.ToLower(w.Title())
-}
-
-func (w *dummyWindow) IconName() string {
-	return strings.ToLower(w.Title())
-}
-
-func (w *dummyWindow) Icon() fyne.Resource {
-	return nil
-}
-
-func (w *dummyWindow) Fullscreened() bool {
-	return false
-}
-
-func (w *dummyWindow) Iconic() bool {
-	return false
-}
-
-func (w *dummyWindow) Maximized() bool {
-	return false
-}
-
-func (w *dummyWindow) TopWindow() bool {
-	return true
-}
-
-func (w *dummyWindow) SkipTaskbar() bool {
-	return false
-}
-
-func (w *dummyWindow) Focused() bool {
-	return false
-}
-
-func (w *dummyWindow) Focus() {
-	// no-op
-}
-
-func (w *dummyWindow) Close() {
-	// no-op
-}
-
-func (w *dummyWindow) Fullscreen() {
-	// no-op
-}
-
-func (w *dummyWindow) Unfullscreen() {
-	// no-op
-}
-
-func (w *dummyWindow) Iconify() {
-	// no-op
-}
-
-func (w *dummyWindow) Uniconify() {
-	// no-op
-}
-
-func (w *dummyWindow) Maximize() {
-	// no-op
-}
-
-func (w *dummyWindow) Unmaximize() {
-	// no-op
-}
-
-func (w *dummyWindow) RaiseAbove(fynedesk.Window) {
-	// no-op (this is instructing the window after stack changes)
-}
-
-func (w *dummyWindow) RaiseToTop() {
-	w.raised = true
-}
 
 type dummyIcon struct {
 	name string
@@ -149,7 +51,7 @@ func TestAppBar_Append(t *testing.T) {
 	assert.Equal(t, len(icons), len(testBar.children))
 	testBar.appendSeparator()
 	assert.Equal(t, len(icons)+1, len(testBar.children))
-	win := &dummyWindow{}
+	win := wmTest.NewWindow("")
 	icon := testBar.createIcon(&dummyIcon{}, win)
 	testBar.append(icon)
 	assert.Equal(t, len(icons)+2, len(testBar.children))
@@ -301,7 +203,7 @@ func TestIconTaskbarDisabled(t *testing.T) {
 	}
 	assert.Equal(t, true, separatorTest)
 
-	icon := testBar.createIcon(&testAppData{}, &dummyWindow{})
+	icon := testBar.createIcon(&testAppData{}, wmTest.NewWindow(""))
 	testBar.append(icon)
 
 	taskbarIconTest := false
