@@ -1,11 +1,12 @@
 // +build linux
 
-package x11
+package win
 
 import (
 	"fyne.io/fyne"
 
 	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/internal/x11"
 )
 
 type clientProperties struct {
@@ -21,21 +22,21 @@ func (c *client) Properties() fynedesk.WindowProperties {
 }
 
 func (c *clientProperties) Class() []string {
-	return windowClass(c.c.wm.x, c.c.win)
+	return windowClass(c.c.wm.X(), c.c.win)
 }
 
 func (c *clientProperties) Command() string {
-	return windowCommand(c.c.wm.x, c.c.win)
+	return windowCommand(c.c.wm.X(), c.c.win)
 }
 
 func (c clientProperties) Decorated() bool {
-	return !windowBorderless(c.c.wm.x, c.c.win)
+	return !windowBorderless(c.c.wm.X(), c.c.win)
 }
 
 func (c *clientProperties) Icon() fyne.Resource {
 	settings := fynedesk.Instance().Settings()
 	iconSize := int(float64(settings.LauncherIconSize()) * settings.LauncherZoomScale())
-	xIcon := windowIcon(c.c.wm.x, c.c.win, iconSize, iconSize)
+	xIcon := windowIcon(c.c.wm.X(), c.c.win, iconSize, iconSize)
 	if len(xIcon.Bytes()) != 0 {
 		return fyne.NewStaticResource(c.Title(), xIcon.Bytes())
 	}
@@ -43,11 +44,11 @@ func (c *clientProperties) Icon() fyne.Resource {
 }
 
 func (c *clientProperties) IconName() string {
-	return windowIconName(c.c.wm.x, c.c.win)
+	return windowIconName(c.c.wm.X(), c.c.win)
 }
 
 func (c *clientProperties) SkipTaskbar() bool {
-	extendedHints := windowExtendedHintsGet(c.c.wm.x, c.c.win)
+	extendedHints := x11.WindowExtendedHintsGet(c.c.wm.X(), c.c.win)
 	if extendedHints == nil {
 		return false
 	}
@@ -60,5 +61,5 @@ func (c *clientProperties) SkipTaskbar() bool {
 }
 
 func (c *clientProperties) Title() string {
-	return windowName(c.c.wm.x, c.c.win)
+	return x11.WindowName(c.c.wm.X(), c.c.win)
 }

@@ -1,6 +1,6 @@
 // +build linux
 
-package x11 // import "fyne.io/fynedesk/wm"
+package wm // import "fyne.io/fynedesk/wm"
 
 import (
 	"fyne.io/fyne"
@@ -10,6 +10,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xwindow"
 
 	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/internal/x11"
 )
 
 type x11ScreensProvider struct {
@@ -89,11 +90,12 @@ func (xsp *x11ScreensProvider) ScreenForWindow(win fynedesk.Window) *fynedesk.Sc
 	if len(xsp.screens) <= 1 {
 		return xsp.screens[0]
 	}
-	fr := win.(*client).frame
-	if fr == nil {
+
+	x, y, w, h := win.(x11.XWin).Geometry()
+	if w == 0 && h == 0 {
 		return xsp.Primary()
 	}
-	return xsp.ScreenForGeometry(int(fr.x), int(fr.y), int(fr.width), int(fr.height))
+	return xsp.ScreenForGeometry(x, y, int(w), int(h))
 }
 
 func getScale(widthPx, widthMm uint16) float32 {

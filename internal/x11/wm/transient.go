@@ -1,8 +1,12 @@
 // +build linux
 
-package x11
+package wm
 
-import "github.com/BurntSushi/xgb/xproto"
+import (
+	"github.com/BurntSushi/xgb/xproto"
+
+	"fyne.io/fynedesk/internal/x11"
+)
 
 func (x *x11WM) transientChildAdd(leader xproto.Window, child xproto.Window) {
 	for _, win := range x.transientMap[leader] {
@@ -26,7 +30,7 @@ func (x *x11WM) transientTopLeaderGet(child xproto.Window) xproto.Window {
 	var topLeader xproto.Window
 	for child != 0 {
 		topLeader = child
-		child = windowTransientForGet(x.x, child)
+		child = x11.WindowTransientForGet(x.x, child)
 	}
 	return topLeader
 }

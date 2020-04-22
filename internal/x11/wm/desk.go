@@ -1,6 +1,6 @@
 // +build linux
 
-package x11 // import "fyne.io/fynedesk/internal/x11"
+package wm // import "fyne.io/fynedesk/internal/x11/wm"
 
 import (
 	"errors"
@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
@@ -23,6 +24,8 @@ import (
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/ui"
+	"fyne.io/fynedesk/internal/x11"
+	xwin "fyne.io/fynedesk/internal/x11/win"
 )
 
 type x11WM struct {
@@ -34,8 +37,8 @@ type x11WM struct {
 	moveResizingStartY      int16
 	moveResizingLastX       int16
 	moveResizingLastY       int16
-	moveResizingStartWidth  uint16
-	moveResizingStartHeight uint16
+	moveResizingStartWidth  uint
+	moveResizingStartHeight uint
 	moveResizingType        moveResizeType
 	screenChangeTimestamp   xproto.Timestamp
 
@@ -100,40 +103,7 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 		return nil, errors.New("window manager detected, running embedded")
 	}
 
-	mgr.allowedActions = []string{
-		"_NET_WM_ACTION_MOVE",
-		"_NET_WM_ACTION_RESIZE",
-		"_NET_WM_ACTION_MINIMIZE",
-		"_NET_WM_ACTION_MAXIMIZE_HORZ",
-		"_NET_WM_ACTION_MAXIMIZE_VERT",
-		"_NET_WM_ACTION_CLOSE",
-		"_NET_WM_ACTION_FULLSCREEN",
-	}
-
-	mgr.supportedHints = append(mgr.supportedHints, mgr.allowedActions...)
-	mgr.supportedHints = append(mgr.supportedHints, "_NET_ACTIVE_WINDOW",
-		"_NET_CLIENT_LIST",
-		"_NET_CLIENT_LIST_STACKING",
-		"_NET_CURRENT_DESKTOP",
-		"_NET_DESKTOP_GEOMETRY",
-		"_NET_DESKTOP_VIEWPORT",
-		"_NET_FRAME_EXTENTS",
-		"_NET_MOVERESIZE_WINDOW",
-		"_NET_NUMBER_OF_DESKTOPS",
-		"_NET_WM_FULLSCREEN_MONITORS",
-		"_NET_WM_MOVERESIZE",
-		"_NET_WM_NAME",
-		"_NET_WM_STATE",
-		"_NET_WM_STATE_FULLSCREEN",
-		"_NET_WM_STATE_HIDDEN",
-		"_NET_WM_STATE_MAXIMIZED_HORZ",
-		"_NET_WM_STATE_MAXIMIZED_VERT",
-		"_NET_WM_STATE_SKIP_PAGER",
-		"_NET_WM_STATE_SKIP_TASKBAR",
-		"_NET_WORKAREA",
-		"_NET_SUPPORTED")
-
-	ewmh.SupportedSet(mgr.x, mgr.supportedHints)
+	ewmh.SupportedSet(mgr.x, x11.SupportedHints)
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
 	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.Dummy(), mgr.x.Dummy())
 	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), ui.RootWindowName)
@@ -141,7 +111,7 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	ewmh.NumberOfDesktopsSet(mgr.x, 1)                                   // Will always be 1 until virtual desktops are supported
 	ewmh.CurrentDesktopSet(mgr.x, 0)                                     // Will always be 0 until virtual desktops are supported
 
-	loadCursors(conn)
+	x11.LoadCursors(conn)
 	go mgr.runLoop()
 
 	listener := make(chan fyne.Settings)
@@ -150,7 +120,7 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 		for {
 			<-listener
 			for _, c := range mgr.clients {
-				c.(*client).frame.updateScale()
+				c.(x11.XWin).SettingsChanged()
 			}
 			mgr.configureRoots(mgr.x.RootWin())
 		}
@@ -161,6 +131,10 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 
 func (x *x11WM) AddStackListener(l fynedesk.StackListener) {
 	x.stack.listeners = append(x.stack.listeners, l)
+}
+
+func (x *x11WM) BindKeys(win x11.XWin) {
+	x.bindKeys(win.ChildID())
 }
 
 func (x *x11WM) Blank() {
@@ -174,10 +148,18 @@ func (x *x11WM) Close() {
 	log.Println("Disconnecting from X server")
 
 	for _, child := range x.clients {
-		child.(*client).frame.unFrame()
+		child.Close()
 	}
 
 	x.x.Conn().Close()
+}
+
+func (x *x11WM) X() *xgbutil.XUtil {
+	return x.x
+}
+
+func (x *x11WM) Conn() *xgb.Conn {
+	return x.x.Conn()
 }
 
 func (x *x11WM) runLoop() {
@@ -251,7 +233,7 @@ func (x *x11WM) configureRoots(win xproto.Window) {
 	}
 	width, height := 0, 0
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
-		win := x.getWindowFromScreenName(screen.Name)
+		win := x.WinIDForScreen(screen)
 		if win == 0 {
 			continue
 		}
@@ -281,27 +263,29 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	height := ev.Height
 
 	if c != nil {
-		f := c.(*client).frame
-		if f != nil && c.(*client).win == win { // ignore requests from our frame as we must have caused it
-			f.minWidth, f.minHeight = windowSizeMin(x.x, win)
+		if c.ChildID() == win { // ignore requests from our frame as we must have caused it
+			x, y, _, _ := c.Geometry()
+			borderWidth := x11.BorderWidth(c)
+			titleHeight := x11.TitleHeight(c)
+
 			if c.Properties().Decorated() {
 				if !c.Fullscreened() {
-					c.(*client).setWindowGeometry(f.x, f.y, ev.Width+(f.borderWidth()*2), ev.Height+(f.borderWidth()+f.titleHeight()))
+					c.NotifyGeometry(x, y, uint(ev.Width+(borderWidth*2)), uint(ev.Height+borderWidth+titleHeight))
 				} else {
-					c.(*client).setWindowGeometry(f.x, f.y, ev.Width, ev.Height)
+					c.NotifyGeometry(x, y, uint(ev.Width), uint(ev.Height))
 				}
 			} else {
 				if ev.X == 0 && ev.Y == 0 {
-					ev.X = f.x
-					ev.Y = f.y
+					ev.X = int16(x)
+					ev.Y = int16(y)
 				}
-				c.(*client).setWindowGeometry(ev.X, ev.Y, ev.Width, ev.Height)
+				c.NotifyGeometry(int(ev.X), int(ev.Y), uint(ev.Width), uint(ev.Height))
 			}
 		}
 		return
 	}
 
-	name := windowName(x.x, win)
+	name := x11.WindowName(x.x, win)
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
 		if !x.isRootTitle(name) || screenNameFromRootTitle(name) != screen.Name {
 			continue
@@ -343,7 +327,7 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 		}
 		return
 	}
-	transient := windowTransientForGet(x.x, win)
+	transient := x11.WindowTransientForGet(x.x, win)
 	if transient > 0 && transient != win {
 		x.transientChildRemove(transient, win)
 	} else if transient > 0 && transient == win {
@@ -356,8 +340,8 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 
 func (x *x11WM) exposeWindow(win xproto.Window) {
 	border := x.clientForWin(win)
-	if border != nil && border.(*client).frame != nil {
-		border.(*client).frame.applyTheme(false)
+	if border != nil {
+		border.Expose()
 	}
 }
 
@@ -369,7 +353,7 @@ func (x *x11WM) frameExisting() {
 	}
 
 	for _, child := range tree.Children {
-		name := windowName(x.x, child)
+		name := x11.WindowName(x.x, child)
 		if x.isRootTitle(name) {
 			continue
 		}
@@ -385,9 +369,10 @@ func (x *x11WM) frameExisting() {
 	}
 }
 
-func (x *x11WM) getWindowFromScreenName(screenName string) xproto.Window {
+func (x *x11WM) WinIDForScreen(screen *fynedesk.Screen) xproto.Window {
+	screenName := screen.Name
 	for _, id := range x.rootIDs {
-		name := windowName(x.x, id)
+		name := x11.WindowName(x.x, id)
 		if !x.isRootTitle(name) {
 			continue
 		}
@@ -403,15 +388,11 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 	if c == nil {
 		return
 	}
-	xproto.UnmapWindow(x.x.Conn(), c.(*client).id)
+	xproto.UnmapWindow(x.x.Conn(), c.FrameID())
 }
 
 func (x *x11WM) isRootTitle(title string) bool {
 	return strings.Index(title, ui.RootWindowName) == 0
-}
-
-func (x *x11WM) scaleToPixels(i int, screen *fynedesk.Screen) uint16 {
-	return uint16(float32(i) * screen.CanvasScale())
 }
 
 func screenNameFromRootTitle(title string) string {
@@ -423,22 +404,22 @@ func screenNameFromRootTitle(title string) string {
 
 func (x *x11WM) setInitialWindowAttributes(win xproto.Window) {
 	err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), win, xproto.CwCursor,
-		[]uint32{uint32(defaultCursor)}).Check()
+		[]uint32{uint32(x11.DefaultCursor)}).Check()
 	if err != nil {
 		fyne.LogError("Set Cursor Error", err)
 	}
 }
 
 func (x *x11WM) setupWindow(win xproto.Window) {
-	if windowName(x.x, win) == "" {
-		windowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
-		windowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
+	if x11.WindowName(x.x, win) == "" {
+		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
+		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
 	}
 	c := x.clientForWin(win)
 	if c != nil {
 		return
 	}
-	c = newClient(win, x)
+	c = xwin.NewClient(win, x)
 	x.AddWindow(c)
 	c.RaiseToTop()
 	c.Focus()
@@ -447,7 +428,7 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 }
 
 func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
-	name := windowName(x.x, win)
+	name := x11.WindowName(x.x, win)
 	if x.isRootTitle(name) {
 		err := xproto.MapWindowChecked(x.x.Conn(), win).Check()
 		if err != nil {
@@ -482,7 +463,7 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 		return
 	}
 
-	transient := windowTransientForGet(x.x, win)
+	transient := x11.WindowTransientForGet(x.x, win)
 	if transient > 0 && transient != win {
 		x.transientChildAdd(transient, win)
 	}

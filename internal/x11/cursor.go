@@ -11,13 +11,13 @@ import (
 )
 
 var (
-	defaultCursor           xproto.Cursor
-	closeCursor             xproto.Cursor
-	resizeBottomCursor      xproto.Cursor
-	resizeBottomLeftCursor  xproto.Cursor
-	resizeBottomRightCursor xproto.Cursor
-	resizeLeftCursor        xproto.Cursor
-	resizeRightCursor       xproto.Cursor
+	DefaultCursor           xproto.Cursor
+	CloseCursor             xproto.Cursor
+	ResizeBottomCursor      xproto.Cursor
+	ResizeBottomLeftCursor  xproto.Cursor
+	ResizeBottomRightCursor xproto.Cursor
+	ResizeLeftCursor        xproto.Cursor
+	ResizeRightCursor       xproto.Cursor
 )
 
 func createCursor(x *xgbutil.XUtil, builtin uint16) xproto.Cursor {
@@ -30,12 +30,12 @@ func createCursor(x *xgbutil.XUtil, builtin uint16) xproto.Cursor {
 	return cursor
 }
 
-func loadCursors(x *xgbutil.XUtil) {
-	defaultCursor = createCursor(x, xcursor.LeftPtr)
-	closeCursor = createCursor(x, xcursor.XCursor)
-	resizeBottomCursor = createCursor(x, xcursor.BottomSide)
-	resizeBottomLeftCursor = createCursor(x, xcursor.BottomLeftCorner)
-	resizeBottomRightCursor = createCursor(x, xcursor.BottomRightCorner)
-	resizeLeftCursor = createCursor(x, xcursor.LeftSide)
-	resizeRightCursor = createCursor(x, xcursor.RightSide)
+func LoadCursors(x *xgbutil.XUtil) {
+	DefaultCursor = createCursor(x, xcursor.LeftPtr)
+	CloseCursor = createCursor(x, xcursor.XCursor)
+	ResizeBottomCursor = createCursor(x, xcursor.BottomSide)
+	ResizeBottomLeftCursor = createCursor(x, xcursor.BottomLeftCorner)
+	ResizeBottomRightCursor = createCursor(x, xcursor.BottomRightCorner)
+	ResizeLeftCursor = createCursor(x, xcursor.LeftSide)
+	ResizeRightCursor = createCursor(x, xcursor.RightSide)
 }

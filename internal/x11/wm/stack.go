@@ -1,7 +1,10 @@
-package x11
+package wm
 
 import (
+	"github.com/BurntSushi/xgb/xproto"
+
 	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/internal/x11"
 )
 
 type stack struct {
@@ -35,6 +38,9 @@ func (s *stack) RaiseToTop(win fynedesk.Window) {
 	}
 	s.removeFromStack(win)
 	s.addToStack(win)
+
+	wm := fynedesk.Instance().WindowManager().(*x11WM)
+	windowClientListStackingUpdate(wm)
 }
 
 func (s *stack) RemoveWindow(win fynedesk.Window) {
@@ -62,20 +68,34 @@ func (s *stack) Windows() []fynedesk.Window {
 
 func (s *stack) addToStack(win fynedesk.Window) {
 	s.clients = append([]fynedesk.Window{win}, s.clients...)
-	s.mappingOrder = append(s.mappingOrder, win)
+	s.mappingOrder = append(s.mappingOrder, win.(x11.XWin))
 }
 
-func (s *stack) addToStackBottom(win fynedesk.Window) {
+func (s *stack) addToStackBottom(win x11.XWin) {
 	s.clients = append(s.clients, win)
 	s.mappingOrder = append(s.mappingOrder, win)
 }
 
-func (s *stack) getClients(clients []fynedesk.Window) []fynedesk.Window {
-	return s.clients
+func (s *stack) clientForWin(id xproto.Window) x11.XWin {
+	for _, w := range s.clients {
+		if w.(x11.XWin).FrameID() == id || w.(x11.XWin).ChildID() == id {
+			return w.(x11.XWin)
+		}
+	}
+
+	return nil
 }
 
 func (s *stack) getMappingOrder() []fynedesk.Window {
 	return s.mappingOrder
+}
+
+func (s *stack) getWindowsFromClients(clients []fynedesk.Window) []xproto.Window {
+	var wins []xproto.Window
+	for _, cli := range clients {
+		wins = append(wins, cli.(x11.XWin).FrameID())
+	}
+	return wins
 }
 
 func (s *stack) indexForWin(win fynedesk.Window) int {

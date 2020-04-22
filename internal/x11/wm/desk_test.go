@@ -1,6 +1,6 @@
 // +build linux
 
-package x11
+package wm
 
 import (
 	"testing"
