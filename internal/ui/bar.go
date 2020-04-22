@@ -169,9 +169,6 @@ func (b *bar) updateTaskbar() {
 		return
 	}
 	b.appendSeparator()
-	if b.desk.WindowManager() == nil {
-		return
-	}
 
 	for _, win := range b.desk.WindowManager().Windows() {
 		b.WindowAdded(win)
@@ -267,9 +264,7 @@ func newBar(desk fynedesk.Desktop) *bar {
 	bar.iconScale = float32(desk.Settings().LauncherZoomScale())
 	bar.disableTaskbar = desk.Settings().LauncherDisableTaskbar()
 
-	if desk.WindowManager() != nil {
-		desk.WindowManager().AddStackListener(bar)
-	}
+	desk.WindowManager().AddStackListener(bar)
 	bar.appendLauncherIcons()
 
 	return bar

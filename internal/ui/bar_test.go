@@ -34,8 +34,7 @@ func (d *dummyIcon) Run([]string) error {
 }
 
 func testBar(icons []string) *bar {
-	testBar := newBar(&testDesk{settings: &testSettings{}, icons: &testAppProvider{}, screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
-		Width: 2000, Height: 1000, Scale: 1.0}}}})
+	testBar := newBar(newTestDesktop())
 	testBar.children = []fyne.CanvasObject{} // remove divider, then we add it again later
 	for _, name := range icons {
 		icon := testBar.createIcon(&dummyIcon{name: name}, nil)

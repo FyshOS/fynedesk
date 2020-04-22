@@ -21,6 +21,13 @@ type testDesk struct {
 	settings fynedesk.DeskSettings
 	icons    fynedesk.ApplicationProvider
 	screens  fynedesk.ScreenList
+	wm       fynedesk.WindowManager
+}
+
+func newTestDesktop() fynedesk.Desktop {
+	return &testDesk{settings: &testSettings{}, icons: &testAppProvider{}, wm: &embededWM{},
+		screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
+			Width: 2000, Height: 1000, Scale: 1.0}}}}
 }
 
 func (*testDesk) Root() fyne.Window {
@@ -46,8 +53,8 @@ func (td *testDesk) IconProvider() fynedesk.ApplicationProvider {
 	return td.icons
 }
 
-func (*testDesk) WindowManager() fynedesk.WindowManager {
-	return nil
+func (td *testDesk) WindowManager() fynedesk.WindowManager {
+	return td.wm
 }
 
 func (td *testDesk) Screens() fynedesk.ScreenList {
@@ -166,7 +173,7 @@ func newTestAppProvider(appNames []string) *testAppProvider {
 }
 
 func TestDeskLayout_Layout(t *testing.T) {
-	l := &deskLayout{screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
+	l := &desktop{screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
 		Width: 2000, Height: 1000, Scale: 1.0}}}}
 	l.bar = testBar([]string{})
 	l.widgets = newWidgetPanel(l)
@@ -185,7 +192,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 }
 
 func TestScaleVars_Up(t *testing.T) {
-	l := &deskLayout{}
+	l := &desktop{}
 	l.screens = &testScreensProvider{}
 	env := l.scaleVars(1.8)
 	assert.Contains(t, env, "QT_SCALE_FACTOR=1.8")
@@ -194,7 +201,7 @@ func TestScaleVars_Up(t *testing.T) {
 }
 
 func TestScaleVars_Down(t *testing.T) {
-	l := &deskLayout{}
+	l := &desktop{}
 	l.screens = &testScreensProvider{}
 	env := l.scaleVars(0.9)
 	assert.Contains(t, env, "QT_SCALE_FACTOR=1.0")
@@ -203,7 +210,7 @@ func TestScaleVars_Down(t *testing.T) {
 }
 
 func TestBackgroundChange(t *testing.T) {
-	l := &deskLayout{screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
+	l := &desktop{screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
 		Width: 2000, Height: 1000, Scale: 1.0}}}}
 	fynedesk.SetInstance(l)
 	l.settings = &testSettings{}

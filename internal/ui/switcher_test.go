@@ -10,7 +10,7 @@ import (
 )
 
 func testWindows() []fynedesk.Window {
-	desk := &deskLayout{}
+	desk := &desktop{}
 	desk.settings = &testSettings{}
 	fynedesk.SetInstance(desk)
 	return []fynedesk.Window{
