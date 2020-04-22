@@ -13,105 +13,11 @@ import (
 	_ "fyne.io/fyne/test"
 
 	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/test"
 )
 
 var iconTheme = "default_theme"
 var iconSize = 32
-
-type dummyWindow struct {
-	title    string
-	command  string
-	iconName string
-	class    []string
-}
-
-func (w *dummyWindow) Decorated() bool {
-	return true
-}
-
-func (w *dummyWindow) Title() string {
-	return w.title
-}
-
-func (w *dummyWindow) Class() []string {
-	return w.class
-}
-
-func (w *dummyWindow) Command() string {
-	return w.command
-}
-
-func (w *dummyWindow) IconName() string {
-	return w.iconName
-}
-
-func (w *dummyWindow) Icon() fyne.Resource {
-	return nil
-}
-
-func (*dummyWindow) Fullscreened() bool {
-	return false
-}
-
-func (*dummyWindow) Iconic() bool {
-	return false
-}
-
-func (*dummyWindow) Maximized() bool {
-	return false
-}
-
-func (*dummyWindow) TopWindow() bool {
-	return true
-}
-
-func (*dummyWindow) SkipTaskbar() bool {
-	return false
-}
-
-func (*dummyWindow) Focused() bool {
-	return false
-}
-
-func (*dummyWindow) Focus() {
-	// no-op
-}
-
-func (*dummyWindow) Close() {
-	// no-op
-}
-
-func (*dummyWindow) Fullscreen() {
-	// no-op
-}
-
-func (*dummyWindow) Unfullscreen() {
-	// no-op
-}
-
-func (*dummyWindow) Iconify() {
-	// no-op
-}
-
-func (*dummyWindow) Uniconify() {
-	// no-op
-}
-
-func (*dummyWindow) Maximize() {
-	// no-op
-}
-
-func (*dummyWindow) Unmaximize() {
-	// no-op
-}
-
-func (*dummyWindow) RaiseAbove(fynedesk.Window) {
-	// no-op (this is instructing the window after stack changes)
-}
-
-func (*dummyWindow) RaiseToTop() {
-	// no-op
-}
 
 func exists(data fynedesk.AppData) bool {
 	return data != nil && data.Icon(iconTheme, iconSize) != nil
@@ -204,7 +110,7 @@ func TestFdoLookupIconNotInApps(t *testing.T) {
 func TestFdoLookupMissing(t *testing.T) {
 	setTestEnv(t)
 	provider := NewFDOIconProvider()
-	win1 := &dummyWindow{title: "NoMatch"}
+	win1 := test.NewWindow("NoMatch")
 	data := provider.FindAppFromWinInfo(win1)
 	assert.Equal(t, false, exists(data))
 }
@@ -214,19 +120,22 @@ func TestFdoLookupIconByWinInfo(t *testing.T) {
 	provider := NewFDOIconProvider()
 
 	// Test win info lookup by title - should fail as titles are too common
-	win1 := &dummyWindow{title: "App1"}
+	win1 := test.NewWindow("App1")
 	data := provider.FindAppFromWinInfo(win1)
 	assert.Equal(t, false, exists(data))
 	// Test win info lookup by class
-	win2 := &dummyWindow{class: []string{"App2", "app2"}}
+	win2 := test.NewWindow("")
+	win2.SetClass([]string{"App2", "app2"})
 	data = provider.FindAppFromWinInfo(win2)
 	assert.Equal(t, true, exists(data))
 	// Test win info lookup by command
-	win3 := &dummyWindow{command: "app3"}
+	win3 := test.NewWindow("")
+	win3.SetCommand("app3")
 	data = provider.FindAppFromWinInfo(win3)
 	assert.Equal(t, true, exists(data))
 	// Test win info lookup by icon name
-	win4 := &dummyWindow{iconName: "app4"}
+	win4 := test.NewWindow("")
+	win4.SetIconName("app4")
 	data = provider.FindAppFromWinInfo(win4)
 	assert.Equal(t, true, exists(data))
 }

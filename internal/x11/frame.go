@@ -51,7 +51,7 @@ func newFrame(c *client) *frame {
 	}
 	x, y, w, h := attrs.X, attrs.Y, attrs.Width, attrs.Height
 	full := c.Fullscreened()
-	decorated := c.Decorated()
+	decorated := c.Properties().Decorated()
 	maximized := c.Maximized()
 	if full || maximized {
 		activeHead := fynedesk.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
@@ -193,7 +193,7 @@ func (f *frame) applyBorderlessTheme() {
 }
 
 func (f *frame) applyTheme(force bool) {
-	if f.client.Fullscreened() || !f.client.Decorated() {
+	if f.client.Fullscreened() || !f.client.Properties().Decorated() {
 		f.applyBorderlessTheme()
 		return
 	}
@@ -202,7 +202,7 @@ func (f *frame) applyTheme(force bool) {
 }
 
 func (f *frame) borderWidth() uint16 {
-	if !f.client.Decorated() {
+	if !f.client.Properties().Decorated() {
 		return 0
 	}
 	return uint16(f.client.wm.scaleToPixels(wmTheme.BorderWidth, fynedesk.Instance().Screens().ScreenForWindow(f.client)))
@@ -320,7 +320,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 		!windowSizeCanMaximize(f.client.wm.x, f.client) {
 		canMaximize = false
 	}
-	canvas.SetContent(wm.NewBorder(f.client, f.client.Icon(), canMaximize))
+	canvas.SetContent(wm.NewBorder(f.client, f.client.Properties().Icon(), canMaximize))
 
 	heightPix := f.titleHeight()
 	iconBorderPixWidth := heightPix + f.borderWidth()*2
@@ -342,9 +342,9 @@ func (f *frame) getGeometry() (int16, int16, uint16, uint16) {
 }
 
 func (f *frame) getInnerWindowCoordinates(w uint16, h uint16) (uint32, uint32, uint32, uint32) {
-	if f.client.Fullscreened() || !f.client.Decorated() {
+	if f.client.Fullscreened() || !f.client.Properties().Decorated() {
 		constrainW, constrainH := w, h
-		if !f.client.Decorated() {
+		if !f.client.Properties().Decorated() {
 			adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.x, f.client.win, w, h)
 			constrainW, constrainH = windowSizeConstrain(f.client.wm.x, f.client.win,
 				adjustedW, adjustedH)

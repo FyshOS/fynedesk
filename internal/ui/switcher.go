@@ -27,13 +27,13 @@ type switchIcon struct {
 
 func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 	var res fyne.Resource
-	title := s.win.Title()
+	title := s.win.Properties().Title()
 	app := s.parent.provider.FindAppFromWinInfo(s.win)
 	if app != nil {
 		res = app.Icon(fynedesk.Instance().Settings().IconTheme(), switcherIconSize*2)
 		title = app.Name()
 	} else {
-		res = s.win.Icon()
+		res = s.win.Properties().Icon()
 	}
 
 	img := canvas.NewImageFromResource(res)

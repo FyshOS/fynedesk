@@ -142,7 +142,7 @@ func (m *macOSAppProvider) FindAppFromName(appName string) fynedesk.AppData {
 }
 
 func (m *macOSAppProvider) FindAppFromWinInfo(win fynedesk.Window) fynedesk.AppData {
-	return m.FindAppFromName(win.Title())
+	return m.FindAppFromName(win.Properties().Title())
 }
 
 func (m *macOSAppProvider) DefaultApps() []fynedesk.AppData {

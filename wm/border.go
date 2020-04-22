@@ -45,7 +45,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 		exit,
 		max,
 		widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {}),
-		widget.NewLabel(win.Title()),
+		widget.NewLabel(win.Properties().Title()),
 		layout.NewSpacer())
 
 	if icon != nil {

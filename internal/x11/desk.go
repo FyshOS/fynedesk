@@ -284,7 +284,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		f := c.(*client).frame
 		if f != nil && c.(*client).win == win { // ignore requests from our frame as we must have caused it
 			f.minWidth, f.minHeight = windowSizeMin(x.x, win)
-			if c.Decorated() {
+			if c.Properties().Decorated() {
 				if !c.Fullscreened() {
 					c.(*client).setWindowGeometry(f.x, f.y, ev.Width+(f.borderWidth()*2), ev.Height+(f.borderWidth()+f.titleHeight()))
 				} else {
