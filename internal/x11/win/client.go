@@ -30,7 +30,8 @@ type client struct {
 	wm    x11.XWM
 }
 
-func NewClient(win xproto.Window, wm x11.XWM) *client {
+// NewClient creates a new X11 client for the specified window ID and X window manager
+func NewClient(win xproto.Window, wm x11.XWM) x11.XWin {
 	c := &client{win: win, wm: wm}
 	err := xproto.ChangeWindowAttributesChecked(wm.Conn(), win, xproto.CwEventMask,
 		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow |

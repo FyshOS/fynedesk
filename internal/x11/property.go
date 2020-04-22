@@ -9,15 +9,20 @@ import (
 	"github.com/BurntSushi/xgbutil/icccm"
 )
 
+// WindowStateAction defines actions for manipulating window state
 type WindowStateAction int
 
 const (
+	// WindowStateActionRemove removes a state
 	WindowStateActionRemove WindowStateAction = 0
-	WindowStateActionAdd    WindowStateAction = 1
+	// WindowStateActionAdd adds a state
+	WindowStateActionAdd WindowStateAction = 1
+	// WindowStateActionToggle inverts the state of an state
 	WindowStateActionToggle WindowStateAction = 2
 )
 
 var (
+	// AllowedActions is the list of actions the window manager allows
 	AllowedActions = []string{
 		"_NET_WM_ACTION_MOVE",
 		"_NET_WM_ACTION_RESIZE",
@@ -28,6 +33,7 @@ var (
 		"_NET_WM_ACTION_FULLSCREEN",
 	}
 
+	// SupportedHints is the complete list of hints that we support
 	SupportedHints = append(AllowedActions, "_NET_ACTIVE_WINDOW",
 		"_NET_CLIENT_LIST",
 		"_NET_CLIENT_LIST_STACKING",
@@ -52,16 +58,19 @@ var (
 	)
 )
 
+// WindowActiveGet returns the currently active window
 func WindowActiveGet(x *xgbutil.XUtil) (xproto.Window, error) {
 	return ewmh.ActiveWindowGet(x)
 }
 
+// WindowExtendedHintsAdd adds a hint to the window
 func WindowExtendedHintsAdd(x *xgbutil.XUtil, win xproto.Window, hint string) {
 	extendedHints, _ := ewmh.WmStateGet(x, win) // error unimportant
 	extendedHints = append(extendedHints, hint)
 	ewmh.WmStateSet(x, win, extendedHints)
 }
 
+// WindowExtendedHintsGet returns a hint from the window
 func WindowExtendedHintsGet(x *xgbutil.XUtil, win xproto.Window) []string {
 	extendedHints, err := ewmh.WmStateGet(x, win)
 	if err != nil {
@@ -70,6 +79,7 @@ func WindowExtendedHintsGet(x *xgbutil.XUtil, win xproto.Window) []string {
 	return extendedHints
 }
 
+// WindowExtendedHintsRemove removes a hint from the window
 func WindowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string) {
 	extendedHints, err := ewmh.WmStateGet(x, win)
 	if err != nil {
@@ -84,6 +94,7 @@ func WindowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string)
 	}
 }
 
+// WindowName gets the name of an X window
 func WindowName(x *xgbutil.XUtil, win xproto.Window) string {
 	//Spec says _NET_WM_NAME is preferred to WM_NAME
 	name, err := ewmh.WmNameGet(x, win)
@@ -97,6 +108,8 @@ func WindowName(x *xgbutil.XUtil, win xproto.Window) string {
 	return name
 }
 
+// WindowTransientForGet returns the window ID that the requested window is transient for.
+// A return of 0 means that it is not transient
 func WindowTransientForGet(x *xgbutil.XUtil, win xproto.Window) xproto.Window {
 	transient, err := icccm.WmTransientForGet(x, win)
 	if err == nil {

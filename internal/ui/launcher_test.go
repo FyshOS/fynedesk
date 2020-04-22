@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"fyne.io/fynedesk"
+	wmTest "fyne.io/fynedesk/test"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/test"
@@ -12,8 +13,7 @@ import (
 )
 
 func TestLauncher_ListMatches(t *testing.T) {
-	names := []string{"App 1", "App 2", "Another"}
-	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	setupIcons("App 1", "App 2", "Another")
 	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	apps := launcher.appButtonListMatching("App")
@@ -30,8 +30,7 @@ func TestLauncher_ListMatches(t *testing.T) {
 }
 
 func TestLauncher_ListTyped(t *testing.T) {
-	names := []string{"App 1", "App 2", "Another"}
-	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	setupIcons("App 1", "App 2", "Another")
 	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	assert.Equal(t, 0, len(launcher.appList.Objects))
@@ -42,8 +41,7 @@ func TestLauncher_ListTyped(t *testing.T) {
 }
 
 func TestLauncher_ListActive(t *testing.T) {
-	names := []string{"App 1", "App 2", "Another"}
-	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	setupIcons("App 1", "App 2", "Another")
 	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	assert.Equal(t, 0, len(launcher.appList.Objects))
@@ -56,8 +54,7 @@ func TestLauncher_ListActive(t *testing.T) {
 }
 
 func TestLauncher_setActiveIndex(t *testing.T) {
-	names := []string{"App 1", "App 2", "Another"}
-	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	setupIcons("App 1", "App 2", "Another")
 	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	launcher.appList.Objects = launcher.appButtonListMatching("App")
@@ -71,4 +68,10 @@ func TestLauncher_setActiveIndex(t *testing.T) {
 
 	launcher.setActiveIndex(-1)
 	assert.Equal(t, 1, launcher.activeIndex)
+}
+
+func setupIcons(icons ...string) {
+	desk := wmTest.NewDesktop()
+	desk.SetIconProvider(wmTest.NewAppProvider(icons...))
+	fynedesk.SetInstance(desk)
 }

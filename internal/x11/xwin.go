@@ -8,6 +8,7 @@ import (
 	"fyne.io/fynedesk"
 )
 
+// XWin describes the additional functions that X windows need to expose to be managed
 type XWin interface {
 	fynedesk.Window
 

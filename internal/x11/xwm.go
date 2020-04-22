@@ -10,6 +10,7 @@ import (
 	"fyne.io/fynedesk"
 )
 
+// XWM describes the additional elements that an X11 window manager exposes
 type XWM interface {
 	fynedesk.WindowManager
 
@@ -18,8 +19,4 @@ type XWM interface {
 
 	WinIDForScreen(screen *fynedesk.Screen) xproto.Window
 	BindKeys(win XWin)
-}
-
-func XConn() *xgbutil.XUtil {
-	return fynedesk.Instance().WindowManager().(XWM).X()
 }

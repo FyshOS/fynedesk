@@ -9,7 +9,6 @@ import (
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
-	"fyne.io/fynedesk"
 	wmTest "fyne.io/fynedesk/test"
 	wmTheme "fyne.io/fynedesk/theme"
 
@@ -34,8 +33,7 @@ func (d *dummyIcon) Run([]string) error {
 }
 
 func testBar(icons []string) *bar {
-	testBar := newBar(&testDesk{settings: &testSettings{}, icons: &testAppProvider{}, screens: &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0,
-		Width: 2000, Height: 1000, Scale: 1.0}}}})
+	testBar := newBar(wmTest.NewDesktop())
 	testBar.children = []fyne.CanvasObject{} // remove divider, then we add it again later
 	for _, name := range icons {
 		icon := testBar.createIcon(&dummyIcon{name: name}, nil)
@@ -87,18 +85,18 @@ func TestIconsAndIconThemeChange(t *testing.T) {
 	testBar := testBar(nil)
 
 	assert.Equal(t, 0, len(testBar.icons))
-	testBar.desk.Settings().(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App1", "App2", "App3"})
 	testBar.updateIconOrder()
 
 	assert.Equal(t, 3, len(testBar.icons))
 
-	testBar.desk.Settings().(*testSettings).iconTheme = "Maximize"
+	testBar.desk.Settings().(*wmTest.Settings).SetIconTheme("Maximize")
 	testBar.updateIcons()
 
 	assert.Equal(t, "Maximize", testBar.desk.Settings().IconTheme())
 	assert.Equal(t, wmTheme.MaximizeIcon, testBar.children[0].(*barIcon).resource)
 
-	testBar.desk.Settings().(*testSettings).iconTheme = "TestIconTheme"
+	testBar.desk.Settings().(*wmTest.Settings).SetIconTheme("TestIconTheme")
 	testBar.updateIcons()
 
 	assert.Equal(t, "TestIconTheme", testBar.desk.Settings().IconTheme())
@@ -110,13 +108,13 @@ func TestIconOrderChange(t *testing.T) {
 
 	assert.Equal(t, 0, len(testBar.icons))
 
-	testBar.desk.Settings().(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App1", "App2", "App3"})
 	testBar.updateIconOrder()
 	assert.Equal(t, "App1", testBar.children[0].(*barIcon).appData.Name())
 	assert.Equal(t, "App2", testBar.children[1].(*barIcon).appData.Name())
 	assert.Equal(t, "App3", testBar.children[2].(*barIcon).appData.Name())
 
-	testBar.desk.Settings().(*testSettings).launcherIcons = []string{"App3", "App1", "App2"}
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App3", "App1", "App2"})
 	testBar.updateIconOrder()
 	assert.Equal(t, "App3", testBar.children[0].(*barIcon).appData.Name())
 	assert.Equal(t, "App1", testBar.children[1].(*barIcon).appData.Name())
@@ -126,12 +124,12 @@ func TestIconOrderChange(t *testing.T) {
 func TestIconSizeChange(t *testing.T) {
 	testBar := testBar(nil)
 
-	testBar.desk.Settings().(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App1", "App2", "App3"})
 	testBar.updateIconOrder()
 
 	assert.Equal(t, 32, testBar.icons[0].Size().Width)
 
-	testBar.desk.Settings().(*testSettings).launcherIconSize = 64
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIconSize(64)
 	testBar.iconSize = testBar.desk.Settings().LauncherIconSize()
 	testBar.updateIcons()
 
@@ -141,7 +139,7 @@ func TestIconSizeChange(t *testing.T) {
 func TestZoomScaleChange(t *testing.T) {
 	testBar := testBar(nil)
 
-	testBar.desk.Settings().(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App1", "App2", "App3"})
 	testBar.updateIconOrder()
 
 	testBar.mouseInside = true
@@ -149,7 +147,7 @@ func TestZoomScaleChange(t *testing.T) {
 	widget.Refresh(testBar)
 	firstWidth := testBar.children[0].Size().Width
 
-	testBar.desk.Settings().(*testSettings).launcherZoomScale = 2.0
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherZoomScale(2.0)
 	testBar.iconScale = float32(testBar.desk.Settings().LauncherZoomScale())
 	testBar.updateIcons()
 
@@ -168,8 +166,8 @@ func TestZoomScaleChange(t *testing.T) {
 func TestIconZoomDisabled(t *testing.T) {
 	testBar := testBar(nil)
 
-	testBar.desk.Settings().(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
-	testBar.desk.Settings().(*testSettings).launcherZoomScale = 2.0
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App1", "App2", "App3"})
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherZoomScale(2.0)
 	testBar.iconScale = float32(testBar.desk.Settings().LauncherZoomScale())
 	testBar.updateIconOrder()
 
@@ -180,7 +178,7 @@ func TestIconZoomDisabled(t *testing.T) {
 	width := testBar.children[0].Size().Width
 	assert.NotEqual(t, testBar.desk.Settings().LauncherIconSize(), width)
 
-	testBar.desk.Settings().(*testSettings).launcherDisableZoom = true
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherDisableZoom(true)
 	testBar.disableZoom = true
 	testBar.updateIconOrder()
 
@@ -195,7 +193,7 @@ func TestIconZoomDisabled(t *testing.T) {
 func TestIconTaskbarDisabled(t *testing.T) {
 	testBar := testBar(nil)
 
-	testBar.desk.Settings().(*testSettings).launcherIcons = []string{"App1", "App2", "App3"}
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App1", "App2", "App3"})
 	testBar.updateIconOrder()
 
 	separatorTest := false
@@ -204,7 +202,7 @@ func TestIconTaskbarDisabled(t *testing.T) {
 	}
 	assert.Equal(t, true, separatorTest)
 
-	icon := testBar.createIcon(&testAppData{}, wmTest.NewWindow(""))
+	icon := testBar.createIcon(wmTest.NewAppData(), wmTest.NewWindow(""))
 	testBar.append(icon)
 
 	taskbarIconTest := false
@@ -213,7 +211,7 @@ func TestIconTaskbarDisabled(t *testing.T) {
 	}
 	assert.Equal(t, true, taskbarIconTest)
 
-	testBar.desk.Settings().(*testSettings).launcherDisableTaskbar = true
+	testBar.desk.Settings().(*wmTest.Settings).SetLauncherDisableTaskbar(true)
 	testBar.updateIconOrder()
 	testBar.updateTaskbar()
 
