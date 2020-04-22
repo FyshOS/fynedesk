@@ -17,7 +17,7 @@ import (
 )
 
 func TestDeskLayout_Layout(t *testing.T) {
-	l := &deskLayout{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
+	l := &desktop{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
 		Width: 2000, Height: 1000, Scale: 1.0})}
 	l.bar = testBar([]string{})
 	l.widgets = newWidgetPanel(l)
@@ -36,7 +36,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 }
 
 func TestScaleVars_Up(t *testing.T) {
-	l := &deskLayout{}
+	l := &desktop{}
 	l.screens = test.NewScreensProvider()
 	env := l.scaleVars(1.8)
 	assert.Contains(t, env, "QT_SCALE_FACTOR=1.8")
@@ -45,7 +45,7 @@ func TestScaleVars_Up(t *testing.T) {
 }
 
 func TestScaleVars_Down(t *testing.T) {
-	l := &deskLayout{}
+	l := &desktop{}
 	l.screens = test.NewScreensProvider()
 	env := l.scaleVars(0.9)
 	assert.Contains(t, env, "QT_SCALE_FACTOR=1.0")
@@ -54,7 +54,7 @@ func TestScaleVars_Down(t *testing.T) {
 }
 
 func TestBackgroundChange(t *testing.T) {
-	l := &deskLayout{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
+	l := &desktop{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
 		Width: 2000, Height: 1000, Scale: 1.0})}
 	fynedesk.SetInstance(l)
 	l.settings = test.NewSettings()

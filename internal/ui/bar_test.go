@@ -33,7 +33,7 @@ func (d *dummyIcon) Run([]string) error {
 }
 
 func testBar(icons []string) *bar {
-	testBar := newBar(wmTest.NewDesktop())
+	testBar := newBar(wmTest.NewDesktopWithWM(&embededWM{}))
 	testBar.children = []fyne.CanvasObject{} // remove divider, then we add it again later
 	for _, name := range icons {
 		icon := testBar.createIcon(&dummyIcon{name: name}, nil)

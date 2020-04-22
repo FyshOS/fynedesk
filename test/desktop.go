@@ -20,7 +20,9 @@ func NewDesktop() *Desktop {
 }
 
 func NewDesktopWithWM(wm fynedesk.WindowManager) *Desktop {
-	return &Desktop{wm: wm}
+	desk := NewDesktop()
+	desk.wm = wm
+	return desk
 }
 
 func (*Desktop) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32) {
