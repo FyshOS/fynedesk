@@ -27,4 +27,9 @@ sudo -- sh -c "cp cmd/fynedesk_runner/fynedesk_runner $PREFIX/bin/ && \
 	cp fynedesk.desktop /usr/share/xsessions"
 
 #done
-echo "Install completed successfully"
+if [ $? -eq 0 ]; then
+	echo "Install completed successfully"
+else
+	echo "Install failed to copy files"
+fi
+
