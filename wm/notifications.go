@@ -10,11 +10,13 @@ var (
 	lastNotificationID uint32
 )
 
+// Notification is a simple struct representing message that can be displayed in the notification area
 type Notification struct {
 	ID          uint32
 	Title, Body string
 }
 
+// NewNotification creates a new message that can be passed to SendNotification
 func NewNotification(title, body string) *Notification {
 	lastNotificationID++
 
@@ -23,6 +25,8 @@ func NewNotification(title, body string) *Notification {
 	return item
 }
 
+// SetNotificationListener connects the user interface to display notifications.
+// Other developers should not use this call.
 func SetNotificationListener(listen func(*Notification)) {
 	s := startNotifications()
 
@@ -30,6 +34,7 @@ func SetNotificationListener(listen func(*Notification)) {
 	server = s
 }
 
+// SendNotification posts a given notification into the user interface's notification area
 func SendNotification(n *Notification) {
 	if server == nil || server.listener == nil {
 		fyne.LogError("No notifications listener attached", nil)

@@ -23,6 +23,8 @@ func connectBus() (*dbus.Conn, error) {
 	return conn, nil
 }
 
+// RegisterService allows an object to be exported to the DBus messaging system.
+// Methods on that object to be exposed need to return *dbus.Error as their last parameter.
 func RegisterService(obj interface{}, path, iface string) error {
 	conn, err := connectBus()
 	if err != nil {
