@@ -1,3 +1,6 @@
+cmd/fynedesk/fynedesk
+cmd/fynedesk_runner/fynedesk_runner
+
 .idea
 
 internal/testdata/applications/app3.desktop
