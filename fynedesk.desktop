@@ -1,0 +1,5 @@
+[Desktop Entry]
+Name=FyneDesk
+Comment=Use the Fyne based desktop environment
+Exec=fynedesk_runner
+Type=Application
