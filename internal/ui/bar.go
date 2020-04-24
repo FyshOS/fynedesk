@@ -27,6 +27,7 @@ type bar struct {
 	disableTaskbar bool
 	disableZoom    bool
 	icons          []*barIcon
+	separator      *canvas.Rectangle
 }
 
 // MouseIn alerts the widget that the mouse has entered
@@ -65,8 +66,8 @@ func (b *bar) append(object fyne.CanvasObject) {
 
 // appendSeparator adds a separator between the default icons and the taskbar
 func (b *bar) appendSeparator() {
-	line := canvas.NewRectangle(theme.TextColor())
-	b.append(line)
+	b.separator = canvas.NewRectangle(theme.TextColor())
+	b.append(b.separator)
 }
 
 // removeFromTaskbar removes an object from the taskbar area of the widget
@@ -304,6 +305,9 @@ func (b *barRenderer) Objects() []fyne.CanvasObject {
 // Refresh will recalculate the widget and repaint it
 func (b *barRenderer) Refresh() {
 	b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	if b.appBar.separator != nil {
+		b.appBar.separator.FillColor = theme.TextColor()
+	}
 	b.objects = b.appBar.children
 	b.Layout(b.appBar.Size())
 
