@@ -13,8 +13,7 @@ func main() {
 	for {
 		exe := exec.Command(runCmd)
 		exe.Env = append(os.Environ(), "FYNE_DESK_RUNNER=1")
-		exe.Stdout = os.Stdout
-		exe.Stderr = os.Stderr
+		exe.Stdout, exe.Stderr = openLogWriter()
 		err := exe.Run()
 		if err == nil {
 			return
