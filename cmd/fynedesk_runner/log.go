@@ -9,7 +9,11 @@ import (
 )
 
 func logPath() string {
-	cacheDir := filepath.Join(systemLogDir(), "fyne", "io.fyne.fynedesk")
+	return logPathRelativeTo(systemLogDir())
+}
+
+func logPathRelativeTo(parent string) string {
+	cacheDir := filepath.Join(parent, "fyne", "io.fyne.fynedesk")
 	err := os.MkdirAll(cacheDir, 0700)
 	if err != nil {
 		fyne.LogError("Could not create log directory", err)
