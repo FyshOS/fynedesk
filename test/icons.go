@@ -13,8 +13,9 @@ type testAppData struct {
 	name string
 }
 
-func NewAppData() fynedesk.AppData {
-	return &testAppData{}
+// NewAppData returns a new test app icon with the specified name
+func NewAppData(name string) fynedesk.AppData {
+	return &testAppData{name: name}
 }
 
 func (tad *testAppData) Name() string {
@@ -39,11 +40,12 @@ type testAppProvider struct {
 	apps    []fynedesk.AppData
 }
 
+// NewAppProvider returns a simple provider of applications from the provided list of app names
 func NewAppProvider(appNames ...string) fynedesk.ApplicationProvider {
 	provider := &testAppProvider{}
 
 	for _, name := range appNames {
-		provider.apps = append(provider.apps, &testAppData{name: name})
+		provider.apps = append(provider.apps, NewAppData(name))
 	}
 
 	return provider

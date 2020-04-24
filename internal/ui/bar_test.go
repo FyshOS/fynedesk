@@ -202,7 +202,7 @@ func TestIconTaskbarDisabled(t *testing.T) {
 	}
 	assert.Equal(t, true, separatorTest)
 
-	icon := testBar.createIcon(wmTest.NewAppData(), wmTest.NewWindow(""))
+	icon := testBar.createIcon(wmTest.NewAppData("dummy"), wmTest.NewWindow(""))
 	testBar.append(icon)
 
 	taskbarIconTest := false

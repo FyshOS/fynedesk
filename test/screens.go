@@ -8,7 +8,8 @@ type testScreensProvider struct {
 	active  *fynedesk.Screen
 }
 
-func NewScreensProvider(screens ...*fynedesk.Screen) *testScreensProvider {
+// NewScreensProvider returns a simple screen manager for the specified screens
+func NewScreensProvider(screens ...*fynedesk.Screen) fynedesk.ScreenList {
 	return &testScreensProvider{screens: screens}
 }
 
