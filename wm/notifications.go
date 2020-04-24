@@ -5,11 +5,22 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
-var server *notifications
+var (
+	server             *notifications
+	lastNotificationID uint32
+)
 
 type Notification struct {
 	ID          uint32
 	Title, Body string
+}
+
+func NewNotification(title, body string) *Notification {
+	lastNotificationID++
+
+	item := &Notification{ID: lastNotificationID, Title: title, Body: body}
+
+	return item
 }
 
 func SetNotificationListener(listen func(*Notification)) {
@@ -29,7 +40,6 @@ func SendNotification(n *Notification) {
 }
 
 type notifications struct {
-	nextID uint32
 	notifs []Notification
 
 	listener func(*Notification)
@@ -37,8 +47,7 @@ type notifications struct {
 
 func (n *notifications) Notify(appName string, replacesID uint32, appIcon, summary, body string,
 	actions []string, hints map[string]interface{}, timeout int32) (uint32, *dbus.Error) {
-	item := &Notification{ID: n.nextID, Title: summary, Body: body}
-	n.nextID++
+	item := NewNotification(summary, body)
 
 	SendNotification(item)
 	return item.ID, nil
@@ -53,7 +62,7 @@ func (n *notifications) GetCapabilities() ([]string, *dbus.Error) {
 }
 
 func startNotifications() *notifications {
-	n := &notifications{nextID: 1}
+	n := &notifications{}
 	err := RegisterService(n, "/org/freedesktop/Notifications", "org.freedesktop.Notifications")
 	if err != nil {
 		fyne.LogError("Could not start DBus notifications server, using local only", err)
