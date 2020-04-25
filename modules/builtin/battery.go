@@ -3,6 +3,7 @@ package builtin
 import (
 	"io/ioutil"
 	"log"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -25,9 +26,18 @@ type battery struct {
 	done bool
 }
 
+func pickChargeOrEnergy() (string, string) {
+	_, err := os.Stat("/sys/class/power_supply/BAT0/charge_now")
+	if err != nil {
+		return "/sys/class/power_supply/BAT0/energy_now", "/sys/class/power_supply/BAT0/energy_full"
+	}
+	return "/sys/class/power_supply/BAT0/charge_now", "/sys/class/power_supply/BAT0/charge_full"
+}
+
 func (b *battery) value() (float64, error) {
-	nowStr, err1 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_now")
-	fullStr, err2 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_full")
+	nowFile, fullFile := pickChargeOrEnergy()
+	nowStr, err1 := ioutil.ReadFile(nowFile)
+	fullStr, err2 := ioutil.ReadFile(fullFile)
 	if err1 != nil || err2 != nil {
 		log.Println("Error reading battery info", err1)
 		return 0, err1
