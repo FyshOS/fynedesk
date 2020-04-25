@@ -57,9 +57,10 @@ type widgetPanel struct {
 	desk       fynedesk.Desktop
 	appExecWin fyne.Window
 
-	clock   *canvas.Text
-	date    *widget.Label
-	modules *fyne.Container
+	clock         *canvas.Text
+	date          *widget.Label
+	modules       *fyne.Container
+	notifications fyne.CanvasObject
 }
 
 func (w *widgetPanel) clockTick() {
@@ -156,7 +157,8 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 
 	objects := []fyne.CanvasObject{
 		w.clock,
-		w.date}
+		w.date,
+		w.notifications}
 
 	w.modules = fyne.NewContainerWithLayout(layout.NewVBoxLayout())
 	objects = append(objects, layout.NewSpacer(), w.modules, appExecButton, account)
@@ -194,6 +196,7 @@ func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 		appExecWin: nil,
 	}
 	w.ExtendBaseWidget(w)
+	w.notifications = startNotifications()
 	w.createClock()
 
 	return w
