@@ -53,6 +53,9 @@ func newFrame(c *client) *frame {
 	full := c.Fullscreened()
 	decorated := c.Properties().Decorated()
 	maximized := c.Maximized()
+	screen := fynedesk.Instance().Screens().ScreenForGeometry(int(x), int(y), int(w), int(h))
+	borderWidth := x11.ScaleToPixels(wmTheme.BorderWidth, screen)
+	titleHeight := x11.ScaleToPixels(wmTheme.TitleHeight, screen)
 	if full || maximized {
 		activeHead := fynedesk.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
 		x = int16(activeHead.X)
@@ -65,18 +68,7 @@ func newFrame(c *client) *frame {
 			w = uint16(maxWidth)
 			h = uint16(maxHeight)
 		}
-	} else if !decorated {
-		x = attrs.X
-		y = attrs.Y
-		w = attrs.Width
-		h = attrs.Height
-	}
-
-	framed := &frame{client: c}
-	borderWidth := x11.BorderWidth(x11.XWin(c))
-	titleHeight := x11.TitleHeight(x11.XWin(c))
-	if !full && decorated {
-
+	} else if decorated {
 		x -= int16(borderWidth)
 		y -= int16(titleHeight)
 		if x < 0 {
@@ -90,6 +82,7 @@ func newFrame(c *client) *frame {
 			h = attrs.Height + borderWidth + titleHeight
 		}
 	}
+	framed := &frame{client: c}
 	framed.x = x
 	framed.y = y
 	values := []uint32{xproto.EventMaskStructureNotify | xproto.EventMaskSubstructureNotify |
@@ -140,11 +133,7 @@ func newFrame(c *client) *frame {
 	windowStateSet(c.wm.X(), c.win, icccm.StateNormal)
 	framed.show()
 	framed.applyTheme(true)
-
-	ev := xproto.ConfigureNotifyEvent{Event: c.win, Window: c.win, AboveSibling: 0,
-		X: int16(x + offsetX), Y: int16(y + offsetY), Width: uint16(framed.childWidth), Height: uint16(framed.childHeight),
-		BorderWidth: borderWidth, OverrideRedirect: false}
-	xproto.SendEvent(c.wm.Conn(), false, c.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+	framed.notifyInnerGeometry()
 
 	return framed
 }
@@ -154,18 +143,22 @@ func (f *frame) addBorder() {
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
 	x := int16(borderWidth)
 	y := int16(titleHeight)
-	w := f.childWidth + borderWidth*2
-	h := f.childHeight + borderWidth + titleHeight
-	f.x -= x
-	f.y -= y
-	if f.x < 0 {
-		f.x = 0
+	w := f.width
+	h := f.height
+	if !f.client.maximized {
+		w := f.childWidth + borderWidth*2
+		h := f.childHeight + borderWidth + titleHeight
+		f.x -= x
+		f.y -= y
+		if f.x < 0 {
+			f.x = 0
+		}
+		if f.y < 0 {
+			f.y = 0
+		}
+		f.width = w
+		f.height = h
 	}
-	if f.y < 0 {
-		f.y = 0
-	}
-	f.width = w
-	f.height = h
 	f.applyTheme(true)
 
 	err := xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
@@ -182,11 +175,7 @@ func (f *frame) addBorder() {
 	}
 
 	ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: int(borderWidth), Right: int(borderWidth), Top: int(titleHeight), Bottom: int(borderWidth)})
-
-	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
-		X: int16(f.x), Y: int16(f.y), Width: uint16(f.childWidth), Height: uint16(f.childHeight),
-		BorderWidth: borderWidth, OverrideRedirect: false}
-	xproto.SendEvent(f.client.wm.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+	f.notifyInnerGeometry()
 }
 
 func (f *frame) applyBorderlessTheme() {
@@ -204,7 +193,16 @@ func (f *frame) applyTheme(force bool) {
 		return
 	}
 
+	f.checkScale()
 	f.decorate(force)
+}
+
+func (f *frame) checkScale() {
+	titleHeight := x11.TitleHeight(x11.XWin(f.client))
+	if f.height - titleHeight != f.childHeight {
+		f.updateGeometry(f.x, f.y, f.width, f.height, true)
+		f.notifyInnerGeometry()
+	}
 }
 
 func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image.Image, pid xproto.Pixmap, draw xproto.Gcontext, depth byte) {
@@ -568,8 +566,12 @@ func (f *frame) removeBorder() {
 	borderWidth := x11.BorderWidth(x11.XWin(f.client))
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
 
-	f.x += int16(borderWidth)
-	f.y += int16(titleHeight)
+	if !f.client.maximized {
+		f.x += int16(borderWidth)
+		f.y += int16(titleHeight)
+		f.width = f.childWidth
+		f.height = f.childHeight
+	}
 	f.applyTheme(true)
 
 	err := xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
@@ -586,11 +588,7 @@ func (f *frame) removeBorder() {
 	}
 
 	ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
-
-	ev := xproto.ConfigureNotifyEvent{Event: f.client.win, Window: f.client.win, AboveSibling: 0,
-		X: int16(f.x), Y: int16(f.y), Width: uint16(f.childWidth), Height: uint16(f.childHeight),
-		BorderWidth: borderWidth, OverrideRedirect: false}
-	xproto.SendEvent(f.client.wm.Conn(), false, f.client.win, xproto.EventMaskStructureNotify, string(ev.Bytes()))
+	f.notifyInnerGeometry()
 }
 
 func (f *frame) show() {
