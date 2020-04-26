@@ -8,6 +8,8 @@ import (
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
+	"log"
+	"strconv"
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/notify"
@@ -164,6 +166,7 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 }
 
 func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
+	log.Println("Key pressed : " + strconv.Itoa(int(ev.Detail)))
 	if ev.Detail == keyCodeSpace {
 		if switcherInstance != nil { // we are currently switching windows - select current window
 			x.applyAppSwitcher()
@@ -173,6 +176,7 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 	} else {
 		// The rest of these methods are about app switcher.
 		// Apart from Tab they will only be called once the keyboard grab is in effect.
+		// add windows action
 		if ev.Detail == keyCodeTab {
 			shiftPressed := ev.State&xproto.ModMaskShift != 0
 			x.showOrSelectAppSwitcher(shiftPressed)
@@ -189,6 +193,7 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 }
 
 func (x *x11WM) handleKeyRelease(ev xproto.KeyReleaseEvent) {
+	log.Println("Key released : " + strconv.Itoa(int(ev.Detail)))
 	if ev.Detail == keyCodeAlt {
 		x.applyAppSwitcher()
 	}
