@@ -4,6 +4,7 @@ import (
 	"fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
+	"fyne.io/fynedesk"
 )
 
 const (
@@ -19,9 +20,13 @@ func (c *closeButton) Cursor() desktop.Cursor {
 	return CloseCursor
 }
 
-func newCloseButton() *closeButton {
+func newCloseButton(win fynedesk.Window) *closeButton {
 	b := &closeButton{}
 	b.ExtendBaseWidget(b)
+	b.OnTapped = func() {
+		win.Close()
+	}
+
 	b.Icon = theme.CancelIcon()
 	b.Style = widget.PrimaryButton
 

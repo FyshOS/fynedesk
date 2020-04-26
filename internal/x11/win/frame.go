@@ -529,8 +529,6 @@ func (f *frame) mousePress(x, y int16) {
 }
 
 func (f *frame) mouseRelease(x, y int16) {
-	borderWidth := x11.BorderWidth(x11.XWin(f.client))
-	buttonWidth := x11.ButtonWidth(x11.XWin(f.client))
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
 
 	relX := x - f.x
@@ -539,26 +537,18 @@ func (f *frame) mouseRelease(x, y int16) {
 	if relY > barYMax {
 		return
 	}
-	if relX >= int16(borderWidth) && relX < int16(borderWidth+buttonWidth) {
-		f.client.Close()
-	}
-	if relX >= int16(borderWidth)+int16(theme.Padding())+int16(buttonWidth) &&
-		relX < int16(borderWidth)+int16(theme.Padding()*2)+int16(buttonWidth*2) {
-		if f.client.Maximized() {
-			f.client.Unmaximize()
-		} else {
-			f.client.Maximize()
-		}
-	} else if relX >= int16(borderWidth)+int16(theme.Padding()*2)+int16(buttonWidth*2) &&
-		relX < int16(borderWidth)+int16(theme.Padding()*2)+int16(buttonWidth*3) {
-		f.client.Iconify()
-	}
 
-	f.resizeBottom = false
-	f.resizeLeft = false
-	f.resizeRight = false
-	f.moveOnly = false
-	f.updateGeometry(f.x, f.y, f.width, f.height, false)
+	obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
+		func(obj fyne.CanvasObject) bool {
+			_, ok := obj.(fyne.Tappable)
+			return ok
+		},
+	)
+
+	if obj == nil {
+		return
+	}
+	obj.(fyne.Tappable).Tapped(&fyne.PointEvent{})
 }
 
 // Notify the child window that it's geometry has changed to update menu positions etc.

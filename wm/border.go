@@ -32,8 +32,13 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 		}
 	}
 
-	exit := newCloseButton()
-	max := widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {})
+	max := widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {
+		if win.Maximized() {
+			win.Unmaximize()
+		} else {
+			win.Maximize()
+		}
+	})
 	if win.Maximized() {
 		max.Icon = theme.ViewRestoreIcon()
 	}
@@ -41,9 +46,11 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 		max.Disable()
 	}
 	titleBar := newColoredHBox(win.Focused(), makeFiller(0),
-		exit,
+		newCloseButton(win),
 		max,
-		widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {}),
+		widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {
+			win.Iconify()
+		}),
 		widget.NewLabel(win.Properties().Title()),
 		layout.NewSpacer())
 
