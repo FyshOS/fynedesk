@@ -131,7 +131,7 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 
 	root := w.desk.(*desktop).primaryWin
 	items = append(items, fyne.NewMenuItem(closeLabel, func() {
-		root.Close()
+		w.desk.WindowManager().Close()
 	}))
 
 	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), root.Canvas())

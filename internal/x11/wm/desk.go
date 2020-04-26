@@ -5,7 +5,6 @@ package wm // import "fyne.io/fynedesk/internal/x11/wm"
 import (
 	"errors"
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strings"
@@ -26,6 +25,7 @@ import (
 	"fyne.io/fynedesk/internal/ui"
 	"fyne.io/fynedesk/internal/x11"
 	xwin "fyne.io/fynedesk/internal/x11/win"
+	"fyne.io/fynedesk/wm"
 )
 
 type x11WM struct {
@@ -145,13 +145,30 @@ func (x *x11WM) Blank() {
 }
 
 func (x *x11WM) Close() {
-	log.Println("Disconnecting from X server")
-
 	for _, child := range x.clients {
 		child.Close()
 	}
 
-	x.x.Conn().Close()
+	cancel := false
+	exit := make(chan interface{})
+	go func() {
+		for !cancel && len(x.clients) > 0 {
+			time.Sleep(time.Millisecond * 100)
+		}
+
+		close(exit)
+	}()
+
+	go func() {
+		select {
+		case <-exit:
+			x.x.Conn().Close()
+		case <-time.NewTimer(time.Second * 10).C:
+			notify := wm.NewNotification("Log Out", "Log Out was cancelled by an open application")
+			wm.SendNotification(notify)
+			cancel = true
+		}
+	}()
 }
 
 func (x *x11WM) X() *xgbutil.XUtil {
