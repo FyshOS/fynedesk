@@ -199,7 +199,7 @@ func (f *frame) applyTheme(force bool) {
 
 func (f *frame) checkScale() {
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
-	if f.height - titleHeight != f.childHeight {
+	if f.height-titleHeight != f.childHeight {
 		f.updateGeometry(f.x, f.y, f.width, f.height, true)
 		f.notifyInnerGeometry()
 	}
