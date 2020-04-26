@@ -32,8 +32,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 		}
 	}
 
-	exit := widget.NewButtonWithIcon("", theme.CancelIcon(), func() {})
-	exit.Style = widget.PrimaryButton
+	exit := newCloseButton()
 	max := widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {})
 	if win.Maximized() {
 		max.Icon = theme.ViewRestoreIcon()

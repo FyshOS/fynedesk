@@ -6,6 +6,7 @@ import (
 	"image"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/tools/playground"
 
@@ -34,6 +35,7 @@ type frame struct {
 	borderTop, borderTopRight xproto.Pixmap
 	borderTopWidth            uint16
 
+	canvas fyne.Canvas
 	client *client
 }
 
@@ -199,7 +201,7 @@ func (f *frame) applyTheme(force bool) {
 
 func (f *frame) checkScale() {
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
-	if f.height - titleHeight != f.childHeight {
+	if f.height-titleHeight != f.childHeight {
 		f.updateGeometry(f.x, f.y, f.width, f.height, true)
 		f.notifyInnerGeometry()
 	}
@@ -314,6 +316,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 		canMaximize = false
 	}
 	canvas.SetContent(wm.NewBorder(f.client, f.client.Properties().Icon(), canMaximize))
+	f.canvas = canvas
 
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	iconBorderPixWidth := heightPix + x11.BorderWidth(x11.XWin(f.client))*2
@@ -432,41 +435,25 @@ func (f *frame) mouseDrag(x, y int16) {
 }
 
 func (f *frame) mouseMotion(x, y int16) {
-	borderWidth := x11.BorderWidth(x11.XWin(f.client))
-	buttonWidth := x11.ButtonWidth(x11.XWin(f.client))
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
-
 	relX := x - f.x
 	relY := y - f.y
+
+	obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
+		func(obj fyne.CanvasObject) bool {
+			_, ok := obj.(desktop.Cursorable)
+			return ok
+		},
+	)
+
 	cursor := x11.DefaultCursor
-	if relY <= int16(titleHeight) { // title bar
-		if relX > int16(borderWidth) && relX <= int16(borderWidth+buttonWidth) {
+	if obj != nil {
+		if obj.(desktop.Cursorable).Cursor() == wm.CloseCursor {
 			cursor = x11.CloseCursor
 		}
-		err := xproto.ChangeWindowAttributesChecked(f.client.wm.Conn(), f.client.id, xproto.CwCursor,
-			[]uint32{uint32(cursor)}).Check()
-		if err != nil {
-			fyne.LogError("Set Cursor Error", err)
-		}
-		return
-	}
-	if f.client.Maximized() || f.client.Fullscreened() || windowSizeFixed(f.client.wm.X(), f.client.win) {
-		return
-	}
-
-	if relY >= int16(f.height-buttonWidth) { // bottom
-		if relX < int16(buttonWidth) {
-			cursor = x11.ResizeBottomLeftCursor
-		} else if relX >= int16(f.width-buttonWidth) {
-			cursor = x11.ResizeBottomRightCursor
-		} else {
-			cursor = x11.ResizeBottomCursor
-		}
-	} else { // center (sides)
-		if relX < int16(f.width-buttonWidth) {
-			cursor = x11.ResizeLeftCursor
-		} else if relX >= int16(f.width-buttonWidth) {
-			cursor = x11.ResizeRightCursor
+	} else if uint16(y) > titleHeight {
+		if !f.client.Maximized() && !f.client.Fullscreened() && !windowSizeFixed(f.client.wm.X(), f.client.win) {
+			cursor = f.lookupResizeCursor(relX, relY)
 		}
 	}
 
@@ -475,6 +462,28 @@ func (f *frame) mouseMotion(x, y int16) {
 	if err != nil {
 		fyne.LogError("Set Cursor Error", err)
 	}
+}
+
+func (f *frame) lookupResizeCursor(x, y int16) xproto.Cursor {
+	cornerSize := x11.ButtonWidth(x11.XWin(f.client))
+
+	if y >= int16(f.height-cornerSize) { // bottom
+		if x < int16(cornerSize) {
+			return x11.ResizeBottomLeftCursor
+		} else if x >= int16(f.width-cornerSize) {
+			return x11.ResizeBottomRightCursor
+		} else {
+			return x11.ResizeBottomCursor
+		}
+	} else { // center (sides)
+		if x < int16(f.width-cornerSize) {
+			return x11.ResizeLeftCursor
+		} else if x >= int16(f.width-cornerSize) {
+			return x11.ResizeRightCursor
+		}
+	}
+
+	return x11.DefaultCursor
 }
 
 func (f *frame) mousePress(x, y int16) {
