@@ -55,6 +55,7 @@ func NewClient(win xproto.Window, wm x11.XWM) x11.XWin {
 		c.iconic = true
 		xproto.UnmapWindow(wm.Conn(), win)
 	} else {
+		c.positionNewWindow()
 		c.newFrame()
 	}
 
@@ -321,6 +322,24 @@ func (c *client) maximizeMessage(action x11.WindowStateAction) {
 
 func (c *client) newFrame() {
 	c.frame = newFrame(c)
+}
+
+func (c *client) positionNewWindow() {
+	attrs, err := xproto.GetGeometry(c.wm.Conn(), xproto.Drawable(c.win)).Reply()
+	if err != nil {
+		fyne.LogError("Get Geometry Error", err)
+		return
+	}
+
+	if attrs.X != 0 || attrs.Y != 0 {
+		return
+	}
+
+	screen := fynedesk.Instance().Screens().Active()
+
+	// TODO factor out to central WM code to identify the right start position for windows...
+	xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY,
+		[]uint32{uint32(screen.X + 50), uint32(screen.Y + 100)}).Check()
 }
 
 func (c *client) stateMessage(state int) {
