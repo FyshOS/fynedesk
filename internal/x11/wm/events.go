@@ -4,17 +4,15 @@ package wm
 
 import (
 	"fyne.io/fyne"
-	"github.com/BurntSushi/xgb/xproto"
-	"github.com/BurntSushi/xgbutil/icccm"
-	"github.com/BurntSushi/xgbutil/xevent"
-	"github.com/BurntSushi/xgbutil/xprop"
-	"log"
-	"strconv"
-
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/notify"
 	"fyne.io/fynedesk/internal/ui"
 	"fyne.io/fynedesk/internal/x11"
+	"fyne.io/fynedesk/modules/builtin"
+	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/xevent"
+	"github.com/BurntSushi/xgbutil/xprop"
 )
 
 func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
@@ -166,34 +164,32 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 }
 
 func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
-	log.Println("Key pressed : " + strconv.Itoa(int(ev.Detail)))
-	if ev.Detail == keyCodeSpace {
+	switch ev.Detail {
+	case keyCodeSpace:
 		if switcherInstance != nil { // we are currently switching windows - select current window
 			x.applyAppSwitcher()
 		} else {
 			go ui.ShowAppLauncher()
 		}
-	} else {
-		// The rest of these methods are about app switcher.
-		// Apart from Tab they will only be called once the keyboard grab is in effect.
-		// add windows action
-		if ev.Detail == keyCodeTab {
-			shiftPressed := ev.State&xproto.ModMaskShift != 0
-			x.showOrSelectAppSwitcher(shiftPressed)
-		} else if ev.Detail == keyCodeEscape {
-			x.cancelAppSwitcher()
-		} else if ev.Detail == keyCodeReturn || ev.Detail == keyCodeEnter {
-			x.applyAppSwitcher()
-		} else if ev.Detail == keyCodeLeft {
-			x.previousAppSwitcher()
-		} else if ev.Detail == keyCodeRight {
-			x.nextAppSwitcher()
-		}
+	case keyCodeTab:
+		shiftPressed := ev.State&xproto.ModMaskShift != 0
+		x.showOrSelectAppSwitcher(shiftPressed)
+	case keyCodeEscape:
+		x.cancelAppSwitcher()
+	case keyCodeReturn, keyCodeEnter:
+		x.applyAppSwitcher()
+	case keyCodeLeft:
+		x.previousAppSwitcher()
+	case keyCodeRight:
+		x.nextAppSwitcher()
+	case keyCodeBrightLess:
+		builtin.BrightnessModule.OffsetValue(-5)
+	case keyCodeBrightMore:
+		builtin.BrightnessModule.OffsetValue(5)
 	}
 }
 
 func (x *x11WM) handleKeyRelease(ev xproto.KeyReleaseEvent) {
-	log.Println("Key released : " + strconv.Itoa(int(ev.Detail)))
 	if ev.Detail == keyCodeAlt {
 		x.applyAppSwitcher()
 	}
