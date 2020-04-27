@@ -3,6 +3,7 @@
 package win
 
 import (
+	"fyne.io/fynedesk/wm"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
@@ -331,15 +332,12 @@ func (c *client) positionNewWindow() {
 		return
 	}
 
-	if attrs.X != 0 || attrs.Y != 0 {
-		return
-	}
+	x, y, w, h := wm.PositionForNewWindow(int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
+		fynedesk.Instance().Screens())
 
-	screen := fynedesk.Instance().Screens().Active()
-
-	// TODO factor out to central WM code to identify the right start position for windows...
-	xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY,
-		[]uint32{uint32(screen.X + 50), uint32(screen.Y + 100)}).Check()
+	xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(x), uint32(y),
+		uint32(w), uint32(h)}).Check()
 }
 
 func (c *client) stateMessage(state int) {
