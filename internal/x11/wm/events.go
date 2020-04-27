@@ -104,6 +104,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		}
 	case "_NET_ACTIVE_WINDOW":
 		x.handleActiveWin(ev)
+		x.setActiveScreenFromWindow(c)
 	case "_NET_WM_FULLSCREEN_MONITORS":
 		// TODO WHEN WE SUPPORT MULTI-MONITORS - THIS TELLS WHICH/HOW MANY MONITORS
 		// TO FULLSCREEN ACROSS

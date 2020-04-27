@@ -39,6 +39,10 @@ func NewX11ScreensProvider(mgr fynedesk.WindowManager) fynedesk.ScreenList {
 	return screensProvider
 }
 
+func (xsp *x11ScreensProvider) SetActive(s *fynedesk.Screen) {
+	xsp.active = s
+}
+
 func (xsp *x11ScreensProvider) Active() *fynedesk.Screen {
 	return xsp.active
 }

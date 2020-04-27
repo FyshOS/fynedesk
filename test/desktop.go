@@ -17,7 +17,8 @@ type Desktop struct {
 
 // NewDesktop returns a new in-memory desktop instance
 func NewDesktop() *Desktop {
-	screens := &testScreensProvider{screens: []*fynedesk.Screen{{Name: "Screen0", X: 0, Y: 0, Width: 2000, Height: 1000, Scale: 1.0}}}
+	screen := &fynedesk.Screen{Name: "Screen0", X: 0, Y: 0, Width: 2000, Height: 1000, Scale: 1.0}
+	screens := &testScreensProvider{screens: []*fynedesk.Screen{screen}, active: screen, primary: screen}
 	return &Desktop{settings: &Settings{}, icons: &testAppProvider{}, screens: screens}
 }
 

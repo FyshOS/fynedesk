@@ -668,6 +668,7 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	newScreen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 	if newScreen != currentScreen {
 		f.updateScale()
+		fynedesk.Instance().Screens().SetActive(newScreen)
 	}
 }
 
