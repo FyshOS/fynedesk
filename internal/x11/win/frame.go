@@ -451,7 +451,7 @@ func (f *frame) mouseMotion(x, y int16) {
 		if obj.(desktop.Cursorable).Cursor() == wm.CloseCursor {
 			cursor = x11.CloseCursor
 		}
-	} else if uint16(y) > titleHeight {
+	} else if uint16(relY) > titleHeight {
 		if !f.client.Maximized() && !f.client.Fullscreened() && !windowSizeFixed(f.client.wm.X(), f.client.win) {
 			cursor = f.lookupResizeCursor(relX, relY)
 		}
@@ -476,7 +476,7 @@ func (f *frame) lookupResizeCursor(x, y int16) xproto.Cursor {
 			return x11.ResizeBottomCursor
 		}
 	} else { // center (sides)
-		if x < int16(f.width-cornerSize) {
+		if x < int16(cornerSize) {
 			return x11.ResizeLeftCursor
 		} else if x >= int16(f.width-cornerSize) {
 			return x11.ResizeRightCursor
