@@ -82,7 +82,7 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 
 func UpdateBrightness(value int) {
 	for _, m := range fynedesk.Instance().Modules() {
-		if b, ok := m.Metadata().NewInstance().(*brightness); ok {
+		if b, ok := m.(*brightness); ok {
 			b.offsetValue(value)
 		}
 	}
