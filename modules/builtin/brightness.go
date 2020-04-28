@@ -2,14 +2,15 @@ package builtin
 
 import (
 	"fmt"
-	"fyne.io/fyne"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
 	"log"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"fyne.io/fyne"
+	"fyne.io/fyne/layout"
+	"fyne.io/fyne/theme"
+	"fyne.io/fyne/widget"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
