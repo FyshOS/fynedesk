@@ -8,7 +8,6 @@ require (
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 	github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802
 	github.com/BurntSushi/xgbutil v0.0.0-20160919175755-f7c97cef3b4e
-	github.com/fyne-io/mobile v0.0.1
 	github.com/godbus/dbus/v5 v5.0.3
 	github.com/jackmordaunt/icns v1.0.1-0.20200413110149-9e181b441ab2
 	github.com/stretchr/testify v1.5.1
