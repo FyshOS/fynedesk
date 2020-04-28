@@ -2,15 +2,14 @@ package builtin
 
 import (
 	"fmt"
-	"log"
-	"os/exec"
-	"strconv"
-	"strings"
-
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
+	"log"
+	"os/exec"
+	"strconv"
+	"strings"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
@@ -24,8 +23,6 @@ var brightnessMeta = fynedesk.ModuleMetadata{
 type brightness struct {
 	bar *widget.ProgressBar
 }
-
-var BrightnessModule = &brightness{}
 
 func (b *brightness) Destroy() {
 }
@@ -44,7 +41,7 @@ func (b *brightness) value() (float64, error) {
 	return ret / 100, nil
 }
 
-func (b *brightness) OffsetValue(diff int) {
+func (b *brightness) offsetValue(diff int) {
 	floatVal, _ := b.value()
 	value := int(floatVal*100) + diff
 
@@ -71,16 +68,24 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 	b.bar = widget.NewProgressBar()
 	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-		b.OffsetValue(-5)
+		b.offsetValue(-5)
 	})
 	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		b.OffsetValue(5)
+		b.offsetValue(5)
 	})
 	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
 		less, b.bar, more)
 
-	go b.OffsetValue(0)
+	go b.offsetValue(0)
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright)
+}
+
+func UpdateBrightness(value int) {
+	for _, m := range fynedesk.Instance().Modules() {
+		if b, ok := m.Metadata().NewInstance().(*brightness); ok {
+			b.offsetValue(value)
+		}
+	}
 }
 
 func (b *brightness) Metadata() fynedesk.ModuleMetadata {
@@ -89,5 +94,5 @@ func (b *brightness) Metadata() fynedesk.ModuleMetadata {
 
 // NewBrightness creates a new module that will show screen brightness in the status area
 func NewBrightness() fynedesk.Module {
-	return BrightnessModule
+	return &brightness{}
 }

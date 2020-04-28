@@ -183,9 +183,9 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 	case keyCodeRight:
 		x.nextAppSwitcher()
 	case keyCodeBrightLess:
-		builtin.BrightnessModule.OffsetValue(-5)
+		go builtin.UpdateBrightness(-5)
 	case keyCodeBrightMore:
-		builtin.BrightnessModule.OffsetValue(5)
+		go builtin.UpdateBrightness(5)
 	}
 }
 
