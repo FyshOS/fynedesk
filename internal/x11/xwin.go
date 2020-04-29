@@ -16,15 +16,14 @@ type XWin interface {
 	ChildID() xproto.Window
 
 	SizeMin() (uint, uint)
-	SizeMax() (int, int)
-	Geometry() (int, int, uint, uint)
+	SizeMax() (uint, uint)
 
 	Expose()
 	Refresh()
 	SettingsChanged()
 
 	NotifyBorderChange()
-	NotifyGeometry(int, int, uint, uint)
+	NotifyGeometry(geometry fynedesk.Geometry)
 	NotifyMoveResizeEnded()
 
 	NotifyMaximize()
@@ -34,8 +33,8 @@ type XWin interface {
 	NotifyIconify()
 	NotifyUnIconify()
 
-	NotifyMouseDrag(int16, int16)
-	NotifyMouseMotion(int16, int16)
-	NotifyMousePress(int16, int16)
-	NotifyMouseRelease(int16, int16)
+	NotifyMouseDrag(int, int)
+	NotifyMouseMotion(int, int)
+	NotifyMousePress(int, int)
+	NotifyMouseRelease(int, int)
 }

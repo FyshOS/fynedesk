@@ -4,7 +4,8 @@ import "fyne.io/fynedesk"
 
 // Window is an in-memory virtual window for test purposes
 type Window struct {
-	props dummyProperties
+	geometry fynedesk.Geometry
+	props    dummyProperties
 
 	iconic, focused, fullscreen, maximized, raised bool
 }

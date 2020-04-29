@@ -33,10 +33,10 @@ type x11WM struct {
 	x                       *xgbutil.XUtil
 	framedExisting          bool
 	moveResizing            bool
-	moveResizingStartX      int16
-	moveResizingStartY      int16
-	moveResizingLastX       int16
-	moveResizingLastY       int16
+	moveResizingStartX      int
+	moveResizingStartY      int
+	moveResizingLastX       int
+	moveResizingLastY       int
 	moveResizingStartWidth  uint
 	moveResizingStartHeight uint
 	moveResizingType        moveResizeType
@@ -237,11 +237,11 @@ func (x *x11WM) configureRoots(win xproto.Window) {
 		if win == 0 {
 			continue
 		}
-		if screen.X+screen.Width > width {
-			width = screen.X + screen.Width
+		if screen.X+int(screen.Width) > width {
+			width = screen.X + int(screen.Width)
 		}
-		if screen.Y+screen.Height > height {
-			height = screen.Y + screen.Height
+		if screen.Y+int(screen.Height) > height {
+			height = screen.Y + int(screen.Height)
 		}
 		xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -257,29 +257,30 @@ func (x *x11WM) configureRoots(win xproto.Window) {
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
 	c := x.clientForWin(win)
-	xcoord := ev.X
-	ycoord := ev.Y
-	width := ev.Width
-	height := ev.Height
+	geom := fynedesk.NewGeometry(int(ev.X), int(ev.Y), uint(ev.Width), uint(ev.Height))
 
 	if c != nil {
 		if c.ChildID() == win { // ignore requests from our frame as we must have caused it
-			x, y, _, _ := c.Geometry()
+			g := c.Geometry()
 			borderWidth := x11.BorderWidth(c)
 			titleHeight := x11.TitleHeight(c)
 
 			if c.Properties().Decorated() {
 				if !c.Fullscreened() {
-					c.NotifyGeometry(x, y, uint(ev.Width+(borderWidth*2)), uint(ev.Height+borderWidth+titleHeight))
+					g.Width = uint(int(ev.Width) + int(borderWidth*2))
+					g.Height = uint(int(ev.Height) + int(borderWidth+titleHeight))
+					c.NotifyGeometry(g)
 				} else {
-					c.NotifyGeometry(x, y, uint(ev.Width), uint(ev.Height))
+					g.Width = uint(ev.Width)
+					g.Height = uint(ev.Height)
+					c.NotifyGeometry(g)
 				}
 			} else {
 				if ev.X == 0 && ev.Y == 0 {
-					ev.X = int16(x)
-					ev.Y = int16(y)
+					geom.X = g.X
+					geom.Y = g.Y
 				}
-				c.NotifyGeometry(int(ev.X), int(ev.Y), uint(ev.Width), uint(ev.Height))
+				c.NotifyGeometry(geom)
 			}
 		}
 		return
@@ -299,19 +300,15 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		if !found {
 			x.rootIDs = append(x.rootIDs, win)
 		}
-		xcoord = int16(screen.X)
-		ycoord = int16(screen.Y)
-		width = uint16(screen.Width)
-		height = uint16(screen.Height)
+		geom = screen.Geometry
 		notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
-			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
+			X: int16(geom.X), Y: int16(geom.Y), Width: uint16(geom.Width), Height: uint16(geom.Height),
 			BorderWidth: 0, OverrideRedirect: false}
 		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 		break
 	}
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(xcoord), uint32(ycoord), uint32(width), uint32(height)}).Check()
+		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, x11.GeometryToUint32s(geom)).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}

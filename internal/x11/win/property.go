@@ -92,7 +92,7 @@ func windowSizeCanMaximize(x *xgbutil.XUtil, win fynedesk.Window) bool {
 	screen := fynedesk.Instance().Screens().ScreenForWindow(win)
 
 	maxWidth, maxHeight := windowSizeMax(x, win.(x11.XWin).ChildID())
-	if maxWidth == -1 && maxHeight == -1 {
+	if maxWidth == 0 && maxHeight == 0 {
 		return true
 	}
 	if maxWidth < screen.Width || maxHeight < screen.Height {
@@ -101,20 +101,20 @@ func windowSizeCanMaximize(x *xgbutil.XUtil, win fynedesk.Window) bool {
 	return true
 }
 
-func windowSizeConstrain(x *xgbutil.XUtil, win xproto.Window, width uint16, height uint16) (uint16, uint16) {
+func windowSizeConstrain(x *xgbutil.XUtil, win xproto.Window, width uint, height uint) (uint, uint) {
 	minWidth, minHeight := windowSizeMin(x, win)
 	maxWidth, maxHeight := windowSizeMax(x, win)
-	if width < uint16(minWidth) {
-		width = uint16(minWidth)
+	if width < minWidth {
+		width = minWidth
 	}
-	if height < uint16(minHeight) {
-		height = uint16(minHeight)
+	if height < minHeight {
+		height = minHeight
 	}
-	if maxWidth > -1 && width > uint16(maxWidth) {
-		width = uint16(maxWidth)
+	if maxWidth != 0 && width > maxWidth {
+		width = maxWidth
 	}
-	if maxHeight > -1 && height > uint16(maxHeight) {
-		height = uint16(maxHeight)
+	if maxHeight != 0 && height > maxHeight {
+		height = maxHeight
 	}
 	return width, height
 }
@@ -122,21 +122,21 @@ func windowSizeConstrain(x *xgbutil.XUtil, win xproto.Window, width uint16, heig
 func windowSizeFixed(x *xgbutil.XUtil, win xproto.Window) bool {
 	minWidth, minHeight := windowSizeMin(x, win)
 	maxWidth, maxHeight := windowSizeMax(x, win)
-	if int(minWidth) == maxWidth && int(minHeight) == maxHeight {
+	if minWidth == maxWidth && minHeight == maxHeight {
 		return true
 	}
 	return false
 }
 
-func windowSizeMax(x *xgbutil.XUtil, win xproto.Window) (int, int) {
+func windowSizeMax(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
 	nh, err := icccm.WmNormalHintsGet(x, win)
 	if err != nil {
-		return -1, -1
+		return 0, 0
 	}
 	if (nh.Flags & icccm.SizeHintPMaxSize) > 0 {
-		return int(nh.MaxWidth), int(nh.MaxHeight)
+		return nh.MaxWidth, nh.MaxHeight
 	}
-	return -1, -1
+	return 0, 0
 }
 
 func windowSizeMin(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
@@ -150,31 +150,31 @@ func windowSizeMin(x *xgbutil.XUtil, win xproto.Window) (uint, uint) {
 	return 0, 0
 }
 
-func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, height uint16) (uint16, uint16) {
+func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint, height uint) (uint, uint) {
 	nh, err := icccm.WmNormalHintsGet(x, win)
 	if err != nil {
 		fyne.LogError("Could not apply requested increment", err)
 		return width, height
 	}
 	if (nh.Flags & icccm.SizeHintPResizeInc) > 0 {
-		var baseWidth, baseHeight uint16 = 0, 0
+		var baseWidth, baseHeight uint = 0, 0
 		if nh.BaseWidth > 0 {
-			baseWidth = uint16(nh.BaseWidth)
+			baseWidth = nh.BaseWidth
 		} else {
 			minWidth, _ := windowSizeMin(x, win)
-			baseWidth = uint16(minWidth)
+			baseWidth = minWidth
 		}
 		if nh.BaseHeight > 0 {
-			baseHeight = uint16(nh.BaseHeight)
+			baseHeight = nh.BaseHeight
 		} else {
 			_, minHeight := windowSizeMin(x, win)
-			baseHeight = uint16(minHeight)
+			baseHeight = minHeight
 		}
 		if nh.WidthInc > 0 {
-			width = baseWidth + uint16((math.Round(float64(width-baseWidth)/float64(nh.WidthInc)))*float64(nh.WidthInc))
+			width = baseWidth + uint((math.Round(float64(width-baseWidth)/float64(nh.WidthInc)))*float64(nh.WidthInc))
 		}
 		if nh.HeightInc > 0 {
-			height = baseHeight + uint16((math.Round(float64(height-baseHeight)/float64(nh.HeightInc)))*float64(nh.HeightInc))
+			height = baseHeight + uint((math.Round(float64(height-baseHeight)/float64(nh.HeightInc)))*float64(nh.HeightInc))
 		}
 	}
 	return width, height

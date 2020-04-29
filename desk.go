@@ -5,7 +5,7 @@ type Desktop interface {
 	Run()
 	RunApp(AppData) error
 	Settings() DeskSettings
-	ContentSizePixels(screen *Screen) (uint32, uint32)
+	ContentSizePixels(screen *Screen) (uint, uint)
 	Screens() ScreenList
 
 	IconProvider() ApplicationProvider
