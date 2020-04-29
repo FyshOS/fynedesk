@@ -4,15 +4,16 @@ package wm
 
 import (
 	"fyne.io/fyne"
+	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/xevent"
+	"github.com/BurntSushi/xgbutil/xprop"
+
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/notify"
 	"fyne.io/fynedesk/internal/ui"
 	"fyne.io/fynedesk/internal/x11"
 	"fyne.io/fynedesk/modules/builtin"
-	"github.com/BurntSushi/xgb/xproto"
-	"github.com/BurntSushi/xgbutil/icccm"
-	"github.com/BurntSushi/xgbutil/xevent"
-	"github.com/BurntSushi/xgbutil/xprop"
 )
 
 func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
@@ -183,9 +184,17 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 	case keyCodeRight:
 		x.nextAppSwitcher()
 	case keyCodeBrightLess:
-		go builtin.UpdateBrightness(-5)
+		go modifyBrightness(-5)
 	case keyCodeBrightMore:
-		go builtin.UpdateBrightness(5)
+		go modifyBrightness(5)
+	}
+}
+
+func modifyBrightness(value int) {
+	for _, m := range fynedesk.Instance().Modules() {
+		if b, ok := m.(*builtin.Brightness); ok {
+			b.OffsetValue(value)
+		}
 	}
 }
 
