@@ -2,21 +2,19 @@ package wm
 
 import (
 	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/theme"
 )
 
 // PositionForNewWindow returns the suggested position for a new window of the given geometry.
 // The screen list hints at available space, but normally list.Active() is the best.
-func PositionForNewWindow(x, y int, w, h uint, list fynedesk.ScreenList) (int, int, uint, uint) {
+func PositionForNewWindow(x, y int, w, h uint, screens fynedesk.ScreenList) (int, int, uint, uint) {
 	if x != 0 && y != 0 {
 		return x, y, w, h
 	}
 
-	screenX := list.Active().X
-	screenY := list.Active().Y
-	screenW := list.Active().Width
-	screenH := list.Active().Height
+	target := screens.Active()
+	offX := ScaleToPixels(theme.BorderWidth, target)
+	offY := ScaleToPixels(theme.TitleHeight, target)
 
-	offX := (screenW - int(w)) / 2
-	offY := (screenH - int(h)) / 2
-	return screenX + offX, screenY + offY, w, h
+	return target.X + offX, target.Y + offY, w, h
 }
