@@ -3,17 +3,19 @@ package wm
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
+
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/test"
-	"github.com/stretchr/testify/assert"
+	"fyne.io/fynedesk/theme"
 )
 
-func TestPositionForNewWindow_Center(t *testing.T) {
-	screen := &fynedesk.Screen{Geometry: fynedesk.NewGeometry(50, 0, 200, 200)}
+func TestPositionForNewWindow_TopLeft(t *testing.T) {
+	screen := &fynedesk.Screen{Geometry: fynedesk.NewGeometry(50, 0, 500, 500), Scale: 1}
 	g := PositionForNewWindow(fynedesk.NewGeometry(0, 0, 100, 100), test.NewScreensProvider(screen))
 
-	assert.Equal(t, 100, g.X)
-	assert.Equal(t, 50, g.Y)
+	assert.Equal(t, 50+theme.BorderWidth, g.X)
+	assert.Equal(t, theme.TitleHeight, g.Y)
 }
 
 func TestPositionForNewWindow_Set(t *testing.T) {
