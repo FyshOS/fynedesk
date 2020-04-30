@@ -1,6 +1,6 @@
 // +build linux
 
-package wm // import "fyne.io/fynedesk/wm"
+package wm
 
 import (
 	"fyne.io/fyne"
