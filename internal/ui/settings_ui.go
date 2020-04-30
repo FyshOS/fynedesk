@@ -59,12 +59,17 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 	bgButtons := widget.NewHBox(bgPathClear,
 		widget.NewButtonWithIcon("", theme.SearchIcon(), func() {
-			dialog.ShowFileOpen(func(file string) {
-				if file == "" {
+			dialog.ShowFileOpen(func(file fyne.FileReadCloser, err error) {
+				if err != nil || file == nil {
 					return
 				}
 
-				bgPath.SetText(file)
+				// not advisable for cross-platform but we are desktop only
+				path := file.URI()[7:]
+				// TODO add a nice preview :)
+				_ = file.Close()
+
+				bgPath.SetText(path)
 				bgPathClear.Enable()
 			}, d.win)
 		}))

@@ -25,6 +25,7 @@ type ElevationLevel int
 const (
 	BaseLevel             ElevationLevel = 0
 	ButtonLevel           ElevationLevel = 2
+	MenuLevel             ElevationLevel = 4
 	PopUpLevel            ElevationLevel = 8
 	SubmergedContentLevel ElevationLevel = 8
 )
@@ -137,6 +138,7 @@ func (r *shadowRenderer) MinSize() fyne.Size {
 func (r *shadowRenderer) Refresh() {
 	r.refreshShadows()
 	r.Layout(r.s.Size())
+	canvas.Refresh(r.s)
 }
 
 func (r *shadowRenderer) createShadows() {
