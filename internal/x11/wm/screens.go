@@ -1,6 +1,6 @@
 // +build linux
 
-package wm // import "fyne.io/fynedesk/wm"
+package wm
 
 import (
 	"fyne.io/fyne"
@@ -83,7 +83,7 @@ func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height
 			return xsp.screens[i]
 		}
 	}
-	return xsp.screens[0]
+	return xsp.active
 }
 
 func (xsp *x11ScreensProvider) ScreenForWindow(win fynedesk.Window) *fynedesk.Screen {

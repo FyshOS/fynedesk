@@ -66,8 +66,6 @@ func (c *client) ChildID() xproto.Window {
 }
 
 func (c *client) Close() {
-	c.frame.unFrame() // TODO check this - it was only called in WM shutdown before...
-
 	winProtos, err := icccm.WmProtocolsGet(c.wm.X(), c.win)
 	if err != nil {
 		fyne.LogError("Get Protocols Error", err)
