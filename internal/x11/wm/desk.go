@@ -67,7 +67,6 @@ const (
 
 	keyCodeEscape = 9
 	keyCodeTab    = 23
-	keyCodeCtrl   = 33
 	keyCodeReturn = 36
 	keyCodeAlt    = 64
 	keyCodeSpace  = 65
@@ -75,12 +74,6 @@ const (
 	keyCodeEnter = 108
 	keyCodeLeft  = 113
 	keyCodeRight = 114
-
-	keyCodeMute          = 121
-	keyCodeSoundDecrease = 122
-	keyCodeSoundIncrease = 123
-
-	keyCodeSuper = 133
 
 	keyCodeBrightLess = 232
 	keyCodeBrightMore = 233
