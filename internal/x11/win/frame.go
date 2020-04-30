@@ -324,7 +324,7 @@ func (f *frame) getInnerWindowCoordinates(w, h uint) fynedesk.Geometry {
 	if f.client.Fullscreened() || !f.client.Properties().Decorated() {
 		constrainW, constrainH := w, h
 		if !f.client.Properties().Decorated() {
-			adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.X(), f.client.win, w, h)
+			adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.X(), f.client.win, f.Width, f.Height)
 			constrainW, constrainH = windowSizeConstrain(f.client.wm.X(), f.client.win,
 				adjustedW, adjustedH)
 		}
@@ -626,7 +626,7 @@ func (f *frame) updateGeometry(g fynedesk.Geometry, force bool) {
 	f.childHeight = childGeom.Height
 
 	err := xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
-		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, x11.GeometryToUint32s(g)).Check()
+		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, x11.GeometryToUint32s(f.Geometry)).Check()
 	if err != nil {
 		fyne.LogError("Configure Window Error", err)
 	}
