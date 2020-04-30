@@ -9,18 +9,18 @@ import (
 )
 
 func TestPositionForNewWindow_Center(t *testing.T) {
-	screen := &fynedesk.Screen{Geometry: fynedesk.NewGeometry(50, 0, 200, 200)}
-	g := PositionForNewWindow(fynedesk.NewGeometry(0, 0, 100, 100), test.NewScreensProvider(screen))
+	screen := &fynedesk.Screen{X: 50, Y: 0, Width: 200, Height: 200}
+	x, y, _, _ := PositionForNewWindow(0, 0, 100, 100, test.NewScreensProvider(screen))
 
-	assert.Equal(t, 100, g.X)
-	assert.Equal(t, 50, g.Y)
+	assert.Equal(t, 100, x)
+	assert.Equal(t, 50, y)
 }
 
 func TestPositionForNewWindow_Set(t *testing.T) {
 	xPos := 5
 	yPos := 10
 
-	g := PositionForNewWindow(fynedesk.NewGeometry(xPos, yPos, 100, 100), test.NewScreensProvider())
-	assert.Equal(t, xPos, g.X)
-	assert.Equal(t, yPos, g.Y)
+	x, y, _, _ := PositionForNewWindow(xPos, yPos, 100, 100, test.NewScreensProvider())
+	assert.Equal(t, xPos, x)
+	assert.Equal(t, yPos, y)
 }

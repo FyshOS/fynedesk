@@ -17,8 +17,7 @@ type Desktop struct {
 
 // NewDesktop returns a new in-memory desktop instance
 func NewDesktop() *Desktop {
-	screen := &fynedesk.Screen{Name: "Screen0", Scale: 1.0,
-		Geometry: fynedesk.Geometry{X: 0, Y: 0, Width: 2000, Height: 1000}}
+	screen := &fynedesk.Screen{Name: "Screen0", X: 0, Y: 0, Width: 2000, Height: 1000, Scale: 1.0}
 	screens := &testScreensProvider{screens: []*fynedesk.Screen{screen}, active: screen, primary: screen}
 	return &Desktop{settings: &Settings{}, icons: &testAppProvider{}, screens: screens}
 }
@@ -31,8 +30,8 @@ func NewDesktopWithWM(wm fynedesk.WindowManager) *Desktop {
 }
 
 // ContentSizePixels returns a default value for how much space maximised apps should use
-func (*Desktop) ContentSizePixels(_ *fynedesk.Screen) (uint, uint) {
-	return uint(320), uint(240)
+func (*Desktop) ContentSizePixels(_ *fynedesk.Screen) (uint32, uint32) {
+	return uint32(320), uint32(240)
 }
 
 // IconProvider returns the icon provider, by default it uses a simple in-memory implementation

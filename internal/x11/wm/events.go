@@ -67,7 +67,7 @@ func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
 func (x *x11WM) handleButtonPress(ev xproto.ButtonPressEvent) {
 	for _, c := range x.clients {
 		if c.(x11.XWin).FrameID() == ev.Event {
-			c.(x11.XWin).NotifyMousePress(int(ev.RootX), int(ev.RootY))
+			c.(x11.XWin).NotifyMousePress(ev.RootX, ev.RootY)
 		}
 	}
 	xevent.ReplayPointer(x.x)
@@ -77,7 +77,7 @@ func (x *x11WM) handleButtonRelease(ev xproto.ButtonReleaseEvent) {
 	for _, c := range x.clients {
 		if c.(x11.XWin).FrameID() == ev.Event {
 			if !x.moveResizing {
-				c.(x11.XWin).NotifyMouseRelease(int(ev.RootX), int(ev.RootY))
+				c.(x11.XWin).NotifyMouseRelease(ev.RootX, ev.RootY)
 			}
 			x.moveResizeEnd(c.(x11.XWin))
 		}
@@ -208,8 +208,7 @@ func (x *x11WM) handleMouseEnter(ev xproto.EnterNotifyEvent) {
 
 func (x *x11WM) handleMouseLeave(ev xproto.LeaveNotifyEvent) {
 	if mouseNotify, ok := fynedesk.Instance().(notify.MouseNotify); ok {
-		geom := fynedesk.NewGeometry(int(ev.RootX), int(ev.RootY), 0, 0)
-		screen := fynedesk.Instance().Screens().ScreenForGeometry(geom)
+		screen := fynedesk.Instance().Screens().ScreenForGeometry(int(ev.RootX), int(ev.RootY), 0, 0)
 		mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/screen.CanvasScale()),
 			int(float32(ev.RootY)/screen.CanvasScale())))
 	}
@@ -219,13 +218,13 @@ func (x *x11WM) handleMouseMotion(ev xproto.MotionNotifyEvent) {
 	for _, c := range x.clients {
 		if c.(x11.XWin).FrameID() == ev.Event {
 			if x.moveResizing {
-				x.moveResize(int(ev.RootX), int(ev.RootY), c.(x11.XWin))
+				x.moveResize(ev.RootX, ev.RootY, c.(x11.XWin))
 				break
 			}
 			if ev.State&xproto.ButtonMask1 != 0 {
-				c.(x11.XWin).NotifyMouseDrag(int(ev.RootX), int(ev.RootY))
+				c.(x11.XWin).NotifyMouseDrag(ev.RootX, ev.RootY)
 			} else {
-				c.(x11.XWin).NotifyMouseMotion(int(ev.RootX), int(ev.RootY))
+				c.(x11.XWin).NotifyMouseMotion(ev.RootX, ev.RootY)
 			}
 			break
 		}
@@ -234,12 +233,11 @@ func (x *x11WM) handleMouseMotion(ev xproto.MotionNotifyEvent) {
 
 func (x *x11WM) handleMoveResize(ev xproto.ClientMessageEvent, c x11.XWin) {
 	x.moveResizing = true
-	x.moveResizingLastX = int(ev.Data.Data32[0])
-	x.moveResizingLastY = int(ev.Data.Data32[1])
+	x.moveResizingLastX = int16(ev.Data.Data32[0])
+	x.moveResizingLastY = int16(ev.Data.Data32[1])
 	x.moveResizingStartX = x.moveResizingLastX
 	x.moveResizingStartY = x.moveResizingLastY
-	x.moveResizingStartWidth = c.Geometry().Width
-	x.moveResizingStartHeight = c.Geometry().Height
+	_, _, x.moveResizingStartWidth, x.moveResizingStartHeight = c.Geometry()
 	x.moveResizingType = moveResizeType(ev.Data.Data32[2])
 	xproto.GrabPointer(x.x.Conn(), true, c.FrameID(),
 		xproto.EventMaskButtonPress|xproto.EventMaskButtonRelease|xproto.EventMaskPointerMotion,
@@ -329,8 +327,10 @@ func (x *x11WM) moveResizeEnd(c x11.XWin) {
 	c.NotifyMoveResizeEnded()
 }
 
-func (x *x11WM) moveResize(moveX, moveY int, c x11.XWin) {
-	g := c.Geometry()
+func (x *x11WM) moveResize(moveX, moveY int16, c x11.XWin) {
+	xcoord, ycoord, width, height := c.Geometry()
+	w := int16(width)
+	h := int16(height)
 	deltaW := moveX - x.moveResizingLastX
 	deltaH := moveY - x.moveResizingLastY
 	deltaX := moveX - x.moveResizingStartX
@@ -338,46 +338,48 @@ func (x *x11WM) moveResize(moveX, moveY int, c x11.XWin) {
 
 	switch x.moveResizingType {
 	case moveResizeTopLeft:
-		//MoveBy both X,Y coords and resize both W,H
-		g = g.MovedBy(deltaW, deltaH)
+		//Move both X,Y coords and resize both W,H
+		xcoord += int(deltaW)
+		ycoord += int(deltaH)
 
-		g.Width = uint(int(x.moveResizingStartWidth) - deltaX)
-		g.Height = uint(int(x.moveResizingStartHeight) - deltaY)
+		w = int16(x.moveResizingStartWidth) - deltaX
+		h = int16(x.moveResizingStartHeight) - deltaY
 	case moveResizeTop:
-		//MoveBy Y coord and resize H
-		g.Y += deltaH
-		g.Height = uint(int(x.moveResizingStartHeight) - deltaY)
+		//Move Y coord and resize H
+		ycoord += int(deltaH)
+		h = int16(x.moveResizingStartHeight) - deltaY
 	case moveResizeTopRight:
-		//MoveBy Y coord and resize both W,H
-		g.Y += deltaH
-		g.Width = uint(int(x.moveResizingStartWidth) + deltaX)
-		g.Height = uint(int(x.moveResizingStartHeight) - deltaY)
+		//Move Y coord and resize both W,H
+		ycoord += int(deltaH)
+		w = int16(x.moveResizingStartWidth) + deltaX
+		h = int16(x.moveResizingStartHeight) - deltaY
 	case moveResizeRight:
 		//Keep X coord and resize W
-		g.Width = uint(int(x.moveResizingStartWidth) + deltaX)
+		w = int16(x.moveResizingStartWidth) + deltaX
 	case moveResizeBottomRight, moveResizeKeyboard:
 		//Keep both X,Y coords and resize both W,H
-		g.Width = uint(int(x.moveResizingStartWidth) + deltaX)
-		g.Height = uint(int(x.moveResizingStartHeight) + deltaY)
+		w = int16(x.moveResizingStartWidth) + deltaX
+		h = int16(x.moveResizingStartHeight) + deltaY
 	case moveResizeBottom:
 		//Keep Y coord and resize H
-		g.Height = uint(int(x.moveResizingStartHeight) + deltaY)
+		h = int16(x.moveResizingStartHeight) + deltaY
 	case moveResizeBottomLeft:
-		//MoveBy X coord and resize both W,H
-		g.X += deltaW
-		g.Width = uint(int(x.moveResizingStartWidth) - deltaX)
-		g.Height = uint(int(x.moveResizingStartHeight) + deltaY)
+		//Move X coord and resize both W,H
+		xcoord += int(deltaW)
+		w = int16(x.moveResizingStartWidth) - deltaX
+		h = int16(x.moveResizingStartHeight) + deltaY
 	case moveResizeLeft:
-		//MoveBy X coord and resize W
-		g.X += deltaW
-		g.Width = uint(int(x.moveResizingStartWidth) - deltaX)
+		//Move X coord and resize W
+		xcoord += int(deltaW)
+		w = int16(x.moveResizingStartWidth) - deltaX
 	case moveResizeMove, moveResizeMoveKeyboard:
-		//MoveBy both X,Y coords and no resize
-		g = g.MovedBy(deltaW, deltaH)
+		//Move both X,Y coords and no resize
+		xcoord += int(deltaW)
+		ycoord += int(deltaH)
 	case moveResizeCancel:
 		x.moveResizeEnd(c)
 	}
 	x.moveResizingLastX = moveX
 	x.moveResizingLastY = moveY
-	c.NotifyGeometry(g)
+	c.NotifyGeometry(xcoord, ycoord, uint(w), uint(h))
 }

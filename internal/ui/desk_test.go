@@ -17,8 +17,8 @@ import (
 )
 
 func TestDeskLayout_Layout(t *testing.T) {
-	l := &desktop{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", Scale: 1.0,
-		Geometry: fynedesk.Geometry{X: 0, Y: 0, Width: 2000, Height: 1000}})}
+	l := &desktop{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
+		Width: 2000, Height: 1000, Scale: 1.0})}
 	l.bar = testBar([]string{})
 	l.widgets = newWidgetPanel(l)
 	bg := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}
@@ -54,8 +54,8 @@ func TestScaleVars_Down(t *testing.T) {
 }
 
 func TestBackgroundChange(t *testing.T) {
-	l := &desktop{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", Scale: 1.0,
-		Geometry: fynedesk.Geometry{X: 0, Y: 0, Width: 2000, Height: 1000}})}
+	l := &desktop{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
+		Width: 2000, Height: 1000, Scale: 1.0})}
 	fynedesk.SetInstance(l)
 	l.settings = test.NewSettings()
 	bg := newBackground()

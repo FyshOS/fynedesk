@@ -24,7 +24,8 @@ type client struct {
 	maximized bool
 	props     *clientProperties
 
-	restoreGeometry fynedesk.Geometry
+	restoreX, restoreY          int16
+	restoreWidth, restoreHeight uint16
 
 	frame *frame
 	wm    x11.XWM
@@ -150,11 +151,11 @@ func (c *client) Iconic() bool {
 	return c.iconic
 }
 
-func (c *client) Geometry() fynedesk.Geometry {
+func (c *client) Geometry() (int, int, uint, uint) {
 	if c.frame == nil {
-		return fynedesk.NewGeometry(0, 0, 0, 0)
+		return 0, 0, 0, 0
 	}
-	return c.frame.Geometry
+	return int(c.frame.x), int(c.frame.y), uint(c.frame.width), uint(c.frame.height)
 }
 
 func (c *client) Maximize() {
@@ -173,8 +174,8 @@ func (c *client) NotifyBorderChange() {
 	}
 }
 
-func (c *client) NotifyGeometry(g fynedesk.Geometry) {
-	c.frame.updateGeometry(g, true)
+func (c *client) NotifyGeometry(x int, y int, width uint, height uint) {
+	c.frame.updateGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
 }
 
 func (c *client) NotifyFullscreen() {
@@ -195,19 +196,19 @@ func (c *client) NotifyMaximize() {
 	x11.WindowExtendedHintsAdd(c.wm.X(), c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 }
 
-func (c *client) NotifyMouseDrag(x, y int) {
+func (c *client) NotifyMouseDrag(x, y int16) {
 	c.frame.mouseDrag(x, y)
 }
 
-func (c *client) NotifyMouseMotion(x, y int) {
+func (c *client) NotifyMouseMotion(x, y int16) {
 	c.frame.mouseMotion(x, y)
 }
 
-func (c *client) NotifyMousePress(x, y int) {
+func (c *client) NotifyMousePress(x, y int16) {
 	c.frame.mousePress(x, y)
 }
 
-func (c *client) NotifyMouseRelease(x, y int) {
+func (c *client) NotifyMouseRelease(x, y int16) {
 	c.frame.mouseRelease(x, y)
 }
 
@@ -278,7 +279,7 @@ func (c *client) SettingsChanged() {
 	c.frame.updateScale()
 }
 
-func (c *client) SizeMax() (uint, uint) {
+func (c *client) SizeMax() (int, int) {
 	return windowSizeMax(c.wm.X(), c.ChildID())
 }
 
@@ -311,6 +312,10 @@ func (c *client) fullscreenMessage(action x11.WindowStateAction) {
 	ewmh.WmStateReq(c.wm.X(), c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
 }
 
+func (c *client) getWindowGeometry() (int16, int16, uint16, uint16) {
+	return c.frame.getGeometry()
+}
+
 func (c *client) maximizeMessage(action x11.WindowStateAction) {
 	ewmh.WmStateReqExtra(c.wm.X(), c.win, int(action), "_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_MAXIMIZED_HORZ", 1)
@@ -327,11 +332,12 @@ func (c *client) positionNewWindow() {
 		return
 	}
 
-	g := wm.PositionForNewWindow(x11.GeometryFromGetGeometryReply(attrs),
+	x, y, w, h := wm.PositionForNewWindow(int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
 		fynedesk.Instance().Screens())
 
 	xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, x11.GeometryToUint32s(g)).Check()
+		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(x), uint32(y),
+		uint32(w), uint32(h)}).Check()
 }
 
 func (c *client) stateMessage(state int) {

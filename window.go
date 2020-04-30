@@ -22,7 +22,6 @@ type Window interface {
 	Uniconify()        // Request to restore this window and possibly children of this window from being minimized
 	Unmaximize()       // Request to restore this window to its size before being maximized
 
-	Geometry() Geometry           // Request the geometry of this window
 	Properties() WindowProperties // Request the properties set on this window
 }
 

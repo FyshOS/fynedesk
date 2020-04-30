@@ -1,9 +1,6 @@
 package test
 
-import (
-	"fyne.io/fynedesk"
-	"github.com/BurntSushi/xgb/xproto"
-)
+import "github.com/BurntSushi/xgb/xproto"
 
 // just stubs so we can use the generic test Window in X11 tests
 
@@ -23,8 +20,8 @@ func (w *Window) FrameID() xproto.Window {
 }
 
 // Geometry returns the x, y position and width, height size of this window's outer bounds
-func (w *Window) Geometry() fynedesk.Geometry {
-	return w.geometry
+func (w *Window) Geometry() (int, int, uint, uint) {
+	return 0, 0, 10, 10
 }
 
 // NotifyBorderChange is called when the border should be shown or hidden
@@ -33,7 +30,7 @@ func (w *Window) NotifyBorderChange() {
 }
 
 // NotifyGeometry is called when the window is instructed to change it's geometry
-func (w *Window) NotifyGeometry(fynedesk.Geometry) {
+func (w *Window) NotifyGeometry(int, int, uint, uint) {
 	// no-op
 }
 
@@ -73,22 +70,22 @@ func (w *Window) NotifyUnMaximize() {
 }
 
 // NotifyMouseDrag is called when the mouse was seen to drag inside the window frame
-func (w *Window) NotifyMouseDrag(int, int) {
+func (w *Window) NotifyMouseDrag(int16, int16) {
 	// no-op
 }
 
 // NotifyMouseMotion is called when the mouse was seen to move inside the window frame
-func (w *Window) NotifyMouseMotion(int, int) {
+func (w *Window) NotifyMouseMotion(int16, int16) {
 	// no-op
 }
 
 // NotifyMousePress is called when the mouse was seen to press inside the window frame
-func (w *Window) NotifyMousePress(int, int) {
+func (w *Window) NotifyMousePress(int16, int16) {
 	// no-op
 }
 
 // NotifyMouseRelease is called when the mouse was seen to release inside the window frame
-func (w *Window) NotifyMouseRelease(int, int) {
+func (w *Window) NotifyMouseRelease(int16, int16) {
 	// no-op
 }
 
@@ -108,6 +105,6 @@ func (w *Window) SizeMin() (uint, uint) {
 }
 
 // SizeMax returns the maximum size this window can become (which may disable maximize)
-func (w *Window) SizeMax() (uint, uint) {
-	return 0, 0
+func (w *Window) SizeMax() (int, int) {
+	return -1, -1
 }

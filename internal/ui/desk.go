@@ -163,11 +163,13 @@ func (l *desktop) Settings() fynedesk.DeskSettings {
 	return l.settings
 }
 
-func (l *desktop) ContentSizePixels(screen *fynedesk.Screen) (uint, uint) {
+func (l *desktop) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32) {
+	screenW := uint32(screen.Width)
+	screenH := uint32(screen.Height)
 	if l.screens.Primary() == screen {
-		return screen.Width - uint(float32(l.widgets.Size().Width)*screen.CanvasScale()), screen.Height
+		return screenW - uint32(float32(l.widgets.Size().Width)*screen.CanvasScale()), screenH
 	}
-	return screen.Width, screen.Height
+	return screenW, screenH
 }
 
 func (l *desktop) IconProvider() fynedesk.ApplicationProvider {
