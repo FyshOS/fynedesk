@@ -123,7 +123,7 @@ func windowSizeFixed(x *xgbutil.XUtil, win xproto.Window) bool {
 	minWidth, minHeight := windowSizeMin(x, win)
 	maxWidth, maxHeight := windowSizeMax(x, win)
 	if minWidth == maxWidth && minHeight == maxHeight {
-		return maxWidth != 0 && maxHeight != 0 // if they are all 0 then it's not fixed
+		return true
 	}
 	return false
 }
