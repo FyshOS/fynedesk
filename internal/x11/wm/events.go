@@ -3,9 +3,6 @@
 package wm
 
 import (
-	"log"
-	"strconv"
-
 	"fyne.io/fyne"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
@@ -168,7 +165,6 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 }
 
 func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
-	log.Println("Key pressed : " + strconv.Itoa(int(ev.Detail)))
 	if ev.Detail == keyCodeSpace {
 		if switcherInstance != nil { // we are currently switching windows - select current window
 			x.applyAppSwitcher()
@@ -178,7 +174,6 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 	} else {
 		// The rest of these methods are about app switcher.
 		// Apart from Tab they will only be called once the keyboard grab is in effect.
-		// add windows action
 		if ev.Detail == keyCodeTab {
 			shiftPressed := ev.State&xproto.ModMaskShift != 0
 			x.showOrSelectAppSwitcher(shiftPressed)
