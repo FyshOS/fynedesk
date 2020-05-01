@@ -3,17 +3,17 @@
 package win
 
 import (
-	"fyne.io/fynedesk/wm"
+	"fyne.io/fyne"
+
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/fyne"
-
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/x11"
+	"fyne.io/fynedesk/wm"
 )
 
 type client struct {
@@ -325,6 +325,17 @@ func (c *client) newFrame() {
 	c.frame = newFrame(c)
 }
 
+func (c *client) positionIsValid(x, y int) bool {
+	for _, screen := range fynedesk.Instance().Screens().Screens() {
+		if screen.X <= x && screen.X+screen.Width > x &&
+			screen.Y <= y && screen.Y+screen.Height > y {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *client) positionNewWindow() {
 	attrs, err := xproto.GetGeometry(c.wm.Conn(), xproto.Drawable(c.win)).Reply()
 	if err != nil {
@@ -332,8 +343,20 @@ func (c *client) positionNewWindow() {
 		return
 	}
 
-	x, y, w, h := wm.PositionForNewWindow(int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
-		fynedesk.Instance().Screens())
+	requestPosition := false
+	hints, err := icccm.WmNormalHintsGet(c.wm.X(), c.win)
+	if err == nil {
+		if hints.Flags&icccm.SizeHintPPosition > 0 && hints.Flags&icccm.SizeHintUSPosition > 0 {
+			requestPosition = true
+		}
+	}
+
+	x, y, w, h := int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height)
+	if !requestPosition || !c.positionIsValid(x, y) {
+		decorated := !windowBorderless(c.wm.X(), c.win)
+		x, y, w, h = wm.PositionForNewWindow(int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
+			decorated, fynedesk.Instance().Screens())
+	}
 
 	xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(x), uint32(y),
