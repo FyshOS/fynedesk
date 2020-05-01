@@ -13,6 +13,7 @@ import (
 	"fyne.io/fynedesk/internal/notify"
 	"fyne.io/fynedesk/internal/ui"
 	"fyne.io/fynedesk/internal/x11"
+	"fyne.io/fynedesk/modules/builtin"
 )
 
 func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
@@ -184,6 +185,18 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 			x.previousAppSwitcher()
 		} else if ev.Detail == keyCodeRight {
 			x.nextAppSwitcher()
+		} else if ev.Detail == keyCodeBrightLess {
+			go modifyBrightness(-5)
+		} else if ev.Detail == keyCodeBrightMore {
+			go modifyBrightness(5)
+		}
+	}
+}
+
+func modifyBrightness(value int) {
+	for _, m := range fynedesk.Instance().Modules() {
+		if b, ok := m.(*builtin.Brightness); ok {
+			b.OffsetValue(value)
 		}
 	}
 }

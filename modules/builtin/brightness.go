@@ -21,14 +21,16 @@ var brightnessMeta = fynedesk.ModuleMetadata{
 	NewInstance: NewBrightness,
 }
 
-type brightness struct {
+// Brightness is a progress bar module to modify screen brightness
+type Brightness struct {
 	bar *widget.ProgressBar
 }
 
-func (b *brightness) Destroy() {
+// Destroy destroys the module
+func (b *Brightness) Destroy() {
 }
 
-func (b *brightness) value() (float64, error) {
+func (b *Brightness) value() (float64, error) {
 	out, err := exec.Command("xbacklight").Output()
 	if err != nil {
 		log.Println("Error running xbacklight", err)
@@ -39,10 +41,11 @@ func (b *brightness) value() (float64, error) {
 		log.Println("Error reading brightness info", err)
 		return 0, err
 	}
-	return float64(ret) / 100, nil
+	return ret / 100, nil
 }
 
-func (b *brightness) offsetValue(diff int) {
+// OffsetValue actually increase or decrease the screen brightness using xbacklight
+func (b *Brightness) OffsetValue(diff int) {
 	floatVal, _ := b.value()
 	value := int(floatVal*100) + diff
 
@@ -61,7 +64,8 @@ func (b *brightness) offsetValue(diff int) {
 	}
 }
 
-func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
+// StatusAreaWidget builds the widget
+func (b *Brightness) StatusAreaWidget() fyne.CanvasObject {
 	if _, err := b.value(); err != nil {
 		return nil
 	}
@@ -69,23 +73,24 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 	b.bar = widget.NewProgressBar()
 	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-		b.offsetValue(-5)
+		b.OffsetValue(-5)
 	})
 	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		b.offsetValue(5)
+		b.OffsetValue(5)
 	})
 	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
 		less, b.bar, more)
 
-	go b.offsetValue(0)
+	go b.OffsetValue(0)
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright)
 }
 
-func (b *brightness) Metadata() fynedesk.ModuleMetadata {
+// Metadata returns ModuleMetadata
+func (b *Brightness) Metadata() fynedesk.ModuleMetadata {
 	return brightnessMeta
 }
 
 // NewBrightness creates a new module that will show screen brightness in the status area
 func NewBrightness() fynedesk.Module {
-	return &brightness{}
+	return &Brightness{}
 }

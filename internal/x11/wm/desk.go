@@ -74,6 +74,9 @@ const (
 	keyCodeEnter = 108
 	keyCodeLeft  = 113
 	keyCodeRight = 114
+
+	keyCodeBrightLess = 232
+	keyCodeBrightMore = 233
 )
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
@@ -242,6 +245,8 @@ func (x *x11WM) bindKeys(win xproto.Window) {
 	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeSpace, xproto.GrabModeAsync, xproto.GrabModeAsync)
 	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
 	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskAny, keyCodeBrightLess, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskAny, keyCodeBrightMore, xproto.GrabModeAsync, xproto.GrabModeAsync)
 }
 
 func (x *x11WM) configureRoots(win xproto.Window) {
