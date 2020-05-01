@@ -346,7 +346,7 @@ func (c *client) positionNewWindow() {
 	requestPosition := false
 	hints, err := icccm.WmNormalHintsGet(c.wm.X(), c.win)
 	if err == nil {
-		if hints.Flags&icccm.SizeHintPPosition > 0 && hints.Flags&icccm.SizeHintUSPosition > 0 {
+		if hints.Flags&icccm.SizeHintPPosition != 0 || hints.Flags&icccm.SizeHintUSPosition != 0 {
 			requestPosition = true
 		}
 	}
