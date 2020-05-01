@@ -20,6 +20,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xprop"
 
 	"fyne.io/fyne"
+	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/ui"
@@ -241,12 +242,52 @@ func (x *x11WM) runLoop() {
 	fyne.LogError("X11 connection terminated!", nil)
 }
 
+func (x *x11WM) modifierToKeyMask(m deskDriver.Modifier) uint16 {
+	mask := uint16(0)
+	if m&deskDriver.AltModifier != 0 {
+		mask |= xproto.ModMask1
+	}
+	if m&deskDriver.ControlModifier != 0 {
+		mask |= xproto.ModMaskControl
+	}
+	if m&deskDriver.ShiftModifier != 0 {
+		mask |= xproto.ModMaskShift
+	}
+
+	if mask == 0 {
+		return xproto.ModMaskAny
+	}
+	return mask
+}
+
+func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
+	switch n {
+	case fyne.KeySpace:
+		return keyCodeSpace
+	case fyne.KeyTab:
+		return keyCodeTab
+	case fynedesk.KeyBrightnessDown:
+		return keyCodeBrightLess
+	case fynedesk.KeyBrightnessUp:
+		return keyCodeBrightMore
+	}
+
+	return 0
+}
+
 func (x *x11WM) bindKeys(win xproto.Window) {
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeSpace, xproto.GrabModeAsync, xproto.GrabModeAsync)
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskShift|xproto.ModMask1, keyCodeTab, xproto.GrabModeAsync, xproto.GrabModeAsync)
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskAny, keyCodeBrightLess, xproto.GrabModeAsync, xproto.GrabModeAsync)
-	xproto.GrabKey(x.x.Conn(), true, win, xproto.ModMaskAny, keyCodeBrightMore, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	if desk, ok := fynedesk.Instance().(wm.ShortcutManager); ok {
+		for _, shortcut := range desk.Shortcuts() {
+			if d, ok := shortcut.(*deskDriver.CustomShortcut); ok {
+				mask := x.modifierToKeyMask(d.Modifier)
+				code := x.keyNameToCode(d.KeyName)
+				if code == 0 {
+					continue
+				}
+				xproto.GrabKey(x.x.Conn(), true, win, mask, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
+			}
+		}
+	}
 }
 
 func (x *x11WM) configureRoots(win xproto.Window) {

@@ -8,6 +8,8 @@ import (
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/modules/builtin"
+	"fyne.io/fynedesk/wm"
 )
 
 const (
@@ -16,6 +18,7 @@ const (
 )
 
 type desktop struct {
+	wm.ShortcutHandler
 	app      fyne.App
 	wm       fynedesk.WindowManager
 	icons    fynedesk.ApplicationProvider
@@ -270,6 +273,39 @@ func (l *desktop) addSettingsChangeListener() {
 	go l.startSettingsChangeListener(listener)
 }
 
+func (l *desktop) registerShortcuts() {
+	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fyne.KeySpace, Modifier: deskDriver.AltModifier},
+		func(_ fyne.Shortcut) {
+			ShowAppLauncher()
+		})
+	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fyne.KeyTab, Modifier: deskDriver.AltModifier},
+		func(_ fyne.Shortcut) {
+			// dummy - the wm handles app switcher
+		})
+	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fyne.KeyTab, Modifier: deskDriver.AltModifier | deskDriver.ShiftModifier},
+		func(_ fyne.Shortcut) {
+			// dummy - the wm handles app switcher
+		})
+
+	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fynedesk.KeyBrightnessDown},
+		func(_ fyne.Shortcut) {
+			modifyBrightness(-5)
+		})
+	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fynedesk.KeyBrightnessUp},
+		func(_ fyne.Shortcut) {
+			modifyBrightness(5)
+		})
+}
+
+// TODO move this back into builtin
+func modifyBrightness(value int) {
+	for _, m := range fynedesk.Instance().Modules() {
+		if b, ok := m.(*builtin.Brightness); ok {
+			b.OffsetValue(value)
+		}
+	}
+}
+
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
 func (l *desktop) Screens() fynedesk.ScreenList {
 	return l.screens
@@ -317,5 +353,6 @@ func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 	desk.addSettingsChangeListener()
 	desk.backgroundScreenMap = make(map[*background]*fynedesk.Screen)
 
+	desk.registerShortcuts()
 	return desk
 }

@@ -1,5 +1,7 @@
 package fynedesk // import "fyne.io/fynedesk"
 
+import "fyne.io/fyne"
+
 // Desktop defines an embedded or full desktop environment that we can run.
 type Desktop interface {
 	Run()
@@ -11,6 +13,8 @@ type Desktop interface {
 	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
 	Modules() []Module
+
+	AddShortcut(shortcut fyne.Shortcut, handler func(shortcut fyne.Shortcut))
 }
 
 var instance Desktop
