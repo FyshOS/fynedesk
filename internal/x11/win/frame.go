@@ -56,8 +56,8 @@ func newFrame(c *client) *frame {
 	decorated := c.Properties().Decorated()
 	maximized := c.Maximized()
 	screen := fynedesk.Instance().Screens().ScreenForGeometry(int(x), int(y), int(w), int(h))
-	borderWidth := x11.ScaleToPixels(wmTheme.BorderWidth, screen)
-	titleHeight := x11.ScaleToPixels(wmTheme.TitleHeight, screen)
+	borderWidth := uint16(wm.ScaleToPixels(wmTheme.BorderWidth, screen))
+	titleHeight := uint16(wm.ScaleToPixels(wmTheme.TitleHeight, screen))
 	if full || maximized {
 		activeHead := fynedesk.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
 		x = int16(activeHead.X)
@@ -668,6 +668,7 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	newScreen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 	if newScreen != currentScreen {
 		f.updateScale()
+		fynedesk.Instance().Screens().SetActive(newScreen)
 	}
 }
 

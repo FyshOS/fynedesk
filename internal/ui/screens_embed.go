@@ -3,6 +3,7 @@ package ui
 import "fyne.io/fynedesk"
 
 type embeddedScreensProvider struct {
+	active  *fynedesk.Screen
 	screens []*fynedesk.Screen
 }
 
@@ -18,8 +19,12 @@ func (esp embeddedScreensProvider) Screens() []*fynedesk.Screen {
 	return esp.screens
 }
 
+func (esp embeddedScreensProvider) SetActive(s *fynedesk.Screen) {
+	esp.active = s
+}
+
 func (esp embeddedScreensProvider) Active() *fynedesk.Screen {
-	return esp.Screens()[0]
+	return esp.active
 }
 
 func (esp embeddedScreensProvider) Primary() *fynedesk.Screen {
@@ -36,6 +41,6 @@ func (esp embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, he
 
 // NewEmbeddedScreensProvider returns a screen provider for use in embedded desktop mode
 func newEmbeddedScreensProvider() fynedesk.ScreenList {
-	return &embeddedScreensProvider{[]*fynedesk.Screen{{Name: "(Embedded)", X: 0, Y: 0,
-		Width: 1280, Height: 1024, Scale: 1.0}}}
+	screen := &fynedesk.Screen{Name: "(Embedded)", X: 0, Y: 0, Width: 1280, Height: 1024, Scale: 1.0}
+	return &embeddedScreensProvider{active: screen, screens: []*fynedesk.Screen{screen}}
 }
