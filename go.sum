@@ -1,5 +1,7 @@
 fyne.io/fyne v1.2.5-0.20200420151207-161ff44ec2a7 h1:Guabsej74yvtlYgVnP/RDJdlyhgR63lPwtn3qejomyY=
 fyne.io/fyne v1.2.5-0.20200420151207-161ff44ec2a7/go.mod h1:agUKsPxqpvUEO8m+NhvjT9A9X/FCY2JummuuBl7tkH4=
+fyne.io/fyne v1.2.5-0.20200430195409-6d84fc1cff6b h1:+Su5oYj3SlQDj4SEEZ3AclxYGvdHgVy4Ts+jv0Bj45s=
+fyne.io/fyne v1.2.5-0.20200430195409-6d84fc1cff6b/go.mod h1:8LN/nrM9+1vAClaUUXB4fo9/omVGBmcyIgZ1p8kMW+w=
 github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 h1:1qlsVAQJXZHsaM8b6OLVo6muQUQd4CwkH/D3fnnbHXA=
 github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298/go.mod h1:D+QujdIlUNfa0igpNMk6UIvlb6C252URs4yupRUV4lQ=
 github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 h1:lTG4HQym5oPKjL7nGs+csTgiDna685ZXjxijkne828g=
@@ -8,13 +10,15 @@ github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802 h1:1BDTz0u9nC3//pOC
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Kodeworks/golang-image-ico v0.0.0-20141118225523-73f0f4cfade9/go.mod h1:7uhhqiBaR4CpN0k9rMjOtjpcfGd6DG2m04zQxKnWQ0I=
 github.com/akavel/rsrc v0.8.0/go.mod h1:uLoCtb9J+EyAqh+26kdrTgmzRBFPGOolLWKpdxkKq+c=
+github.com/auroralaboratories/pulse v0.0.0-20180404192411-5a7d28589393/go.mod h1:PzN9ocwlGJcSay81ZI/kWJMijhbUY5jSVCH5hq/gdeE=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
-github.com/fyne-io/mobile v0.0.1 h1:Skc/XcZy1ZNdBanhZB9D8114fU4K+kSi5QZXuG6JPeQ=
 github.com/fyne-io/mobile v0.0.1/go.mod h1:/kOrWrZB6sasLbEy2JIvr4arEzQTXBTZGb3Y96yWbHY=
+github.com/fyne-io/mobile v0.0.2-0.20200421111809-d9d371319719 h1:eRE3ElW0LlpTfyPp0GvZdXIIzBbfCuFtFJkqTRzWryQ=
+github.com/fyne-io/mobile v0.0.2-0.20200421111809-d9d371319719/go.mod h1:/kOrWrZB6sasLbEy2JIvr4arEzQTXBTZGb3Y96yWbHY=
 github.com/fyne-io/xgbutil v0.0.0-20191220152344-7d838166824d h1:8+poQtDqiRfAZmeyYRlInuaIBsQEflmxtpJeZklvNuE=
 github.com/fyne-io/xgbutil v0.0.0-20191220152344-7d838166824d/go.mod h1:vPqYMuTmTyrLNDQWQXy9lqdnV+WRQn6jhaSon8TppBs=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7 h1:SCYMcCJ89LjRGwEa0tRluNRiMjZHalQZrVrvTbPh+qw=

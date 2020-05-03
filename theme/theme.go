@@ -29,6 +29,10 @@ var (
 	MaximizeIcon = theme.NewThemedResource(maximizeIcon, nil)
 	// IconifyIcon is the material design icon for minimizing a window
 	IconifyIcon = theme.NewThemedResource(iconifyIcon, nil)
+	// SoundIcon is the material design icon for sound in light and dark theme
+	SoundIcon = theme.NewThemedResource(soundIcon, nil)
+	// MuteIcon is the material design icon for mute in light and dark theme
+	MuteIcon = theme.NewThemedResource(muteIcon, nil)
 
 	// BorderWidth is the width of window frames
 	BorderWidth = 4
