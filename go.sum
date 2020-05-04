@@ -1,5 +1,5 @@
-fyne.io/fyne v1.2.5-0.20200430195409-6d84fc1cff6b h1:+Su5oYj3SlQDj4SEEZ3AclxYGvdHgVy4Ts+jv0Bj45s=
-fyne.io/fyne v1.2.5-0.20200430195409-6d84fc1cff6b/go.mod h1:8LN/nrM9+1vAClaUUXB4fo9/omVGBmcyIgZ1p8kMW+w=
+fyne.io/fyne v1.2.5-0.20200504083148-34534298ddfa h1:aloxyNNTZ24RocjS/QDqc58UP4H9U3xj3zc2ubxWSQE=
+fyne.io/fyne v1.2.5-0.20200504083148-34534298ddfa/go.mod h1:8LN/nrM9+1vAClaUUXB4fo9/omVGBmcyIgZ1p8kMW+w=
 github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 h1:1qlsVAQJXZHsaM8b6OLVo6muQUQd4CwkH/D3fnnbHXA=
 github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298/go.mod h1:D+QujdIlUNfa0igpNMk6UIvlb6C252URs4yupRUV4lQ=
 github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 h1:lTG4HQym5oPKjL7nGs+csTgiDna685ZXjxijkne828g=
