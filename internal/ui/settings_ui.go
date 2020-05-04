@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os/exec"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -252,7 +253,12 @@ func (d *settingsUI) loadAdvancedScreen() fyne.CanvasObject {
 
 func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	var names, mods, keys []fyne.CanvasObject
-	for _, shortcut := range fynedesk.Instance().(wm.ShortcutManager).Shortcuts() {
+	shortcuts := fynedesk.Instance().(wm.ShortcutManager).Shortcuts()
+	sort.Slice(shortcuts, func(i, j int) bool {
+		return strings.Compare(shortcuts[i].ShortcutName(), shortcuts[j].ShortcutName()) < 0
+	})
+
+	for _, shortcut := range shortcuts {
 		names = append(names, widget.NewLabel(shortcut.ShortcutName()))
 
 		if s, ok := shortcut.(*deskDriver.CustomShortcut); ok {
@@ -269,14 +275,14 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	rows := widget.NewHBox(widget.NewGroup("Action", names...),
 		widget.NewGroup("Modifier", mods...),
 		widget.NewGroup("Key Name", keys...))
-	shortcuts := widget.NewScrollContainer(rows)
+	grid := widget.NewScrollContainer(rows)
 
 	applyButton := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
 		}})
 
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, applyButton, nil, nil),
-		applyButton, shortcuts)
+		applyButton, grid)
 }
 
 func loadScreensTable() fyne.CanvasObject {
