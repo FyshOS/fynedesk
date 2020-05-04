@@ -2,6 +2,7 @@ package builtin
 
 import (
 	"errors"
+	"log"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
@@ -50,7 +51,7 @@ func (b *Pulseaudio) value() (float64, bool, error) {
 func (b *Pulseaudio) OffsetValue(diff int) {
 	sinks, err := b.client.GetSinks()
 	if err != nil || len(sinks) <= 0 {
-		//t.Errorf("GetSinks() failed: %+v", err)
+		log.Println("GetSinks() failed", err)
 		return
 	}
 
@@ -66,7 +67,7 @@ func (b *Pulseaudio) OffsetValue(diff int) {
 	}
 
 	if err := sink.SetVolume(value); err != nil {
-		//t.Errorf("Failed to set volume: %v", err)
+		log.Println("Failed to set volume", err)
 		return
 	}
 
