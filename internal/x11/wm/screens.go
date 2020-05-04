@@ -13,6 +13,8 @@ import (
 	"fyne.io/fynedesk/internal/x11"
 )
 
+const baselineDPI = 120.0
+
 type x11ScreensProvider struct {
 	screens []*fynedesk.Screen
 	active  *fynedesk.Screen
@@ -37,6 +39,10 @@ func NewX11ScreensProvider(mgr fynedesk.WindowManager) fynedesk.ScreenList {
 	screensProvider.setupScreens()
 
 	return screensProvider
+}
+
+func (xsp *x11ScreensProvider) SetActive(s *fynedesk.Screen) {
+	xsp.active = s
 }
 
 func (xsp *x11ScreensProvider) Active() *fynedesk.Screen {
@@ -101,10 +107,14 @@ func (xsp *x11ScreensProvider) ScreenForWindow(win fynedesk.Window) *fynedesk.Sc
 func getScale(widthPx, widthMm uint16) float32 {
 	dpi := float32(widthPx) / (float32(widthMm) / 25.4)
 	if dpi > 1000 || dpi < 10 {
-		dpi = 96
+		dpi = baselineDPI
 	}
 
-	return float32(float64(dpi) / 96.0)
+	scale := float32(float64(dpi) / baselineDPI)
+	if scale < 1.0 {
+		return 1.0
+	}
+	return scale
 }
 
 func (xsp *x11ScreensProvider) insertInOrder(tmpScreens []*fynedesk.Screen, outputInfo *randr.GetOutputInfoReply, crtcInfo *randr.GetCrtcInfoReply) ([]*fynedesk.Screen, int) {
@@ -116,17 +126,17 @@ func (xsp *x11ScreensProvider) insertInOrder(tmpScreens []*fynedesk.Screen, outp
 		}
 
 	}
+
+	newScreen := &fynedesk.Screen{Name: string(outputInfo.Name),
+		X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height),
+		Scale: getScale(crtcInfo.Width, uint16(outputInfo.MmWidth))}
 	if insertIndex == -1 {
-		tmpScreens = append(tmpScreens, &fynedesk.Screen{Name: string(outputInfo.Name),
-			X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height),
-			Scale: getScale(crtcInfo.Width, uint16(outputInfo.MmWidth))})
+		tmpScreens = append(tmpScreens, newScreen)
 		insertIndex = len(tmpScreens) - 1
 	} else {
 		tmpScreens = append(tmpScreens, nil)
 		copy(tmpScreens[insertIndex+1:], tmpScreens[insertIndex:])
-		tmpScreens[insertIndex] = &fynedesk.Screen{Name: string(outputInfo.Name),
-			X: int(crtcInfo.X), Y: int(crtcInfo.Y), Width: int(crtcInfo.Width), Height: int(crtcInfo.Height),
-			Scale: getScale(crtcInfo.Width, uint16(outputInfo.MmWidth))}
+		tmpScreens[insertIndex] = newScreen
 	}
 	return tmpScreens, insertIndex
 }

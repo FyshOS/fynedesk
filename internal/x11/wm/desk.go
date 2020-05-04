@@ -477,6 +477,17 @@ func screenNameFromRootTitle(title string) string {
 	return title[len(ui.RootWindowName):]
 }
 
+func (x *x11WM) setActiveScreenFromWindow(win fynedesk.Window) {
+	if win == nil || fynedesk.Instance() == nil {
+		return
+	}
+
+	windowScreen := fynedesk.Instance().Screens().ScreenForWindow(win)
+	if windowScreen != nil {
+		fynedesk.Instance().Screens().SetActive(windowScreen)
+	}
+}
+
 func (x *x11WM) setInitialWindowAttributes(win xproto.Window) {
 	err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), win, xproto.CwCursor,
 		[]uint32{uint32(x11.DefaultCursor)}).Check()
