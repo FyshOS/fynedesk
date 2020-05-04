@@ -38,6 +38,7 @@ func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 
 	img := canvas.NewImageFromResource(res)
 	text := widget.NewLabel(title)
+	text.Wrapping = fyne.TextTruncate
 	return &switchIconRenderer{icon: s,
 		img: img, text: text, objects: []fyne.CanvasObject{img, text}}
 }

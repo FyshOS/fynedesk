@@ -3,7 +3,7 @@ module fyne.io/fynedesk
 go 1.12
 
 require (
-	fyne.io/fyne v1.2.5-0.20200420151207-161ff44ec2a7
+	fyne.io/fyne v1.2.5-0.20200430195409-6d84fc1cff6b
 	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 	github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802
