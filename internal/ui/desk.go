@@ -274,24 +274,24 @@ func (l *desktop) addSettingsChangeListener() {
 }
 
 func (l *desktop) registerShortcuts() {
-	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fyne.KeySpace, Modifier: deskDriver.AltModifier},
+	l.AddShortcut(fynedesk.NewShortcut("Show Launcher", fyne.KeySpace, deskDriver.AltModifier),
 		func(_ fyne.Shortcut) {
 			ShowAppLauncher()
 		})
-	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fyne.KeyTab, Modifier: deskDriver.AltModifier},
+	l.AddShortcut(fynedesk.NewShortcut("Switch App Next", fyne.KeyTab, deskDriver.AltModifier),
 		func(_ fyne.Shortcut) {
 			// dummy - the wm handles app switcher
 		})
-	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fyne.KeyTab, Modifier: deskDriver.AltModifier | deskDriver.ShiftModifier},
+	l.AddShortcut(fynedesk.NewShortcut("Switch App Previous", fyne.KeyTab, deskDriver.AltModifier|deskDriver.ShiftModifier),
 		func(_ fyne.Shortcut) {
 			// dummy - the wm handles app switcher
 		})
 
-	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fynedesk.KeyBrightnessDown},
+	l.AddShortcut(fynedesk.NewShortcut("Increase Screen Brightness", fynedesk.KeyBrightnessDown, fynedesk.AnyModifier),
 		func(_ fyne.Shortcut) {
 			modifyBrightness(-5)
 		})
-	l.AddShortcut(&deskDriver.CustomShortcut{KeyName: fynedesk.KeyBrightnessUp},
+	l.AddShortcut(fynedesk.NewShortcut("Reduce Screen Brightness", fynedesk.KeyBrightnessUp, fynedesk.AnyModifier),
 		func(_ fyne.Shortcut) {
 			modifyBrightness(5)
 		})
