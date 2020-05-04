@@ -296,7 +296,7 @@ func showSettings(deskSettings *deskSettings) {
 
 	tabs := widget.NewTabContainer(
 		&widget.TabItem{Text: "Fyne Settings", Icon: theme.FyneLogo(),
-			Content: fyneSettings.LoadAppearanceScreen()},
+			Content: fyneSettings.LoadAppearanceScreen(w)},
 		&widget.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
 			Content: ui.loadAppearanceScreen()},
 		&widget.TabItem{Text: "App Bar", Icon: wmtheme.IconifyIcon, Content: ui.loadBarScreen()},
