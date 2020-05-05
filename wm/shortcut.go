@@ -11,30 +11,30 @@ import (
 // ShortcutHandler is a simple implementation for tracking registered shortcuts
 type ShortcutHandler struct {
 	mu    sync.RWMutex
-	entry map[*fynedesk.Shortcut]func(fyne.Shortcut)
+	entry map[*fynedesk.Shortcut]func()
 }
 
 // TypedShortcut handle the registered shortcut
 func (sh *ShortcutHandler) TypedShortcut(shortcut fyne.Shortcut) {
-	var match func(fyne.Shortcut)
+	var matched func()
 	for s, f := range sh.entry {
 		if s.ShortcutName() == shortcut.ShortcutName() {
-			match = f
+			matched = f
 		}
 	}
-	if match == nil {
+	if matched == nil {
 		return
 	}
 
-	match(shortcut)
+	matched()
 }
 
 // AddShortcut register an handler to be executed when the shortcut action is triggered
-func (sh *ShortcutHandler) AddShortcut(shortcut *fynedesk.Shortcut, handler func(shortcut fyne.Shortcut)) {
+func (sh *ShortcutHandler) AddShortcut(shortcut *fynedesk.Shortcut, handler func()) {
 	sh.mu.Lock()
 	defer sh.mu.Unlock()
 	if sh.entry == nil {
-		sh.entry = make(map[*fynedesk.Shortcut]func(fyne.Shortcut))
+		sh.entry = make(map[*fynedesk.Shortcut]func())
 	}
 	sh.entry[shortcut] = handler
 }

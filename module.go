@@ -11,6 +11,7 @@ type ModuleMetadata struct {
 // Module marks the required methods of a pluggable module in FyneDesk.
 type Module interface {
 	Metadata() ModuleMetadata
+	Shortcuts() map[*Shortcut]func()
 	Destroy()
 }
 

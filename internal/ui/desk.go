@@ -8,7 +8,6 @@ import (
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/modules/builtin"
 	"fyne.io/fynedesk/wm"
 )
 
@@ -204,6 +203,10 @@ func (l *desktop) Modules() []fynedesk.Module {
 
 		instance := meta.NewInstance()
 		mods = append(mods, instance)
+
+		for sh, f := range instance.Shortcuts() {
+			l.AddShortcut(sh, f)
+		}
 	}
 
 	l.moduleCache = mods
@@ -275,35 +278,15 @@ func (l *desktop) addSettingsChangeListener() {
 
 func (l *desktop) registerShortcuts() {
 	l.AddShortcut(fynedesk.NewShortcut("Show Launcher", fyne.KeySpace, deskDriver.AltModifier),
-		func(_ fyne.Shortcut) {
-			ShowAppLauncher()
-		})
+		ShowAppLauncher)
 	l.AddShortcut(fynedesk.NewShortcut("Switch App Next", fyne.KeyTab, deskDriver.AltModifier),
-		func(_ fyne.Shortcut) {
+		func() {
 			// dummy - the wm handles app switcher
 		})
 	l.AddShortcut(fynedesk.NewShortcut("Switch App Previous", fyne.KeyTab, deskDriver.AltModifier|deskDriver.ShiftModifier),
-		func(_ fyne.Shortcut) {
+		func() {
 			// dummy - the wm handles app switcher
 		})
-
-	l.AddShortcut(fynedesk.NewShortcut("Increase Screen Brightness", fynedesk.KeyBrightnessDown, fynedesk.AnyModifier),
-		func(_ fyne.Shortcut) {
-			modifyBrightness(-5)
-		})
-	l.AddShortcut(fynedesk.NewShortcut("Reduce Screen Brightness", fynedesk.KeyBrightnessUp, fynedesk.AnyModifier),
-		func(_ fyne.Shortcut) {
-			modifyBrightness(5)
-		})
-}
-
-// TODO move this back into builtin
-func modifyBrightness(value int) {
-	for _, m := range fynedesk.Instance().Modules() {
-		if b, ok := m.(*builtin.Brightness); ok {
-			b.OffsetValue(value)
-		}
-	}
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.

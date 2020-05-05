@@ -30,7 +30,7 @@ func NewDesktopWithWM(wm fynedesk.WindowManager) *Desktop {
 }
 
 // AddShortcut is called from modules that wish to register keyboard handlers
-func (*Desktop) AddShortcut(shortcut *fynedesk.Shortcut, handler func(shortcut fyne.Shortcut)) {
+func (*Desktop) AddShortcut(shortcut *fynedesk.Shortcut, handler func()) {
 	// TODO
 }
 
