@@ -278,22 +278,8 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 func (x *x11WM) bindKeys(win xproto.Window) {
 	if desk, ok := fynedesk.Instance().(wm.ShortcutManager); ok {
 		for _, shortcut := range desk.Shortcuts() {
-			mod := fynedesk.AnyModifier
-			key := fyne.KeyName("")
-
-			if d, ok := shortcut.(*deskDriver.CustomShortcut); ok {
-				mod = d.Modifier
-				key = d.KeyName
-			} else if d, ok := shortcut.(*fynedesk.Shortcut); ok {
-				mod = d.Modifier
-				key = d.KeyName
-			}
-			if key == fyne.KeyName("") {
-				continue
-			}
-
-			mask := x.modifierToKeyMask(mod)
-			code := x.keyNameToCode(key)
+			mask := x.modifierToKeyMask(shortcut.Modifier)
+			code := x.keyNameToCode(shortcut.KeyName)
 			if code == 0 {
 				continue
 			}

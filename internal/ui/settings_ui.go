@@ -260,17 +260,8 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 
 	for _, shortcut := range shortcuts {
 		names = append(names, widget.NewLabel(shortcut.ShortcutName()))
-
-		if s, ok := shortcut.(*deskDriver.CustomShortcut); ok {
-			mods = append(mods, widget.NewLabel(modifierToString(s.Modifier)))
-			keys = append(keys, widget.NewLabel(string(s.KeyName)))
-		} else if s, ok := shortcut.(*fynedesk.Shortcut); ok {
-			mods = append(mods, widget.NewLabel(modifierToString(s.Modifier)))
-			keys = append(keys, widget.NewLabel(string(s.KeyName)))
-		} else {
-			mods = append(mods, widget.NewLabel(""))
-			keys = append(keys, widget.NewLabel(""))
-		}
+		mods = append(mods, widget.NewLabel(modifierToString(shortcut.Modifier)))
+		keys = append(keys, widget.NewLabel(string(shortcut.KeyName)))
 	}
 	rows := widget.NewHBox(widget.NewGroup("Action", names...),
 		widget.NewGroup("Modifier", mods...),
@@ -351,21 +342,21 @@ func showSettings(deskSettings *deskSettings) {
 }
 
 func modifierToString(mods deskDriver.Modifier) string {
-	s := []string{}
+	var s []string
 	if (mods & deskDriver.ShiftModifier) != 0 {
-		s = append(s, string("Shift"))
+		s = append(s, "Shift")
 	}
 	if (mods & deskDriver.ControlModifier) != 0 {
-		s = append(s, string("Control"))
+		s = append(s, "Control")
 	}
 	if (mods & deskDriver.AltModifier) != 0 {
-		s = append(s, string("Alt"))
+		s = append(s, "Alt")
 	}
 	if (mods & deskDriver.SuperModifier) != 0 {
 		if runtime.GOOS == "darwin" {
-			s = append(s, string("Command"))
+			s = append(s, "Command")
 		} else {
-			s = append(s, string("Super"))
+			s = append(s, "Super")
 		}
 	}
 	return strings.Join(s, "+")

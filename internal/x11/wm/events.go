@@ -4,7 +4,6 @@ package wm
 
 import (
 	"fyne.io/fyne"
-	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
@@ -191,14 +190,12 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 
 	if desk, ok := fynedesk.Instance().(wm.ShortcutManager); ok {
 		for _, shortcut := range desk.Shortcuts() {
-			if d, ok := shortcut.(*deskDriver.CustomShortcut); ok {
-				mask := x.modifierToKeyMask(d.Modifier)
-				code := x.keyNameToCode(d.KeyName)
+			mask := x.modifierToKeyMask(shortcut.Modifier)
+			code := x.keyNameToCode(shortcut.KeyName)
 
-				if code == ev.Detail && (mask == ev.State || mask == xproto.ModMaskAny) {
-					go desk.TypedShortcut(shortcut)
-					return
-				}
+			if code == ev.Detail && (mask == ev.State || mask == xproto.ModMaskAny) {
+				go desk.TypedShortcut(shortcut)
+				return
 			}
 		}
 	}

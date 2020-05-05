@@ -14,7 +14,7 @@ type Desktop interface {
 	WindowManager() WindowManager
 	Modules() []Module
 
-	AddShortcut(shortcut fyne.Shortcut, handler func(shortcut fyne.Shortcut))
+	AddShortcut(shortcut *Shortcut, handler func(shortcut fyne.Shortcut))
 }
 
 var instance Desktop

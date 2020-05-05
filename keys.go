@@ -16,9 +16,13 @@ const (
 	KeyBrightnessUp fyne.KeyName = "BrightnessUp"
 )
 
+// Declare conformity with Shortcut interface
+var _ fyne.Shortcut = (*Shortcut)(nil)
+
 // Shortcut defines a keyboard shortcut that can be configured by the user
 type Shortcut struct {
-	deskDriver.CustomShortcut
+	fyne.KeyName
+	deskDriver.Modifier
 	Name string
 }
 
