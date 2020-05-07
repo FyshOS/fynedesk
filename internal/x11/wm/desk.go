@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 	"time"
 
@@ -115,16 +116,18 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	ewmh.CurrentDesktopSet(mgr.x, 0)                                     // Will always be 0 until virtual desktops are supported
 
 	x11.LoadCursors(conn)
+	mgr.setupX11DPIForScale(a.Settings().Scale())
 	go mgr.runLoop()
 
 	listener := make(chan fyne.Settings)
 	a.Settings().AddChangeListener(listener)
 	go func() {
 		for {
-			<-listener
+			s := <-listener
 			for _, c := range mgr.clients {
 				c.(x11.XWin).SettingsChanged()
 			}
+			mgr.setupX11DPIForScale(s.Scale())
 			mgr.configureRoots(mgr.x.RootWin())
 		}
 	}()
@@ -458,6 +461,11 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	c.Focus()
 	windowClientListUpdate(x)
 	windowClientListStackingUpdate(x)
+}
+
+func (x *x11WM) setupX11DPIForScale(scale float32) {
+	cmd := exec.Command("xrandr", "--dpi", strconv.Itoa(int(float32(baselineDPI)*scale)))
+	_ = cmd.Start() // if it fails that's a shame but it's just info
 }
 
 func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
