@@ -3,6 +3,7 @@ package builtin
 import (
 	"errors"
 	"log"
+	"time"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
@@ -56,8 +57,6 @@ func (b *Pulseaudio) OffsetValue(diff int) {
 		return
 	}
 
-	sink := sinks[0]
-
 	floatVal, _, _ := b.value()
 	value := floatVal + float64(diff)/100
 
@@ -67,9 +66,11 @@ func (b *Pulseaudio) OffsetValue(diff int) {
 		value = 1
 	}
 
-	if err := sink.SetVolume(value); err != nil {
-		log.Println("Failed to set volume", err)
-		return
+	for _, sink := range sinks {
+		if err := sink.SetVolume(value); err != nil {
+			log.Println("Failed to set volume", err)
+			return
+		}
 	}
 
 	b.bar.SetValue(value)
@@ -83,23 +84,24 @@ func (b *Pulseaudio) ToggleMute() {
 		return
 	}
 
-	sink := sinks[0]
-	err = sink.ToggleMute()
-	if err != nil {
-		log.Println("ToggleMute() failed", err)
-	}
+	for _, sink := range sinks {
+		err = sink.ToggleMute()
+		if err != nil {
+			log.Println("ToggleMute() failed", err)
+		}
 
-	if sink.Muted {
-		b.soundIcon.SetIcon(wmtheme.MuteIcon)
-	} else {
-		b.soundIcon.SetIcon(wmtheme.SoundIcon)
+		if sink.Muted {
+			b.soundIcon.SetIcon(wmtheme.MuteIcon)
+		} else {
+			b.soundIcon.SetIcon(wmtheme.SoundIcon)
+		}
 	}
 
 }
 
 // StatusAreaWidget builds the widget
 func (b *Pulseaudio) StatusAreaWidget() fyne.CanvasObject {
-	client, err := pulse.NewClient(`fyne-client`)
+	client, err := pulse.NewClient(`fyne-client` + string(time.Now().Unix()))
 	if err != nil {
 		return nil
 	}
