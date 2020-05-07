@@ -284,6 +284,9 @@ func (x *x11WM) bindKeys(win xproto.Window) {
 				continue
 			}
 			xproto.GrabKey(x.x.Conn(), true, win, mask, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
+			xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMaskLock, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
+			xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMask2, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
+			xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMask3, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
 		}
 	}
 }

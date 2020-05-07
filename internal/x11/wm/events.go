@@ -166,12 +166,15 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 }
 
 func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
-	if ev.State == xproto.ModMask1 || ev.State == xproto.ModMask1|xproto.ModMaskShift {
+	alt := ev.State&xproto.ModMask1 != 0
+	ctrl := ev.State&xproto.ModMaskControl != 0
+	shift := ev.State&xproto.ModMaskShift != 0
+
+	if alt && !ctrl {
 		// These methods are about app switcher, we don't want them overridden!
 		// Apart from Tab they will only be called once the keyboard grab is in effect.
 		if ev.Detail == keyCodeTab {
-			shiftPressed := ev.State&xproto.ModMaskShift != 0
-			x.showOrSelectAppSwitcher(shiftPressed)
+			x.showOrSelectAppSwitcher(shift)
 			return
 		} else if ev.Detail == keyCodeEscape {
 			x.cancelAppSwitcher()
