@@ -153,6 +153,7 @@ func (l *desktop) setupRoots() {
 }
 
 func (l *desktop) Run() {
+	go l.wm.Run()
 	l.run() // use the configured run method
 }
 

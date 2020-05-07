@@ -229,7 +229,6 @@ func (c *client) NotifyUnIconify() {
 
 	c.iconic = false
 	c.frame.show()
-	c.frame.show()
 	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_HIDDEN")
 }
 

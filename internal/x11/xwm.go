@@ -18,5 +18,4 @@ type XWM interface {
 	Conn() *xgb.Conn
 
 	WinIDForScreen(screen *fynedesk.Screen) xproto.Window
-	BindKeys(win XWin)
 }

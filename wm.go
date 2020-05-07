@@ -7,6 +7,7 @@ type WindowManager interface {
 
 	Blank()
 	Close()
+	Run()
 }
 
 // Stack describes an ordered list of windows.

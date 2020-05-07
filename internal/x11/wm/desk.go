@@ -43,8 +43,9 @@ type x11WM struct {
 	moveResizingType        moveResizeType
 	screenChangeTimestamp   xproto.Timestamp
 
-	allowedActions []string
-	supportedHints []string
+	allowedActions  []string
+	supportedHints  []string
+	currentBindings []*fynedesk.Shortcut
 
 	rootIDs      []xproto.Window
 	transientMap map[xproto.Window][]xproto.Window
@@ -116,7 +117,6 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	ewmh.CurrentDesktopSet(mgr.x, 0)                                     // Will always be 0 until virtual desktops are supported
 
 	x11.LoadCursors(conn)
-	go mgr.runLoop()
 
 	listener := make(chan fyne.Settings)
 	a.Settings().AddChangeListener(listener)
@@ -135,10 +135,6 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 
 func (x *x11WM) AddStackListener(l fynedesk.StackListener) {
 	x.stack.listeners = append(x.stack.listeners, l)
-}
-
-func (x *x11WM) BindKeys(win x11.XWin) {
-	x.bindKeys(win.ChildID())
 }
 
 func (x *x11WM) Blank() {
@@ -175,15 +171,82 @@ func (x *x11WM) Close() {
 	}()
 }
 
-func (x *x11WM) X() *xgbutil.XUtil {
-	return x.x
-}
-
 func (x *x11WM) Conn() *xgb.Conn {
 	return x.x.Conn()
 }
 
+func (x *x11WM) Run() {
+	x.setupBindings()
+	go x.runLoop()
+}
+
+func (x *x11WM) X() *xgbutil.XUtil {
+	return x.x
+}
+
+func (x *x11WM) bindShortcut(short *fynedesk.Shortcut, win xproto.Window) {
+	mask := x.modifierToKeyMask(short.Modifier)
+	code := x.keyNameToCode(short.KeyName)
+	if code == 0 {
+		return
+	}
+
+	xproto.GrabKey(x.x.Conn(), true, win, mask, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMaskLock, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMask2, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMask3, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
+}
+
+func (x *x11WM) bindShortcuts(win xproto.Window) {
+	if _, ok := fynedesk.Instance().(wm.ShortcutManager); !ok {
+		return
+	}
+
+	shortcutList := fynedesk.Instance().(wm.ShortcutManager).Shortcuts()
+	for _, shortcut := range shortcutList {
+		x.bindShortcut(shortcut, win)
+	}
+
+	if x.currentBindings == nil {
+		x.currentBindings = shortcutList
+	}
+}
+
+func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
+	switch n {
+	case fyne.KeySpace:
+		return keyCodeSpace
+	case fyne.KeyTab:
+		return keyCodeTab
+	case fynedesk.KeyBrightnessDown:
+		return keyCodeBrightLess
+	case fynedesk.KeyBrightnessUp:
+		return keyCodeBrightMore
+	}
+
+	return 0
+}
+
+func (x *x11WM) modifierToKeyMask(m deskDriver.Modifier) uint16 {
+	mask := uint16(0)
+	if m&deskDriver.AltModifier != 0 {
+		mask |= xproto.ModMask1
+	}
+	if m&deskDriver.ControlModifier != 0 {
+		mask |= xproto.ModMaskControl
+	}
+	if m&deskDriver.ShiftModifier != 0 {
+		mask |= xproto.ModMaskShift
+	}
+
+	if mask == 0 {
+		return xproto.ModMaskAny
+	}
+	return mask
+}
+
 func (x *x11WM) runLoop() {
+	x.setupBindings()
 	conn := x.x.Conn()
 
 	for {
@@ -240,55 +303,6 @@ func (x *x11WM) runLoop() {
 	}
 
 	fyne.LogError("X11 connection terminated!", nil)
-}
-
-func (x *x11WM) modifierToKeyMask(m deskDriver.Modifier) uint16 {
-	mask := uint16(0)
-	if m&deskDriver.AltModifier != 0 {
-		mask |= xproto.ModMask1
-	}
-	if m&deskDriver.ControlModifier != 0 {
-		mask |= xproto.ModMaskControl
-	}
-	if m&deskDriver.ShiftModifier != 0 {
-		mask |= xproto.ModMaskShift
-	}
-
-	if mask == 0 {
-		return xproto.ModMaskAny
-	}
-	return mask
-}
-
-func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
-	switch n {
-	case fyne.KeySpace:
-		return keyCodeSpace
-	case fyne.KeyTab:
-		return keyCodeTab
-	case fynedesk.KeyBrightnessDown:
-		return keyCodeBrightLess
-	case fynedesk.KeyBrightnessUp:
-		return keyCodeBrightMore
-	}
-
-	return 0
-}
-
-func (x *x11WM) bindKeys(win xproto.Window) {
-	if desk, ok := fynedesk.Instance().(wm.ShortcutManager); ok {
-		for _, shortcut := range desk.Shortcuts() {
-			mask := x.modifierToKeyMask(shortcut.Modifier)
-			code := x.keyNameToCode(shortcut.KeyName)
-			if code == 0 {
-				continue
-			}
-			xproto.GrabKey(x.x.Conn(), true, win, mask, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
-			xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMaskLock, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
-			xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMask2, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
-			xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMask3, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
-		}
-	}
 }
 
 func (x *x11WM) configureRoots(win xproto.Window) {
@@ -485,6 +499,32 @@ func (x *x11WM) setInitialWindowAttributes(win xproto.Window) {
 	}
 }
 
+func (x *x11WM) setupBindings() {
+	deskListener := make(chan fynedesk.DeskSettings)
+	fynedesk.Instance().Settings().AddChangeListener(deskListener)
+	go func() {
+		for {
+			<-deskListener
+			// this uses the state from the previous bind call
+			for _, r := range x.rootIDs {
+				x.unbindShortcuts(r)
+			}
+			for _, c := range x.clients {
+				x.unbindShortcuts(c.(x11.XWin).ChildID())
+			}
+			x.currentBindings = nil
+
+			// this call sets up the new cache of shortcuts
+			for _, r := range x.rootIDs {
+				x.bindShortcuts(r)
+			}
+			for _, c := range x.clients {
+				x.bindShortcuts(c.(x11.XWin).ChildID())
+			}
+		}
+	}()
+}
+
 func (x *x11WM) setupWindow(win xproto.Window) {
 	if x11.WindowName(x.x, win) == "" {
 		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
@@ -495,6 +535,7 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 		return
 	}
 	c = xwin.NewClient(win, x)
+	x.bindShortcuts(win)
 	x.AddWindow(c)
 	c.RaiseToTop()
 	c.Focus()
@@ -510,7 +551,7 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 			fyne.LogError("Show Window Error", err)
 		}
 		xproto.ConfigureWindow(x.x.Conn(), win, xproto.ConfigWindowStackMode, []uint32{xproto.StackModeBelow})
-		x.bindKeys(win)
+		x.bindShortcuts(win)
 		if !x.framedExisting {
 			x.framedExisting = true
 			go x.frameExisting()
@@ -579,4 +620,27 @@ func (x *x11WM) takeSelectionOwnership() {
 	}
 	xproto.SendEvent(x.x.Conn(), false, x.x.RootWin(), xproto.EventMaskStructureNotify,
 		string(cm.Bytes()))
+}
+
+func (x *x11WM) unbindShortcut(short *fynedesk.Shortcut, win xproto.Window) {
+	mask := x.modifierToKeyMask(short.Modifier)
+	code := x.keyNameToCode(short.KeyName)
+	if code == 0 {
+		return
+	}
+
+	xproto.UngrabKey(x.x.Conn(), code, win, mask)
+	xproto.UngrabKey(x.x.Conn(), code, win, mask|xproto.ModMaskLock)
+	xproto.UngrabKey(x.x.Conn(), code, win, mask|xproto.ModMask2)
+	xproto.UngrabKey(x.x.Conn(), code, win, mask|xproto.ModMask3)
+}
+
+func (x *x11WM) unbindShortcuts(win xproto.Window) {
+	if _, ok := fynedesk.Instance().(wm.ShortcutManager); !ok {
+		return
+	}
+
+	for _, shortcut := range x.currentBindings {
+		x.unbindShortcut(shortcut, win)
+	}
 }

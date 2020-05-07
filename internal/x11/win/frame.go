@@ -597,7 +597,6 @@ func (f *frame) show() {
 
 	xproto.ChangeSaveSet(c.wm.Conn(), xproto.SetModeInsert, c.win)
 	xproto.MapWindow(c.wm.Conn(), c.win)
-	c.wm.BindKeys(c)
 	xproto.GrabButton(f.client.wm.Conn(), true, f.client.id,
 		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
 		f.client.wm.X().RootWin(), xproto.CursorNone, xproto.ButtonIndex1, xproto.ModMaskAny)
