@@ -8,10 +8,15 @@ type ModuleMetadata struct {
 	NewInstance func() Module
 }
 
+// KeyBindModule marks a module that provides key bindings.
+// This is optional but can be enabled for any module by implementing the interface.
+type KeyBindModule interface {
+	Shortcuts() map[*Shortcut]func()
+}
+
 // Module marks the required methods of a pluggable module in FyneDesk.
 type Module interface {
 	Metadata() ModuleMetadata
-	Shortcuts() map[*Shortcut]func()
 	Destroy()
 }
 

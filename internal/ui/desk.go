@@ -204,8 +204,10 @@ func (l *desktop) Modules() []fynedesk.Module {
 		instance := meta.NewInstance()
 		mods = append(mods, instance)
 
-		for sh, f := range instance.Shortcuts() {
-			l.AddShortcut(sh, f)
+		if bind, ok := instance.(fynedesk.KeyBindModule); ok {
+			for sh, f := range bind.Shortcuts() {
+				l.AddShortcut(sh, f)
+			}
 		}
 	}
 

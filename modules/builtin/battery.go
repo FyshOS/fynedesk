@@ -72,10 +72,6 @@ func (b *battery) Metadata() fynedesk.ModuleMetadata {
 	return batteryMeta
 }
 
-func (b *battery) Shortcuts() map[*fynedesk.Shortcut]func() {
-	return nil
-}
-
 func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 	if _, err := b.value(); err != nil {
 		return nil
