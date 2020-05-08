@@ -166,6 +166,7 @@ func (x *x11WM) Close() {
 		select {
 		case <-exit:
 			x.x.Conn().Close()
+			os.Exit(0)
 		case <-time.NewTimer(time.Second * 10).C:
 			notify := wm.NewNotification("Log Out", "Log Out was cancelled by an open application")
 			wm.SendNotification(notify)
