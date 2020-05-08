@@ -10,7 +10,8 @@ import (
 )
 
 type clientProperties struct {
-	c *client
+	c         *client
+	iconCache fyne.Resource
 }
 
 func (c *client) Properties() fynedesk.WindowProperties {
@@ -34,13 +35,17 @@ func (c clientProperties) Decorated() bool {
 }
 
 func (c *clientProperties) Icon() fyne.Resource {
+	if c.iconCache != nil {
+		return c.iconCache
+	}
+
 	settings := fynedesk.Instance().Settings()
 	iconSize := int(float64(settings.LauncherIconSize()) * settings.LauncherZoomScale())
 	xIcon := windowIcon(c.c.wm.X(), c.c.win, iconSize, iconSize)
 	if len(xIcon.Bytes()) != 0 {
-		return fyne.NewStaticResource(c.Title(), xIcon.Bytes())
+		c.iconCache = fyne.NewStaticResource(c.Title(), xIcon.Bytes())
 	}
-	return nil
+	return c.iconCache
 }
 
 func (c *clientProperties) IconName() string {
