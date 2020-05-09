@@ -29,6 +29,11 @@ func NewDesktopWithWM(wm fynedesk.WindowManager) *Desktop {
 	return desk
 }
 
+// AddShortcut is called from modules that wish to register keyboard handlers
+func (*Desktop) AddShortcut(shortcut *fynedesk.Shortcut, handler func()) {
+	// TODO
+}
+
 // ContentSizePixels returns a default value for how much space maximised apps should use
 func (*Desktop) ContentSizePixels(_ *fynedesk.Screen) (uint32, uint32) {
 	return uint32(320), uint32(240)

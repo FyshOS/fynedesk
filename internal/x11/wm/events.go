@@ -4,6 +4,7 @@ package wm
 
 import (
 	"fyne.io/fyne"
+
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
@@ -11,9 +12,8 @@ import (
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/notify"
-	"fyne.io/fynedesk/internal/ui"
 	"fyne.io/fynedesk/internal/x11"
-	"fyne.io/fynedesk/modules/builtin"
+	"fyne.io/fynedesk/wm"
 )
 
 func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
@@ -166,38 +166,40 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 }
 
 func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
-	if ev.Detail == keyCodeSpace {
-		if switcherInstance != nil { // we are currently switching windows - select current window
-			x.applyAppSwitcher()
-		} else {
-			go ui.ShowAppLauncher()
-		}
-	} else {
-		// The rest of these methods are about app switcher.
+	alt := ev.State&xproto.ModMask1 != 0
+	ctrl := ev.State&xproto.ModMaskControl != 0
+	shift := ev.State&xproto.ModMaskShift != 0
+
+	if alt && !ctrl {
+		// These methods are about app switcher, we don't want them overridden!
 		// Apart from Tab they will only be called once the keyboard grab is in effect.
 		if ev.Detail == keyCodeTab {
-			shiftPressed := ev.State&xproto.ModMaskShift != 0
-			x.showOrSelectAppSwitcher(shiftPressed)
+			x.showOrSelectAppSwitcher(shift)
+			return
 		} else if ev.Detail == keyCodeEscape {
 			x.cancelAppSwitcher()
+			return
 		} else if ev.Detail == keyCodeReturn || ev.Detail == keyCodeEnter {
 			x.applyAppSwitcher()
+			return
 		} else if ev.Detail == keyCodeLeft {
 			x.previousAppSwitcher()
+			return
 		} else if ev.Detail == keyCodeRight {
 			x.nextAppSwitcher()
-		} else if ev.Detail == keyCodeBrightLess {
-			go modifyBrightness(-5)
-		} else if ev.Detail == keyCodeBrightMore {
-			go modifyBrightness(5)
+			return
 		}
 	}
-}
 
-func modifyBrightness(value int) {
-	for _, m := range fynedesk.Instance().Modules() {
-		if b, ok := m.(*builtin.Brightness); ok {
-			b.OffsetValue(value)
+	if desk, ok := fynedesk.Instance().(wm.ShortcutManager); ok {
+		for _, shortcut := range desk.Shortcuts() {
+			mask := x.modifierToKeyMask(shortcut.Modifier)
+			code := x.keyNameToCode(shortcut.KeyName)
+
+			if code == ev.Detail && (mask == ev.State || mask == xproto.ModMaskAny) {
+				go desk.TypedShortcut(shortcut)
+				return
+			}
 		}
 	}
 }

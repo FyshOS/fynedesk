@@ -29,6 +29,8 @@ var (
 	MaximizeIcon = theme.NewThemedResource(maximizeIcon, nil)
 	// IconifyIcon is the material design icon for minimizing a window
 	IconifyIcon = theme.NewThemedResource(iconifyIcon, nil)
+	// KeyboardIcon is the material design icon for the keyboard settings
+	KeyboardIcon = theme.NewThemedResource(keyboardIcon, nil)
 
 	// BorderWidth is the width of window frames
 	BorderWidth = 4
