@@ -18,7 +18,7 @@ import (
 
 var batteryMeta = fynedesk.ModuleMetadata{
 	Name:        "Battery",
-	NewInstance: NewBattery,
+	NewInstance: newBattery,
 }
 
 type battery struct {
@@ -68,6 +68,10 @@ func (b *battery) Destroy() {
 	b.done = true
 }
 
+func (b *battery) Metadata() fynedesk.ModuleMetadata {
+	return batteryMeta
+}
+
 func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 	if _, err := b.value(); err != nil {
 		return nil
@@ -80,11 +84,7 @@ func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, b.bar)
 }
 
-func (b *battery) Metadata() fynedesk.ModuleMetadata {
-	return batteryMeta
-}
-
-// NewBattery creates a new module that will show battery level in the status area
-func NewBattery() fynedesk.Module {
+// newBattery creates a new module that will show battery level in the status area
+func newBattery() fynedesk.Module {
 	return &battery{}
 }

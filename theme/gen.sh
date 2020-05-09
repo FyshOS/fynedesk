@@ -16,6 +16,7 @@ $BIN/fyne bundle -package theme -append -name personIcon person.svg >> $FILE
 $BIN/fyne bundle -package theme -append -name brokenImageIcon broken_image.svg >> $FILE
 $BIN/fyne bundle -package theme -append -name maximizeIcon maximize.svg >> $FILE
 $BIN/fyne bundle -package theme -append -name iconifyIcon minimize.svg >> $FILE
+$BIN/fyne bundle -package theme -append -name keyboardIcon keyboard.svg >> $FILE
 $BIN/fyne bundle -package theme -append -name soundIcon sound.svg >> $FILE
 $BIN/fyne bundle -package theme -append -name muteIcon mute.svg >> $FILE
 

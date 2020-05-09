@@ -27,6 +27,9 @@ func (e *embededWM) RemoveWindow(win fynedesk.Window) {
 	}
 }
 
+func (e *embededWM) Run() {
+}
+
 func (e *embededWM) TopWindow() fynedesk.Window {
 	if len(e.windows) == 0 {
 		return nil

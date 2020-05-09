@@ -8,6 +8,7 @@ import (
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/wm"
 )
 
 const (
@@ -16,6 +17,7 @@ const (
 )
 
 type desktop struct {
+	wm.ShortcutHandler
 	app      fyne.App
 	wm       fynedesk.WindowManager
 	icons    fynedesk.ApplicationProvider
@@ -151,6 +153,7 @@ func (l *desktop) setupRoots() {
 }
 
 func (l *desktop) Run() {
+	go l.wm.Run()
 	l.run() // use the configured run method
 }
 
@@ -201,6 +204,12 @@ func (l *desktop) Modules() []fynedesk.Module {
 
 		instance := meta.NewInstance()
 		mods = append(mods, instance)
+
+		if bind, ok := instance.(fynedesk.KeyBindModule); ok {
+			for sh, f := range bind.Shortcuts() {
+				l.AddShortcut(sh, f)
+			}
+		}
 	}
 
 	l.moduleCache = mods
@@ -270,6 +279,19 @@ func (l *desktop) addSettingsChangeListener() {
 	go l.startSettingsChangeListener(listener)
 }
 
+func (l *desktop) registerShortcuts() {
+	l.AddShortcut(fynedesk.NewShortcut("Show Launcher", fyne.KeySpace, deskDriver.AltModifier),
+		ShowAppLauncher)
+	l.AddShortcut(fynedesk.NewShortcut("Switch App Next", fyne.KeyTab, deskDriver.AltModifier),
+		func() {
+			// dummy - the wm handles app switcher
+		})
+	l.AddShortcut(fynedesk.NewShortcut("Switch App Previous", fyne.KeyTab, deskDriver.AltModifier|deskDriver.ShiftModifier),
+		func() {
+			// dummy - the wm handles app switcher
+		})
+}
+
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
 func (l *desktop) Screens() fynedesk.ScreenList {
 	return l.screens
@@ -317,5 +339,6 @@ func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 	desk.addSettingsChangeListener()
 	desk.backgroundScreenMap = make(map[*background]*fynedesk.Screen)
 
+	desk.registerShortcuts()
 	return desk
 }
