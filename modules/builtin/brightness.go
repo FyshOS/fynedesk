@@ -18,19 +18,18 @@ import (
 
 var brightnessMeta = fynedesk.ModuleMetadata{
 	Name:        "Brightness",
-	NewInstance: NewBrightness,
+	NewInstance: newBrightness,
 }
 
 // Brightness is a progress bar module to modify screen brightness
-type Brightness struct {
+type brightness struct {
 	bar *widget.ProgressBar
 }
 
-// Destroy destroys the module
-func (b *Brightness) Destroy() {
+func (b *brightness) Destroy() {
 }
 
-func (b *Brightness) value() (float64, error) {
+func (b *brightness) value() (float64, error) {
 	out, err := exec.Command("xbacklight").Output()
 	if err != nil {
 		log.Println("Error running xbacklight", err)
@@ -44,8 +43,7 @@ func (b *Brightness) value() (float64, error) {
 	return ret / 100, nil
 }
 
-// OffsetValue actually increase or decrease the screen brightness using xbacklight
-func (b *Brightness) OffsetValue(diff int) {
+func (b *brightness) offsetValue(diff int) {
 	floatVal, _ := b.value()
 	value := int(floatVal*100) + diff
 
@@ -64,8 +62,22 @@ func (b *Brightness) OffsetValue(diff int) {
 	}
 }
 
-// StatusAreaWidget builds the widget
-func (b *Brightness) StatusAreaWidget() fyne.CanvasObject {
+func (b *brightness) Metadata() fynedesk.ModuleMetadata {
+	return brightnessMeta
+}
+
+func (b *brightness) Shortcuts() map[*fynedesk.Shortcut]func() {
+	return map[*fynedesk.Shortcut]func(){
+		fynedesk.NewShortcut("Increase Screen Brightness", fynedesk.KeyBrightnessDown, fynedesk.AnyModifier): func() {
+			b.offsetValue(-5)
+		},
+		fynedesk.NewShortcut("Reduce Screen Brightness", fynedesk.KeyBrightnessUp, fynedesk.AnyModifier): func() {
+			b.offsetValue(5)
+		},
+	}
+}
+
+func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 	if _, err := b.value(); err != nil {
 		return nil
 	}
@@ -73,24 +85,19 @@ func (b *Brightness) StatusAreaWidget() fyne.CanvasObject {
 	b.bar = widget.NewProgressBar()
 	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-		b.OffsetValue(-5)
+		b.offsetValue(-5)
 	})
 	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		b.OffsetValue(5)
+		b.offsetValue(5)
 	})
 	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
 		less, b.bar, more)
 
-	go b.OffsetValue(0)
+	go b.offsetValue(0)
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright)
 }
 
-// Metadata returns ModuleMetadata
-func (b *Brightness) Metadata() fynedesk.ModuleMetadata {
-	return brightnessMeta
-}
-
-// NewBrightness creates a new module that will show screen brightness in the status area
-func NewBrightness() fynedesk.Module {
-	return &Brightness{}
+// newBrightness creates a new module that will show screen brightness in the status area
+func newBrightness() fynedesk.Module {
+	return &brightness{}
 }

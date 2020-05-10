@@ -11,6 +11,8 @@ type Desktop interface {
 	IconProvider() ApplicationProvider
 	WindowManager() WindowManager
 	Modules() []Module
+
+	AddShortcut(shortcut *Shortcut, handler func())
 }
 
 var instance Desktop

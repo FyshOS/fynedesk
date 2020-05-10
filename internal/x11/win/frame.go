@@ -261,7 +261,10 @@ func (f *frame) decorate(force bool) {
 	depth := f.client.wm.X().Screen().RootDepth
 	refresh := force
 
-	if f.borderTop == 0 || refresh {
+	if refresh {
+		f.freePixmaps()
+	}
+	if f.borderTop == 0 {
 		err := f.createPixmaps(depth)
 		if err != nil {
 			fyne.LogError("New Pixmap Error", err)
@@ -332,6 +335,13 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	}
 
 	f.copyDecorationPixels(uint32(iconBorderPixWidth), uint32(heightPix), uint32(f.borderTopWidth), 0, img, pidTopRight, drawTopRight, depth)
+}
+
+func (f *frame) freePixmaps() {
+	xproto.FreePixmap(f.client.wm.Conn(), f.borderTop)
+	f.borderTop = 0
+	xproto.FreePixmap(f.client.wm.Conn(), f.borderTopRight)
+	f.borderTopRight = 0
 }
 
 func (f *frame) getGeometry() (int16, int16, uint16, uint16) {
@@ -597,7 +607,6 @@ func (f *frame) show() {
 
 	xproto.ChangeSaveSet(c.wm.Conn(), xproto.SetModeInsert, c.win)
 	xproto.MapWindow(c.wm.Conn(), c.win)
-	c.wm.BindKeys(c)
 	xproto.GrabButton(f.client.wm.Conn(), true, f.client.id,
 		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
 		f.client.wm.X().RootWin(), xproto.CursorNone, xproto.ButtonIndex1, xproto.ModMaskAny)
@@ -673,10 +682,7 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 }
 
 func (f *frame) updateScale() {
-	xproto.FreePixmap(f.client.wm.Conn(), f.borderTop)
-	f.borderTop = 0
-	xproto.FreePixmap(f.client.wm.Conn(), f.borderTopRight)
-	f.borderTopRight = 0
+	f.freePixmaps()
 
 	f.updateGeometry(f.x, f.y, f.width, f.height, true)
 	f.applyTheme(true)

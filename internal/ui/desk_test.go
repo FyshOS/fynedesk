@@ -18,7 +18,7 @@ import (
 
 func TestDeskLayout_Layout(t *testing.T) {
 	l := &desktop{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
-		Width: 2000, Height: 1000, Scale: 1.0})}
+		Width: 2000, Height: 1000, Scale: 1.0}), settings: test.NewSettings()}
 	l.bar = testBar([]string{})
 	l.widgets = newWidgetPanel(l)
 	bg := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}

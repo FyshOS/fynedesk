@@ -3,19 +3,23 @@ package ui
 import (
 	"fmt"
 	"os/exec"
+	"runtime"
+	"sort"
 	"strconv"
-
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/dialog"
+	"strings"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/cmd/fyne_settings/settings"
+	"fyne.io/fyne/dialog"
+	deskDriver "fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
+	"fyne.io/fynedesk/wm"
 )
 
 const randrHelper = "arandr"
@@ -216,7 +220,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 		header, applyButton, widget.NewVBox(bar, details))
 }
 
-func (d *settingsUI) loadModuleScreen() fyne.CanvasObject {
+func (d *settingsUI) loadAdvancedScreen() fyne.CanvasObject {
 	var modules []fyne.CanvasObject
 
 	for _, mod := range fynedesk.AvailableModules() {
@@ -227,6 +231,8 @@ func (d *settingsUI) loadModuleScreen() fyne.CanvasObject {
 		check.SetChecked(enabled)
 		modules = append(modules, check)
 	}
+	content := fyne.NewContainerWithLayout(layout.NewGridLayout(2), d.loadScreensGroup(),
+		widget.NewGroup("Modules", modules...))
 
 	applyButton := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
@@ -242,7 +248,32 @@ func (d *settingsUI) loadModuleScreen() fyne.CanvasObject {
 		}})
 
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, applyButton, nil, nil),
-		applyButton, widget.NewVBox(modules...))
+		applyButton, content)
+}
+
+func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
+	var names, mods, keys []fyne.CanvasObject
+	shortcuts := fynedesk.Instance().(wm.ShortcutManager).Shortcuts()
+	sort.Slice(shortcuts, func(i, j int) bool {
+		return strings.Compare(shortcuts[i].ShortcutName(), shortcuts[j].ShortcutName()) < 0
+	})
+
+	for _, shortcut := range shortcuts {
+		names = append(names, widget.NewLabel(shortcut.ShortcutName()))
+		mods = append(mods, widget.NewLabel(modifierToString(shortcut.Modifier)))
+		keys = append(keys, widget.NewLabel(string(shortcut.KeyName)))
+	}
+	rows := widget.NewHBox(widget.NewGroup("Action", names...),
+		widget.NewGroup("Modifier", mods...),
+		widget.NewGroup("Key Name", keys...))
+	grid := widget.NewScrollContainer(rows)
+
+	applyButton := widget.NewHBox(layout.NewSpacer(),
+		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+		}})
+
+	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, applyButton, nil, nil),
+		applyButton, grid)
 }
 
 func loadScreensTable() fyne.CanvasObject {
@@ -269,10 +300,10 @@ func loadScreensTable() fyne.CanvasObject {
 	return widget.NewHBox(names, labels1, values1, labels2, values2)
 }
 
-func loadAdvancedScreen() fyne.CanvasObject {
+func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
 	var displays fyne.CanvasObject
 	if _, err := exec.LookPath(randrHelper); err == nil {
-		displays = widget.NewButtonWithIcon("Displays", wmtheme.DisplayIcon, func() {
+		displays = widget.NewButtonWithIcon("Manage Displays", wmtheme.DisplayIcon, func() {
 			exec.Command(randrHelper).Start()
 		})
 	} else {
@@ -281,10 +312,9 @@ func loadAdvancedScreen() fyne.CanvasObject {
 
 	userScale := fyne.CurrentApp().Settings().Scale()
 	content := widget.NewVBox(widget.NewLabel(fmt.Sprintf("User scale: %0.2f", userScale)))
-	screens := widget.NewGroup("Screens", content)
+	screens := widget.NewGroup("Screens", displays, content)
 	screens.Append(loadScreensTable())
-
-	return widget.NewVBox(displays, screens)
+	return screens
 }
 
 func showSettings(deskSettings *deskSettings) {
@@ -300,13 +330,34 @@ func showSettings(deskSettings *deskSettings) {
 		&widget.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
 			Content: ui.loadAppearanceScreen()},
 		&widget.TabItem{Text: "App Bar", Icon: wmtheme.IconifyIcon, Content: ui.loadBarScreen()},
-		&widget.TabItem{Text: "Modules", Icon: theme.FileIcon(), Content: ui.loadModuleScreen()},
+		&widget.TabItem{Text: "Keyboard", Icon: wmtheme.KeyboardIcon, Content: ui.loadKeyboardScreen()},
 		&widget.TabItem{Text: "Advanced", Icon: theme.SettingsIcon(),
-			Content: loadAdvancedScreen()},
+			Content: ui.loadAdvancedScreen()},
 	)
 	tabs.SetTabLocation(widget.TabLocationLeading)
 	w.SetContent(tabs)
 
 	w.Resize(fyne.NewSize(480, 320))
 	w.Show()
+}
+
+func modifierToString(mods deskDriver.Modifier) string {
+	var s []string
+	if (mods & deskDriver.ShiftModifier) != 0 {
+		s = append(s, "Shift")
+	}
+	if (mods & deskDriver.ControlModifier) != 0 {
+		s = append(s, "Control")
+	}
+	if (mods & deskDriver.AltModifier) != 0 {
+		s = append(s, "Alt")
+	}
+	if (mods & deskDriver.SuperModifier) != 0 {
+		if runtime.GOOS == "darwin" {
+			s = append(s, "Command")
+		} else {
+			s = append(s, "Super")
+		}
+	}
+	return strings.Join(s, "+")
 }
