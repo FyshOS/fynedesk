@@ -21,22 +21,23 @@ any contributions or feedback for the project.
 
 For a full desktop experience you will also need the following external tools installed:
 
-* xbacklight
-* arandr
+- xbacklight
+- arandr
 
 # Getting Started
 
 Using standard go tools you can install Fyne's desktop using:
+```
+go get fyne.io/fynedesk/cmd/fynedesk
+```
 
-    go get fyne.io/fynedesk/cmd/fynedesk
+Once installed you can run `make install` to get everything set up. This will take care of all the building and configuration for you.
 
-Once installed you could set `$GOPATH/fynedesk` as your window manager (usually
-using .xinitrc).
 You can also run it in an embedded X window for testing using:
-
+```
     DISPLAY=:0 Xephyr :1 -screen 1280x720 &
     DISPLAY=:1 fynedesk
-
+```
 It should look like this:
 
 <p align="center" markdown="1">
