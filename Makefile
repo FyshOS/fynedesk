@@ -1,4 +1,4 @@
-# If not DESTDIR is provided, we default to /usr/local if it exists and if it doesn't we fall back /usr.
+# If DESTDIR is not provided, we default to /usr/local if it exists and if it doesn't we fall back /usr.
 ifneq ("$(wildcard /usr/local)","")
 DESTDIR ?= /usr/local
 else
