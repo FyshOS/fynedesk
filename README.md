@@ -26,12 +26,16 @@ For a full desktop experience you will also need the following external tools in
 
 # Getting Started
 
-Using standard go tools you can install Fyne's desktop using:
+Using standard go tools you can install FyneDesk using:
 ```
 go get fyne.io/fynedesk/cmd/fynedesk
 ```
 
-Once installed you can run `make install` to get everything set up. This will take care of all the building and configuration for you.
+Once installed you can run the following commands to get everything set up. This will take care of all the building and configuration for you.
+```
+make
+make install
+```
 
 You can also run it in an embedded X window for testing using:
 ```
