@@ -10,7 +10,7 @@ build:
 	go build ./cmd/fynedesk || (echo "Failed to build fynedesk"; exit 1)
 
 install:
-	cp cmd/fynedesk_runner/fynedesk_runner $(DESTDIR)$(PREFIX)/bin
+	cp cmd/fynedesk_runner/fynedesk_runner $(DESTDIR)/bin
 	cp cmd/fynedesk/fynedesk $(DESTDIR)$(PREFIX)/bin
 	cp fynedesk.desktop $(DESTDIR)/share/xsessions
 

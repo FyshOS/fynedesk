@@ -31,10 +31,10 @@ Using standard go tools you can install FyneDesk using:
 go get fyne.io/fynedesk/cmd/fynedesk
 ```
 
-Once installed you can run the following commands to get everything set up. This will take care of all the building and configuration for you.
+Once installed you can run the following commands from the root of the installed fynedesk folder (usually $GOPATH/src/fyne.io/fynedesk/) to set up fynedesk as a selectable desktop option in your login manager (such as LightDM for example).
 ```
 make
-make install
+sudo make install
 ```
 
 You can also run it in an embedded X window for testing using:
