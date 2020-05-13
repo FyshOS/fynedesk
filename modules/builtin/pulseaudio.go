@@ -7,7 +7,7 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-	"github.com/mattboll/pulseaudio"
+	"github.com/mafik/pulseaudio"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
