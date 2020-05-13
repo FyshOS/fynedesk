@@ -18,7 +18,7 @@ var pulseaudioMeta = fynedesk.ModuleMetadata{
 	NewInstance: NewPulseaudio,
 }
 
-// Pulseaudio is a progress bar module to modify screen pulseaudio
+// Pulseaudio is a progress bar module to modify sound with pulseaudio
 type Pulseaudio struct {
 	bar    *widget.ProgressBar
 	client *pulseaudio.Client
@@ -30,18 +30,18 @@ func (b *Pulseaudio) Destroy() {
 	b.client.Close()
 }
 
-func (b *Pulseaudio) value() (float32, bool, error) {
+func (b *Pulseaudio) value() (float32, error) {
 	volume, err := b.client.Volume()
 	if err != nil {
-		return 0, true, err
+		return 0, err
 	}
 
-	return volume, false, nil
+	return volume, nil
 }
 
-// OffsetValue actually increase or decrease the screen pulseaudio
+// OffsetValue actually increase or decrease the sound with pulseaudio
 func (b *Pulseaudio) OffsetValue(diff int) {
-	floatVal, _, _ := b.value()
+	floatVal, _ := b.value()
 	value := floatVal + float32(diff)/100
 
 	if value < 0 {
