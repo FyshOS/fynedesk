@@ -20,9 +20,9 @@ var pulseaudioMeta = fynedesk.ModuleMetadata{
 
 // Pulseaudio is a progress bar module to modify screen pulseaudio
 type Pulseaudio struct {
-	bar       *widget.ProgressBar
-	client    *pulseaudio.Client
-	soundIcon *widget.Button
+	bar    *widget.ProgressBar
+	client *pulseaudio.Client
+	mute   *widget.Button
 }
 
 // Destroy destroys the module
@@ -67,9 +67,9 @@ func (b *Pulseaudio) ToggleMute() {
 	}
 
 	if toggl {
-		b.soundIcon.SetIcon(wmtheme.MuteIcon)
+		b.mute.SetIcon(wmtheme.MuteIcon)
 	} else {
-		b.soundIcon.SetIcon(wmtheme.SoundIcon)
+		b.mute.SetIcon(wmtheme.SoundIcon)
 	}
 
 }
@@ -83,7 +83,7 @@ func (b *Pulseaudio) StatusAreaWidget() fyne.CanvasObject {
 	b.client = client
 
 	b.bar = widget.NewProgressBar()
-	b.soundIcon = widget.NewButtonWithIcon("", wmtheme.SoundIcon, func() {
+	b.mute = widget.NewButtonWithIcon("", wmtheme.SoundIcon, func() {
 		b.ToggleMute()
 	})
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
@@ -96,7 +96,7 @@ func (b *Pulseaudio) StatusAreaWidget() fyne.CanvasObject {
 		less, b.bar, more)
 
 	go b.OffsetValue(0)
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, b.soundIcon, nil), b.soundIcon, sound)
+	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, b.mute, nil), b.mute, sound)
 }
 
 // Metadata returns ModuleMetadata
