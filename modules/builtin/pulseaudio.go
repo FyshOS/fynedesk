@@ -41,7 +41,11 @@ func (b *Pulseaudio) value() (float32, error) {
 
 // OffsetValue actually increase or decrease the sound with pulseaudio
 func (b *Pulseaudio) OffsetValue(diff int) {
-	floatVal, _ := b.value()
+	floatVal, err := b.value()
+	if err != nil {
+		log.Println("Failed to get volume", err)
+		return
+	}
 	value := floatVal + float32(diff)/100
 
 	if value < 0 {
