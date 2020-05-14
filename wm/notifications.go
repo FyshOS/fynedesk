@@ -2,7 +2,6 @@ package wm
 
 import (
 	"fyne.io/fyne"
-	"github.com/godbus/dbus/v5"
 )
 
 var (
@@ -51,19 +50,19 @@ type notifications struct {
 }
 
 func (n *notifications) Notify(appName string, replacesID uint32, appIcon, summary, body string,
-	actions []string, hints map[string]interface{}, timeout int32) (uint32, *dbus.Error) {
+	actions []string, hints map[string]interface{}, timeout int32) (uint32, error) {
 	item := NewNotification(summary, body)
 
 	SendNotification(item)
 	return item.ID, nil
 }
 
-func (n *notifications) GetServerInformation() (string, string, string, string, *dbus.Error) {
-	return "FyneDesk", "Fyne.io", "0", "0", nil
+func (n *notifications) GetServerInformation() (string, string, string, string) {
+	return "FyneDesk", "Fyne.io", "0", "0"
 }
 
-func (n *notifications) GetCapabilities() ([]string, *dbus.Error) {
-	return []string{"body", "icon-static", "persistence"}, nil
+func (n *notifications) GetCapabilities() []string {
+	return []string{"body", "icon-static", "persistence"}
 }
 
 func startNotifications() *notifications {

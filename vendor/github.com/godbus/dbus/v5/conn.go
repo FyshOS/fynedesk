@@ -45,6 +45,7 @@ type Conn struct {
 	serialGen     SerialGenerator
 	inInt         Interceptor
 	outInt        Interceptor
+	auth          []Auth
 
 	names      *nameTracker
 	calls      *callTracker
@@ -67,19 +68,7 @@ func SessionBus() (conn *Conn, err error) {
 			sessionBus = conn
 		}
 	}()
-	conn, err = SessionBusPrivate()
-	if err != nil {
-		return
-	}
-	if err = conn.Auth(nil); err != nil {
-		conn.Close()
-		conn = nil
-		return
-	}
-	if err = conn.Hello(); err != nil {
-		conn.Close()
-		conn = nil
-	}
+	conn, err = ConnectSessionBus()
 	return
 }
 
@@ -124,20 +113,42 @@ func SystemBus() (conn *Conn, err error) {
 			systemBus = conn
 		}
 	}()
-	conn, err = SystemBusPrivate()
+	conn, err = ConnectSystemBus()
+	return
+}
+
+// ConnectSessionBus connects to the session bus.
+func ConnectSessionBus(opts ...ConnOption) (*Conn, error) {
+	address, err := getSessionBusAddress()
 	if err != nil {
-		return
+		return nil, err
 	}
-	if err = conn.Auth(nil); err != nil {
-		conn.Close()
-		conn = nil
-		return
+	return Connect(address, opts...)
+}
+
+// ConnectSystemBus connects to the system bus.
+func ConnectSystemBus(opts ...ConnOption) (*Conn, error) {
+	return Connect(getSystemBusPlatformAddress(), opts...)
+}
+
+// Connect connects to the given address.
+//
+// Returned connection is ready to use and doesn't require calling
+// Auth and Hello methods to make it usable.
+func Connect(address string, opts ...ConnOption) (*Conn, error) {
+	conn, err := Dial(address, opts...)
+	if err != nil {
+		return nil, err
+	}
+	if err = conn.Auth(conn.auth); err != nil {
+		_ = conn.Close()
+		return nil, err
 	}
 	if err = conn.Hello(); err != nil {
-		conn.Close()
-		conn = nil
+		_ = conn.Close()
+		return nil, err
 	}
-	return
+	return conn, nil
 }
 
 // SystemBusPrivate returns a new private connection to the system bus.
@@ -193,6 +204,14 @@ func WithSignalHandler(handler SignalHandler) ConnOption {
 func WithSerialGenerator(gen SerialGenerator) ConnOption {
 	return func(conn *Conn) error {
 		conn.serialGen = gen
+		return nil
+	}
+}
+
+// WithAuth sets authentication methods for the auth conversation.
+func WithAuth(methods ...Auth) ConnOption {
+	return func(conn *Conn) error {
+		conn.auth = methods
 		return nil
 	}
 }
@@ -344,6 +363,7 @@ func (conn *Conn) Hello() error {
 // inWorker runs in an own goroutine, reading incoming messages from the
 // transport and dispatching them appropiately.
 func (conn *Conn) inWorker() {
+	sequenceGen := newSequenceGenerator()
 	for {
 		msg, err := conn.ReadMessage()
 		if err != nil {
@@ -352,7 +372,7 @@ func (conn *Conn) inWorker() {
 				// anything but to shut down all stuff and returns errors to all
 				// pending replies.
 				conn.Close()
-				conn.calls.finalizeAllWithError(err)
+				conn.calls.finalizeAllWithError(sequenceGen, err)
 				return
 			}
 			// invalid messages are ignored
@@ -381,13 +401,14 @@ func (conn *Conn) inWorker() {
 		if conn.inInt != nil {
 			conn.inInt(msg)
 		}
+		sequence := sequenceGen.next()
 		switch msg.Type {
 		case TypeError:
-			conn.serialGen.RetireSerial(conn.calls.handleDBusError(msg))
+			conn.serialGen.RetireSerial(conn.calls.handleDBusError(sequence, msg))
 		case TypeMethodReply:
-			conn.serialGen.RetireSerial(conn.calls.handleReply(msg))
+			conn.serialGen.RetireSerial(conn.calls.handleReply(sequence, msg))
 		case TypeSignal:
-			conn.handleSignal(msg)
+			conn.handleSignal(sequence, msg)
 		case TypeMethodCall:
 			go conn.handleCall(msg)
 		}
@@ -395,7 +416,7 @@ func (conn *Conn) inWorker() {
 	}
 }
 
-func (conn *Conn) handleSignal(msg *Message) {
+func (conn *Conn) handleSignal(sequence Sequence, msg *Message) {
 	iface := msg.Headers[FieldInterface].value.(string)
 	member := msg.Headers[FieldMember].value.(string)
 	// as per http://dbus.freedesktop.org/doc/dbus-specification.html ,
@@ -421,10 +442,11 @@ func (conn *Conn) handleSignal(msg *Message) {
 		}
 	}
 	signal := &Signal{
-		Sender: sender,
-		Path:   msg.Headers[FieldPath].value.(ObjectPath),
-		Name:   iface + "." + member,
-		Body:   msg.Body,
+		Sender:   sender,
+		Path:     msg.Headers[FieldPath].value.(ObjectPath),
+		Name:     iface + "." + member,
+		Body:     msg.Body,
+		Sequence: sequence,
 	}
 	conn.signalHandler.DeliverSignal(iface, member, signal)
 }
@@ -639,10 +661,11 @@ func (e Error) Error() string {
 // Signal represents a D-Bus message of type Signal. The name member is given in
 // "interface.member" notation, e.g. org.freedesktop.D-Bus.NameLost.
 type Signal struct {
-	Sender string
-	Path   ObjectPath
-	Name   string
-	Body   []interface{}
+	Sender   string
+	Path     ObjectPath
+	Name     string
+	Body     []interface{}
+	Sequence Sequence
 }
 
 // transport is a D-Bus transport.
@@ -825,25 +848,25 @@ func (tracker *callTracker) track(sn uint32, call *Call) {
 	tracker.lck.Unlock()
 }
 
-func (tracker *callTracker) handleReply(msg *Message) uint32 {
+func (tracker *callTracker) handleReply(sequence Sequence, msg *Message) uint32 {
 	serial := msg.Headers[FieldReplySerial].value.(uint32)
 	tracker.lck.RLock()
 	_, ok := tracker.calls[serial]
 	tracker.lck.RUnlock()
 	if ok {
-		tracker.finalizeWithBody(serial, msg.Body)
+		tracker.finalizeWithBody(serial, sequence, msg.Body)
 	}
 	return serial
 }
 
-func (tracker *callTracker) handleDBusError(msg *Message) uint32 {
+func (tracker *callTracker) handleDBusError(sequence Sequence, msg *Message) uint32 {
 	serial := msg.Headers[FieldReplySerial].value.(uint32)
 	tracker.lck.RLock()
 	_, ok := tracker.calls[serial]
 	tracker.lck.RUnlock()
 	if ok {
 		name, _ := msg.Headers[FieldErrorName].value.(string)
-		tracker.finalizeWithError(serial, Error{name, msg.Body})
+		tracker.finalizeWithError(serial, sequence, Error{name, msg.Body})
 	}
 	return serial
 }
@@ -856,7 +879,7 @@ func (tracker *callTracker) handleSendError(msg *Message, err error) {
 	_, ok := tracker.calls[msg.serial]
 	tracker.lck.RUnlock()
 	if ok {
-		tracker.finalizeWithError(msg.serial, err)
+		tracker.finalizeWithError(msg.serial, NoSequence, err)
 	}
 }
 
@@ -871,7 +894,7 @@ func (tracker *callTracker) finalize(sn uint32) {
 	}
 }
 
-func (tracker *callTracker) finalizeWithBody(sn uint32, body []interface{}) {
+func (tracker *callTracker) finalizeWithBody(sn uint32, sequence Sequence, body []interface{}) {
 	tracker.lck.Lock()
 	c, ok := tracker.calls[sn]
 	if ok {
@@ -880,11 +903,12 @@ func (tracker *callTracker) finalizeWithBody(sn uint32, body []interface{}) {
 	tracker.lck.Unlock()
 	if ok {
 		c.Body = body
+		c.ResponseSequence = sequence
 		c.done()
 	}
 }
 
-func (tracker *callTracker) finalizeWithError(sn uint32, err error) {
+func (tracker *callTracker) finalizeWithError(sn uint32, sequence Sequence, err error) {
 	tracker.lck.Lock()
 	c, ok := tracker.calls[sn]
 	if ok {
@@ -893,11 +917,12 @@ func (tracker *callTracker) finalizeWithError(sn uint32, err error) {
 	tracker.lck.Unlock()
 	if ok {
 		c.Err = err
+		c.ResponseSequence = sequence
 		c.done()
 	}
 }
 
-func (tracker *callTracker) finalizeAllWithError(err error) {
+func (tracker *callTracker) finalizeAllWithError(sequenceGen *sequenceGenerator, err error) {
 	tracker.lck.Lock()
 	closedCalls := make([]*Call, 0, len(tracker.calls))
 	for sn := range tracker.calls {
@@ -907,6 +932,7 @@ func (tracker *callTracker) finalizeAllWithError(err error) {
 	tracker.lck.Unlock()
 	for _, call := range closedCalls {
 		call.Err = err
+		call.ResponseSequence = sequenceGen.next()
 		call.done()
 	}
 }

@@ -69,6 +69,22 @@ func getMethods(in interface{}, mapping map[string]string) map[string]reflect.Va
 	return methods
 }
 
+func getAllMethods(in interface{}, mapping map[string]string) map[string]reflect.Value {
+	if in == nil {
+		return nil
+	}
+	methods := make(map[string]reflect.Value)
+	val := reflect.ValueOf(in)
+	typ := val.Type()
+	for i := 0; i < typ.NumMethod(); i++ {
+		methtype := typ.Method(i)
+		method := val.Method(i)
+		// map names while building table
+		methods[computeMethodName(methtype.Name, mapping)] = method
+	}
+	return methods
+}
+
 func standardMethodArgumentDecode(m Method, sender string, msg *Message, body []interface{}) ([]interface{}, error) {
 	pointers := make([]interface{}, m.NumArguments())
 	decode := make([]interface{}, 0, len(body))
@@ -245,6 +261,18 @@ func (conn *Conn) Emit(path ObjectPath, name string, values ...interface{}) erro
 // Export returns an error if path is not a valid path name.
 func (conn *Conn) Export(v interface{}, path ObjectPath, iface string) error {
 	return conn.ExportWithMap(v, nil, path, iface)
+}
+
+// ExportAll registers all exported methods defined by the given object on
+// the message bus.
+//
+// Unlike Export there is no requirement to have the last parameter as type
+// *Error. If you want to be able to return error then you can append an error
+// type parameter to your method signature. If the error returned is not nil,
+// it is sent back to the caller as an error. Otherwise, a method reply is
+// sent with the other return values as its body.
+func (conn *Conn) ExportAll(v interface{}, path ObjectPath, iface string) error {
+	return conn.export(getAllMethods(v, nil), path, iface, false)
 }
 
 // ExportWithMap works exactly like Export but provides the ability to remap

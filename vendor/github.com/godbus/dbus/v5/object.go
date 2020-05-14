@@ -16,6 +16,7 @@ type BusObject interface {
 	AddMatchSignal(iface, member string, options ...MatchOption) *Call
 	RemoveMatchSignal(iface, member string, options ...MatchOption) *Call
 	GetProperty(p string) (Variant, error)
+	StoreProperty(p string, value interface{}) error
 	SetProperty(p string, v interface{}) error
 	Destination() string
 	Path() ObjectPath
@@ -168,22 +169,25 @@ func (o *Object) createCall(ctx context.Context, method string, flags Flags, ch 
 // GetProperty calls org.freedesktop.DBus.Properties.Get on the given
 // object. The property name must be given in interface.member notation.
 func (o *Object) GetProperty(p string) (Variant, error) {
+	var result Variant
+	err := o.StoreProperty(p, &result)
+	return result, err
+}
+
+// StoreProperty calls org.freedesktop.DBus.Properties.Get on the given
+// object. The property name must be given in interface.member notation.
+// It stores the returned property into the provided value.
+func (o *Object) StoreProperty(p string, value interface{}) error {
 	idx := strings.LastIndex(p, ".")
 	if idx == -1 || idx+1 == len(p) {
-		return Variant{}, errors.New("dbus: invalid property " + p)
+		return errors.New("dbus: invalid property " + p)
 	}
 
 	iface := p[:idx]
 	prop := p[idx+1:]
 
-	result := Variant{}
-	err := o.Call("org.freedesktop.DBus.Properties.Get", 0, iface, prop).Store(&result)
-
-	if err != nil {
-		return Variant{}, err
-	}
-
-	return result, nil
+	return o.Call("org.freedesktop.DBus.Properties.Get", 0, iface, prop).
+		Store(value)
 }
 
 // SetProperty calls org.freedesktop.DBus.Properties.Set on the given
