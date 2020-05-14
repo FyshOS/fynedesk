@@ -17,6 +17,8 @@ $BIN/fyne bundle -package theme -append -name brokenImageIcon broken_image.svg >
 $BIN/fyne bundle -package theme -append -name maximizeIcon maximize.svg >> $FILE
 $BIN/fyne bundle -package theme -append -name iconifyIcon minimize.svg >> $FILE
 $BIN/fyne bundle -package theme -append -name keyboardIcon keyboard.svg >> $FILE
+$BIN/fyne bundle -package theme -append -name soundIcon sound.svg >> $FILE
+$BIN/fyne bundle -package theme -append -name muteIcon mute.svg >> $FILE
 
 $BIN/fyne bundle -package theme -append -name lochFynePicture lochfyne.jpg >> $FILE
 $BIN/fyne bundle -package theme -append -name fyneAboutBackground fyne_about_bg.png >> $FILE

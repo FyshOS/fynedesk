@@ -31,6 +31,10 @@ var (
 	IconifyIcon = theme.NewThemedResource(iconifyIcon, nil)
 	// KeyboardIcon is the material design icon for the keyboard settings
 	KeyboardIcon = theme.NewThemedResource(keyboardIcon, nil)
+	// SoundIcon is the material design icon for sound in light and dark theme
+	SoundIcon = theme.NewThemedResource(soundIcon, nil)
+	// MuteIcon is the material design icon for mute in light and dark theme
+	MuteIcon = theme.NewThemedResource(muteIcon, nil)
 
 	// BorderWidth is the width of window frames
 	BorderWidth = 4
