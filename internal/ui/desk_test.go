@@ -38,8 +38,9 @@ func TestDeskLayout_Layout(t *testing.T) {
 func TestScaleVars_Up(t *testing.T) {
 	l := &desktop{}
 	l.screens = test.NewScreensProvider()
+	l.screens.Screens()[0].Scale = 1.8
 	env := l.scaleVars(1.8)
-	assert.Contains(t, env, "QT_SCALE_FACTOR=1.8")
+	assert.Contains(t, env, "QT_SCREEN_SCALE_FACTORS=Screen0=1.8")
 	assert.Contains(t, env, "GDK_SCALE=2")
 	assert.Contains(t, env, "ELM_SCALE=1.8")
 }
@@ -47,8 +48,9 @@ func TestScaleVars_Up(t *testing.T) {
 func TestScaleVars_Down(t *testing.T) {
 	l := &desktop{}
 	l.screens = test.NewScreensProvider()
+	l.screens.Screens()[0].Scale = 0.9
 	env := l.scaleVars(0.9)
-	assert.Contains(t, env, "QT_SCALE_FACTOR=1.0")
+	assert.Contains(t, env, "QT_SCREEN_SCALE_FACTORS=Screen0=1.0")
 	assert.Contains(t, env, "GDK_SCALE=1")
 	assert.Contains(t, env, "ELM_SCALE=0.9")
 }

@@ -216,13 +216,24 @@ func (l *desktop) Modules() []fynedesk.Module {
 	return mods
 }
 
+func (l *desktop) qtScreenScales() string {
+	screenScales := ""
+	for i, screen := range l.Screens().Screens() {
+		if i > 0 {
+			screenScales += ";"
+		}
+		// Qt toolkit cannot handle scale < 1
+		positiveScale := math.Max(1.0, float64(screen.CanvasScale()))
+		screenScales += fmt.Sprintf("%s=%1.1f", screen.Name, positiveScale)
+	}
+	return screenScales
+}
+
 func (l *desktop) scaleVars(scale float32) []string {
 	intScale := int(math.Round(float64(scale)))
-	// Qt toolkit cannot handle scale < 1
-	positiveScale := math.Max(1.0, float64(scale))
 
 	return []string{
-		fmt.Sprintf("QT_SCALE_FACTOR=%1.1f", positiveScale),
+		fmt.Sprintf("QT_SCREEN_SCALE_FACTORS=%s", l.qtScreenScales()),
 		fmt.Sprintf("GDK_SCALE=%d", intScale),
 		fmt.Sprintf("ELM_SCALE=%1.1f", scale),
 	}
