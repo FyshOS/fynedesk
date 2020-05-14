@@ -7,30 +7,29 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-	"github.com/mafik/pulseaudio"
+	pulse "github.com/mafik/pulseaudio"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
 var pulseaudioMeta = fynedesk.ModuleMetadata{
-	Name:        "Pulseaudio",
-	NewInstance: NewPulseaudio,
+	Name:        "pulseaudio",
+	NewInstance: newPulseaudio,
 }
 
-// Pulseaudio is a progress bar module to modify sound with pulseaudio
-type Pulseaudio struct {
+type pulseaudio struct {
 	bar    *widget.ProgressBar
-	client *pulseaudio.Client
+	client *pulse.Client
 	mute   *widget.Button
 }
 
 // Destroy destroys the module
-func (b *Pulseaudio) Destroy() {
+func (b *pulseaudio) Destroy() {
 	b.client.Close()
 }
 
-func (b *Pulseaudio) value() (float32, error) {
+func (b *pulseaudio) value() (float32, error) {
 	volume, err := b.client.Volume()
 	if err != nil {
 		return 0, err
@@ -39,8 +38,7 @@ func (b *Pulseaudio) value() (float32, error) {
 	return volume, nil
 }
 
-// OffsetValue actually increase or decrease the sound with pulseaudio
-func (b *Pulseaudio) OffsetValue(diff int) {
+func (b *pulseaudio) offsetValue(diff int) {
 	floatVal, err := b.value()
 	if err != nil {
 		log.Println("Failed to get volume", err)
@@ -62,11 +60,10 @@ func (b *Pulseaudio) OffsetValue(diff int) {
 	b.bar.SetValue(float64(value))
 }
 
-// ToggleMute is used to switch between mute or not
-func (b *Pulseaudio) ToggleMute() {
+func (b *pulseaudio) toggleMute() {
 	toggl, err := b.client.ToggleMute()
 	if err != nil {
-		log.Println("ToggleMute() failed", err)
+		log.Println("toggleMute() failed", err)
 		return
 	}
 
@@ -79,8 +76,8 @@ func (b *Pulseaudio) ToggleMute() {
 }
 
 // StatusAreaWidget builds the widget
-func (b *Pulseaudio) StatusAreaWidget() fyne.CanvasObject {
-	client, err := pulseaudio.NewClient()
+func (b *pulseaudio) StatusAreaWidget() fyne.CanvasObject {
+	client, err := pulse.NewClient()
 	if err != nil {
 		return nil
 	}
@@ -88,27 +85,26 @@ func (b *Pulseaudio) StatusAreaWidget() fyne.CanvasObject {
 
 	b.bar = widget.NewProgressBar()
 	b.mute = widget.NewButtonWithIcon("", wmtheme.SoundIcon, func() {
-		b.ToggleMute()
+		b.toggleMute()
 	})
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-		b.OffsetValue(-5)
+		b.offsetValue(-5)
 	})
 	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-		b.OffsetValue(5)
+		b.offsetValue(5)
 	})
 	sound := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
 		less, b.bar, more)
 
-	go b.OffsetValue(0)
+	go b.offsetValue(0)
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, b.mute, nil), b.mute, sound)
 }
 
 // Metadata returns ModuleMetadata
-func (b *Pulseaudio) Metadata() fynedesk.ModuleMetadata {
+func (b *pulseaudio) Metadata() fynedesk.ModuleMetadata {
 	return pulseaudioMeta
 }
 
-// NewPulseaudio creates a new module that will show screen pulseaudio in the status area
-func NewPulseaudio() fynedesk.Module {
-	return &Pulseaudio{}
+func newPulseaudio() fynedesk.Module {
+	return &pulseaudio{}
 }
