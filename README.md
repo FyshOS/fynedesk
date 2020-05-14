@@ -21,22 +21,27 @@ any contributions or feedback for the project.
 
 For a full desktop experience you will also need the following external tools installed:
 
-* xbacklight
-* arandr
+- xbacklight
+- arandr
 
 # Getting Started
 
-Using standard go tools you can install Fyne's desktop using:
+Using standard go tools you can install FyneDesk using:
+```
+go get fyne.io/fynedesk/cmd/fynedesk
+```
 
-    go get fyne.io/fynedesk/cmd/fynedesk
+Once installed you can run the following commands from the root of the installed fynedesk folder (usually $GOPATH/src/fyne.io/fynedesk/) to set up fynedesk as a selectable desktop option in your login manager (such as LightDM for example).
+```
+make
+sudo make install
+```
 
-Once installed you could set `$GOPATH/fynedesk` as your window manager (usually
-using .xinitrc).
 You can also run it in an embedded X window for testing using:
-
+```
     DISPLAY=:0 Xephyr :1 -screen 1280x720 &
     DISPLAY=:1 fynedesk
-
+```
 It should look like this:
 
 <p align="center" markdown="1">
