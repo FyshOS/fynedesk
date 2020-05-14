@@ -7,29 +7,29 @@ import (
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
-	pulse "github.com/mafik/pulseaudio"
+	"github.com/mafik/pulseaudio"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
-var pulseaudioMeta = fynedesk.ModuleMetadata{
-	Name:        "pulseaudio",
-	NewInstance: newPulseaudio,
+var soundMeta = fynedesk.ModuleMetadata{
+	Name:        "Sound",
+	NewInstance: newSound,
 }
 
-type pulseaudio struct {
+type sound struct {
 	bar    *widget.ProgressBar
-	client *pulse.Client
+	client *pulseaudio.Client
 	mute   *widget.Button
 }
 
 // Destroy destroys the module
-func (b *pulseaudio) Destroy() {
+func (b *sound) Destroy() {
 	b.client.Close()
 }
 
-func (b *pulseaudio) value() (float32, error) {
+func (b *sound) value() (float32, error) {
 	volume, err := b.client.Volume()
 	if err != nil {
 		return 0, err
@@ -38,7 +38,7 @@ func (b *pulseaudio) value() (float32, error) {
 	return volume, nil
 }
 
-func (b *pulseaudio) offsetValue(diff int) {
+func (b *sound) offsetValue(diff int) {
 	floatVal, err := b.value()
 	if err != nil {
 		log.Println("Failed to get volume", err)
@@ -60,7 +60,7 @@ func (b *pulseaudio) offsetValue(diff int) {
 	b.bar.SetValue(float64(value))
 }
 
-func (b *pulseaudio) toggleMute() {
+func (b *sound) toggleMute() {
 	toggl, err := b.client.ToggleMute()
 	if err != nil {
 		log.Println("toggleMute() failed", err)
@@ -76,8 +76,8 @@ func (b *pulseaudio) toggleMute() {
 }
 
 // StatusAreaWidget builds the widget
-func (b *pulseaudio) StatusAreaWidget() fyne.CanvasObject {
-	client, err := pulse.NewClient()
+func (b *sound) StatusAreaWidget() fyne.CanvasObject {
+	client, err := pulseaudio.NewClient()
 	if err != nil {
 		return nil
 	}
@@ -101,10 +101,10 @@ func (b *pulseaudio) StatusAreaWidget() fyne.CanvasObject {
 }
 
 // Metadata returns ModuleMetadata
-func (b *pulseaudio) Metadata() fynedesk.ModuleMetadata {
-	return pulseaudioMeta
+func (b *sound) Metadata() fynedesk.ModuleMetadata {
+	return soundMeta
 }
 
-func newPulseaudio() fynedesk.Module {
-	return &pulseaudio{}
+func newSound() fynedesk.Module {
+	return &sound{}
 }
