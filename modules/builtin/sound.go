@@ -26,6 +26,9 @@ type sound struct {
 
 // Destroy destroys the module
 func (b *sound) Destroy() {
+	if b.client == nil {
+		return
+	}
 	b.client.Close()
 }
 
