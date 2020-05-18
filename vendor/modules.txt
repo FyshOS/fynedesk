@@ -1,4 +1,4 @@
-# fyne.io/fyne v1.2.5-0.20200504083148-34534298ddfa
+# fyne.io/fyne v1.2.5-0.20200517205229-914f5fd96fa5
 fyne.io/fyne
 fyne.io/fyne/app
 fyne.io/fyne/canvas
@@ -17,6 +17,7 @@ fyne.io/fyne/internal/painter/gl
 fyne.io/fyne/internal/painter/software
 fyne.io/fyne/internal/widget
 fyne.io/fyne/layout
+fyne.io/fyne/storage
 fyne.io/fyne/test
 fyne.io/fyne/theme
 fyne.io/fyne/tools/playground
@@ -53,7 +54,7 @@ github.com/BurntSushi/xgbutil/xwindow
 github.com/davecgh/go-spew/spew
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
-# github.com/fyne-io/mobile v0.0.2-0.20200421111809-d9d371319719
+# github.com/fyne-io/mobile v0.0.2-0.20200511203347-825e44fe5a95
 github.com/fyne-io/mobile/app
 github.com/fyne-io/mobile/app/internal/callfn
 github.com/fyne-io/mobile/event/key
@@ -78,6 +79,8 @@ github.com/goki/freetype/raster
 github.com/goki/freetype/truetype
 # github.com/jackmordaunt/icns v1.0.1-0.20200413110149-9e181b441ab2
 github.com/jackmordaunt/icns
+# github.com/mafik/pulseaudio v0.0.0-20200511091429-8449222912dd
+github.com/mafik/pulseaudio
 # github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 github.com/nfnt/resize
 # github.com/pkg/errors v0.9.1

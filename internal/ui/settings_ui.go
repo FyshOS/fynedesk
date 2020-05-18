@@ -69,7 +69,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 				}
 
 				// not advisable for cross-platform but we are desktop only
-				path := file.URI()[7:]
+				path := file.URI().String()[7:]
 				// TODO add a nice preview :)
 				_ = file.Close()
 

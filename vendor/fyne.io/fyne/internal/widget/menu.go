@@ -13,10 +13,9 @@ var _ fyne.Tappable = (*Menu)(nil)
 // Menu is a widget for displaying a fyne.Menu.
 type Menu struct {
 	base
-	DismissAction func()
-	Items         []fyne.CanvasObject
-
-	activeChild *Menu
+	menuBase
+	Items       []fyne.CanvasObject
+	customSized bool
 }
 
 // NewMenu creates a new Menu.
@@ -33,9 +32,13 @@ func NewMenu(menu *fyne.Menu) *Menu {
 	return m
 }
 
-// CreateRenderer satisfies the fyne.Widget interface.
+// CreateRenderer returns a new renderer for the menu.
+// Implements: fyne.Widget
 func (m *Menu) CreateRenderer() fyne.WidgetRenderer {
-	cont := fyne.NewContainerWithLayout(layout.NewVBoxLayout(), m.Items...)
+	cont := &fyne.Container{
+		Layout:  layout.NewVBoxLayout(),
+		Objects: m.Items,
+	}
 	return &menuRenderer{
 		NewShadowingRenderer([]fyne.CanvasObject{cont}, MenuLevel),
 		cont,
@@ -43,45 +46,40 @@ func (m *Menu) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-// Hide satisfies the fyne.Widget interface.
+// Hide hides the menu.
+// Implements: fyne.Widget
 func (m *Menu) Hide() {
 	m.hide(m)
 }
 
-// MinSize satisfies the fyne.Widget interface.
+// MinSize returns the minimal size of the menu.
+// Implements: fyne.Widget
 func (m *Menu) MinSize() fyne.Size {
 	return m.minSize(m)
 }
 
-// Refresh satisfies the fyne.Widget interface.
+// Refresh triggers a redraw of the menu.
+// Implements: fyne.Widget
 func (m *Menu) Refresh() {
 	m.refresh(m)
 }
 
-// Resize satisfies the fyne.Widget interface.
+// Resize has no effect because menus are always displayed with their minimal size.
+// Implements: fyne.Widget
 func (m *Menu) Resize(size fyne.Size) {
 	m.resize(size, m)
 }
 
-// Show satisfies the fyne.Widget interface.
+// Show makes the menu visible.
+// Implements: fyne.Widget
 func (m *Menu) Show() {
 	m.show(m)
 }
 
-// Tapped satisfies the fyne.Tappable interface.
+// Tapped catches taps on separators and the menu background. It doesn’t perform any action.
+// Implements: fyne.Tappable
 func (m *Menu) Tapped(*fyne.PointEvent) {
 	// Hit a separator or padding -> do nothing.
-}
-
-func (m *Menu) dismiss() {
-	if m.activeChild != nil {
-		defer m.activeChild.dismiss()
-		m.activeChild.Hide()
-		m.activeChild = nil
-	}
-	if m.DismissAction != nil {
-		m.DismissAction()
-	}
 }
 
 type menuRenderer struct {
@@ -90,20 +88,29 @@ type menuRenderer struct {
 	m    *Menu
 }
 
-// Layout satisfies the fyne.WidgetRenderer interface.
-func (r *menuRenderer) Layout(size fyne.Size) {
+func (r *menuRenderer) Layout(s fyne.Size) {
+	minSize := r.MinSize()
+	var size fyne.Size
+	if r.m.customSized {
+		size = minSize.Max(s)
+	} else {
+		size = minSize
+	}
+	if size != r.m.Size() {
+		r.m.Resize(size)
+		return
+	}
+
 	r.LayoutShadow(size, fyne.NewPos(0, 0))
 	padding := r.padding()
 	r.cont.Resize(size.Subtract(padding))
 	r.cont.Move(fyne.NewPos(padding.Width/2, padding.Height/2))
 }
 
-// MinSize satisfies the fyne.WidgetRenderer interface.
 func (r *menuRenderer) MinSize() fyne.Size {
 	return r.cont.MinSize().Add(r.padding())
 }
 
-// Refresh satisfies the fyne.WidgetRenderer interface.
 func (r *menuRenderer) Refresh() {
 	canvas.Refresh(r.m)
 }

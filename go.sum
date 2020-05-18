@@ -1,5 +1,5 @@
-fyne.io/fyne v1.2.5-0.20200504083148-34534298ddfa h1:aloxyNNTZ24RocjS/QDqc58UP4H9U3xj3zc2ubxWSQE=
-fyne.io/fyne v1.2.5-0.20200504083148-34534298ddfa/go.mod h1:8LN/nrM9+1vAClaUUXB4fo9/omVGBmcyIgZ1p8kMW+w=
+fyne.io/fyne v1.2.5-0.20200517205229-914f5fd96fa5 h1:MUxVhmUSsyailV60Flzfynr0+gVN/2B05LIHrDr5hCA=
+fyne.io/fyne v1.2.5-0.20200517205229-914f5fd96fa5/go.mod h1:aAq4WmIwSqlS2K8Fct81ENxCWzJCIOWk8ndLi+/g88o=
 github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 h1:1qlsVAQJXZHsaM8b6OLVo6muQUQd4CwkH/D3fnnbHXA=
 github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298/go.mod h1:D+QujdIlUNfa0igpNMk6UIvlb6C252URs4yupRUV4lQ=
 github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 h1:lTG4HQym5oPKjL7nGs+csTgiDna685ZXjxijkne828g=
@@ -13,14 +13,16 @@ github.com/davecgh/go-spew v1.1.1 h1:vj9j/u1bqnvCEfJOwUhtlOARqs3+rkHYY13jYWTU97c
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/fsnotify/fsnotify v1.4.9 h1:hsms1Qyu0jgnwNXIxa+/V/PDsU6CfLf6CNO8H7IWoS4=
 github.com/fsnotify/fsnotify v1.4.9/go.mod h1:znqG4EE+3YCdAaPaxE2ZRY/06pZUdp0tY4IgpuI1SZQ=
-github.com/fyne-io/mobile v0.0.2-0.20200421111809-d9d371319719 h1:eRE3ElW0LlpTfyPp0GvZdXIIzBbfCuFtFJkqTRzWryQ=
-github.com/fyne-io/mobile v0.0.2-0.20200421111809-d9d371319719/go.mod h1:/kOrWrZB6sasLbEy2JIvr4arEzQTXBTZGb3Y96yWbHY=
+github.com/fyne-io/mobile v0.0.2-0.20200511203347-825e44fe5a95 h1:aj+YsmpJ5UY2YkUezODaM3XE0jS7TDBcWomFwpQCB1I=
+github.com/fyne-io/mobile v0.0.2-0.20200511203347-825e44fe5a95/go.mod h1:/kOrWrZB6sasLbEy2JIvr4arEzQTXBTZGb3Y96yWbHY=
 github.com/fyne-io/xgbutil v0.0.0-20191220152344-7d838166824d h1:8+poQtDqiRfAZmeyYRlInuaIBsQEflmxtpJeZklvNuE=
 github.com/fyne-io/xgbutil v0.0.0-20191220152344-7d838166824d/go.mod h1:vPqYMuTmTyrLNDQWQXy9lqdnV+WRQn6jhaSon8TppBs=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7 h1:SCYMcCJ89LjRGwEa0tRluNRiMjZHalQZrVrvTbPh+qw=
 github.com/go-gl/gl v0.0.0-20190320180904-bf2b1f2f34d7/go.mod h1:482civXOzJJCPzJ4ZOX/pwvXBWSnzD4OKMdH4ClKGbk=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4 h1:WtGNWLvXpe6ZudgnXrq0barxBImvnnJoMEhXAzcbM0I=
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200222043503-6f7a984d4dc4/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
+github.com/godbus/dbus/v5 v5.0.3 h1:ZqHaoEF7TBzh4jzPmqVhE/5A1z9of6orkAe5uHoAeME=
+github.com/godbus/dbus/v5 v5.0.3/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/godbus/dbus/v5 v5.0.4-0.20200513180336-df5ef3eb7cca h1:ewc47M3S8MAZgSO1yEnPrbmHjtQz6caAhYWOQzPHBok=
 github.com/godbus/dbus/v5 v5.0.4-0.20200513180336-df5ef3eb7cca/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/goki/freetype v0.0.0-20181231101311-fa8a33aabaff h1:W71vTCKoxtdXgnm1ECDFkfQnpdqAO00zzGXLA5yaEX8=
