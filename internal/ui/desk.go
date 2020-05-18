@@ -106,13 +106,14 @@ func (l *desktop) ensureSufficientRoots() {
 		}
 	} else {
 		diff := len(l.roots) - len(l.screens.Screens())
-		count := len(l.roots) - diff - 1
+		count := len(l.roots) - diff
 		for i := 0; i < diff; i++ {
 			root := l.roots[count]
 			root.SetOnClosed(nil)
 			bg := root.Content().(*fyne.Container).Objects[0].(*background)
 			delete(l.backgroundScreenMap, bg)
 			root.Close()
+			count++
 		}
 		l.roots = l.roots[:len(l.screens.Screens())]
 	}
