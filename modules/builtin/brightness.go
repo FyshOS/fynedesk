@@ -2,12 +2,14 @@ package builtin
 
 import (
 	"fmt"
+	"image/color"
 	"log"
 	"os/exec"
 	"strconv"
 	"strings"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
@@ -84,6 +86,10 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 
 	b.bar = widget.NewProgressBar()
 	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
+	prop := canvas.NewRectangle(color.Transparent)
+	prop.SetMinSize(brightnessIcon.MinSize().Add(fyne.NewSize(theme.Padding()*2, 0)))
+	icon := fyne.NewContainerWithLayout(layout.NewCenterLayout(), prop, brightnessIcon)
+
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
 		b.offsetValue(-5)
 	})
@@ -94,7 +100,7 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 		less, b.bar, more)
 
 	go b.offsetValue(0)
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright)
+	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, icon, nil), icon, bright)
 }
 
 // newBrightness creates a new module that will show screen brightness in the status area
