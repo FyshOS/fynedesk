@@ -371,8 +371,18 @@ func (f *frame) getInnerWindowCoordinates(w uint16, h uint16) (uint32, uint32, u
 
 	extraWidth := 2 * borderWidth
 	extraHeight := borderWidth + titleHeight
-	w -= extraWidth
-	h -= extraHeight
+	// uint underflow
+	if w > extraWidth {
+		w -= extraWidth
+	} else {
+		w = 0
+	}
+	if h > extraHeight {
+		h -= extraHeight
+	} else {
+		h = 0
+	}
+
 	adjustedW, adjustedH := windowSizeWithIncrement(f.client.wm.X(), f.client.win, w, h)
 	constrainW, constrainH := windowSizeConstrain(f.client.wm.X(), f.client.win,
 		adjustedW, adjustedH)
@@ -432,18 +442,26 @@ func (f *frame) mouseDrag(x, y int16) {
 		deltaX := x - f.resizeStartX
 		deltaY := y - f.resizeStartY
 		x := f.x
-		width := f.resizeStartWidth
-		height := f.resizeStartHeight
+		width := int16(f.resizeStartWidth)
+		height := int16(f.resizeStartHeight)
 		if f.resizeBottom {
-			height += uint16(deltaY)
+			height += deltaY
 		}
 		if f.resizeLeft {
 			x += moveDeltaX
-			width -= uint16(deltaX)
+			width -= deltaX
 		} else if f.resizeRight {
-			width += uint16(deltaX)
+			width += deltaX
 		}
-		f.updateGeometry(x, f.y, width, height, false)
+
+		// avoid uint underflow
+		if width < 0 {
+			width = 0
+		}
+		if height < 0 {
+			height = 0
+		}
+		f.updateGeometry(x, f.y, uint16(width), uint16(height), false)
 	} else if f.moveOnly {
 		f.updateGeometry(f.x+moveDeltaX, f.y+moveDeltaY, f.width, f.height, false)
 	}

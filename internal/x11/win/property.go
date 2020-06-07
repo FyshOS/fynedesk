@@ -156,26 +156,36 @@ func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, 
 		fyne.LogError("Could not apply requested increment", err)
 		return width, height
 	}
-	if (nh.Flags & icccm.SizeHintPResizeInc) > 0 {
-		var baseWidth, baseHeight uint16 = 0, 0
-		if nh.BaseWidth > 0 {
-			baseWidth = uint16(nh.BaseWidth)
-		} else {
-			minWidth, _ := windowSizeMin(x, win)
-			baseWidth = uint16(minWidth)
-		}
-		if nh.BaseHeight > 0 {
-			baseHeight = uint16(nh.BaseHeight)
-		} else {
-			_, minHeight := windowSizeMin(x, win)
-			baseHeight = uint16(minHeight)
-		}
-		if nh.WidthInc > 0 {
-			width = baseWidth + uint16((math.Round(float64(width-baseWidth)/float64(nh.WidthInc)))*float64(nh.WidthInc))
-		}
-		if nh.HeightInc > 0 {
-			height = baseHeight + uint16((math.Round(float64(height-baseHeight)/float64(nh.HeightInc)))*float64(nh.HeightInc))
-		}
+	if (nh.Flags & icccm.SizeHintPResizeInc) == 0 {
+		return width, height
+	}
+
+	var baseWidth, baseHeight uint16 = 0, 0
+	if nh.BaseWidth > 0 {
+		baseWidth = uint16(nh.BaseWidth)
+	} else {
+		minWidth, _ := windowSizeMin(x, win)
+		baseWidth = uint16(minWidth)
+	}
+	if nh.BaseHeight > 0 {
+		baseHeight = uint16(nh.BaseHeight)
+	} else {
+		_, minHeight := windowSizeMin(x, win)
+		baseHeight = uint16(minHeight)
+	}
+	// catch uint underflow
+	if width < baseWidth {
+		width = baseWidth
+	}
+	if height < baseHeight {
+		height = baseHeight
+	}
+
+	if nh.WidthInc > 0 {
+		width = baseWidth + uint16((math.Round(float64(width-baseWidth)/float64(nh.WidthInc)))*float64(nh.WidthInc))
+	}
+	if nh.HeightInc > 0 {
+		height = baseHeight + uint16((math.Round(float64(height-baseHeight)/float64(nh.HeightInc)))*float64(nh.HeightInc))
 	}
 	return width, height
 }
