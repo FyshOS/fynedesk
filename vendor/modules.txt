@@ -1,4 +1,4 @@
-# fyne.io/fyne v1.2.5-0.20200526133036-2cf1babe3a3d
+# fyne.io/fyne v1.3.0
 fyne.io/fyne
 fyne.io/fyne/app
 fyne.io/fyne/canvas
@@ -54,7 +54,7 @@ github.com/BurntSushi/xgbutil/xwindow
 github.com/davecgh/go-spew/spew
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
-# github.com/fyne-io/mobile v0.0.2-0.20200511203347-825e44fe5a95
+# github.com/fyne-io/mobile v0.0.2
 github.com/fyne-io/mobile/app
 github.com/fyne-io/mobile/app/internal/callfn
 github.com/fyne-io/mobile/event/key

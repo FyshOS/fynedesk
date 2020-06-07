@@ -63,7 +63,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 	bgButtons := widget.NewHBox(bgPathClear,
 		widget.NewButtonWithIcon("", theme.SearchIcon(), func() {
-			dialog.ShowFileOpen(func(file fyne.FileReadCloser, err error) {
+			dialog.ShowFileOpen(func(file fyne.URIReadCloser, err error) {
 				if err != nil || file == nil {
 					return
 				}

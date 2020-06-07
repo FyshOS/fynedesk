@@ -621,16 +621,11 @@ func (w *window) mouseClicked(_ *glfw.Window, btn glfw.MouseButton, action glfw.
 		}
 	}
 
-	needsfocus := false
 	if layer != 1 { // 0 - overlay, 1 - menu, 2 - content
-		needsfocus = true
-
-		if wid := w.canvas.Focused(); wid != nil {
-			if wid.(fyne.CanvasObject) != co {
-				w.canvas.Unfocus()
-			} else {
-				needsfocus = false
-			}
+		if wid, ok := co.(fyne.Focusable); ok {
+			w.canvas.Focus(wid)
+		} else {
+			w.canvas.Unfocus()
 		}
 	}
 
@@ -638,13 +633,6 @@ func (w *window) mouseClicked(_ *glfw.Window, btn glfw.MouseButton, action glfw.
 		w.mouseButton = button
 	} else if action == glfw.Release {
 		w.mouseButton = 0
-	}
-
-	// we cannot switch here as objects may respond to multiple cases
-	if wid, ok := co.(fyne.Focusable); ok && needsfocus {
-		if dis, ok := wid.(fyne.Disableable); !ok || !dis.Disabled() {
-			w.canvas.Focus(wid)
-		}
 	}
 
 	// Check for double click/tap
@@ -800,6 +788,7 @@ var keyCodeMap = map[glfw.Key]fyne.KeyName{
 	glfw.KeyLeftSuper:    desktop.KeySuperLeft,
 	glfw.KeyRightSuper:   desktop.KeySuperRight,
 	glfw.KeyMenu:         desktop.KeyMenu,
+	glfw.KeyCapsLock:     desktop.KeyCapsLock,
 }
 
 var keyNameMap = map[string]fyne.KeyName{
