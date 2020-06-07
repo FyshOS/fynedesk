@@ -338,10 +338,14 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 }
 
 func (f *frame) freePixmaps() {
-	xproto.FreePixmap(f.client.wm.Conn(), f.borderTop)
-	f.borderTop = 0
-	xproto.FreePixmap(f.client.wm.Conn(), f.borderTopRight)
-	f.borderTopRight = 0
+	if f.borderTop != 0 {
+		xproto.FreePixmap(f.client.wm.Conn(), f.borderTop)
+		f.borderTop = 0
+	}
+	if f.borderTopRight != 0 {
+		xproto.FreePixmap(f.client.wm.Conn(), f.borderTopRight)
+		f.borderTopRight = 0
+	}
 }
 
 func (f *frame) getGeometry() (int16, int16, uint16, uint16) {
@@ -682,8 +686,7 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 }
 
 func (f *frame) updateScale() {
-	f.freePixmaps()
-
+	// update border offset for current scale and redraw borders
 	f.updateGeometry(f.x, f.y, f.width, f.height, true)
 	f.applyTheme(true)
 }

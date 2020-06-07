@@ -196,6 +196,9 @@ func (x *x11WM) bindShortcut(short *fynedesk.Shortcut, win xproto.Window) {
 	}
 
 	xproto.GrabKey(x.x.Conn(), true, win, mask, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	if mask == xproto.ModMaskAny {
+		return // no need for the extra binds
+	}
 	xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMaskLock, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
 	xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMask2, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
 	xproto.GrabKey(x.x.Conn(), true, win, mask|xproto.ModMask3, code, xproto.GrabModeAsync, xproto.GrabModeAsync)
