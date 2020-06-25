@@ -291,7 +291,7 @@ func (x *x11WM) handleScreenChange(timestamp xproto.Timestamp) {
 		return
 	}
 	desk.Screens().RefreshScreens()
-	x.configureRoots(x.x.RootWin())
+	x.configureRoots()
 }
 
 func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeState func(), addState func(), toggleCheck bool) {

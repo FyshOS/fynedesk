@@ -129,7 +129,7 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 				c.(x11.XWin).SettingsChanged()
 			}
 			mgr.setupX11DPIForScale(s.Scale())
-			mgr.configureRoots(mgr.x.RootWin())
+			mgr.configureRoots()
 		}
 	}()
 
@@ -273,7 +273,9 @@ func (x *x11WM) runLoop() {
 		case xproto.ClientMessageEvent:
 			x.handleClientMessage(ev)
 		case xproto.ConfigureNotifyEvent:
-			x.configureRoots(ev.Window)
+			if ev.Window == x.x.RootWin() {
+				x.configureRoots()
+			}
 		case xproto.ConfigureRequestEvent:
 			x.configureWindow(ev.Window, ev)
 		case xproto.CreateNotifyEvent:
@@ -312,8 +314,8 @@ func (x *x11WM) runLoop() {
 	fyne.LogError("X11 connection terminated!", nil)
 }
 
-func (x *x11WM) configureRoots(win xproto.Window) {
-	if win != x.x.RootWin() || fynedesk.Instance() == nil {
+func (x *x11WM) configureRoots() {
+	if fynedesk.Instance() == nil {
 		return
 	}
 	width, height := 0, 0
@@ -392,6 +394,8 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
 			BorderWidth: 0, OverrideRedirect: false}
 		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
+
+		x.configureRoots() // we added a root window, so reconfigure
 		break
 	}
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
