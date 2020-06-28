@@ -48,9 +48,9 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	iconLeft := barLeft
 
 	mouseX := bl.mousePosition.X
-	zoom := bl.mouseInside && mouseX >= barLeft && mouseX < barLeft+barWidth
+	zoom := !bl.bar.disableZoom && bl.mouseInside && mouseX >= barLeft && mouseX < barLeft+barWidth
 	for _, child := range objects {
-		if zoom && !bl.bar.disableZoom {
+		if zoom {
 			if _, ok := child.(*canvas.Rectangle); ok {
 				child.Resize(fyne.NewSize(separatorWidth, bl.bar.iconSize))
 				if iconLeft+separatorWidth+theme.Padding() < mouseX {
@@ -93,18 +93,23 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 
 	x := barLeft - int(offset)
 	zoomLeft := x
+	tallHeight := int(float32(bl.bar.iconSize) * bl.bar.iconScale)
 	for _, child := range objects {
 		width := child.Size().Width
 		height := child.Size().Height
 
-		if bl.mouseInside {
-			child.Move(fyne.NewPos(x, int(float32(bl.bar.iconSize)*bl.bar.iconScale)-height))
+		if zoom {
+			if _, ok := child.(*canvas.Rectangle); ok {
+				child.Move(fyne.NewPos(x, bl.bar.iconSize))
+			} else {
+				child.Move(fyne.NewPos(x, tallHeight-height))
+			}
 		} else {
 			child.Move(fyne.NewPos(x, 0))
 		}
 		x += width + theme.Padding()
 	}
-	if bl.mouseInside && !bl.bar.disableZoom {
+	if zoom {
 		bg.Move(fyne.NewPos(zoomLeft-theme.Padding(), bl.bar.iconSize))
 	} else {
 		bg.Move(fyne.NewPos(zoomLeft-theme.Padding(), 0))
@@ -124,8 +129,10 @@ func (bl *barLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	} else {
 		barWidth = iconCount * (bl.bar.iconSize + theme.Padding())
 	}
-	if bl.mouseInside {
 
+	barLeft := (bl.bar.Size().Width - barWidth) / 2
+	mouseX := bl.mousePosition.X
+	if !bl.bar.disableZoom && bl.mouseInside && mouseX >= barLeft && mouseX < barLeft+barWidth {
 		return fyne.NewSize(barWidth, int(float32(bl.bar.iconSize)*bl.bar.iconScale))
 	}
 
