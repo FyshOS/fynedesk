@@ -179,7 +179,7 @@ func (s *Switcher) loadUI() fyne.Window {
 		win = d.CreateSplashWindow()
 		win.SetPadded(true)
 	} else {
-		win = fyne.CurrentApp().NewWindow("Application instance")
+		win = fyne.CurrentApp().NewWindow("Window switcher")
 	}
 
 	win.SetContent(widget.NewHBox(s.icons...))
