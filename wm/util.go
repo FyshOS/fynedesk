@@ -10,6 +10,10 @@ import (
 // FindObjectAtPixelPositionMatching looks for objects in the given canvas that are under pixel
 // position at x, y. Objects must match the criteria in 'fn' and the first match will be returned.
 func FindObjectAtPixelPositionMatching(x, y int, c fyne.Canvas, fn func(fyne.CanvasObject) bool) fyne.CanvasObject {
+	if c == nil {
+		return nil
+	}
+
 	pos := fyne.NewPos(unscaleInt(c, x), unscaleInt(c, y))
 	obj, _ := findObjectAtPositionMatching(pos, fn, c.Content())
 	return obj
