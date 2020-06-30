@@ -1,6 +1,7 @@
 package builtin
 
 import (
+	"errors"
 	"fmt"
 	"image/color"
 	"log"
@@ -36,6 +37,9 @@ func (b *brightness) value() (float64, error) {
 	if err != nil {
 		log.Println("Error running xbacklight", err)
 		return 0, err
+	}
+	if strings.TrimSpace(string(out)) == "" {
+		return 0, errors.New("no back-lit screens found")
 	}
 	ret, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
 	if err != nil {
