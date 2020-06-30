@@ -1,8 +1,8 @@
-# If DESTDIR is not provided, we default to /usr/local if it exists and if it doesn't we fall back /usr.
+# If PREFIX isn't provided, we check for /usr/local and use that if it exists. Otherwice we fall back to using /usr.
 ifneq ("$(wildcard /usr/local)","")
-DESTDIR ?= /usr/local
+PREFIX ?= /usr/local
 else
-DESTDIR ?= /usr
+PREFIX ?= /usr
 endif
 
 build:
@@ -10,7 +10,6 @@ build:
 	go build ./cmd/fynedesk || (echo "Failed to build fynedesk"; exit 1)
 
 install:
-	cp cmd/fynedesk_runner/fynedesk_runner $(DESTDIR)/bin
-	cp cmd/fynedesk/fynedesk $(DESTDIR)$(PREFIX)/bin
-	cp fynedesk.desktop $(DESTDIR)/share/xsessions
-
+	install -Dm00755 fynedesk_runner $(DESTDIR)$(PREFIX)/bin/fynedesk_runner
+	install -Dm00755 fynedesk $(DESTDIR)$(PREFIX)/bin/fynedesk
+	install -Dm00644 fynedesk.desktop $(DESTDIR)$(PREFIX)/share/xsessions/fynedesk.desktop
