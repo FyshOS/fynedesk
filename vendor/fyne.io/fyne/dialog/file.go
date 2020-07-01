@@ -262,15 +262,31 @@ func (f *fileDialog) setSelected(file *fileDialogItem) {
 	}
 }
 
+// effectiveStartingDir calculates the directory at which the file dialog
+// should open, based on the values of  CWD, home, and any error conditions
+// which occur.
+//
+// Order of precedence is:
+//
+// * os.UserHomeDir()
+// * "/" (should be filesystem root on all supported platforms)
+func (f *FileDialog) effectiveStartingDir() string {
+
+	// Try home dir
+	dir, err := os.UserHomeDir()
+	if err == nil {
+		return dir
+	}
+	fyne.LogError("Could not load user home dir", err)
+
+	return "/"
+}
+
 func showFile(file *FileDialog) *fileDialog {
 	d := &fileDialog{file: file}
 	ui := d.makeUI()
-	dir, err := os.UserHomeDir()
-	if err != nil {
-		fyne.LogError("Could not load user home dir", err)
-		dir, _ = os.Getwd() //fallback
-	}
-	d.setDirectory(dir)
+
+	d.setDirectory(file.effectiveStartingDir())
 
 	size := ui.MinSize().Add(fyne.NewSize(fileIconCellWidth*2+theme.Padding()*4,
 		(fileIconSize+fileTextSize)+theme.Padding()*4))
