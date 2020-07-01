@@ -99,6 +99,10 @@ func fdoLookupXdgDataDirs() []string {
 	locationLookup := strings.Split(dataLocation, ":")
 	if len(locationLookup) == 0 || (len(locationLookup) == 1 && locationLookup[0] == "") {
 		var fallbackLocations []string
+		homeDir, err := os.UserHomeDir()
+		if err == nil {
+			fallbackLocations = append(fallbackLocations, filepath.Join(homeDir, ".local/share"))
+		}
 		fallbackLocations = append(fallbackLocations, "/usr/local/share")
 		fallbackLocations = append(fallbackLocations, "/usr/share")
 		return fallbackLocations
