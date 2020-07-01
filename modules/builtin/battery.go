@@ -39,8 +39,11 @@ func pickChargeOrEnergy() (string, string) {
 
 func (b *battery) value() (float64, error) {
 	nowFile, fullFile := pickChargeOrEnergy()
-	nowStr, err1 := ioutil.ReadFile(nowFile)
-	fullStr, err2 := ioutil.ReadFile(fullFile)
+	fullStr, err1 := ioutil.ReadFile(fullFile)
+	if os.IsNotExist(err1) {
+		return 0, err1 // return quietly if the file was not present (desktop?)
+	}
+	nowStr, err2 := ioutil.ReadFile(nowFile)
 	if err1 != nil || err2 != nil {
 		log.Println("Error reading battery info", err1)
 		return 0, err1
