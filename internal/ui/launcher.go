@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fyne.io/fyne"
+	deskDriver "fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
@@ -98,7 +99,14 @@ func (l *picker) Show() {
 }
 
 func newAppPicker(title string, callback func(fynedesk.AppData)) *picker {
-	win := fyne.CurrentApp().NewWindow(title)
+	var win fyne.Window
+	if d, ok := fyne.CurrentApp().Driver().(deskDriver.Driver); ok {
+		win = d.CreateSplashWindow()
+		win.SetPadded(true)
+	} else {
+		win = fyne.CurrentApp().NewWindow(title)
+	}
+
 	win.Canvas().SetOnTypedKey(func(ev *fyne.KeyEvent) {
 		if ev.Name == fyne.KeyEscape {
 			win.Close()
