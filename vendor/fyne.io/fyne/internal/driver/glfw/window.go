@@ -273,7 +273,7 @@ func (w *window) fitContent() {
 		if w.height < minHeight {
 			w.height = minHeight
 		}
-		w.viewport.SetSize(w.width, w.height)
+		w.shouldExpand = true // queue the resize to happen on main
 	}
 	if w.fixedSize {
 		w.width = internal.ScaleInt(w.canvas, w.Canvas().Size().Width)
@@ -356,6 +356,10 @@ func (w *window) doShow() {
 		w.visible = true
 		w.viewLock.Unlock()
 		w.viewport.SetTitle(w.title)
+
+		if w.centered {
+			w.doCenterOnScreen() // lastly center if that was requested
+		}
 		w.viewport.Show()
 
 		// save coordinates
@@ -381,9 +385,9 @@ func (w *window) Hide() {
 	}
 
 	runOnMain(func() {
-		w.viewport.Hide()
 		w.viewLock.Lock()
 		w.visible = false
+		w.viewport.Hide()
 		w.viewLock.Unlock()
 
 		// hide top canvas element
@@ -502,16 +506,12 @@ func (w *window) resized(_ *glfw.Window, width, height int) {
 		w.height = internal.ScaleInt(w.canvas, canvasSize.Height)
 	}
 
-	d, ok := fyne.CurrentApp().Driver().(*gLDriver)
-	if !ok || !w.visible { // don't wait to redraw in this way if we are running on test or not yet drawn
+	if !w.visible { // don't redraw if hidden
 		w.canvas.Resize(canvasSize)
 		return
 	}
 
-	runOnDraw(w, func() {
-		w.canvas.Resize(canvasSize)
-		d.repaintWindow(w)
-	})
+	w.platformResize(canvasSize)
 }
 
 func (w *window) frameSized(viewport *glfw.Window, width, height int) {
@@ -1077,7 +1077,7 @@ func (w *window) queueEvent(fn func()) {
 	select {
 	case w.eventQueue <- fn:
 	default:
-		fyne.LogError("EventQueue full", nil)
+		fyne.LogError("EventQueue full, perhaps a callback blocked the event handler", nil)
 	}
 }
 
@@ -1200,11 +1200,11 @@ func (w *window) create() {
 			fn()
 		}
 
+		if w.fixedSize { // as the window will not be sized later we may need to pack menus etc
+			w.canvas.Resize(w.canvas.Size())
+		}
 		// order of operation matters so we do these last items in order
 		w.viewport.SetSize(w.width, w.height) // ensure we requested latest size
-		if w.centered {
-			w.doCenterOnScreen() // lastly center if that was requested
-		}
 	})
 }
 

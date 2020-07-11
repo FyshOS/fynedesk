@@ -10,7 +10,6 @@ import (
 func (l *desktop) newDesktopWindowFull(outputName string) fyne.Window {
 	desk := l.app.NewWindow(fmt.Sprintf("%s%s", RootWindowName, outputName))
 	desk.SetPadded(false)
-	desk.SetFullScreen(true)
 
 	return desk
 }
