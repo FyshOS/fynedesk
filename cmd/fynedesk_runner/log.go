@@ -37,7 +37,8 @@ func logPathRelativeTo(parent string) string {
 	return filepath.Join(logDir(parent), "fynedesk.log")
 }
 
-// openLogWriter returns the log file for stdOut and stdErr of the process we run
+// openLogWriter returns the log file that can be used to write stdOut and
+// stdErr of the process we run
 func openLogWriter() *os.File {
 	f, err := os.Create(logPath())
 	if err != nil {
