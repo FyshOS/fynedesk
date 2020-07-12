@@ -50,6 +50,8 @@ github.com/BurntSushi/xgbutil/xgraphics
 github.com/BurntSushi/xgbutil/xprop
 github.com/BurntSushi/xgbutil/xrect
 github.com/BurntSushi/xgbutil/xwindow
+# github.com/Knetic/govaluate v3.0.0+incompatible
+github.com/Knetic/govaluate
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/fsnotify/fsnotify v1.4.9
