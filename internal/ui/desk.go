@@ -14,6 +14,8 @@ import (
 const (
 	// RootWindowName is the base string that all root windows will have in their title and is used to identify root windows.
 	RootWindowName = "Fyne Desktop"
+	// SkipTaskbarHint should be added to the title of normal windows that should be skipped like the X11 SkipTaskbar hint.
+	SkipTaskbarHint = "FyneDesk:skip"
 )
 
 type desktop struct {

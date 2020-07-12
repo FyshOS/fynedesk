@@ -3,9 +3,12 @@
 package win
 
 import (
+	"strings"
+
 	"fyne.io/fyne"
 
 	"fyne.io/fynedesk"
+	"fyne.io/fynedesk/internal/ui"
 	"fyne.io/fynedesk/internal/x11"
 )
 
@@ -53,6 +56,10 @@ func (c *clientProperties) IconName() string {
 }
 
 func (c *clientProperties) SkipTaskbar() bool {
+	if strings.Contains(c.Title(), ui.SkipTaskbarHint) { // a small hack for fyne windows we should ignore
+		return true
+	}
+
 	extendedHints := x11.WindowExtendedHintsGet(c.c.wm.X(), c.c.win)
 	if extendedHints == nil {
 		return false

@@ -173,17 +173,18 @@ func (s *Switcher) raise(icon *switchIcon) {
 	icon.win.RaiseToTop()
 }
 
-func (s *Switcher) loadUI() fyne.Window {
+func (s *Switcher) loadUI(title string) fyne.Window {
 	var win fyne.Window
 	if d, ok := fyne.CurrentApp().Driver().(deskDriver.Driver); ok {
 		win = d.CreateSplashWindow()
 		win.SetPadded(true)
 	} else {
-		win = fyne.CurrentApp().NewWindow("Window switcher")
+		win = fyne.CurrentApp().NewWindow(title)
 	}
 
 	win.SetContent(widget.NewHBox(s.icons...))
 	win.CenterOnScreen()
+	win.SetTitle(title)
 
 	return win
 }
@@ -217,7 +218,7 @@ func showAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.Applicatio
 
 	s := &Switcher{provider: prov}
 	s.icons = s.loadIcons(wins)
-	s.win = s.loadUI()
+	s.win = s.loadUI("Window switcher " + SkipTaskbarHint)
 	if off < 0 {
 		off = len(s.icons) + off // plus a negative is minus
 	}

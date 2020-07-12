@@ -103,6 +103,7 @@ func newAppPicker(title string, callback func(fynedesk.AppData)) *picker {
 	if d, ok := fyne.CurrentApp().Driver().(deskDriver.Driver); ok {
 		win = d.CreateSplashWindow()
 		win.SetPadded(true)
+		win.SetTitle(title)
 	} else {
 		win = fyne.CurrentApp().NewWindow(title)
 	}
@@ -151,7 +152,7 @@ func ShowAppLauncher() {
 		return
 	}
 
-	appExec = newAppPicker("Application Launcher", func(app fynedesk.AppData) {
+	appExec = newAppPicker("Application Launcher "+SkipTaskbarHint, func(app fynedesk.AppData) {
 		err := fynedesk.Instance().RunApp(app)
 		if err != nil {
 			fyne.LogError("Failed to start app", err)
