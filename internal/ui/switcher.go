@@ -2,6 +2,7 @@ package ui
 
 import (
 	"image/color"
+	"time"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
@@ -202,13 +203,16 @@ func (s *Switcher) loadIcons(list []fynedesk.Window) []fyne.CanvasObject {
 // HideApply dismisses the application Switcher and raises
 // whichever window was selected.
 func (s *Switcher) HideApply() {
-	s.HideCancel()
 	s.raise(s.win.Canvas().Focused().(*switchIcon))
+	s.HideCancel()
 }
 
 // HideCancel dismisses the application Switcher without changing window order.
 func (s *Switcher) HideCancel() {
-	s.win.Close()
+	go func() {
+		time.Sleep(time.Millisecond * 100)
+		s.win.Close()
+	}()
 }
 
 func showAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {

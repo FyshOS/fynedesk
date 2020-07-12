@@ -637,17 +637,6 @@ func (f *frame) show() {
 	c.Focus()
 }
 
-func (f *frame) unFrame() {
-	c := f.client
-	c.wm.RemoveWindow(c)
-
-	if f != nil {
-		xproto.ReparentWindow(c.wm.Conn(), c.win, c.wm.X().RootWin(), f.x, f.y)
-	}
-	xproto.ChangeSaveSet(c.wm.Conn(), xproto.SetModeDelete, c.win)
-	xproto.UnmapWindow(c.wm.Conn(), c.id)
-}
-
 func (f *frame) unmaximizeApply() {
 	if windowSizeFixed(f.client.wm.X(), f.client.win) ||
 		!windowSizeCanMaximize(f.client.wm.X(), f.client) {

@@ -52,6 +52,9 @@ func (x *x11WM) previousAppSwitcher() {
 }
 
 func (x *x11WM) showOrSelectAppSwitcher(reverse bool) {
+	if len(x.clients) <= 1 {
+		return
+	}
 	xproto.GrabKeyboard(x.x.Conn(), true, x.x.RootWin(), xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
 
 	if switcherInstance != nil {

@@ -263,7 +263,7 @@ func (c *client) RaiseToTop() {
 }
 
 func (c *client) Refresh() {
-	if c.frame == nil {
+	if c.frame == nil || !c.props.Decorated() {
 		return
 	}
 
