@@ -398,9 +398,12 @@ func (f *frame) getInnerWindowCoordinates(w uint16, h uint16) (uint32, uint32, u
 }
 
 func (f *frame) hide() {
-	f.client.RaiseToTop() // Lets ensure this client is on top of the stack so we can walk backwards to find the next window to focus
 	stack := f.client.wm.Windows()
 	for i := len(stack) - 1; i >= 0; i-- {
+		if stack[i] == (interface{})(f.client).(fynedesk.Window) {
+			continue
+		}
+
 		if !stack[i].Iconic() {
 			stack[i].RaiseToTop()
 			stack[i].Focus()
