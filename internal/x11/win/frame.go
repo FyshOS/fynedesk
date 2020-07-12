@@ -202,6 +202,11 @@ func (f *frame) applyTheme(force bool) {
 func (f *frame) checkScale() {
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
 	borderWidth := x11.BorderWidth(x11.XWin(f.client))
+	if !f.client.props.Decorated() {
+		titleHeight = 0
+		borderWidth = 0
+	}
+
 	if f.height-titleHeight-borderWidth != f.childHeight {
 		f.updateGeometry(f.x, f.y, f.width, f.height, true)
 		f.notifyInnerGeometry()

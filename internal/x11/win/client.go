@@ -167,6 +167,7 @@ func (c *client) Maximized() bool {
 }
 
 func (c *client) NotifyBorderChange() {
+	c.props.refreshCache()
 	if c.Properties().Decorated() {
 		c.frame.addBorder()
 	} else {

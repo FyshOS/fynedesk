@@ -14,12 +14,14 @@ import (
 
 type clientProperties struct {
 	c         *client
+	decorated bool
 	iconCache fyne.Resource
 }
 
 func (c *client) Properties() fynedesk.WindowProperties {
 	if c.props == nil {
 		c.props = &clientProperties{c: c}
+		c.props.refreshCache()
 	}
 
 	return c.props
@@ -33,7 +35,11 @@ func (c *clientProperties) Command() string {
 	return windowCommand(c.c.wm.X(), c.c.win)
 }
 
-func (c clientProperties) Decorated() bool {
+func (c *clientProperties) Decorated() bool {
+	return c.decorated
+}
+
+func (c *clientProperties) lookupDecorated() bool {
 	return !windowBorderless(c.c.wm.X(), c.c.win)
 }
 
@@ -74,4 +80,9 @@ func (c *clientProperties) SkipTaskbar() bool {
 
 func (c *clientProperties) Title() string {
 	return x11.WindowName(c.c.wm.X(), c.c.win)
+}
+
+func (c *clientProperties) refreshCache() {
+	c.iconCache = nil
+	c.decorated = c.lookupDecorated()
 }
