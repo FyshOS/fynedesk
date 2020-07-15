@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne"
 
 	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 var urlMeta = fynedesk.ModuleMetadata{
@@ -49,7 +50,7 @@ type urlResult struct {
 }
 
 func (r *urlResult) Icon() fyne.Resource {
-	return nil
+	return wmTheme.InternetIcon
 }
 
 func (r *urlResult) Title() string {

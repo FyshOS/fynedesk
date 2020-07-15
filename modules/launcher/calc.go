@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne"
 
 	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 
 	"github.com/Knetic/govaluate"
 )
@@ -74,7 +75,7 @@ type calcItem struct {
 }
 
 func (i *calcItem) Icon() fyne.Resource {
-	return nil
+	return wmTheme.CalculateIcon
 }
 
 func (i *calcItem) Title() string {

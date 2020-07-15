@@ -19,10 +19,15 @@ var (
 	BatteryIcon = theme.NewThemedResource(batteryIcon, nil)
 	// BrightnessIcon is the material design icon for brightness in light and dark theme
 	BrightnessIcon = theme.NewThemedResource(brightnessIcon, nil)
-	// UserIcon is the material design icon for a user in light and dark theme
-	UserIcon = theme.NewThemedResource(personIcon, nil)
+	// CalculateIcon is the material design icon for a calculator in light and dark theme
+	CalculateIcon = theme.NewThemedResource(calculateIcon, nil)
 	// DisplayIcon is the material design icon for computer displays in light and dark theme
 	DisplayIcon = theme.NewThemedResource(displayIcon, nil)
+	// InternetIcon is the material design icon for the internet in light and dark theme
+	InternetIcon = theme.NewThemedResource(internetIcon, nil)
+	// UserIcon is the material design icon for a user in light and dark theme
+	UserIcon = theme.NewThemedResource(personIcon, nil)
+
 	// BrokenImageIcon is the material design icon for a broken image
 	BrokenImageIcon = theme.NewThemedResource(brokenImageIcon, nil)
 	// MaximizeIcon is the material design icon for maximizing a window
