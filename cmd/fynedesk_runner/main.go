@@ -10,10 +10,23 @@ import (
 const runCmd = "fynedesk"
 
 func main() {
+	_ = os.Remove(logPath()) // remove old logs
+
 	for {
+		logFile := logPath()
+		if _, err := os.Stat(logFile); err == nil {
+			crashFile := crashLogPath()
+			err = os.Rename(logFile, crashFile)
+			if err != nil {
+				log.Println("Could not save crash file", crashFile)
+			}
+		}
+
 		exe := exec.Command(runCmd)
 		exe.Env = append(os.Environ(), "FYNE_DESK_RUNNER=1")
-		exe.Stdout, exe.Stderr = openLogWriter()
+		// logger will be closed at the end of this for loop
+		logger := openLogWriter()
+		exe.Stdout, exe.Stderr = logger, logger
 		err := exe.Run()
 		if err == nil {
 			return
@@ -37,5 +50,8 @@ func main() {
 				log.Println("Restart from status", status)
 			}
 		}
+
+		// close before starting next run
+		_ = logger.Close()
 	}
 }
