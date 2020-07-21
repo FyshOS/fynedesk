@@ -3,7 +3,9 @@
 package win
 
 import (
+	"context"
 	"image"
+	"time"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/driver/desktop"
@@ -34,6 +36,10 @@ type frame struct {
 
 	borderTop, borderTopRight xproto.Pixmap
 	borderTopWidth            uint16
+
+	doubleClick bool
+	ctx context.Context
+	cancelFunc context.CancelFunc
 
 	canvas fyne.Canvas
 	client *client
@@ -579,17 +585,40 @@ func (f *frame) mouseRelease(x, y int16) {
 		return
 	}
 
-	obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
-		func(obj fyne.CanvasObject) bool {
-			_, ok := obj.(fyne.Tappable)
-			return ok
-		},
-	)
-
-	if obj == nil {
+	if f.ctx != nil && f.cancelFunc != nil {
+		f.doubleClick = true
+		f.cancelFunc()
 		return
 	}
-	obj.(fyne.Tappable).Tapped(&fyne.PointEvent{})
+	go func() {
+		f.ctx, f.cancelFunc = context.WithDeadline(context.TODO(), time.Now().Add(time.Millisecond*300))
+		defer f.cancelFunc()
+		select {
+		case <-f.ctx.Done():
+			if f.doubleClick == true {
+				if f.client.Maximized() {
+					f.client.Unmaximize()
+				} else {
+					f.client.Maximize()
+				}
+			} else {
+				obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
+					func(obj fyne.CanvasObject) bool {
+						_, ok := obj.(fyne.Tappable)
+						return ok
+					},
+				)
+
+				if obj != nil {
+					obj.(fyne.Tappable).Tapped(&fyne.PointEvent{})
+				}
+			}
+			f.ctx = nil
+			f.cancelFunc = nil
+			f.doubleClick = false
+			return
+		}
+	}()
 }
 
 // Notify the child window that it's geometry has changed to update menu positions etc.
