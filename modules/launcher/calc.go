@@ -13,7 +13,7 @@ import (
 )
 
 var calcMeta = fynedesk.ModuleMetadata{
-	Name:        "Launch Calculations",
+	Name:        "Launcher: Calculate",
 	NewInstance: newCalcSuggest,
 }
 

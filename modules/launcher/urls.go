@@ -11,7 +11,7 @@ import (
 )
 
 var urlMeta = fynedesk.ModuleMetadata{
-	Name:        "Launch URLs",
+	Name:        "Launcher: Open URLs",
 	NewInstance: newURLs,
 }
 
@@ -60,9 +60,9 @@ func (r *urlResult) Title() string {
 func (r *urlResult) Launch() {
 	u, err := url.Parse(r.url)
 	if err != nil {
-		fyne.LogError("COuld not parse URL", err)
+		fyne.LogError("Could not parse URL", err)
 		return
 	}
 
-	fyne.CurrentApp().OpenURL(u)
+	_ = fyne.CurrentApp().OpenURL(u)
 }
