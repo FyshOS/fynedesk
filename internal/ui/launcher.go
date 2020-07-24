@@ -37,6 +37,7 @@ type picker struct {
 	win      fyne.Window
 	desk     fynedesk.Desktop
 	callback func(data fynedesk.AppData)
+	showMods bool
 
 	entry       *appEntry
 	appList     *fyne.Container
@@ -91,11 +92,43 @@ func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 		appList = append(appList, app)
 	}
 
-	return appList
+	if len(appList) > 0 {
+		return appList
+	}
+	if l.showMods {
+		return l.listSuggestions(input)
+	}
+
+	return nil
 }
 
 func (l *picker) Show() {
 	l.win.Show()
+}
+
+func (l *picker) listSuggestions(input string) []fyne.CanvasObject {
+	var appList []fyne.CanvasObject
+
+	for _, m := range l.desk.Modules() {
+		if suggest, ok := m.(fynedesk.LaunchSuggestionModule); ok {
+			items := suggest.LaunchSuggestions(input)
+
+			for _, item := range items {
+				launchData := item // capture for goroutine below
+				app := widget.NewButtonWithIcon(launchData.Title(), launchData.Icon(), func() {
+					launchData.Launch()
+					l.win.Close()
+				})
+
+				if len(appList) == 0 {
+					app.Style = widget.PrimaryButton
+				}
+				appList = append(appList, app)
+			}
+		}
+	}
+
+	return appList
 }
 
 func newAppPicker(title string, callback func(fynedesk.AppData)) *picker {
@@ -159,6 +192,7 @@ func ShowAppLauncher() {
 			return
 		}
 	})
+	appExec.showMods = true
 	appExec.win.SetOnClosed(func() {
 		appExec = nil
 	})

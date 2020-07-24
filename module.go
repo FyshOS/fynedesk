@@ -20,6 +20,19 @@ type Module interface {
 	Destroy()
 }
 
+// LaunchSuggestion represents an item that can appear in the app launcher and be actioned on tap
+type LaunchSuggestion interface {
+	Icon() fyne.Resource
+	Title() string
+	Launch()
+}
+
+// LaunchSuggestionModule is a module that can provide suggestions for the app launcher
+type LaunchSuggestionModule interface {
+	Module
+	LaunchSuggestions(string) []LaunchSuggestion
+}
+
 // StatusAreaModule describes a module that can add items to the status area
 // (the bottom of the widget panel)
 type StatusAreaModule interface {

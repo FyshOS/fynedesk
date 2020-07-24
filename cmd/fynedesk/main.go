@@ -4,7 +4,8 @@ import (
 	"fyne.io/fyne/app"
 	"fyne.io/fyne/theme"
 
-	_ "fyne.io/fynedesk/modules/builtin"
+	_ "fyne.io/fynedesk/modules/launcher"
+	_ "fyne.io/fynedesk/modules/status"
 )
 
 func main() {
