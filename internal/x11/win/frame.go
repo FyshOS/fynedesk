@@ -37,8 +37,7 @@ type frame struct {
 	borderTop, borderTopRight xproto.Pixmap
 	borderTopWidth            uint16
 
-	doubleClick bool
-	ctx context.Context
+	clickCount int
 	cancelFunc context.CancelFunc
 
 	canvas fyne.Canvas
@@ -584,41 +583,47 @@ func (f *frame) mouseRelease(x, y int16) {
 	if relY > barYMax {
 		return
 	}
+	f.clickCount++
 
-	if f.ctx != nil && f.cancelFunc != nil {
-		f.doubleClick = true
+	if f.cancelFunc != nil {
 		f.cancelFunc()
 		return
 	}
-	go func() {
-		f.ctx, f.cancelFunc = context.WithDeadline(context.TODO(), time.Now().Add(time.Millisecond*300))
-		defer f.cancelFunc()
-		select {
-		case <-f.ctx.Done():
-			if f.doubleClick == true {
-				if f.client.Maximized() {
-					f.client.Unmaximize()
-				} else {
-					f.client.Maximize()
-				}
-			} else {
-				obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
-					func(obj fyne.CanvasObject) bool {
-						_, ok := obj.(fyne.Tappable)
-						return ok
-					},
-				)
+	go f.mouseReleaseWaitForDoubleClick(int(relX), int(relY))
+}
 
-				if obj != nil {
-					obj.(fyne.Tappable).Tapped(&fyne.PointEvent{})
-				}
+func (f* frame) mouseReleaseWaitForDoubleClick(relX int, relY int) {
+	var ctx context.Context
+	ctx, f.cancelFunc = context.WithDeadline(context.TODO(), time.Now().Add(time.Millisecond*300))
+	defer f.cancelFunc()
+	select {
+	case <- ctx.Done():
+		if f.clickCount == 2 {
+			obj := wm.FindObjectAtPixelPositionMatching(relX, relY, f.canvas,
+				func(obj fyne.CanvasObject) bool {
+					_, ok := obj.(fyne.DoubleTappable)
+					return ok
+				},
+			)
+			if obj != nil {
+				obj.(fyne.DoubleTappable).DoubleTapped(&fyne.PointEvent{})
 			}
-			f.ctx = nil
-			f.cancelFunc = nil
-			f.doubleClick = false
-			return
+		} else {
+			obj := wm.FindObjectAtPixelPositionMatching(relX, relY, f.canvas,
+				func(obj fyne.CanvasObject) bool {
+					_, ok := obj.(fyne.Tappable)
+					return ok
+				},
+			)
+			if obj != nil {
+				obj.(fyne.Tappable).Tapped(&fyne.PointEvent{})
+			}
 		}
-	}()
+
+		f.clickCount = 0
+		f.cancelFunc = nil
+		return
+	}
 }
 
 // Notify the child window that it's geometry has changed to update menu positions etc.
