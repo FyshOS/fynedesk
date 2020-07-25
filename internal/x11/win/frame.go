@@ -592,12 +592,12 @@ func (f *frame) mouseRelease(x, y int16) {
 	go f.mouseReleaseWaitForDoubleClick(int(relX), int(relY))
 }
 
-func (f* frame) mouseReleaseWaitForDoubleClick(relX int, relY int) {
+func (f *frame) mouseReleaseWaitForDoubleClick(relX int, relY int) {
 	var ctx context.Context
 	ctx, f.cancelFunc = context.WithDeadline(context.TODO(), time.Now().Add(time.Millisecond*300))
 	defer f.cancelFunc()
 	select {
-	case <- ctx.Done():
+	case <-ctx.Done():
 		if f.clickCount == 2 {
 			obj := wm.FindObjectAtPixelPositionMatching(relX, relY, f.canvas,
 				func(obj fyne.CanvasObject) bool {
