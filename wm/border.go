@@ -45,7 +45,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 	if !canMaximize {
 		max.Disable()
 	}
-	titleBar := newColoredHBox(win.Focused(), makeFiller(0),
+	titleBar := newColoredHBox(win.Focused(), win, makeFiller(0),
 		newCloseButton(win),
 		max,
 		widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {
@@ -68,11 +68,20 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 type coloredHBox struct {
 	*widget.Box
 	focused bool
+	win     fynedesk.Window
 }
 
 type coloredBoxRenderer struct {
 	fyne.WidgetRenderer
 	focused bool
+}
+
+func (c *coloredHBox) DoubleTapped(*fyne.PointEvent) {
+	if c.win.Maximized() {
+		c.win.Unmaximize()
+		return
+	}
+	c.win.Maximize()
 }
 
 func (c *coloredHBox) CreateRenderer() fyne.WidgetRenderer {
@@ -88,8 +97,8 @@ func (r *coloredBoxRenderer) BackgroundColor() color.Color {
 	return theme.ButtonColor()
 }
 
-func newColoredHBox(focused bool, objs ...fyne.CanvasObject) *coloredHBox {
-	ret := &coloredHBox{focused: focused}
+func newColoredHBox(focused bool, win fynedesk.Window, objs ...fyne.CanvasObject) *coloredHBox {
+	ret := &coloredHBox{focused: focused, win: win}
 	ret.Box = widget.NewHBox(objs...)
 	ret.ExtendBaseWidget(ret)
 
