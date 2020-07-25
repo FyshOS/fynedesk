@@ -68,7 +68,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 type coloredHBox struct {
 	*widget.Box
 	focused bool
-	win fynedesk.Window
+	win     fynedesk.Window
 }
 
 type coloredBoxRenderer struct {
