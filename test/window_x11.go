@@ -80,12 +80,12 @@ func (w *Window) NotifyMouseMotion(int16, int16) {
 }
 
 // NotifyMousePress is called when the mouse was seen to press inside the window frame
-func (w *Window) NotifyMousePress(int16, int16) {
+func (w *Window) NotifyMousePress(int16, int16, xproto.Button) {
 	// no-op
 }
 
 // NotifyMouseRelease is called when the mouse was seen to release inside the window frame
-func (w *Window) NotifyMouseRelease(int16, int16) {
+func (w *Window) NotifyMouseRelease(int16, int16, xproto.Button) {
 	// no-op
 }
 

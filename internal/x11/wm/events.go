@@ -68,7 +68,7 @@ func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
 func (x *x11WM) handleButtonPress(ev xproto.ButtonPressEvent) {
 	for _, c := range x.clients {
 		if c.(x11.XWin).FrameID() == ev.Event {
-			c.(x11.XWin).NotifyMousePress(ev.RootX, ev.RootY)
+			c.(x11.XWin).NotifyMousePress(ev.RootX, ev.RootY, ev.Detail)
 		}
 	}
 	xevent.ReplayPointer(x.x)
@@ -78,7 +78,7 @@ func (x *x11WM) handleButtonRelease(ev xproto.ButtonReleaseEvent) {
 	for _, c := range x.clients {
 		if c.(x11.XWin).FrameID() == ev.Event {
 			if !x.moveResizing {
-				c.(x11.XWin).NotifyMouseRelease(ev.RootX, ev.RootY)
+				c.(x11.XWin).NotifyMouseRelease(ev.RootX, ev.RootY, ev.Detail)
 			}
 			x.moveResizeEnd(c.(x11.XWin))
 		}

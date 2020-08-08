@@ -36,6 +36,6 @@ type XWin interface {
 
 	NotifyMouseDrag(int16, int16)
 	NotifyMouseMotion(int16, int16)
-	NotifyMousePress(int16, int16)
-	NotifyMouseRelease(int16, int16)
+	NotifyMousePress(int16, int16, xproto.Button)
+	NotifyMouseRelease(int16, int16, xproto.Button)
 }

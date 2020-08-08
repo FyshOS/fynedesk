@@ -205,12 +205,12 @@ func (c *client) NotifyMouseMotion(x, y int16) {
 	c.frame.mouseMotion(x, y)
 }
 
-func (c *client) NotifyMousePress(x, y int16) {
-	c.frame.mousePress(x, y)
+func (c *client) NotifyMousePress(x, y int16, b xproto.Button) {
+	c.frame.mousePress(x, y, b)
 }
 
-func (c *client) NotifyMouseRelease(x, y int16) {
-	c.frame.mouseRelease(x, y)
+func (c *client) NotifyMouseRelease(x, y int16, b xproto.Button) {
+	c.frame.mouseRelease(x, y, b)
 }
 
 func (c *client) NotifyMoveResizeEnded() {

@@ -532,7 +532,10 @@ func (f *frame) lookupResizeCursor(x, y int16) xproto.Cursor {
 	return x11.DefaultCursor
 }
 
-func (f *frame) mousePress(x, y int16) {
+func (f *frame) mousePress(x, y int16, b xproto.Button) {
+	if b != xproto.ButtonIndex1 {
+		return
+	}
 	if !f.client.Focused() {
 		f.client.RaiseToTop()
 		f.client.Focus()
@@ -574,7 +577,10 @@ func (f *frame) mousePress(x, y int16) {
 	f.client.wm.RaiseToTop(f.client)
 }
 
-func (f *frame) mouseRelease(x, y int16) {
+func (f *frame) mouseRelease(x, y int16, b xproto.Button) {
+	if b != xproto.ButtonIndex1 {
+		return
+	}
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
 
 	relX := x - f.x
