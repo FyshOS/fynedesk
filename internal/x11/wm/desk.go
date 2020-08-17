@@ -428,6 +428,11 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 }
 
 func (x *x11WM) exposeWindow(win xproto.Window) {
+	attrs, err := xproto.GetWindowAttributes(x.x.Conn(), win).Reply()
+	if err == nil && attrs.MapState == xproto.MapStateUnmapped { // ignore expose for windows closing
+		return
+	}
+
 	border := x.clientForWin(win)
 	if border != nil {
 		border.Expose()

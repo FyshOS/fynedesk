@@ -203,8 +203,8 @@ func (s *Switcher) loadIcons(list []fynedesk.Window) []fyne.CanvasObject {
 // HideApply dismisses the application Switcher and raises
 // whichever window was selected.
 func (s *Switcher) HideApply() {
-	s.raise(s.win.Canvas().Focused().(*switchIcon))
 	s.HideCancel()
+	s.raise(s.win.Canvas().Focused().(*switchIcon))
 }
 
 // HideCancel dismisses the application Switcher without changing window order.
