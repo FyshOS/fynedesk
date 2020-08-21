@@ -74,6 +74,7 @@ type window struct {
 	mouseLastClick     fyne.CanvasObject
 	mousePressed       fyne.CanvasObject
 	onClosed           func()
+	onCloseIntercepted func()
 
 	xpos, ypos    int
 	width, height int
@@ -264,8 +265,9 @@ func (w *window) fitContent() {
 	}
 
 	minWidth, minHeight := w.minSizeOnScreen()
-	w.viewLock.Lock()
-	defer w.viewLock.Unlock()
+	w.viewLock.RLock()
+	view := w.viewport
+	w.viewLock.RUnlock()
 	if w.width < minWidth || w.height < minHeight {
 		if w.width < minWidth {
 			w.width = minWidth
@@ -273,20 +275,26 @@ func (w *window) fitContent() {
 		if w.height < minHeight {
 			w.height = minHeight
 		}
+		w.viewLock.Lock()
 		w.shouldExpand = true // queue the resize to happen on main
+		w.viewLock.Unlock()
 	}
 	if w.fixedSize {
 		w.width = internal.ScaleInt(w.canvas, w.Canvas().Size().Width)
 		w.height = internal.ScaleInt(w.canvas, w.Canvas().Size().Height)
 
-		w.viewport.SetSizeLimits(w.width, w.height, w.width, w.height)
+		view.SetSizeLimits(w.width, w.height, w.width, w.height)
 	} else {
-		w.viewport.SetSizeLimits(minWidth, minHeight, glfw.DontCare, glfw.DontCare)
+		view.SetSizeLimits(minWidth, minHeight, glfw.DontCare, glfw.DontCare)
 	}
 }
 
 func (w *window) SetOnClosed(closed func()) {
 	w.onClosed = closed
+}
+
+func (w *window) SetCloseIntercept(callback func()) {
+	w.onCloseIntercepted = callback
 }
 
 func (w *window) getMonitorForWindow() *glfw.Monitor {
@@ -401,7 +409,20 @@ func (w *window) Close() {
 	if w.viewport == nil {
 		return
 	}
-	w.closed(w.viewport)
+
+	w.viewport.SetShouldClose(true)
+
+	w.canvas.walkTrees(nil, func(node *renderCacheNode) {
+		switch co := node.obj.(type) {
+		case fyne.Widget:
+			cache.DestroyRenderer(co)
+		}
+	})
+
+	// trigger callbacks
+	if w.onClosed != nil {
+		w.queueEvent(w.onClosed)
+	}
 }
 
 func (w *window) ShowAndRun() {
@@ -443,19 +464,14 @@ func (w *window) Canvas() fyne.Canvas {
 }
 
 func (w *window) closed(viewport *glfw.Window) {
-	viewport.SetShouldClose(true)
+	viewport.SetShouldClose(false)
 
-	w.canvas.walkTrees(nil, func(node *renderCacheNode) {
-		switch co := node.obj.(type) {
-		case fyne.Widget:
-			cache.DestroyRenderer(co)
-		}
-	})
-
-	// trigger callbacks
-	if w.onClosed != nil {
-		w.queueEvent(w.onClosed)
+	if w.onCloseIntercepted != nil {
+		w.queueEvent(w.onCloseIntercepted)
+		return
 	}
+
+	w.Close()
 }
 
 // destroy this window and, if it's the last window quit the app

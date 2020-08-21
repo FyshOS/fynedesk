@@ -14,8 +14,8 @@ import (
 )
 
 func makeFiller(width int) fyne.CanvasObject {
-	filler := canvas.NewRectangle(theme.BackgroundColor()) // make a border on the X axis only
-	filler.SetMinSize(fyne.NewSize(width, 2))              // width forced
+	filler := canvas.NewRectangle(color.Transparent) // make a border on the X axis only
+	filler.SetMinSize(fyne.NewSize(width, 2))        // width forced
 
 	return filler
 }
@@ -39,18 +39,21 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 			win.Maximize()
 		}
 	})
+	max.HideShadow = true
 	if win.Maximized() {
 		max.Icon = theme.ViewRestoreIcon()
 	}
 	if !canMaximize {
 		max.Disable()
 	}
+	min := widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {
+		win.Iconify()
+	})
+	min.HideShadow = true
 	titleBar := newColoredHBox(win.Focused(), win, makeFiller(0),
 		newCloseButton(win),
 		max,
-		widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {
-			win.Iconify()
-		}),
+		min,
 		widget.NewLabel(win.Properties().Title()),
 		layout.NewSpacer())
 
@@ -94,7 +97,7 @@ func (r *coloredBoxRenderer) BackgroundColor() color.Color {
 	if r.focused {
 		return theme.BackgroundColor()
 	}
-	return theme.ButtonColor()
+	return theme.DisabledButtonColor()
 }
 
 func newColoredHBox(focused bool, win fynedesk.Window, objs ...fyne.CanvasObject) *coloredHBox {

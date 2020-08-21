@@ -283,7 +283,7 @@ func (f *frame) decorate(force bool) {
 		refresh = true
 	}
 
-	backR, backG, backB, _ := theme.ButtonColor().RGBA()
+	backR, backG, backB, _ := theme.DisabledButtonColor().RGBA()
 	if f.client.Focused() {
 		backR, backG, backB, _ = theme.BackgroundColor().RGBA()
 	}

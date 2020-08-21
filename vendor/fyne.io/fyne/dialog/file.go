@@ -148,7 +148,7 @@ func (f *fileDialog) makeUI() fyne.CanvasObject {
 		(fileIconSize+fileTextSize)+theme.Padding()*2+verticalExtra))
 
 	f.breadcrumb = widget.NewHBox()
-	scrollBread := widget.NewScrollContainer(f.breadcrumb)
+	scrollBread := widget.NewHScrollContainer(f.breadcrumb)
 	body := fyne.NewContainerWithLayout(layout.NewBorderLayout(scrollBread, nil, nil, nil),
 		scrollBread, f.fileScroll)
 	header := widget.NewLabelWithStyle(label+" File", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
@@ -160,13 +160,13 @@ func (f *fileDialog) makeUI() fyne.CanvasObject {
 func (f *fileDialog) loadFavorites() []fyne.CanvasObject {
 	home, _ := os.UserHomeDir()
 	places := []fyne.CanvasObject{
-		widget.NewButton("Home", func() {
+		makeFavoriteButton("Home", theme.HomeIcon(), func() {
 			f.setDirectory(home)
 		}),
-		widget.NewButton("Documents", func() {
+		makeFavoriteButton("Documents", theme.DocumentIcon(), func() {
 			f.setDirectory(filepath.Join(home, "Documents"))
 		}),
-		widget.NewButton("Downloads", func() {
+		makeFavoriteButton("Downloads", theme.DownloadIcon(), func() {
 			f.setDirectory(filepath.Join(home, "Downloads"))
 		}),
 	}
@@ -316,6 +316,25 @@ func (f *FileDialog) Show() {
 	f.dialog = showFile(f)
 }
 
+// Resize dialog, call this function after dialog show
+func (f *FileDialog) Resize(size fyne.Size) {
+	maxSize := f.dialog.win.Size()
+	minSize := f.dialog.win.MinSize()
+	newWidth := size.Width
+	if size.Width > maxSize.Width {
+		newWidth = maxSize.Width
+	} else if size.Width < minSize.Width {
+		newWidth = minSize.Width
+	}
+	newHeight := size.Height
+	if size.Height > maxSize.Height {
+		newHeight = maxSize.Height
+	} else if size.Height < minSize.Height {
+		newHeight = minSize.Height
+	}
+	f.dialog.win.Resize(fyne.NewSize(newWidth, newHeight))
+}
+
 // Hide hides the file dialog.
 func (f *FileDialog) Hide() {
 	if f.dialog == nil {
@@ -395,4 +414,11 @@ func ShowFileSave(callback func(fyne.URIWriteCloser, error), parent fyne.Window)
 		return
 	}
 	dialog.Show()
+}
+
+func makeFavoriteButton(title string, icon fyne.Resource, f func()) *widget.Button {
+	b := widget.NewButtonWithIcon(title, icon, f)
+
+	b.Alignment = widget.ButtonAlignLeading
+	return b
 }

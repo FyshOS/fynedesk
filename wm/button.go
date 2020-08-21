@@ -23,6 +23,7 @@ func (c *closeButton) Cursor() desktop.Cursor {
 func newCloseButton(win fynedesk.Window) *closeButton {
 	b := &closeButton{}
 	b.ExtendBaseWidget(b)
+	b.HideShadow = true
 	b.OnTapped = func() {
 		win.Close()
 	}

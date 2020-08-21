@@ -97,9 +97,11 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
 		b.offsetValue(-5)
 	})
+	less.HideShadow = true
 	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
 		b.offsetValue(5)
 	})
+	more.HideShadow = true
 	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
 		less, b.bar, more)
 
