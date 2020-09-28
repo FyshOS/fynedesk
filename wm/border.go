@@ -21,7 +21,7 @@ func makeFiller(width int) fyne.CanvasObject {
 }
 
 // NewBorder creates a new window border for the given window details
-func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.CanvasObject {
+func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Border {
 	desk := fynedesk.Instance()
 
 	if icon == nil {
@@ -50,12 +50,14 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 		win.Iconify()
 	})
 	min.HideShadow = true
+	title := widget.NewLabel(win.Properties().Title())
 	titleBar := newColoredHBox(win.Focused(), win, makeFiller(0),
 		newCloseButton(win),
 		max,
 		min,
-		widget.NewLabel(win.Properties().Title()),
+		title,
 		layout.NewSpacer())
+	titleBar.title = title
 
 	if icon != nil {
 		appIcon := canvas.NewImageFromResource(icon)
@@ -64,22 +66,24 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) fyne.C
 		titleBar.Append(makeFiller(1))
 	}
 
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(titleBar, nil, nil, nil),
-		titleBar)
+	return titleBar
 }
 
-type coloredHBox struct {
+// Border represents a window border. It draws the title bar and provides functions to manipulate it.
+type Border struct {
 	*widget.Box
 	focused bool
+	title   *widget.Label
 	win     fynedesk.Window
 }
 
 type coloredBoxRenderer struct {
 	fyne.WidgetRenderer
-	focused bool
+	b *Border
 }
 
-func (c *coloredHBox) DoubleTapped(*fyne.PointEvent) {
+// DoubleTapped is called when the user double taps a frame, it toggles the maximised state.
+func (c *Border) DoubleTapped(*fyne.PointEvent) {
 	if c.win.Maximized() {
 		c.win.Unmaximize()
 		return
@@ -87,21 +91,35 @@ func (c *coloredHBox) DoubleTapped(*fyne.PointEvent) {
 	c.win.Maximize()
 }
 
-func (c *coloredHBox) CreateRenderer() fyne.WidgetRenderer {
-	render := &coloredBoxRenderer{focused: c.focused}
+// CreateRenderer creates a new renderer for this border
+//
+// Implements: fyne.Widget
+func (c *Border) CreateRenderer() fyne.WidgetRenderer {
+	render := &coloredBoxRenderer{b: c}
 	render.WidgetRenderer = c.Box.CreateRenderer()
 	return render
 }
 
+// SetFocused specifies whether this window is focused, and updates visuals accordingly.
+func (c *Border) SetFocused(focus bool) {
+	c.focused = focus
+	c.Refresh()
+}
+
+// SetTitle updates the title portion of this border and refreshes.
+func (c *Border) SetTitle(title string) {
+	c.title.SetText(title)
+}
+
 func (r *coloredBoxRenderer) BackgroundColor() color.Color {
-	if r.focused {
+	if r.b.focused {
 		return theme.BackgroundColor()
 	}
 	return theme.DisabledButtonColor()
 }
 
-func newColoredHBox(focused bool, win fynedesk.Window, objs ...fyne.CanvasObject) *coloredHBox {
-	ret := &coloredHBox{focused: focused, win: win}
+func newColoredHBox(focused bool, win fynedesk.Window, objs ...fyne.CanvasObject) *Border {
+	ret := &Border{focused: focused, win: win}
 	ret.Box = widget.NewHBox(objs...)
 	ret.ExtendBaseWidget(ret)
 

@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/driver/desktop"
+	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/tools/playground"
 
@@ -37,10 +38,11 @@ type frame struct {
 	borderTop, borderTopRight xproto.Pixmap
 	borderTopWidth            uint16
 
+	hovered    desktop.Hoverable
 	clickCount int
 	cancelFunc context.CancelFunc
 
-	canvas fyne.Canvas
+	canvas test.WindowlessCanvas
 	client *client
 }
 
@@ -321,22 +323,31 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	screen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 	scale := screen.CanvasScale()
 
-	canvas := playground.NewSoftwareCanvas()
-	canvas.SetScale(scale)
-	canvas.SetPadded(false)
 	canMaximize := true
 	if windowSizeFixed(f.client.wm.X(), f.client.win) ||
 		!windowSizeCanMaximize(f.client.wm.X(), f.client) {
 		canMaximize = false
 	}
-	canvas.SetContent(wm.NewBorder(f.client, f.client.Properties().Icon(), canMaximize))
-	f.canvas = canvas
+
+	if f.canvas == nil {
+		canvas := playground.NewSoftwareCanvas()
+		canvas.SetPadded(false)
+
+		canvas.SetContent(wm.NewBorder(f.client, f.client.Properties().Icon(), canMaximize))
+		f.canvas = canvas
+	} else {
+		b := f.canvas.Content().(*wm.Border)
+		b.SetFocused(f.client.Focused())
+		b.SetTitle(f.client.props.Title())
+		// TODO maybe update icon?
+	}
+	f.canvas.SetScale(scale)
 
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	iconBorderPixWidth := heightPix + x11.BorderWidth(x11.XWin(f.client))*2
 	widthPix := f.borderTopWidth + iconBorderPixWidth
-	canvas.Resize(fyne.NewSize(int(float32(widthPix)/scale)+1, wmTheme.TitleHeight))
-	img := canvas.Capture()
+	f.canvas.Resize(fyne.NewSize(int(float32(widthPix)/scale)+1, wmTheme.TitleHeight))
+	img := f.canvas.Capture()
 
 	// TODO just copy the label minSize - smallest possible but maybe bigger than window width
 	// Draw in pixel rows so we don't overflow count usable by PutImageChecked
@@ -485,17 +496,39 @@ func (f *frame) mouseMotion(x, y int16) {
 	relX := x - f.x
 	relY := y - f.y
 
+	refresh := false
 	obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
 		func(obj fyne.CanvasObject) bool {
 			_, ok := obj.(desktop.Cursorable)
+			if ok {
+				return true
+			}
+
+			_, ok = obj.(desktop.Hoverable)
 			return ok
 		},
 	)
 
 	cursor := x11.DefaultCursor
 	if obj != nil {
-		if obj.(desktop.Cursorable).Cursor() == wm.CloseCursor {
-			cursor = x11.CloseCursor
+		if cur, ok := obj.(desktop.Cursorable); ok {
+			if cur.Cursor() == wm.CloseCursor {
+				cursor = x11.CloseCursor
+			}
+		}
+		if hov, ok := obj.(desktop.Hoverable); ok {
+			if f.hovered == nil {
+				hov.MouseIn(&desktop.MouseEvent{})
+				f.hovered = hov
+				refresh = true
+			} else if obj.(desktop.Hoverable) != f.hovered {
+				f.hovered.MouseOut()
+				hov.MouseIn(&desktop.MouseEvent{})
+				f.hovered = hov
+				refresh = true
+			} else {
+				hov.MouseMoved(&desktop.MouseEvent{})
+			}
 		}
 	} else if uint16(relY) > titleHeight {
 		if !f.client.Maximized() && !f.client.Fullscreened() && !windowSizeFixed(f.client.wm.X(), f.client.win) {
@@ -503,6 +536,14 @@ func (f *frame) mouseMotion(x, y int16) {
 		}
 	}
 
+	if obj == nil && f.hovered != nil {
+		f.hovered.MouseOut()
+		f.hovered = nil
+		refresh = true
+	}
+	if refresh {
+		f.applyTheme(true)
+	}
 	err := xproto.ChangeWindowAttributesChecked(f.client.wm.Conn(), f.client.id, xproto.CwCursor,
 		[]uint32{uint32(cursor)}).Check()
 	if err != nil {

@@ -20,6 +20,19 @@ func (c *closeButton) Cursor() desktop.Cursor {
 	return CloseCursor
 }
 
+func (c *closeButton) MouseIn(*desktop.MouseEvent) {
+	c.Style = widget.PrimaryButton
+	c.Refresh()
+}
+
+func (c *closeButton) MouseMoved(*desktop.MouseEvent) {
+}
+
+func (c *closeButton) MouseOut() {
+	c.Style = widget.DefaultButton
+	c.Refresh()
+}
+
 func newCloseButton(win fynedesk.Window) *closeButton {
 	b := &closeButton{}
 	b.ExtendBaseWidget(b)
@@ -29,7 +42,5 @@ func newCloseButton(win fynedesk.Window) *closeButton {
 	}
 
 	b.Icon = theme.CancelIcon()
-	b.Style = widget.PrimaryButton
-
 	return b
 }
