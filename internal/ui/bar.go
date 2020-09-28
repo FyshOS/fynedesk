@@ -311,7 +311,7 @@ func (b *barRenderer) Refresh() {
 	b.objects = b.appBar.children
 	b.Layout(b.appBar.Size())
 
-	canvas.Refresh(b.appBar)
+	canvas.Refresh(b.appBar.separator)
 }
 
 // Destroy destroys the renderer
