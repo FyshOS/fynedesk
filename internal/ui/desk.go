@@ -50,7 +50,7 @@ func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 
 	if screen == l.screens.Primary() {
 		barHeight := l.bar.MinSize().Height
-		l.bar.Resize(fyne.NewSize(size.Width, barHeight))
+		l.bar.Resize(fyne.NewSize(size.Width, barHeight+1)) // add 1 so rounding cannot trigger mouse out on bottom edge
 		l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
 		l.bar.Refresh()
 

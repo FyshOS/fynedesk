@@ -32,7 +32,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 	assert.Equal(t, l.widgets.Position().X+l.widgets.Size().Width, deskSize.Width)
 	assert.Equal(t, l.widgets.Size().Height, deskSize.Height)
 	assert.Equal(t, l.bar.Size().Width, deskSize.Width)
-	assert.Equal(t, l.bar.Position().Y+l.bar.Size().Height, deskSize.Height)
+	assert.Equal(t, l.bar.Position().Y+l.bar.Size().Height-1, deskSize.Height) // -1 rounding fix, desk.go:53
 }
 
 func TestScaleVars_Up(t *testing.T) {
