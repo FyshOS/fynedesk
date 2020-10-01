@@ -1,4 +1,4 @@
-// +build linux
+// +build linux openbsd freebsd netbsd
 
 package wm // import "fyne.io/fynedesk/internal/x11/wm"
 
