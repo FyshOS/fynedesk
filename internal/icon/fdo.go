@@ -527,7 +527,7 @@ func appendAppIfExists(apps []fynedesk.AppData, app fynedesk.AppData) []fynedesk
 func (f *fdoIconProvider) DefaultApps() []fynedesk.AppData {
 	var apps []fynedesk.AppData
 
-	apps = appendAppIfExists(apps, findOneAppFromNames(f, "xfce4-terminal", "gnome-terminal", "xterm"))
+	apps = appendAppIfExists(apps, findOneAppFromNames(f, "xfce4-terminal", "gnome-terminal", "org.kde.konsole", "xterm"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "chromium", "google-chrome", "firefox"))
 	apps = appendAppIfExists(apps, findOneAppFromNames(f, "sylpheed", "thunderbird", "evolution"))
 	apps = appendAppIfExists(apps, f.FindAppFromName("gimp"))
