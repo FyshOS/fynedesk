@@ -62,7 +62,7 @@ func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 }
 
 func (l *desktop) MinSize(_ []fyne.CanvasObject) fyne.Size {
-	return fyne.NewSize(1024, 576) // just for embed - a window manager will scale up to screen size
+	return fyne.NewSize(640, 480) // tiny - window manager will scale up to screen size
 }
 
 func (l *desktop) updateBackgrounds(path string) {
