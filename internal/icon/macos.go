@@ -27,7 +27,7 @@ type macOSAppBundle struct {
 	IconFile   string `plist:"CFBundleIconFile"`
 	iconPath   string
 
-	iconCache  fyne.Resource
+	iconCache fyne.Resource
 }
 
 func (m *macOSAppBundle) Name() string {
@@ -90,7 +90,7 @@ func loadAppBundle(name, path string) fynedesk.AppData {
 
 type macOSAppProvider struct {
 	rootDirs []string
-	cache *appCache
+	cache    *appCache
 }
 
 func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
