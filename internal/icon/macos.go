@@ -26,6 +26,8 @@ type macOSAppBundle struct {
 	runPath    string
 	IconFile   string `plist:"CFBundleIconFile"`
 	iconPath   string
+
+	iconCache  fyne.Resource
 }
 
 func (m *macOSAppBundle) Name() string {
@@ -33,6 +35,10 @@ func (m *macOSAppBundle) Name() string {
 }
 
 func (m *macOSAppBundle) Icon(_ string, _ int) fyne.Resource {
+	if m.iconCache != nil {
+		return m.iconCache
+	}
+
 	src, err := os.Open(m.iconPath)
 	if err != nil {
 		fyne.LogError("Failed to read icon data for "+m.iconPath, err)
@@ -48,7 +54,8 @@ func (m *macOSAppBundle) Icon(_ string, _ int) fyne.Resource {
 	var data bytes.Buffer
 	err = png.Encode(&data, icon)
 	iconName := filepath.Base(m.iconPath)
-	return fyne.NewStaticResource(strings.Replace(iconName, ".icns", ".png", 1), data.Bytes())
+	m.iconCache = fyne.NewStaticResource(strings.Replace(iconName, ".icns", ".png", 1), data.Bytes())
+	return m.iconCache
 }
 
 func (m *macOSAppBundle) Run([]string) error {
