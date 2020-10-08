@@ -99,7 +99,7 @@ func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 	return appList
 }
 
-func (l *picker) loadIcons(dataRange []fynedesk.AppData, appList[]fyne.CanvasObject) {
+func (l *picker) loadIcons(dataRange []fynedesk.AppData, appList []fyne.CanvasObject) {
 	iconTheme := l.desk.Settings().IconTheme()
 
 	for i, data := range dataRange {
