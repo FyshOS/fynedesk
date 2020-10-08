@@ -5,6 +5,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"runtime"
 	"strconv"
 	"strings"
 	"syscall"
@@ -52,9 +53,9 @@ func (b *battery) valueBSD() (float64, error) {
 		return 0, err
 	}
 
-	percent, err := strconv.Atoi(strings.TrimSpace(val))
-	if err != nil || percent == 0 {
-		return 0, err
+	percent := int(val[0])
+	if percent == 0 { // avoid 0/100 below
+		return 0, nil
 	}
 
 	return float64(percent)/100, nil
