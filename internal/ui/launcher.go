@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/widget"
 
 	"fyne.io/fynedesk"
+	wmTheme "fyne.io/fynedesk/theme"
 )
 
 var appExec *picker
@@ -76,12 +77,10 @@ func (l *picker) updateAppListMatching(input string) {
 func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 	var appList []fyne.CanvasObject
 
-	iconTheme := l.desk.Settings().IconTheme()
 	dataRange := l.desk.IconProvider().FindAppsMatching(input)
 	for i, data := range dataRange {
 		appData := data // capture for goroutine below
-		icon := appData.Icon(iconTheme, 32)
-		app := widget.NewButtonWithIcon(appData.Name(), icon, func() {
+		app := widget.NewButtonWithIcon(appData.Name(), wmTheme.BrokenImageIcon, func() {
 			l.callback(appData)
 			l.win.Close()
 		})
@@ -91,44 +90,53 @@ func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 		}
 		appList = append(appList, app)
 	}
+	go l.loadIcons(dataRange, appList)
 
-	if len(appList) > 0 {
-		return appList
-	}
-	if l.showMods {
-		return l.listSuggestions(input)
+	if len(appList) == 0 && l.showMods {
+		return l.loadSuggestionsMatching(input)
 	}
 
-	return nil
+	return appList
+}
+
+func (l *picker) loadIcons(dataRange []fynedesk.AppData, appList[]fyne.CanvasObject) {
+	iconTheme := l.desk.Settings().IconTheme()
+
+	for i, data := range dataRange {
+		app := appList[i].(*widget.Button)
+		icon := data.Icon(iconTheme, 32)
+		app.SetIcon(icon)
+	}
+}
+
+func (l *picker) loadSuggestionsMatching(input string) []fyne.CanvasObject {
+	var suggestList []fyne.CanvasObject
+
+	for _, m := range l.desk.Modules() {
+		suggest, ok := m.(fynedesk.LaunchSuggestionModule)
+		if !ok {
+			continue
+		}
+
+		for i, item := range suggest.LaunchSuggestions(input) {
+			launchData := item // capture for goroutine below
+			button := widget.NewButtonWithIcon(item.Title(), item.Icon(), func() {
+				l.win.Close()
+				launchData.Launch()
+			})
+
+			if i == 0 {
+				button.Style = widget.PrimaryButton
+			}
+			suggestList = append(suggestList, button)
+		}
+	}
+
+	return suggestList
 }
 
 func (l *picker) Show() {
 	l.win.Show()
-}
-
-func (l *picker) listSuggestions(input string) []fyne.CanvasObject {
-	var appList []fyne.CanvasObject
-
-	for _, m := range l.desk.Modules() {
-		if suggest, ok := m.(fynedesk.LaunchSuggestionModule); ok {
-			items := suggest.LaunchSuggestions(input)
-
-			for _, item := range items {
-				launchData := item // capture for goroutine below
-				app := widget.NewButtonWithIcon(launchData.Title(), launchData.Icon(), func() {
-					launchData.Launch()
-					l.win.Close()
-				})
-
-				if len(appList) == 0 {
-					app.Style = widget.PrimaryButton
-				}
-				appList = append(appList, app)
-			}
-		}
-	}
-
-	return appList
 }
 
 func newAppPicker(title string, callback func(fynedesk.AppData)) *picker {
