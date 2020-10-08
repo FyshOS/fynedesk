@@ -1,8 +1,9 @@
-# fyne.io/fyne v1.3.4-0.20200821084928-4150fb00e542
+# fyne.io/fyne v1.3.4-0.20201008092130-a022e44470ad
 fyne.io/fyne
 fyne.io/fyne/app
 fyne.io/fyne/canvas
 fyne.io/fyne/cmd/fyne_settings/settings
+fyne.io/fyne/container
 fyne.io/fyne/dialog
 fyne.io/fyne/driver/desktop
 fyne.io/fyne/driver/mobile
@@ -31,7 +32,7 @@ github.com/BurntSushi/freetype-go/freetype/truetype
 github.com/BurntSushi/graphics-go/graphics
 github.com/BurntSushi/graphics-go/graphics/convolve
 github.com/BurntSushi/graphics-go/graphics/interp
-# github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802
+# github.com/BurntSushi/xgb v0.0.0-20201008132610-5f9e7b3c49cd
 github.com/BurntSushi/xgb
 github.com/BurntSushi/xgb/randr
 github.com/BurntSushi/xgb/render
