@@ -2,13 +2,7 @@ package status
 
 import (
 	"image/color"
-	"io/ioutil"
-	"log"
 	"os"
-	"runtime"
-	"strconv"
-	"strings"
-	"syscall"
 	"time"
 
 	"fyne.io/fyne"
@@ -37,50 +31,6 @@ func pickChargeOrEnergy() (string, string) {
 		return "/sys/class/power_supply/BAT0/energy_now", "/sys/class/power_supply/BAT0/energy_full"
 	}
 	return "/sys/class/power_supply/BAT0/charge_now", "/sys/class/power_supply/BAT0/charge_full"
-}
-
-func (b *battery) value() (float64, error) {
-	if runtime.GOOS == "linux" {
-		return b.valueLinux()
-	}
-
-	return b.valueBSD()
-}
-
-func (b *battery) valueBSD() (float64, error) {
-	val, err := syscall.Sysctl("hw.acpi.battery.life")
-	if err != nil {
-		return 0, err
-	}
-
-	percent := int(val[0])
-	if percent == 0 { // avoid 0/100 below
-		return 0, nil
-	}
-
-	return float64(percent)/100, nil
-}
-
-func (b *battery) valueLinux() (float64, error) {
-	nowFile, fullFile := pickChargeOrEnergy()
-	fullStr, err1 := ioutil.ReadFile(fullFile)
-	if os.IsNotExist(err1) {
-		return 0, err1 // return quietly if the file was not present (desktop?)
-	}
-	nowStr, err2 := ioutil.ReadFile(nowFile)
-	if err1 != nil || err2 != nil {
-		log.Println("Error reading battery info", err1)
-		return 0, err1
-	}
-
-	now, err1 := strconv.Atoi(strings.TrimSpace(string(nowStr)))
-	full, err2 := strconv.Atoi(strings.TrimSpace(string(fullStr)))
-	if err1 != nil || err2 != nil {
-		log.Println("Error converting battery info", err1)
-		return 0, err1
-	}
-
-	return float64(now) / float64(full), nil
 }
 
 func (b *battery) batteryTick() {
