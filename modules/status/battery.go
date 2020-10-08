@@ -7,6 +7,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"syscall"
 	"time"
 
 	"fyne.io/fyne"
@@ -38,6 +39,28 @@ func pickChargeOrEnergy() (string, string) {
 }
 
 func (b *battery) value() (float64, error) {
+	if runtime.GOOS == "linux" {
+		return b.valueLinux()
+	}
+
+	return b.valueBSD()
+}
+
+func (b *battery) valueBSD() (float64, error) {
+	val, err := syscall.Sysctl("hw.acpi.battery.life")
+	if err != nil {
+		return 0, err
+	}
+
+	percent, err := strconv.Atoi(strings.TrimSpace(val))
+	if err != nil || percent == 0 {
+		return 0, err
+	}
+
+	return float64(percent)/100, nil
+}
+
+func (b *battery) valueLinux() (float64, error) {
 	nowFile, fullFile := pickChargeOrEnergy()
 	fullStr, err1 := ioutil.ReadFile(fullFile)
 	if os.IsNotExist(err1) {
