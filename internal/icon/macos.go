@@ -83,10 +83,7 @@ func loadAppBundle(name, path string) fynedesk.AppData {
 
 type macOSAppProvider struct {
 	rootDirs []string
-}
-
-func (m *macOSAppProvider) FindIconsMatchingAppName(theme string, size int, appName string) []fynedesk.AppData {
-	panic("implement me")
+	cache *appCache
 }
 
 func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
@@ -127,12 +124,10 @@ func (m *macOSAppProvider) AvailableThemes() []string {
 
 func (m *macOSAppProvider) FindAppFromName(appName string) fynedesk.AppData {
 	var icon fynedesk.AppData
-	m.forEachApplication(func(name, path string) bool {
+	m.cache.forEachCachedApplication(func(name string, app fynedesk.AppData) bool {
 		if name == appName {
-			icon = loadAppBundle(name, path)
-			if icon != nil {
-				return true
-			}
+			icon = app
+			return true
 		}
 
 		return false
@@ -159,15 +154,12 @@ func (m *macOSAppProvider) DefaultApps() []fynedesk.AppData {
 
 func (m *macOSAppProvider) FindAppsMatching(pattern string) []fynedesk.AppData {
 	var icons []fynedesk.AppData
-	m.forEachApplication(func(name, path string) bool {
+	m.cache.forEachCachedApplication(func(name string, app fynedesk.AppData) bool {
 		if !strings.Contains(strings.ToLower(name), strings.ToLower(pattern)) {
 			return false
 		}
 
-		app := loadAppBundle(name, path)
-		if app != nil {
-			icons = append(icons, app)
-		}
+		icons = append(icons, app)
 		return false
 	})
 
@@ -176,6 +168,8 @@ func (m *macOSAppProvider) FindAppsMatching(pattern string) []fynedesk.AppData {
 
 // NewMacOSAppProvider creates an instance of an ApplicationProvider that can find and decode macOS apps
 func NewMacOSAppProvider() fynedesk.ApplicationProvider {
-	return &macOSAppProvider{rootDirs: []string{"/Applications", "/Applications/Utilities",
+	source := &macOSAppProvider{rootDirs: []string{"/Applications", "/Applications/Utilities",
 		"/System/Applications", "/System/Applications/Utilities"}}
+	source.cache = newAppCache(source)
+	return source
 }
