@@ -93,9 +93,10 @@ func loadIcon(path string) fyne.Resource {
 	}
 
 	if path[len(path)-4:] == ".xpm" {
+		var w bytes.Buffer
 		img := parseXPM(data)
-		w := bytes.NewBuffer(data)
-		err := png.Encode(w, img)
+		err := png.Encode(&w, img)
+		data = w.Bytes()
 
 		if err != nil {
 			fyne.LogError("Failed to re-encode XPM image", err)
