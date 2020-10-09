@@ -18,7 +18,7 @@ func parseXPM(data []byte) image.Image {
 	for i, b := range data {
 		if b == '\n' {
 			row := string(data[rowStart:i])
-			rowStart = i+1
+			rowStart = i + 1
 			if row == "" || row[0] != '"' {
 				continue
 			}
@@ -40,7 +40,6 @@ func parseXPM(data []byte) image.Image {
 			rowNum++
 		}
 	}
-
 
 	return img
 }
@@ -82,15 +81,15 @@ func parseDimensions(data string) (w, h, i, j int) {
 }
 
 func parsePixels(row string, charSize int, pixRow int, colors map[string]color.Color, img *image.NRGBA) {
-	off := pixRow*img.Stride
+	off := pixRow * img.Stride
 	for i := 0; i < len(row); i += charSize {
-		id := row[i:i+charSize]
+		id := row[i : i+charSize]
 		c, ok := colors[id]
 		if !ok {
 			c = color.Transparent
 		}
 
-		pos := off+(i*4)
+		pos := off + (i * 4)
 		r, g, b, a := c.RGBA()
 		img.Pix[pos] = uint8(r)
 		img.Pix[pos+1] = uint8(g)
@@ -122,5 +121,5 @@ func stripQuotes(data string) string {
 	if end == -1 {
 		return data[1:]
 	}
-	return data[1:end+1]
+	return data[1 : end+1]
 }
