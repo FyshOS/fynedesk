@@ -4,7 +4,7 @@ package status
 
 import "syscall"
 
-func (b *battery) valueBSD() (float64, error) {
+func (b *battery) value() (float64, error) {
 	val, err := syscall.Sysctl("hw.acpi.battery.life")
 	if err != nil {
 		return 0, err
