@@ -7,6 +7,7 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"strconv"
 
 	wmtheme "fyne.io/fynedesk/theme"
 )
@@ -22,37 +23,23 @@ func (b *sound) Destroy() {
 }
 
 func (b *sound) value() (int, error) {
-	cmd := exec.Command("mixer", "vol")
+	cmd := exec.Command("mixer", "-s", "vol")
 	out, err := cmd.Output()
-	colonPos := strings.Index(out, ":")
+	colonPos := strings.Index(string(out), ":")
 	if err != nil || colonPos <= 0 {
-		log.Println("Failed to get volume", err)
-		return
+		return 0, err
 	}
 
-	volume, err := strconv.atoi(out[:colonPos])
+	// strip "vol " from the start as well
+	volume, err := strconv.atoi(string(out[4:colonPos]))
 	return volume, err
-}
-
-func (b *sound) offsetValue(diff int) {
-	floatVal, err := b.value()
-	if err != nil {
-		log.Println("Failed to get volume", err)
-		return
-	}
-	value := floatVal + float32(diff)/100
-
-	if value < 0 {
-		value = 0
-	} else if value > 1 {
-		value = 1
-	}
-
-	b.setValue(value)
 }
 
 func (b *sound) setup() error {
 	_, err := b.value()
+	if volume == 0 {
+		volume = 75 // we loaded in mute mode perhapse
+	}
 	return err
 }
 
@@ -64,8 +51,13 @@ func (b *sound) setValue(vol int) {
 		return
 	}
 
-	volume = vol
 	b.bar.SetValue(float64(vol))
+	if vol == 0 {
+		b.mute.SetIcon(wmtheme.MuteIcon)
+	} else {
+		volume = vol
+		b.mute.SetIcon(wmtheme.SoundIcon)
+	}
 }
 
 func (b *sound) toggleMute() {
@@ -80,11 +72,5 @@ func (b *sound) toggleMute() {
 		b.setValue(0)
 	} else {
 		b.setValue(volume)
-	}
-
-	if mute {
-		b.mute.SetIcon(wmtheme.MuteIcon)
-	} else {
-		b.mute.SetIcon(wmtheme.SoundIcon)
 	}
 }
