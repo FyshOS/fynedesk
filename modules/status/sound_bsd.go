@@ -7,7 +7,6 @@ import (
 	"log"
 	"os/exec"
 	"strings"
-	"strconv"
 
 	wmtheme "fyne.io/fynedesk/theme"
 )
@@ -31,7 +30,7 @@ func (b *sound) value() (int, error) {
 	}
 
 	// strip "vol " from the start as well
-	volume, err := strconv.atoi(string(out[4:colonPos]))
+	volume, err := strconv.Atoi(string(out[4:colonPos]))
 	return volume, err
 }
 
