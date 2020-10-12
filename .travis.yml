@@ -20,14 +20,16 @@ before_script:
 
 script:
 - go test -v -covermode=atomic -coverprofile=coverage.out ./...
-- export coverage=$(go tool cover -func coverage.out | tail -n 1 | awk '{ print $3 }' | cut -d \% -f 1 | cut -d \. -f 1)
-- echo "Coverage now $coverage"
-- if [ $coverage -lt 35 ]; then echo "Test coverage lowered"; exit 1; fi
 - |
-  set -e
-  if [[ "$TRAVIS_PULL_REQUEST" == "false" && -n "$COVERALLS_TOKEN" ]]; then
-    go test -covermode=atomic -coverprofile=coverage.out ./...
-    $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+  set -eo
+  if [[ "$TRAVIS_OS_NAME" == "linux" ]]; then
+    export coverage=$(go tool cover -func coverage.out | tail -n 1 | awk '{ print $3 }' | cut -d \% -f 1 | cut -d \. -f 1)
+    echo "Coverage at $coverage"
+    if [ $coverage -lt 28 ]; then echo "Test coverage lowered"; exit 1; fi
+    if [[ "$TRAVIS_PULL_REQUEST" == "false" && -n "$COVERALLS_TOKEN" ]]; then
+      go test -covermode=atomic -coverprofile=coverage.out ./...
+      $(go env GOPATH | awk 'BEGIN{FS=":"} {print $1}')/bin/goveralls -coverprofile=coverage.out -service=travis-ci -repotoken $COVERALLS_TOKEN
+    fi
   fi
 
 env:
