@@ -15,7 +15,7 @@ jobs:
         GO111MODULE=off go get golang.org/x/tools/cmd/goimports                               
         GO111MODULE=off go get github.com/fzipp/gocyclo
         GO111MODULE=off go get golang.org/x/lint/golint
-        GO111MODULE=off go get honnef.co/go/tools/cmd/staticcheck
+#        GO111MODULE=off go get honnef.co/go/tools/cmd/staticcheck
     - name: cleanup repository
       run: rm -rf vendor/
     - name: goimports
@@ -24,5 +24,6 @@ jobs:
       run: gocyclo -over 50 .
     - name: golint
       run: golint -set_exit_status $(go list ./...)
-    - name: staticcheck
-      run: staticcheck -debug.no-compile-errors -f stylish $(go list ./...)
+#    - name: staticcheck
+#      run: staticcheck -debug.no-compile-errors -f stylish $(go list ./...)
+
