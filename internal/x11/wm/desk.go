@@ -5,6 +5,7 @@ package wm // import "fyne.io/fynedesk/internal/x11/wm"
 import (
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"os/exec"
 	"strconv"
@@ -49,7 +50,7 @@ type x11WM struct {
 	currentBindings []*fynedesk.Shortcut
 
 	died         bool
-	rootIDs      []xproto.Window
+	rootID       xproto.Window
 	transientMap map[xproto.Window][]xproto.Window
 }
 
@@ -379,30 +380,11 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 
 	name := x11.WindowName(x.x, win)
-	for _, screen := range fynedesk.Instance().Screens().Screens() {
-		if !x.isRootTitle(name) || screenNameFromRootTitle(name) != screen.Name {
-			continue
-		}
-		found := false
-		for _, id := range x.rootIDs {
-			if id == win {
-				found = true
-			}
-		}
-		if !found {
-			x.rootIDs = append(x.rootIDs, win)
-		}
-		xcoord = int16(screen.X)
-		ycoord = int16(screen.Y)
-		width = uint16(screen.Width)
-		height = uint16(screen.Height)
-		notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
-			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
-			BorderWidth: 0, OverrideRedirect: false}
-		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
+	if x.isRootTitle(name) {
+		x.rootID = win
 
 		x.configureRoots() // we added a root window, so reconfigure
-		break
+		return
 	}
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -415,11 +397,6 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 func (x *x11WM) destroyWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
-		for i, id := range x.rootIDs {
-			if id == win {
-				x.rootIDs = append(x.rootIDs[:i], x.rootIDs[i+1:]...)
-			}
-		}
 		return
 	}
 	transient := x11.WindowTransientForGet(x.x, win)
@@ -469,18 +446,8 @@ func (x *x11WM) frameExisting() {
 	}
 }
 
-func (x *x11WM) WinIDForScreen(screen *fynedesk.Screen) xproto.Window {
-	screenName := screen.Name
-	for _, id := range x.rootIDs {
-		name := x11.WindowName(x.x, id)
-		if !x.isRootTitle(name) {
-			continue
-		}
-		if screenNameFromRootTitle(name) == screenName {
-			return id
-		}
-	}
-	return 0
+func (x *x11WM) RootID() xproto.Window {
+	return x.rootID
 }
 
 func (x *x11WM) hideWindow(win xproto.Window) {
@@ -528,18 +495,14 @@ func (x *x11WM) setupBindings() {
 		for {
 			<-deskListener
 			// this uses the state from the previous bind call
-			for _, r := range x.rootIDs {
-				x.unbindShortcuts(r)
-			}
+			x.unbindShortcuts(x.rootID)
 			for _, c := range x.clients {
 				x.unbindShortcuts(c.(x11.XWin).ChildID())
 			}
 			x.currentBindings = nil
 
 			// this call sets up the new cache of shortcuts
-			for _, r := range x.rootIDs {
-				x.bindShortcuts(r)
-			}
+			x.bindShortcuts(x.rootID)
 			for _, c := range x.clients {
 				x.bindShortcuts(c.(x11.XWin).ChildID())
 			}
