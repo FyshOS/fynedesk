@@ -1,6 +1,8 @@
 package ui
 
 import (
+	"fyne.io/fyne"
+
 	"fyne.io/fynedesk"
 )
 
@@ -51,5 +53,8 @@ func (e *embededWM) Blank() {
 }
 
 func (e *embededWM) Close() {
-	// no-op, just allow exit
+	windows := fyne.CurrentApp().Driver().AllWindows()
+	if len(windows) > 0 {
+		windows[0].Close() // ensure our root is asked to close as well
+	}
 }
