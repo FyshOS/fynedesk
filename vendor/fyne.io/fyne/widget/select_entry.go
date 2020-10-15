@@ -30,6 +30,26 @@ func (e *SelectEntry) CreateRenderer() fyne.WidgetRenderer {
 	return e.Entry.CreateRenderer()
 }
 
+// Enable this widget, updating any style or features appropriately.
+//
+// Implements: fyne.DisableableWidget
+func (e *SelectEntry) Enable() {
+	if e.ActionItem != nil {
+		e.ActionItem.(fyne.Disableable).Enable()
+	}
+	e.Entry.Enable()
+}
+
+// Disable this widget so that it cannot be interacted with, updating any style appropriately.
+//
+// Implements: fyne.DisableableWidget
+func (e *SelectEntry) Disable() {
+	if e.ActionItem != nil {
+		e.ActionItem.(fyne.Disableable).Disable()
+	}
+	e.Entry.Disable()
+}
+
 // MinSize returns the minimal size of the select entry.
 //
 // Implements: fyne.Widget
@@ -82,7 +102,7 @@ func (e *SelectEntry) setupDropDown() fyne.CanvasObject {
 		e.popUp.ShowAtPosition(popUpPos)
 		e.popUp.Resize(fyne.NewSize(e.Size().Width-theme.Padding()*2, e.popUp.MinSize().Height))
 	})
-	dropDownButton.HideShadow = true
+	dropDownButton.Importance = LowImportance
 	dropDownButton.SetIcon(theme.MenuDropDownIcon())
 	return dropDownButton
 }
