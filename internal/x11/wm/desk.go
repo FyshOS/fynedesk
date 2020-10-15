@@ -319,34 +319,28 @@ func (x *x11WM) configureRoots() {
 	if fynedesk.Instance() == nil {
 		return
 	}
-
-	minX, minY, maxX, maxY := math.MaxInt16, math.MaxInt16, 0, 0
+	width, height := 0, 0
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
-		minX = fyne.Min(minX, screen.X)
-		minY = fyne.Min(minY, screen.Y)
-		maxX = fyne.Max(maxX, screen.X+screen.Width)
-		maxY = fyne.Max(maxY, screen.Y+screen.Height)
-
-		if screen == fynedesk.Instance().Screens().Primary() {
-			notifyEv := xproto.ConfigureNotifyEvent{Event: x.rootID, Window: x.rootID, AboveSibling: 0,
-				X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
-				BorderWidth: 0, OverrideRedirect: false}
-			xproto.SendEvent(x.x.Conn(), false, x.rootID, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
-
-			err := xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
-				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-				[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
-			if err != nil {
-				fyne.LogError("Configure Window Error", err)
-			}
+		win := x.WinIDForScreen(screen)
+		if win == 0 {
+			continue
 		}
+		if screen.X+screen.Width > width {
+			width = screen.X + screen.Width
+		}
+		if screen.Y+screen.Height > height {
+			height = screen.Y + screen.Height
+		}
+		xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+			[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
+		notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
+			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
+			BorderWidth: 0, OverrideRedirect: false}
+		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 	}
-
-	rootWidth := maxX - minX
-	rootHeight := maxY - minY
-
-	ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: rootWidth, Height: rootHeight})              // The size will grow when virtual desktops are supported
-	ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(rootWidth), Height: uint(rootHeight)}}) // The array will grow when virtual desktops are supported
+	ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: width, Height: height})              // The array will grow when virtual desktops are supported
+	ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(width), Height: uint(height)}}) // The array will grow when virtual desktops are supported
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
