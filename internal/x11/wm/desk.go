@@ -68,11 +68,12 @@ const (
 	moveResizeMoveKeyboard moveResizeType = 10
 	moveResizeCancel       moveResizeType = 11
 
-	keyCodeEscape = 9
-	keyCodeTab    = 23
-	keyCodeReturn = 36
-	keyCodeAlt    = 64
-	keyCodeSpace  = 65
+	keyCodeEscape      = 9
+	keyCodeTab         = 23
+	keyCodeReturn      = 36
+	keyCodeAlt         = 64
+	keyCodeSpace       = 65
+	keyCodePrintScreen = 107
 
 	keyCodeEnter = 108
 	keyCodeLeft  = 113
@@ -223,6 +224,8 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 	switch n {
 	case fyne.KeySpace:
 		return keyCodeSpace
+	case deskDriver.KeyPrintScreen:
+		return keyCodePrintScreen
 	case fyne.KeyTab:
 		return keyCodeTab
 	case fynedesk.KeyBrightnessDown:
@@ -253,7 +256,6 @@ func (x *x11WM) modifierToKeyMask(m deskDriver.Modifier) uint16 {
 }
 
 func (x *x11WM) runLoop() {
-	x.setupBindings()
 	conn := x.x.Conn()
 
 	for {
@@ -516,6 +518,7 @@ func (x *x11WM) setInitialWindowAttributes(win xproto.Window) {
 }
 
 func (x *x11WM) setupBindings() {
+	x.setupDeskBindings()
 	deskListener := make(chan fynedesk.DeskSettings)
 	fynedesk.Instance().Settings().AddChangeListener(deskListener)
 	go func() {
@@ -539,6 +542,14 @@ func (x *x11WM) setupBindings() {
 			}
 		}
 	}()
+}
+
+func (x *x11WM) setupDeskBindings() {
+	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Window", KeyName: deskDriver.KeyPrintScreen,
+		Modifier: deskDriver.ShiftModifier},
+		x.screenshotWindow)
+	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Screen", KeyName: deskDriver.KeyPrintScreen},
+		x.screenshot)
 }
 
 func (x *x11WM) setupWindow(win xproto.Window) {
