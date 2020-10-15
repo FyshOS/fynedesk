@@ -1,20 +1,15 @@
 package ui
 
 import (
+	"fmt"
 	"runtime/debug"
 
 	"fyne.io/fyne"
 )
 
-func (l *desktop) newDesktopWindowFull() fyne.Window {
-	desk := l.app.NewWindow(RootWindowName)
+func (l *desktop) newDesktopWindowFull(outputName string) fyne.Window {
+	desk := l.app.NewWindow(fmt.Sprintf("%s%s", RootWindowName, outputName))
 	desk.SetPadded(false)
-	desk.SetFullScreen(true)
-
-	desk.SetMaster()
-	desk.SetOnClosed(func() {
-		l.wm.Close()
-	})
 
 	return desk
 }
@@ -29,5 +24,5 @@ func (l *desktop) runFull() {
 		}
 	}()
 
-	l.root.ShowAndRun()
+	l.controlWin.ShowAndRun()
 }

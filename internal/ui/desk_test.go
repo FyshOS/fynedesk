@@ -10,19 +10,20 @@ import (
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/test"
 
 	"fyne.io/fynedesk"
-	wmTest "fyne.io/fynedesk/test"
+	"fyne.io/fynedesk/test"
 	wmTheme "fyne.io/fynedesk/theme"
 )
 
 func TestDeskLayout_Layout(t *testing.T) {
-	l := &desktop{screens: wmTest.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
-		Width: 2000, Height: 1000, Scale: 1.0}), settings: wmTest.NewSettings()}
+	l := &desktop{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
+		Width: 2000, Height: 1000, Scale: 1.0}), settings: test.NewSettings()}
 	l.bar = testBar([]string{})
 	l.widgets = newWidgetPanel(l)
 	bg := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}
+	l.backgroundScreenMap = make(map[*background]*fynedesk.Screen)
+	l.backgroundScreenMap[bg] = l.screens.Primary()
 	deskSize := fyne.NewSize(2000, 1000)
 
 	l.Layout([]fyne.CanvasObject{bg, l.bar, l.widgets}, deskSize)
@@ -36,7 +37,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 
 func TestScaleVars_Up(t *testing.T) {
 	l := &desktop{}
-	l.screens = wmTest.NewScreensProvider()
+	l.screens = test.NewScreensProvider()
 	l.screens.Screens()[0].Scale = 1.8
 	env := l.scaleVars(1.8)
 	assert.Contains(t, env, "QT_SCREEN_SCALE_FACTORS=Screen0=1.8")
@@ -46,7 +47,7 @@ func TestScaleVars_Up(t *testing.T) {
 
 func TestScaleVars_Down(t *testing.T) {
 	l := &desktop{}
-	l.screens = wmTest.NewScreensProvider()
+	l.screens = test.NewScreensProvider()
 	l.screens.Screens()[0].Scale = 0.9
 	env := l.scaleVars(0.9)
 	assert.Contains(t, env, "QT_SCREEN_SCALE_FACTORS=Screen0=1.0")
@@ -55,14 +56,13 @@ func TestScaleVars_Down(t *testing.T) {
 }
 
 func TestBackgroundChange(t *testing.T) {
-	l := &desktop{screens: wmTest.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
+	l := &desktop{screens: test.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
 		Width: 2000, Height: 1000, Scale: 1.0})}
 	fynedesk.SetInstance(l)
-	l.app = test.NewApp()
-	l.settings = wmTest.NewSettings()
-	l.setupRoot()
-
-	bg := l.root.Content().(*fyne.Container).Objects[0].(*background)
+	l.settings = test.NewSettings()
+	bg := newBackground()
+	l.backgroundScreenMap = make(map[*background]*fynedesk.Screen)
+	l.backgroundScreenMap[bg] = l.screens.Primary()
 
 	workingDir, err := os.Getwd()
 	if err != nil {
@@ -71,7 +71,7 @@ func TestBackgroundChange(t *testing.T) {
 	}
 	assert.Equal(t, wmTheme.Background, bg.wallpaper.Resource)
 
-	l.settings.(*wmTest.Settings).SetBackground(filepath.Join(workingDir, "testdata", "fyne.png"))
+	l.settings.(*test.Settings).SetBackground(filepath.Join(workingDir, "testdata", "fyne.png"))
 	l.updateBackgrounds(l.Settings().Background())
 	assert.Equal(t, l.settings.Background(), bg.wallpaper.File)
 }

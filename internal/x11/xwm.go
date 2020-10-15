@@ -17,5 +17,5 @@ type XWM interface {
 	X() *xgbutil.XUtil
 	Conn() *xgb.Conn
 
-	RootID() xproto.Window
+	WinIDForScreen(screen *fynedesk.Screen) xproto.Window
 }

@@ -265,9 +265,7 @@ func newBar(desk fynedesk.Desktop) *bar {
 	bar.iconScale = float32(desk.Settings().LauncherZoomScale())
 	bar.disableTaskbar = desk.Settings().LauncherDisableTaskbar()
 
-	if wm := desk.WindowManager(); wm != nil {
-		wm.AddStackListener(bar)
-	}
+	desk.WindowManager().AddStackListener(bar)
 	bar.appendLauncherIcons()
 
 	return bar
