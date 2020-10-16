@@ -16,29 +16,30 @@ func parseXPM(data []byte) image.Image {
 	rowStart := 0
 	rowNum := 0
 	for i, b := range data {
-		if b == '\n' {
-			row := string(data[rowStart:i])
-			rowStart = i + 1
-			if row == "" || row[0] != '"' {
-				continue
-			}
-			row = stripQuotes(row)
-
-			if rowNum == 0 {
-				w, h, cols, size := parseDimensions(row)
-				img = image.NewNRGBA(image.Rectangle{image.Point{}, image.Point{w, h}})
-				colCount = cols
-				charSize = size
-			} else if rowNum <= colCount {
-				id, c := parseColor(row)
-				if id != "" {
-					colors[id] = c
-				}
-			} else {
-				parsePixels(row, charSize, rowNum-colCount-1, colors, img)
-			}
-			rowNum++
+		if b != '\n' {
+			continue
 		}
+		row := string(data[rowStart:i])
+		rowStart = i + 1
+		if row == "" || row[0] != '"' {
+			continue
+		}
+		row = stripQuotes(row)
+
+		if rowNum == 0 {
+			w, h, cols, size := parseDimensions(row)
+			img = image.NewNRGBA(image.Rectangle{image.Point{}, image.Point{w, h}})
+			colCount = cols
+			charSize = size
+		} else if rowNum <= colCount {
+			id, c := parseColor(row)
+			if id != "" {
+				colors[id] = c
+			}
+		} else {
+			parsePixels(row, charSize, rowNum-colCount-1, colors, img)
+		}
+		rowNum++
 	}
 
 	return img
@@ -49,15 +50,11 @@ func parseColor(data string) (id string, c color.Color) {
 		return
 	}
 	parts := strings.Fields(data)
-	if len(parts) != 3 {
-		if len(parts) == 2 && parts[0] == "c" {
-			parts = []string{" ", "c", parts[1]}
-		} else {
-			return
-		}
-	}
-
-	if parts[1] != "c" {
+	if len(parts) == 2 && parts[0] == "c" {
+		parts = []string{" ", "c", parts[1]}
+	} else if len(parts) != 3 {
+		return
+	} else if parts[1] != "c" {
 		return
 	}
 
