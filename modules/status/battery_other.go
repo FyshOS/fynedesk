@@ -4,10 +4,11 @@ package status
 
 import (
 	"io/ioutil"
-	"log"
 	"os"
 	"strconv"
 	"strings"
+
+	"fyne.io/fyne"
 )
 
 func (b *battery) value() (float64, error) {
@@ -18,14 +19,14 @@ func (b *battery) value() (float64, error) {
 	}
 	nowStr, err2 := ioutil.ReadFile(nowFile)
 	if err1 != nil || err2 != nil {
-		log.Println("Error reading battery info", err1)
+		fyne.LogError("Error reading battery info", err1)
 		return 0, err1
 	}
 
 	now, err1 := strconv.Atoi(strings.TrimSpace(string(nowStr)))
 	full, err2 := strconv.Atoi(strings.TrimSpace(string(fullStr)))
 	if err1 != nil || err2 != nil {
-		log.Println("Error converting battery info", err1)
+		fyne.LogError("Error converting battery info", err1)
 		return 0, err1
 	}
 

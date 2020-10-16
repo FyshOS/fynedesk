@@ -4,10 +4,11 @@ package status
 
 import (
 	"fmt"
-	"log"
 	"os/exec"
 	"strconv"
 	"strings"
+
+	"fyne.io/fyne"
 
 	wmtheme "fyne.io/fynedesk/theme"
 )
@@ -47,7 +48,7 @@ func (b *sound) setValue(vol int) {
 	level := fmt.Sprintf("%d:%d", vol, vol)
 	cmd := exec.Command("mixer", "vol", level)
 	if err := cmd.Run(); err != nil {
-		log.Println("Failed to set volume", err)
+		fyne.LogError("Failed to set volume", err)
 		return
 	}
 
@@ -63,7 +64,7 @@ func (b *sound) setValue(vol int) {
 func (b *sound) toggleMute() {
 	oldVal, err := b.value()
 	if err != nil {
-		log.Println("toggleMute() failed", err)
+		fyne.LogError("toggleMute() failed", err)
 		return
 	}
 

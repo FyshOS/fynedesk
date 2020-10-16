@@ -3,10 +3,11 @@
 package status
 
 import (
-	"log"
+	"fyne.io/fyne"
+
+	"github.com/mafik/pulseaudio"
 
 	wmtheme "fyne.io/fynedesk/theme"
-	"github.com/mafik/pulseaudio"
 )
 
 // Destroy tidies up resources
@@ -37,7 +38,7 @@ func (b *sound) setup() error {
 
 func (b *sound) setValue(vol int) {
 	if err := b.client.SetVolume(float32(vol) / 100); err != nil {
-		log.Println("Failed to set volume", err)
+		fyne.LogError("Failed to set volume", err)
 		return
 	}
 
@@ -45,13 +46,13 @@ func (b *sound) setValue(vol int) {
 }
 
 func (b *sound) toggleMute() {
-	toggl, err := b.client.ToggleMute()
+	toggle, err := b.client.ToggleMute()
 	if err != nil {
-		log.Println("toggleMute() failed", err)
+		fyne.LogError("toggleMute() failed", err)
 		return
 	}
 
-	if toggl {
+	if toggle {
 		b.mute.SetIcon(wmtheme.MuteIcon)
 	} else {
 		b.mute.SetIcon(wmtheme.SoundIcon)

@@ -1,8 +1,6 @@
 package status
 
 import (
-	"log"
-
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
@@ -62,7 +60,7 @@ func (b *sound) Metadata() fynedesk.ModuleMetadata {
 func (b *sound) offsetValue(diff int) {
 	currVal, err := b.value()
 	if err != nil {
-		log.Println("Failed to get volume", err)
+		fyne.LogError("Failed to get volume", err)
 		return
 	}
 	value := currVal + diff
