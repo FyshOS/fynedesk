@@ -2,7 +2,9 @@ package icon // import "fyne.io/fynedesk/internal/icon"
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"image/png"
 	"io/ioutil"
 	"math"
 	"os"
@@ -17,7 +19,7 @@ import (
 	wmTheme "fyne.io/fynedesk/theme"
 )
 
-var iconExtensions = []string{".png", ".svg"}
+var iconExtensions = []string{".png", ".svg", ".xpm"}
 
 //fdoApplicationData is a structure that contains information about .desktop files
 type fdoApplicationData struct {
@@ -88,6 +90,19 @@ func loadIcon(path string) fyne.Resource {
 	if err != nil {
 		fyne.LogError("Failed to load image", err)
 		return nil
+	}
+
+	if path[len(path)-4:] == ".xpm" {
+		var w bytes.Buffer
+		img := parseXPM(data)
+		err := png.Encode(&w, img)
+		data = w.Bytes()
+
+		if err != nil {
+			fyne.LogError("Failed to re-encode XPM image", err)
+			return nil
+		}
+		path = path[:len(path)-4] + ".png"
 	}
 
 	return fyne.NewStaticResource(filepath.Base(path), data)

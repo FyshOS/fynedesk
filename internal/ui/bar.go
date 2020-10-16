@@ -314,7 +314,6 @@ func (b *barRenderer) Refresh() {
 	canvas.Refresh(b.appBar.separator)
 }
 
-// Destroy destroys the renderer
+// Destroy tidies up resources
 func (b *barRenderer) Destroy() {
-
 }

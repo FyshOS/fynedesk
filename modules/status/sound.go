@@ -1,8 +1,6 @@
 package status
 
 import (
-	"log"
-
 	"fyne.io/fyne"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
@@ -24,69 +22,19 @@ type sound struct {
 	mute   *widget.Button
 }
 
-// Destroy destroys the module
-func (b *sound) Destroy() {
-	if b.client == nil {
-		return
-	}
-	b.client.Close()
-}
-
-func (b *sound) value() (float32, error) {
-	volume, err := b.client.Volume()
-	if err != nil {
-		return 0, err
-	}
-
-	return volume, nil
-}
-
-func (b *sound) offsetValue(diff int) {
-	floatVal, err := b.value()
-	if err != nil {
-		log.Println("Failed to get volume", err)
-		return
-	}
-	value := floatVal + float32(diff)/100
-
-	if value < 0 {
-		value = 0
-	} else if value > 1 {
-		value = 1
-	}
-
-	if err := b.client.SetVolume(value); err != nil {
-		log.Println("Failed to set volume", err)
-		return
-	}
-
-	b.bar.SetValue(float64(value))
-}
-
-func (b *sound) toggleMute() {
-	toggl, err := b.client.ToggleMute()
-	if err != nil {
-		log.Println("toggleMute() failed", err)
-		return
-	}
-
-	if toggl {
-		b.mute.SetIcon(wmtheme.MuteIcon)
-	} else {
-		b.mute.SetIcon(wmtheme.SoundIcon)
-	}
-
+func newSound() fynedesk.Module {
+	return &sound{}
 }
 
 // StatusAreaWidget builds the widget
 func (b *sound) StatusAreaWidget() fyne.CanvasObject {
-	client, err := pulseaudio.NewClient()
-	if err != nil {
+	if err := b.setup(); err != nil {
+		fyne.LogError("Unable to start sound module", err)
 		return nil
 	}
-	b.client = client
 
 	b.bar = widget.NewProgressBar()
+	b.bar.Max = 100
 	b.mute = widget.NewButtonWithIcon("", wmtheme.SoundIcon, b.toggleMute)
 	b.mute.HideShadow = true
 	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
@@ -109,6 +57,19 @@ func (b *sound) Metadata() fynedesk.ModuleMetadata {
 	return soundMeta
 }
 
-func newSound() fynedesk.Module {
-	return &sound{}
+func (b *sound) offsetValue(diff int) {
+	currVal, err := b.value()
+	if err != nil {
+		fyne.LogError("Failed to get volume", err)
+		return
+	}
+	value := currVal + diff
+
+	if value < 0 {
+		value = 0
+	} else if value > 100 {
+		value = 100
+	}
+
+	b.setValue(value)
 }
