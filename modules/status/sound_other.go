@@ -9,7 +9,7 @@ import (
 	"github.com/mafik/pulseaudio"
 )
 
-// Destroy destroys the module
+// Destroy tidies up resources
 func (b *sound) Destroy() {
 	if b.client == nil {
 		return
