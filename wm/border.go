@@ -58,6 +58,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 		title,
 		layout.NewSpacer())
 	titleBar.title = title
+	titleBar.max = max
 
 	if icon != nil {
 		appIcon := canvas.NewImageFromResource(icon)
@@ -74,6 +75,7 @@ type Border struct {
 	*widget.Box
 	focused bool
 	title   *widget.Label
+	max     *widget.Button
 	win     fynedesk.Window
 }
 
@@ -104,6 +106,16 @@ func (c *Border) CreateRenderer() fyne.WidgetRenderer {
 func (c *Border) SetFocused(focus bool) {
 	c.focused = focus
 	c.Refresh()
+}
+
+// SetMaximized updates the state of the border maximize indicators and refreshes
+func (c *Border) SetMaximized(isMax bool) {
+	if isMax {
+		c.max.Icon = theme.ViewRestoreIcon()
+	} else {
+		c.max.Icon = wmTheme.MaximizeIcon
+	}
+	c.max.Refresh()
 }
 
 // SetTitle updates the title portion of this border and refreshes.
