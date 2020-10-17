@@ -328,7 +328,7 @@ func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconNa
 	}
 	// If the requested icon wasn't found in the specific size or scalable dirs
 	// of the theme try all sizes within theme and all icon dirs besides apps
-	var subIconDirs = []string{"apps", "actions", "devices", "emblems", "mimetypes", "places", "status"}
+	var subIconDirs = []string{"apps", "actions", "devices", "emblems", "legacy", "mimetypes", "places", "status"}
 	iconSizeInt, err := strconv.Atoi(iconSize)
 	if err != nil {
 		iconSizeInt = 32
