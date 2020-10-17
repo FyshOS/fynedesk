@@ -599,7 +599,7 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 	}
 
 	winType := windowTypeGet(x.x, win)
-	switch winType[0] {
+	switch winType[len(winType)-1] { // KDE etc put their window types first
 	case windowTypeUtility, windowTypeDialog, windowTypeNormal:
 		break
 	default:
