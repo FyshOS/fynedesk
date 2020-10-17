@@ -78,7 +78,7 @@ func (data *fdoApplicationData) Run(env []string) error {
 
 	cmd := exec.Command(command)
 	if len(commands) > 1 {
-		cmd.Args = extractArgs(commands[1:])
+		cmd.Args = extractArgs(commands) // Args[0] should be binary path
 	}
 
 	cmd.Env = vars
