@@ -32,7 +32,7 @@ func parseXPM(data []byte) image.Image {
 			colCount = cols
 			charSize = size
 		} else if rowNum <= colCount {
-			id, c := parseColor(row)
+			id, c := parseColor(row, charSize)
 			if id != "" {
 				colors[id] = c
 			}
@@ -42,10 +42,14 @@ func parseXPM(data []byte) image.Image {
 		rowNum++
 	}
 
+	row := string(data[rowStart:])
+	if row != "" && row[0] == '"' { // last row has pixels
+		parsePixels(stripQuotes(row), charSize, rowNum-colCount-1, colors, img)
+	}
 	return img
 }
 
-func parseColor(data string) (id string, c color.Color) {
+func parseColor(data string, charSize int) (id string, c color.Color) {
 	if len(data) == 0 {
 		return
 	}
@@ -58,7 +62,7 @@ func parseColor(data string) (id string, c color.Color) {
 		return
 	}
 
-	return parts[0], stringToColor(parts[2])
+	return data[:charSize], stringToColor(parts[2])
 }
 
 func parseDimensions(data string) (w, h, i, j int) {
@@ -79,8 +83,9 @@ func parseDimensions(data string) (w, h, i, j int) {
 
 func parsePixels(row string, charSize int, pixRow int, colors map[string]color.Color, img *image.NRGBA) {
 	off := pixRow * img.Stride
-	for i := 0; i < len(row); i += charSize {
-		id := row[i : i+charSize]
+	chPos := 0
+	for i := 0; i < img.Stride/4; i++ {
+		id := row[chPos : chPos+charSize]
 		c, ok := colors[id]
 		if !ok {
 			c = color.Transparent
@@ -92,6 +97,7 @@ func parsePixels(row string, charSize int, pixRow int, colors map[string]color.C
 		img.Pix[pos+1] = uint8(g)
 		img.Pix[pos+2] = uint8(b)
 		img.Pix[pos+3] = uint8(a)
+		chPos += charSize
 	}
 }
 

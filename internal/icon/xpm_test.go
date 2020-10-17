@@ -25,8 +25,7 @@ static char * blarg_xpm[] = {
 "*.*.*.*.*.*..*.*",
 "**..*..**.*...**",
 "...............*",
-".............**."
-};`
+".............**."};`
 
 func TestParse(t *testing.T) {
 	img := parseXPM([]byte(iconData))
@@ -53,11 +52,11 @@ func TestParse(t *testing.T) {
 }
 
 func TestParseColor(t *testing.T) {
-	id, c := parseColor(". c #000000")
+	id, c := parseColor(". c #000000", 1)
 	assert.Equal(t, ".", id)
 	assert.Equal(t, &color.NRGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff}, c)
 
-	id, c = parseColor("  c #000000") // special case, id is spaces
+	id, c = parseColor("  c #000000", 1) // special case, id is spaces
 	assert.Equal(t, " ", id)
 }
 
