@@ -8,10 +8,10 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestSwapPixel(t *testing.T) {
+func TestCopyPixel(t *testing.T) {
 	in := []byte{0xff, 0x99, 0x33, 0x00}
 	out := []uint8{0xff, 0xff, 0xff, 0xff}
-	swapPixels(in, out, 0)
+	copyPixel(in, out, 0)
 
 	assert.Equal(t, uint8(0x33), out[0])
 	assert.Equal(t, uint8(0x99), out[1])

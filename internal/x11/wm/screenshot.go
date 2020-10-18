@@ -19,33 +19,34 @@ import (
 	"fyne.io/fynedesk/internal/x11"
 )
 
-func (x *x11WM) captureWindow(win xproto.Window) {
-	draw := xproto.Drawable(win)
-	geom, err := xproto.GetGeometry(x.x.Conn(), draw).Reply()
+func (x *x11WM) captureWindow(win xproto.Window) *image.NRGBA {
+	geom, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(win)).Reply()
 	if err != nil {
 		fyne.LogError("Unable to get screen geometry", err)
-		return
+		return nil
 	}
-	pix, err := xproto.GetImage(x.x.Conn(), xproto.ImageFormatZPixmap, draw, 0, 0, geom.Width, geom.Height,
-		math.MaxUint32).Reply()
+	pix, err := xproto.GetImage(x.x.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(win),
+		0, 0, geom.Width, geom.Height, math.MaxUint32).Reply()
 	if err != nil {
 		fyne.LogError("Error capturing window content", err)
-		return
+		return nil
 	}
 
 	img := image.NewNRGBA(image.Rect(0, 0, int(geom.Width), int(geom.Height)))
 	i := 0
 	for y := 0; y < int(geom.Height); y++ {
 		for x := 0; x < int(geom.Width); x++ {
-			swapPixels(pix.Data, img.Pix, i)
+			copyPixel(pix.Data, img.Pix, i)
 			i += 4
 		}
 	}
-	x.showCaptureSave(img)
+	return img
 }
 
 func (x *x11WM) screenshot() {
-	x.captureWindow(x.rootIDs[0]) // TODO combine all windows on all screens
+	root := x.x.RootWin()
+	bg := x.captureWindow(root)
+	x.showCaptureSave(bg)
 }
 
 func (x *x11WM) screenshotWindow() {
@@ -55,7 +56,11 @@ func (x *x11WM) screenshotWindow() {
 		return
 	}
 
-	x.captureWindow(win.(x11.XWin).FrameID())
+	img := x.captureWindow(win.(x11.XWin).FrameID())
+	if img == nil {
+		return
+	}
+	x.showCaptureSave(img)
 }
 
 func (x *x11WM) showCaptureSave(img image.Image) {
@@ -78,6 +83,17 @@ func (x *x11WM) showCaptureSave(img image.Image) {
 	w.Show()
 }
 
+func copyPixel(in []byte, out []uint8, i int) {
+	b := in[i]
+	g := in[i+1]
+	r := in[i+2]
+	// we ignore a - seems to be 0 for border
+	out[i] = r
+	out[i+1] = g
+	out[i+2] = b
+	out[i+3] = 0xff
+}
+
 func saveImage(pix image.Image, w fyne.Window) {
 	d := dialog.NewFileSave(func(write fyne.URIWriteCloser, err error) {
 		if err != nil {
@@ -93,15 +109,4 @@ func saveImage(pix image.Image, w fyne.Window) {
 	}, w)
 	d.SetFilter(storage.NewMimeTypeFileFilter([]string{"image/png"}))
 	d.Show()
-}
-
-func swapPixels(in []byte, out []uint8, i int) {
-	b := in[i]
-	g := in[i+1]
-	r := in[i+2]
-	// a is ignored, seems to be 0 for border
-	out[i] = r
-	out[i+1] = g
-	out[i+2] = b
-	out[i+3] = 0xff
 }
