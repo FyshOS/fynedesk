@@ -5,6 +5,7 @@ package wm // import "fyne.io/fynedesk/internal/x11/wm"
 import (
 	"errors"
 	"fmt"
+	"image"
 	"os"
 	"os/exec"
 	"strconv"
@@ -146,6 +147,11 @@ func (x *x11WM) Blank() {
 		time.Sleep(time.Second / 3)
 		exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
 	}()
+}
+
+func (x *x11WM) Capture() image.Image {
+	root := x.x.RootWin()
+	return x11.CaptureWindow(x.x.Conn(), root)
 }
 
 func (x *x11WM) Close() {
@@ -518,7 +524,6 @@ func (x *x11WM) setInitialWindowAttributes(win xproto.Window) {
 }
 
 func (x *x11WM) setupBindings() {
-	x.setupDeskBindings()
 	deskListener := make(chan fynedesk.DeskSettings)
 	fynedesk.Instance().Settings().AddChangeListener(deskListener)
 	go func() {
@@ -542,14 +547,6 @@ func (x *x11WM) setupBindings() {
 			}
 		}
 	}()
-}
-
-func (x *x11WM) setupDeskBindings() {
-	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Window", KeyName: deskDriver.KeyPrintScreen,
-		Modifier: deskDriver.ShiftModifier},
-		x.screenshotWindow)
-	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Screen", KeyName: deskDriver.KeyPrintScreen},
-		x.screenshot)
 }
 
 func (x *x11WM) setupWindow(win xproto.Window) {

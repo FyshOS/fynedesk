@@ -304,6 +304,11 @@ func (l *desktop) registerShortcuts() {
 		func() {
 			// dummy - the wm handles app switcher
 		})
+	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Window", KeyName: deskDriver.KeyPrintScreen,
+		Modifier: deskDriver.ShiftModifier},
+		l.screenshotWindow)
+	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Screen", KeyName: deskDriver.KeyPrintScreen},
+		l.screenshot)
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.

@@ -1,11 +1,14 @@
 package fynedesk
 
+import "image"
+
 // WindowManager describes a full window manager which may be loaded as part of the setup.
 type WindowManager interface {
 	Stack
 	AddStackListener(StackListener)
 
 	Blank()
+	Capture() image.Image // Capture the contents of the whole desktop to an image
 	Close()
 	Run()
 }

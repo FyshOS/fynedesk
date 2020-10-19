@@ -1,6 +1,10 @@
 package test
 
-import "fyne.io/fynedesk"
+import (
+	"image"
+
+	"fyne.io/fynedesk"
+)
 
 // Window is an in-memory virtual window for test purposes
 type Window struct {
@@ -14,6 +18,11 @@ func NewWindow(title string) *Window {
 	win := &Window{}
 	win.props.name = title
 	return win
+}
+
+// Capture the contents of the window. Our test code cowardly refuses to do this.
+func (w *Window) Capture() image.Image {
+	return nil // we can add this if required for testing
 }
 
 // Close this test window
