@@ -87,11 +87,11 @@ func copyPixel(in []byte, out []uint8, i int) {
 	b := in[i]
 	g := in[i+1]
 	r := in[i+2]
-	// we ignore a - seems to be 0 for border
+	a := in[i+3]
 	out[i] = r
 	out[i+1] = g
 	out[i+2] = b
-	out[i+3] = 0xff
+	out[i+3] = a
 }
 
 func saveImage(pix image.Image, w fyne.Window) {

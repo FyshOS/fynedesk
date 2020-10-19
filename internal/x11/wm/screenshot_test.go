@@ -9,8 +9,8 @@ import (
 )
 
 func TestCopyPixel(t *testing.T) {
-	in := []byte{0xff, 0x99, 0x33, 0x00}
-	out := []uint8{0xff, 0xff, 0xff, 0xff}
+	in := []byte{0xff, 0x99, 0x33, 0xff}
+	out := []uint8{0, 0, 0, 0}
 	copyPixel(in, out, 0)
 
 	assert.Equal(t, uint8(0x33), out[0])
