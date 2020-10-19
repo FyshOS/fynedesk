@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"image/color"
-	"log"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -35,7 +34,7 @@ func (b *brightness) Destroy() {
 func (b *brightness) value() (float64, error) {
 	out, err := exec.Command("xbacklight").Output()
 	if err != nil {
-		log.Println("Error running xbacklight", err)
+		fyne.LogError("Error running xbacklight", err)
 		return 0, err
 	}
 	if strings.TrimSpace(string(out)) == "" {
@@ -43,7 +42,7 @@ func (b *brightness) value() (float64, error) {
 	}
 	ret, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
 	if err != nil {
-		log.Println("Error reading brightness info", err)
+		fyne.LogError("Error reading brightness info", err)
 		return 0, err
 	}
 	return ret / 100, nil
@@ -61,7 +60,7 @@ func (b *brightness) offsetValue(diff int) {
 
 	err := exec.Command("xbacklight", "-set", fmt.Sprintf("%d", value)).Run()
 	if err != nil {
-		log.Println("Error running xbacklight", err)
+		fyne.LogError("Error running xbacklight", err)
 	} else {
 		newVal, _ := b.value()
 		b.bar.SetValue(newVal)

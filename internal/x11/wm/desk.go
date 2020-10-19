@@ -49,6 +49,7 @@ type x11WM struct {
 	supportedHints  []string
 	currentBindings []*fynedesk.Shortcut
 
+	died         bool
 	rootIDs      []xproto.Window
 	transientMap map[xproto.Window][]xproto.Window
 }
@@ -157,6 +158,10 @@ func (x *x11WM) Capture() image.Image {
 func (x *x11WM) Close() {
 	for _, child := range x.clients {
 		child.Close()
+	}
+	if x.died {
+		// x server died, no point attempting to shut it cleanly
+		return
 	}
 
 	cancel := false
@@ -271,6 +276,7 @@ func (x *x11WM) runLoop() {
 			continue
 		}
 		if ev == nil { // disconnected if both are nil
+			x.died = true
 			break
 		}
 		switch ev := ev.(type) {
@@ -601,7 +607,7 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 	}
 
 	winType := windowTypeGet(x.x, win)
-	switch winType[0] {
+	switch winType[len(winType)-1] { // KDE etc put their window types first
 	case windowTypeUtility, windowTypeDialog, windowTypeNormal:
 		break
 	default:

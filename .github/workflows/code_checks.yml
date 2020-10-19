@@ -12,7 +12,7 @@ jobs:
         go-version: '^1.15.x'     
     - name: get dependencies
       run: |
-        GO111MODULE=off go get golang.org/x/tools/cmd/goimports                               
+        GO111MODULE=off go get golang.org/x/tools/cmd/goimports
         GO111MODULE=off go get github.com/fzipp/gocyclo/cmd/gocyclo
         GO111MODULE=off go get golang.org/x/lint/golint
 #        GO111MODULE=off go get honnef.co/go/tools/cmd/staticcheck
