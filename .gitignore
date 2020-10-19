@@ -1,5 +1,8 @@
+# Ignore binaries
 cmd/fynedesk/fynedesk
 cmd/fynedesk_runner/fynedesk_runner
+fynedesk
+fynedesk_runner
 
 .idea
 
