@@ -4,8 +4,6 @@ package wm
 
 import (
 	"github.com/BurntSushi/xgb/xproto"
-
-	"fyne.io/fynedesk/internal/x11"
 )
 
 func (x *x11WM) transientChildAdd(leader xproto.Window, child xproto.Window) {
@@ -23,16 +21,6 @@ func (x *x11WM) transientChildRemove(leader xproto.Window, child xproto.Window) 
 			x.transientMap[leader] = append(x.transientMap[leader][:i], x.transientMap[leader][i+1:]...)
 		}
 	}
-}
-
-// Window C could be Transient for window B which is transient for WindowA - We sometimes need the very top level
-func (x *x11WM) transientTopLeaderGet(child xproto.Window) xproto.Window {
-	var topLeader xproto.Window
-	for child != 0 {
-		topLeader = child
-		child = x11.WindowTransientForGet(x.x, child)
-	}
-	return topLeader
 }
 
 func (x *x11WM) transientLeaderRemove(leader xproto.Window) {

@@ -36,7 +36,7 @@ func (c *closeButton) MouseOut() {
 func newCloseButton(win fynedesk.Window) *closeButton {
 	b := &closeButton{}
 	b.ExtendBaseWidget(b)
-	b.HideShadow = true
+	b.Importance = widget.LowImportance
 	b.OnTapped = func() {
 		win.Close()
 	}

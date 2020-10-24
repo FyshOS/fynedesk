@@ -43,7 +43,7 @@ func (d *settingsUI) populateThemeIcons(box *fyne.Container, theme string) {
 		}
 		iconRes := appData.Icon(theme, int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(fynedesk.Instance().Screens().Primary().CanvasScale())))
 		icon := widget.NewIcon(iconRes)
-		box.AddObject(icon)
+		box.Add(icon)
 	}
 	box.Refresh()
 }
@@ -102,7 +102,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 			themeLabel.SetText(themeButton.Text)
 			d.populateThemeIcons(themeIcons, themeButton.Text)
 		}
-		themeList.AddObject(themeButton)
+		themeList.Add(themeButton)
 	}
 
 	bg := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, bgLabel, bgButtons), bgLabel, bgPath, bgButtons)
@@ -111,8 +111,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	themeCurrent := widget.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
-	bottom := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, themeCurrent, themeFormLabel, nil),
-		themeCurrent, themeFormLabel, widget.NewScrollContainer(themeList))
+	bottom := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, themeCurrent, themeFormLabel, nil), themeCurrent, themeFormLabel, container.NewScroll(themeList))
 
 	applyButton := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
@@ -190,7 +189,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 		}).Show()
 	}
 
-	bar := widget.NewHScrollContainer(orderList)
+	bar := container.NewHScroll(orderList)
 
 	iconSize := widget.NewEntry()
 	iconSize.SetText(fmt.Sprintf("%d", d.settings.LauncherIconSize()))
@@ -283,7 +282,7 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	rows := widget.NewHBox(widget.NewGroup("Action", names...),
 		widget.NewGroup("Modifier", mods...),
 		widget.NewGroup("Key Name", keys...))
-	grid := widget.NewScrollContainer(rows)
+	grid := container.NewScroll(rows)
 
 	applyButton := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
@@ -341,17 +340,17 @@ func showSettings(deskSettings *deskSettings) {
 	ui.win = w
 	fyneSettings := settings.NewSettings()
 
-	tabs := widget.NewTabContainer(
-		&widget.TabItem{Text: "Fyne Settings", Icon: theme.FyneLogo(),
+	tabs := container.NewAppTabs(
+		&container.TabItem{Text: "Fyne Settings", Icon: theme.FyneLogo(),
 			Content: fyneSettings.LoadAppearanceScreen(w)},
-		&widget.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
+		&container.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
 			Content: ui.loadAppearanceScreen()},
-		&widget.TabItem{Text: "App Bar", Icon: wmtheme.IconifyIcon, Content: ui.loadBarScreen()},
-		&widget.TabItem{Text: "Keyboard", Icon: wmtheme.KeyboardIcon, Content: ui.loadKeyboardScreen()},
-		&widget.TabItem{Text: "Advanced", Icon: theme.SettingsIcon(),
+		&container.TabItem{Text: "App Bar", Icon: wmtheme.IconifyIcon, Content: ui.loadBarScreen()},
+		&container.TabItem{Text: "Keyboard", Icon: wmtheme.KeyboardIcon, Content: ui.loadKeyboardScreen()},
+		&container.TabItem{Text: "Advanced", Icon: theme.SettingsIcon(),
 			Content: ui.loadAdvancedScreen()},
 	)
-	tabs.SetTabLocation(widget.TabLocationLeading)
+	tabs.SetTabLocation(container.TabLocationLeading)
 	w.SetContent(tabs)
 
 	w.Resize(fyne.NewSize(480, 320))

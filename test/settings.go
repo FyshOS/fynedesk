@@ -23,7 +23,6 @@ func NewSettings() *Settings {
 
 // AddChangeListener is ignored for test instance
 func (*Settings) AddChangeListener(listener chan fynedesk.DeskSettings) {
-	return
 }
 
 // Background returns the path to background image (or "" if not set)

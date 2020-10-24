@@ -342,7 +342,6 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 		b.SetMaximized(f.client.maximized)
 		// TODO maybe update icon?
 	}
-	f.canvas.SetScale(scale)
 
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	iconBorderPixWidth := heightPix + x11.BorderWidth(x11.XWin(f.client))*2
@@ -368,10 +367,6 @@ func (f *frame) freePixmaps() {
 		xproto.FreePixmap(f.client.wm.Conn(), f.borderTopRight)
 		f.borderTopRight = 0
 	}
-}
-
-func (f *frame) getGeometry() (int16, int16, uint16, uint16) {
-	return f.x, f.y, f.width, f.height
 }
 
 func (f *frame) getInnerWindowCoordinates(w uint16, h uint16) (uint32, uint32, uint32, uint32) {
@@ -644,34 +639,32 @@ func (f *frame) mouseReleaseWaitForDoubleClick(relX int, relY int) {
 	var ctx context.Context
 	ctx, f.cancelFunc = context.WithDeadline(context.TODO(), time.Now().Add(time.Millisecond*300))
 	defer f.cancelFunc()
-	select {
-	case <-ctx.Done():
-		if f.clickCount == 2 {
-			obj := wm.FindObjectAtPixelPositionMatching(relX, relY, f.canvas,
-				func(obj fyne.CanvasObject) bool {
-					_, ok := obj.(fyne.DoubleTappable)
-					return ok
-				},
-			)
-			if obj != nil {
-				obj.(fyne.DoubleTappable).DoubleTapped(&fyne.PointEvent{})
-			}
-		} else {
-			obj := wm.FindObjectAtPixelPositionMatching(relX, relY, f.canvas,
-				func(obj fyne.CanvasObject) bool {
-					_, ok := obj.(fyne.Tappable)
-					return ok
-				},
-			)
-			if obj != nil {
-				obj.(fyne.Tappable).Tapped(&fyne.PointEvent{})
-			}
-		}
 
-		f.clickCount = 0
-		f.cancelFunc = nil
-		return
+	<-ctx.Done()
+	if f.clickCount == 2 {
+		obj := wm.FindObjectAtPixelPositionMatching(relX, relY, f.canvas,
+			func(obj fyne.CanvasObject) bool {
+				_, ok := obj.(fyne.DoubleTappable)
+				return ok
+			},
+		)
+		if obj != nil {
+			obj.(fyne.DoubleTappable).DoubleTapped(&fyne.PointEvent{})
+		}
+	} else {
+		obj := wm.FindObjectAtPixelPositionMatching(relX, relY, f.canvas,
+			func(obj fyne.CanvasObject) bool {
+				_, ok := obj.(fyne.Tappable)
+				return ok
+			},
+		)
+		if obj != nil {
+			obj.(fyne.Tappable).Tapped(&fyne.PointEvent{})
+		}
 	}
+
+	f.clickCount = 0
+	f.cancelFunc = nil
 }
 
 // Notify the child window that it's geometry has changed to update menu positions etc.

@@ -32,24 +32,25 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 		}
 	}
 
-	max := widget.NewButtonWithIcon("", wmTheme.MaximizeIcon, func() {
+	max := &widget.Button{Icon: wmTheme.MaximizeIcon, Importance: widget.LowImportance, OnTapped: func() {
 		if win.Maximized() {
 			win.Unmaximize()
 		} else {
 			win.Maximize()
 		}
-	})
-	max.HideShadow = true
+	}}
+
 	if win.Maximized() {
 		max.Icon = theme.ViewRestoreIcon()
 	}
 	if !canMaximize {
 		max.Disable()
 	}
-	min := widget.NewButtonWithIcon("", wmTheme.IconifyIcon, func() {
+
+	min := &widget.Button{Icon: wmTheme.IconifyIcon, Importance: widget.LowImportance, OnTapped: func() {
 		win.Iconify()
-	})
-	min.HideShadow = true
+	}}
+
 	title := widget.NewLabel(win.Properties().Title())
 	titleBar := newColoredHBox(win.Focused(), win, makeFiller(0),
 		newCloseButton(win),

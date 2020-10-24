@@ -93,16 +93,15 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 	prop.SetMinSize(brightnessIcon.MinSize().Add(fyne.NewSize(theme.Padding()*2, 0)))
 	icon := fyne.NewContainerWithLayout(layout.NewCenterLayout(), prop, brightnessIcon)
 
-	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
+	less := &widget.Button{Icon: theme.ContentRemoveIcon(), Importance: widget.LowImportance, OnTapped: func() {
 		b.offsetValue(-5)
-	})
-	less.HideShadow = true
-	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+	}}
+
+	more := &widget.Button{Icon: theme.ContentAddIcon(), Importance: widget.LowImportance, OnTapped: func() {
 		b.offsetValue(5)
-	})
-	more.HideShadow = true
-	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
-		less, b.bar, more)
+	}}
+
+	bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more), less, b.bar, more)
 
 	go b.offsetValue(0)
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, icon, nil), icon, bright)

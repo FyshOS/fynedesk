@@ -47,6 +47,11 @@ func (m *macOSAppBundle) Icon(_ string, _ int) fyne.Resource {
 
 	var data bytes.Buffer
 	err = png.Encode(&data, icon)
+	if err != nil {
+		fyne.LogError("Failed to encode icon data for "+m.iconPath, err)
+		return wmtheme.BrokenImageIcon
+	}
+
 	iconName := filepath.Base(m.iconPath)
 	return fyne.NewStaticResource(strings.Replace(iconName, ".icns", ".png", 1), data.Bytes())
 }

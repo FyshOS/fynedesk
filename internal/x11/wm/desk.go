@@ -50,8 +50,6 @@ type x11WM struct {
 	moveResizingType        moveResizeType
 	screenChangeTimestamp   xproto.Timestamp
 
-	allowedActions  []string
-	supportedHints  []string
 	currentBindings []*fynedesk.Shortcut
 
 	died         bool

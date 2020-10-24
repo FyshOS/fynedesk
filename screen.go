@@ -29,30 +29,23 @@ type Screen struct {
 
 // CanvasScale calculates the scale for the contents of a desktop canvas on this screen
 func (s *Screen) CanvasScale() float32 {
-	user := userScale()
-	if user == fyne.SettingsScaleAuto {
-		user = 1.0
-	}
-
-	return float32(math.Round(float64(s.Scale*user*10.0))) / 10.0
+	return float32(math.Round(float64(s.Scale*userScale()*10.0))) / 10.0
 }
 
 func userScale() float32 {
 	env := os.Getenv("FYNE_SCALE")
 
-	if env != "" && env != "auto" {
-		scale, err := strconv.ParseFloat(env, 32)
-		if err == nil && scale != 0 {
-			return float32(scale)
-		}
-		fyne.LogError("Error reading scale", err)
-	}
-
 	if env != "auto" {
-		setting := fyne.CurrentApp().Settings().Scale()
-		if setting != fyne.SettingsScaleAuto && setting != 0.0 {
+		if scale, err := strconv.ParseFloat(env, 32); env != "" && err == nil && scale != 0 {
+			return float32(scale)
+		} else {
+			fyne.LogError("Error reading scale", err)
+		}
+
+		if setting := fyne.CurrentApp().Settings().Scale(); setting != 0.0 {
 			return setting
 		}
+
 	}
 
 	return 1.0

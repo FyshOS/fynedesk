@@ -17,9 +17,8 @@ import (
 type background struct {
 	widget.BaseWidget
 
-	objects       []fyne.CanvasObject
-	wallpaper     *canvas.Image
-	wallpaperPath string
+	objects   []fyne.CanvasObject
+	wallpaper *canvas.Image
 }
 
 func (b *background) CreateRenderer() fyne.WidgetRenderer {
