@@ -36,10 +36,13 @@ func userScale() float32 {
 	env := os.Getenv("FYNE_SCALE")
 
 	if env != "auto" {
-		if scale, err := strconv.ParseFloat(env, 32); env != "" && err == nil && scale != 0 {
-			return float32(scale)
-		} else {
-			fyne.LogError("Error reading scale", err)
+		if env != "" {
+			scale, err := strconv.ParseFloat(env, 32)
+			if err != nil {
+				fyne.LogError("Error reading scale", err)
+			} else if scale != 0 {
+				return float32(scale)
+			}
 		}
 
 		if setting := fyne.CurrentApp().Settings().Scale(); setting != 0.0 {
