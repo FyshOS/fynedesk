@@ -4,6 +4,7 @@ package fynedesk
 type DeskSettings interface {
 	Background() string
 	IconTheme() string
+	ClockFormatting() string
 
 	LauncherIcons() []string
 	LauncherIconSize() int

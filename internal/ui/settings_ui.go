@@ -11,6 +11,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/cmd/fyne_settings/settings"
+	"fyne.io/fyne/container"
 	"fyne.io/fyne/dialog"
 	deskDriver "fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/layout"
@@ -78,6 +79,12 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 			}, d.win)
 		}))
 
+	clockLabel := widget.NewLabelWithStyle("Clock format", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	clockFormat := &widget.Radio{Options: []string{"24h", "12h"}, Required: true, Horizontal: true, OnChanged: func(selected string) {
+
+	}}
+	clockFormat.SetSelected(d.settings.ClockFormatting())
+
 	themeLabel := widget.NewLabel(d.settings.IconTheme())
 	themeIcons := fyne.NewContainerWithLayout(layout.NewHBoxLayout())
 	d.populateThemeIcons(themeIcons, d.settings.IconTheme())
@@ -90,21 +97,24 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		}
 		themeList.AddObject(themeButton)
 	}
-	top := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, bgLabel, bgButtons),
-		bgLabel, bgPath, bgButtons)
+
+	bg := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, bgLabel, bgButtons), bgLabel, bgPath, bgButtons)
+	time := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, clockLabel, clockFormat), clockLabel, clockFormat)
+	top := container.NewVBox(bg, time)
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	themeCurrent := widget.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
-	middle := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, themeCurrent, themeFormLabel, nil),
+	bottom := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, themeCurrent, themeFormLabel, nil),
 		themeCurrent, themeFormLabel, widget.NewScrollContainer(themeList))
 
 	applyButton := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
 			d.settings.setBackground(bgPath.Text)
 			d.settings.setIconTheme(themeLabel.Text)
+			d.settings.setClockFormatting(clockFormat.Selected)
 		}})
 
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, applyButton, nil, nil), top, applyButton, middle)
+	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, applyButton, nil, nil), top, applyButton, bottom)
 }
 
 func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) {
