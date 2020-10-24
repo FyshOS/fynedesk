@@ -13,3 +13,8 @@ install:
 	install -Dm00755 fynedesk_runner $(DESTDIR)$(PREFIX)/bin/fynedesk_runner
 	install -Dm00755 fynedesk $(DESTDIR)$(PREFIX)/bin/fynedesk
 	install -Dm00644 fynedesk.desktop $(DESTDIR)$(PREFIX)/share/xsessions/fynedesk.desktop
+
+uninstall:
+	-rm $(DESTDIR)$(PREFIX)/bin/fynedesk_runner
+	-rm $(DESTDIR)$(PREFIX)/bin/fynedesk
+	-rm $(DESTDIR)$(PREFIX)/share/xsessions/fynedesk.desktop
