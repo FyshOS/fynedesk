@@ -113,15 +113,15 @@ func (s *Settings) SetModuleNames(mods []string) {
 }
 
 // ClockFormatting returns the format that the clock uses for displaying the time. Either 12h or 24h.
-func (d *Settings) ClockFormatting() string {
-	return d.clockFormatting
+func (s *Settings) ClockFormatting() string {
+	return s.clockFormatting
 }
 
 // SetClockFormatting support setting the format that the clock should display
-func (d *Settings) SetClockFormatting(format string) {
+func (s *Settings) SetClockFormatting(format string) {
 	if format == "24h" {
-		d.clockFormatting = format
+		s.clockFormatting = format
 	} else {
-		d.clockFormatting = "12h"
+		s.clockFormatting = "12h"
 	}
 }
