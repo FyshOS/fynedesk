@@ -79,10 +79,8 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 			}, d.win)
 		}))
 
-	clockLabel := widget.NewLabelWithStyle("Clock format", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	clockFormat := &widget.Radio{Options: []string{"24h", "12h"}, Required: true, Horizontal: true, OnChanged: func(selected string) {
-
-	}}
+	clockLabel := widget.NewLabelWithStyle("Clock Format", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	clockFormat := &widget.Radio{Options: []string{"12h", "24h"}, Required: true, Horizontal: true}
 	clockFormat.SetSelected(d.settings.ClockFormatting())
 
 	themeLabel := widget.NewLabel(d.settings.IconTheme())

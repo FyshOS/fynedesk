@@ -196,9 +196,6 @@ func (d *deskSettings) load() {
 	}
 
 	d.clockFormatting = fyne.CurrentApp().Preferences().StringWithFallback("clockformatting", "12h")
-	if d.clockFormatting != "12h" && d.clockFormatting != "24h" {
-		d.clockFormatting = "12h"
-	}
 }
 
 // newDeskSettings loads the user's preferences from environment or config
