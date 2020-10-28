@@ -3,8 +3,10 @@
 package wm // import "fyne.io/fynedesk/internal/x11/wm"
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
+	"image"
 	"math"
 	"os"
 	"os/exec"
@@ -19,7 +21,9 @@ import (
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
+	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
+	"github.com/nfnt/resize"
 
 	"fyne.io/fyne"
 	deskDriver "fyne.io/fyne/driver/desktop"
@@ -28,6 +32,7 @@ import (
 	"fyne.io/fynedesk/internal/ui"
 	"fyne.io/fynedesk/internal/x11"
 	xwin "fyne.io/fynedesk/internal/x11/win"
+	wmTheme "fyne.io/fynedesk/theme"
 	"fyne.io/fynedesk/wm"
 )
 
@@ -187,6 +192,7 @@ func (x *x11WM) Conn() *xgb.Conn {
 
 func (x *x11WM) Run() {
 	x.setupBindings()
+	go x.updateBackgrounds()
 	go x.runLoop()
 }
 
@@ -353,6 +359,7 @@ func (x *x11WM) configureRoots() {
 
 	ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: rootWidth, Height: rootHeight})              // The size will grow when virtual desktops are supported
 	ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(rootWidth), Height: uint(rootHeight)}}) // The array will grow when virtual desktops are supported
+	go x.updateBackgrounds()
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
@@ -512,6 +519,8 @@ func (x *x11WM) setupBindings() {
 			for _, c := range x.clients {
 				x.bindShortcuts(c.(x11.XWin).ChildID())
 			}
+
+			go x.updateBackgrounds()
 		}
 	}()
 }
@@ -639,4 +648,51 @@ func (x *x11WM) unbindShortcuts(win xproto.Window) {
 	for _, shortcut := range x.currentBindings {
 		x.unbindShortcut(shortcut, win)
 	}
+}
+
+func (x *x11WM) updatedBackgroundImage() image.Image {
+	path := fynedesk.Instance().Settings().Background()
+	if path != "" {
+		file, err := os.Open(path)
+		if err != nil {
+			fyne.LogError("Failed to open background image", err)
+		}
+		img, _, err := image.Decode(file)
+		if err != nil {
+			fyne.LogError("Failed to read background image", err)
+		}
+		_ = file.Close()
+		return img
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(wmTheme.Background.StaticContent))
+	if err != nil {
+		fyne.LogError("Failed to read background resource", err)
+	}
+	return img
+}
+
+func (x *x11WM) updateBackgrounds() {
+	geom, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(x.x.RootWin())).Reply()
+	if err != nil {
+		fyne.LogError("Unable to look up root geometry", err)
+		return
+	}
+	root := xgraphics.New(x.x, image.Rect(0, 0, int(geom.Width), int(geom.Height)))
+
+	data := x.updatedBackgroundImage()
+	for _, screen := range fynedesk.Instance().Screens().Screens() {
+		scaled := resize.Resize(uint(screen.Width), uint(screen.Height), data, resize.Lanczos3)
+		for y := screen.Y; y < screen.Y+screen.Height; y++ {
+			for x := screen.X; x < screen.X+screen.Width; x++ {
+				root.Set(x, y, scaled.At(x-screen.X, y-screen.Y))
+			}
+		}
+	}
+
+	root.XSurfaceSet(x.x.RootWin())
+	root.XDraw()
+	root.XPaint(x.x.RootWin())
+
+	root.Destroy()
 }
