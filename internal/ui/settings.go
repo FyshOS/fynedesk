@@ -18,6 +18,7 @@ type deskSettings struct {
 	launcherDisableTaskbar bool
 	launcherDisableZoom    bool
 	launcherZoomScale      float64
+	clockFormatting        string
 
 	moduleNames []string
 
@@ -55,6 +56,10 @@ func (d *deskSettings) LauncherZoomScale() float64 {
 
 func (d *deskSettings) ModuleNames() []string {
 	return d.moduleNames
+}
+
+func (d *deskSettings) ClockFormatting() string {
+	return d.clockFormatting
 }
 
 func (d *deskSettings) AddChangeListener(listener chan fynedesk.DeskSettings) {
@@ -137,6 +142,12 @@ func (d *deskSettings) setModuleNames(names []string) {
 	d.apply()
 }
 
+func (d *deskSettings) setClockFormatting(format string) {
+	d.clockFormatting = format
+	fyne.CurrentApp().Preferences().SetString("clockformatting", d.clockFormatting)
+	d.apply()
+}
+
 func (d *deskSettings) load() {
 	env := os.Getenv("FYNEDESK_BACKGROUND")
 	if env != "" {
@@ -183,6 +194,8 @@ func (d *deskSettings) load() {
 	if moduleNames != "" {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
+
+	d.clockFormatting = fyne.CurrentApp().Preferences().StringWithFallback("clockformatting", "12h")
 }
 
 // newDeskSettings loads the user's preferences from environment or config

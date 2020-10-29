@@ -68,7 +68,7 @@ func (w *widgetPanel) clockTick() {
 	go func() {
 		for {
 			<-tick.C
-			w.clock.Text = formattedTime()
+			w.clock.Text = w.formattedTime()
 			canvas.Refresh(w.clock)
 
 			w.date.SetText(formattedDate())
@@ -77,8 +77,12 @@ func (w *widgetPanel) clockTick() {
 	}()
 }
 
-func formattedTime() string {
-	return time.Now().Format("15:04pm")
+func (w *widgetPanel) formattedTime() string {
+	if w.desk.Settings().ClockFormatting() == "12h" {
+		return time.Now().Format("03:04pm")
+	}
+
+	return time.Now().Format("15:04")
 }
 
 func formattedDate() string {
@@ -91,7 +95,7 @@ func (w *widgetPanel) createClock() {
 
 	w.clock = &canvas.Text{
 		Color:     theme.TextColor(),
-		Text:      formattedTime(),
+		Text:      w.formattedTime(),
 		Alignment: fyne.TextAlignCenter,
 		TextStyle: style,
 		TextSize:  3 * theme.TextSize(),
