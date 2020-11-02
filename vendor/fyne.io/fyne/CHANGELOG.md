@@ -3,12 +3,12 @@
 This file lists the main changes with each version of the Fyne toolkit.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/fyne/releases). 
 
-## 1.4 - Ongoing
+## 1.4 - 1 November 2020
 
 ### Added (highlights)
 
 * List (#156), Table (#157) and Tree collection Widgets
-* Card, FileItem widgets
+* Card, FileItem, Separator widgets
 * ColorPicker dialog
 * User selection of primary colour
 * Container API package to ease using layouts and container widgets
@@ -20,9 +20,11 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Canvas.InteractiveArea() to indicate where widgets should avoid
 * TextFormatter for ProgressBar
 * FileDialog.SetLocation() (#821)
+* Added dialog.ShowFolderOpen (#941)
 * Support to install on iOS and android with 'fyne install'
 * Support asset bundling with go:generate
 * Add fyne release command for preparing signed apps
+* Add keyboard and focus support to Radio and Select widgets 
 
 ### Changed
 
@@ -51,15 +53,21 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Fix missing key events for some keypad keys (#1325)
 * Issue with non-english folder names in Linux favourites (#1248)
 * Fix overlays escaping screen interactive bounds (#1358)
-
+* Key events not blocked by overlays (#814)
 * Update scroll container content if it is changed (#1341)
 * Respect SelectEntry datta changes on refresh (#1462)
 * Incorrect SelectEntry dropdown button position (#1361)
 * don't allow both single and double tap events to fire (#1381)
+* Fix issue where long or tall images could jump on load (#1266, #1432)
+* Weird behaviour when resizing or minimizing a ScrollContainer (#1245)
+* Fix panic on NewTextGrid().Text()
+* Fix issue where scrollbar could jump after mousewheel scroll
 * Add missing raster support in software render
 * Respect GOOS/GOARCH in fyne command utilities
 * BSD support in build tools
+* SVG Cache could return the incorrect resource (#1479)
 
+* Many optimisations and widget performance enhancements
 * Various fixes to file creation and saving on mobile devices
 
 

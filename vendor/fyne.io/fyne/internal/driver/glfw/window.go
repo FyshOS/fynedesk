@@ -499,7 +499,7 @@ func (w *window) destroy(d *gLDriver) {
 	if w.master {
 		d.Quit()
 	} else if runtime.GOOS == "darwin" {
-		d.focusPreviousWindow()
+		go d.focusPreviousWindow()
 	}
 }
 
@@ -542,8 +542,11 @@ func (w *window) frameSized(viewport *glfw.Window, width, height int) {
 	}
 
 	winWidth, _ := viewport.GetSize()
-	w.canvas.texScale = float32(width) / float32(winWidth) // This will be > 1.0 on a HiDPI screen
-	w.canvas.Refresh(w.canvas.Content())                   // apply texture scale
+	newTexScale := float32(width) / float32(winWidth) // This will be > 1.0 on a HiDPI screen
+	if w.canvas.texScale != newTexScale {
+		w.canvas.texScale = newTexScale
+		w.canvas.Refresh(w.canvas.Content()) // reset graphics to apply texture scale
+	}
 }
 
 func (w *window) refresh(_ *glfw.Window) {
@@ -640,7 +643,7 @@ func (w *window) mouseOut() {
 }
 
 func (w *window) mouseClicked(_ *glfw.Window, btn glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
-	co, pos, layer := w.findObjectAtPositionMatching(w.canvas, w.mousePos, func(object fyne.CanvasObject) bool {
+	co, pos, _ := w.findObjectAtPositionMatching(w.canvas, w.mousePos, func(object fyne.CanvasObject) bool {
 		switch object.(type) {
 		case fyne.Tappable, fyne.SecondaryTappable, fyne.DoubleTappable, fyne.Focusable, fyne.Draggable, desktop.Mouseable, desktop.Hoverable:
 			return true
@@ -672,12 +675,10 @@ func (w *window) mouseClicked(_ *glfw.Window, btn glfw.MouseButton, action glfw.
 		}
 	}
 
-	if layer != 1 { // 0 - overlay, 1 - menu, 2 - content
-		if wid, ok := co.(fyne.Focusable); ok {
-			w.canvas.Focus(wid)
-		} else {
-			w.canvas.Unfocus()
-		}
+	if wid, ok := co.(fyne.Focusable); ok {
+		w.canvas.Focus(wid)
+	} else {
+		w.canvas.Unfocus()
 	}
 
 	if action == glfw.Press {
