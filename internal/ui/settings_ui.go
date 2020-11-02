@@ -2,7 +2,9 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -14,6 +16,7 @@ import (
 	"fyne.io/fyne/dialog"
 	deskDriver "fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/layout"
+	"fyne.io/fyne/storage"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
@@ -60,22 +63,29 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		bgPathClear.Disable()
 	}
 	bgLabel := widget.NewLabelWithStyle("Background", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	bgDialog := dialog.NewFileOpen(func(file fyne.URIReadCloser, err error) {
+		if err != nil || file == nil {
+			return
+		}
+
+		// not advisable for cross-platform but we are desktop only
+		path := file.URI().String()[7:]
+		// TODO add a nice preview :)
+		_ = file.Close()
+
+		bgPath.SetText(path)
+		bgPathClear.Enable()
+	}, d.win)
+	bgDialog.SetFilter(&storage.MimeTypeFileFilter{MimeTypes: []string{"image/jpg", "image/jpeg", "image/png", "image/svg"}})
+	if dir, err := getPicturesDir(); err == nil {
+		bgDialog.SetLocation(dir)
+	} else {
+		fyne.LogError("error finding pictures dir", err)
+	}
 
 	bgButtons := widget.NewHBox(bgPathClear,
 		widget.NewButtonWithIcon("", theme.SearchIcon(), func() {
-			dialog.ShowFileOpen(func(file fyne.URIReadCloser, err error) {
-				if err != nil || file == nil {
-					return
-				}
-
-				// not advisable for cross-platform but we are desktop only
-				path := file.URI().String()[7:]
-				// TODO add a nice preview :)
-				_ = file.Close()
-
-				bgPath.SetText(path)
-				bgPathClear.Enable()
-			}, d.win)
+			bgDialog.Show()
 		}))
 
 	themeLabel := widget.NewLabel(d.settings.IconTheme())
@@ -360,4 +370,14 @@ func modifierToString(mods deskDriver.Modifier) string {
 		}
 	}
 	return strings.Join(s, "+")
+}
+
+func getPicturesDir() (fyne.ListableURI, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	uri := storage.NewFileURI(filepath.Join(home, "Pictures"))
+	return storage.ListerForURI(uri)
 }
