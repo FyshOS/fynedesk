@@ -1,10 +1,10 @@
 package ui
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -76,11 +76,11 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		bgPath.SetText(path)
 		bgPathClear.Enable()
 	}, d.win)
-	bgDialog.SetFilter(&storage.MimeTypeFileFilter{MimeTypes: []string{"image/jpg", "image/jpeg", "image/png", "image/svg"}})
+	bgDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".jpeg", ".png", ".svg"}))
 	if dir, err := getPicturesDir(); err == nil {
 		bgDialog.SetLocation(dir)
 	} else {
-		fyne.LogError("error finding pictures dir", err)
+		fyne.LogError("error finding pictures dir, falling back to home directory", err)
 	}
 
 	bgButtons := widget.NewHBox(bgPathClear,
@@ -378,6 +378,25 @@ func getPicturesDir() (fyne.ListableURI, error) {
 		return nil, err
 	}
 
-	uri := storage.NewFileURI(filepath.Join(home, "Pictures"))
-	return storage.ListerForURI(uri)
+	if runtime.GOOS == "darwin" {
+		uri, err := storage.Child(storage.NewFileURI(home), "Pictures")
+		if err != nil {
+			return nil, err
+		}
+
+		return storage.ListerForURI(uri)
+	}
+
+	const xdguserdir, pic = "xdg-user-dir", "PICTURES"
+	cmd := exec.Command(xdguserdir, pic)
+	stdout := bytes.NewBufferString("")
+	cmd.Stdout = stdout
+	if err = cmd.Run(); err != nil {
+		return nil, err
+	}
+
+	loc := stdout.String()
+	loc = loc[:len(loc)-1] // Remove \n at the end of string
+
+	return storage.ListerForURI(storage.NewFileURI(loc))
 }
