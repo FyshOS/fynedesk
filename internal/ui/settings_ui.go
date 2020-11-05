@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"bytes"
 	"fmt"
 	"os"
 	"os/exec"
@@ -378,25 +377,22 @@ func getPicturesDir() (fyne.ListableURI, error) {
 		return nil, err
 	}
 
-	if runtime.GOOS == "darwin" {
-		uri, err := storage.Child(storage.NewFileURI(home), "Pictures")
-		if err != nil {
-			return nil, err
-		}
+	const xdg = "xdg-user-dir"
+	if _, err := exec.LookPath(xdg); err == nil {
+		cmd := exec.Command(xdg, "PICTURES")
 
-		return storage.ListerForURI(uri)
+		loc, err := cmd.Output()
+		if err == nil {
+			loc = loc[:len(loc)-1] // Remove \n at the end
+			uri := storage.NewFileURI(string(loc))
+			return storage.ListerForURI(uri)
+		}
 	}
 
-	const xdguserdir, pic = "xdg-user-dir", "PICTURES"
-	cmd := exec.Command(xdguserdir, pic)
-	stdout := bytes.NewBufferString("")
-	cmd.Stdout = stdout
-	if err = cmd.Run(); err != nil {
+	uri, err := storage.Child(storage.NewFileURI(home), "Pictures")
+	if err != nil {
 		return nil, err
 	}
 
-	loc := stdout.String()
-	loc = loc[:len(loc)-1] // Remove \n at the end of string
-
-	return storage.ListerForURI(storage.NewFileURI(loc))
+	return storage.ListerForURI(uri)
 }
