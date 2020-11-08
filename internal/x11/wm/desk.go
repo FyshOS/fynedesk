@@ -57,6 +57,7 @@ type x11WM struct {
 	died         bool
 	rootID       xproto.Window
 	transientMap map[xproto.Window][]xproto.Window
+	oldRoot      *xgraphics.Image
 }
 
 type moveResizeType uint32
@@ -192,7 +193,6 @@ func (x *x11WM) Conn() *xgb.Conn {
 
 func (x *x11WM) Run() {
 	x.setupBindings()
-	go x.updateBackgrounds()
 	go x.runLoop()
 }
 
@@ -694,5 +694,20 @@ func (x *x11WM) updateBackgrounds() {
 	root.XDraw()
 	root.XPaint(x.x.RootWin())
 
-	root.Destroy()
+	if x.oldRoot != nil {
+		x.oldRoot.Destroy()
+		x.oldRoot = nil
+	}
+
+	err = xprop.ChangeProp32(x.x, x.x.RootWin(), "_XROOTPMAP_ID", "PIXMAP", uint(root.Pixmap))
+	if err != nil {
+		fyne.LogError("rootprop", err)
+	}
+	err = xprop.ChangeProp32(x.x, x.x.RootWin(), "ESETROOT_PMAP_ID", "PIXMAP", uint(root.Pixmap))
+	if err != nil {
+		fyne.LogError("esetrootprop", err)
+	}
+
+	// save root so we can free it later if not needed
+	x.oldRoot = root
 }
