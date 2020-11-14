@@ -138,8 +138,12 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		w.desk.WindowManager().Close()
 	}))
 
+	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), root.Canvas())
+
 	bottomLeft := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
-	widget.ShowPopUpMenuAtPosition(fyne.NewMenu("Account", items...), root.Canvas(), bottomLeft)
+	popup.Move(bottomLeft.Subtract(fyne.NewPos(0, popup.MinSize().Height)))
+	popup.Resize(fyne.NewSize(from.Size().Width, popup.MinSize().Height))
+	popup.Show()
 }
 
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
