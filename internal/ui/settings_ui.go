@@ -381,10 +381,10 @@ func getPicturesDir() (fyne.ListableURI, error) {
 	if _, err := exec.LookPath(xdg); err == nil {
 		cmd := exec.Command(xdg, "PICTURES")
 
-		loc, err := cmd.Output()
-		if err == nil {
-			loc = loc[:len(loc)-1] // Remove \n at the end
-			uri := storage.NewFileURI(string(loc))
+		out, err := cmd.Output()
+		location := string(out[:len(out)-1]) // Remove \n at the end
+		if err == nil && location != home {
+			uri := storage.NewFileURI(location)
 			return storage.ListerForURI(uri)
 		}
 	}
