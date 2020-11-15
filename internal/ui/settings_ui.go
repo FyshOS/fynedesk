@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"sort"
@@ -15,6 +16,7 @@ import (
 	"fyne.io/fyne/dialog"
 	deskDriver "fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/layout"
+	"fyne.io/fyne/storage"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
@@ -61,22 +63,29 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		bgPathClear.Disable()
 	}
 	bgLabel := widget.NewLabelWithStyle("Background", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	bgDialog := dialog.NewFileOpen(func(file fyne.URIReadCloser, err error) {
+		if err != nil || file == nil {
+			return
+		}
+
+		// not advisable for cross-platform but we are desktop only
+		path := file.URI().String()[7:]
+		// TODO add a nice preview :)
+		_ = file.Close()
+
+		bgPath.SetText(path)
+		bgPathClear.Enable()
+	}, d.win)
+	bgDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".jpeg", ".png", ".svg"}))
+	if dir, err := getPicturesDir(); err == nil {
+		bgDialog.SetLocation(dir)
+	} else {
+		fyne.LogError("error finding pictures dir, falling back to home directory", err)
+	}
 
 	bgButtons := widget.NewHBox(bgPathClear,
 		widget.NewButtonWithIcon("", theme.SearchIcon(), func() {
-			dialog.ShowFileOpen(func(file fyne.URIReadCloser, err error) {
-				if err != nil || file == nil {
-					return
-				}
-
-				// not advisable for cross-platform but we are desktop only
-				path := file.URI().String()[7:]
-				// TODO add a nice preview :)
-				_ = file.Close()
-
-				bgPath.SetText(path)
-				bgPathClear.Enable()
-			}, d.win)
+			bgDialog.Show()
 		}))
 
 	clockLabel := widget.NewLabelWithStyle("Clock Format", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
@@ -368,4 +377,30 @@ func modifierToString(mods deskDriver.Modifier) string {
 		}
 	}
 	return strings.Join(s, "+")
+}
+
+func getPicturesDir() (fyne.ListableURI, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	const xdg = "xdg-user-dir"
+	if _, err := exec.LookPath(xdg); err == nil {
+		cmd := exec.Command(xdg, "PICTURES")
+
+		out, err := cmd.Output()
+		location := string(out[:len(out)-1]) // Remove \n at the end
+		if err == nil && location != home {
+			uri := storage.NewFileURI(location)
+			return storage.ListerForURI(uri)
+		}
+	}
+
+	uri, err := storage.Child(storage.NewFileURI(home), "Pictures")
+	if err != nil {
+		return nil, err
+	}
+
+	return storage.ListerForURI(uri)
 }
