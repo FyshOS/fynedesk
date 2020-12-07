@@ -58,6 +58,8 @@ type x11WM struct {
 	rootID       xproto.Window
 	transientMap map[xproto.Window][]xproto.Window
 	oldRoot      *xgraphics.Image
+
+	primaryX, primaryY, primaryW, primaryH int
 }
 
 type moveResizeType uint32
@@ -340,12 +342,27 @@ func (x *x11WM) configureRoots() {
 		maxY = fyne.Max(maxY, screen.Y+screen.Height)
 
 		if screen == fynedesk.Instance().Screens().Primary() {
+			if x.primaryX == screen.X && x.primaryY == screen.Y &&
+				x.primaryW == screen.Width && x.primaryH == screen.Height {
+				continue // our screen has not changed
+			}
+			x.primaryX, x.primaryY = screen.X, screen.Y
+			x.primaryW, x.primaryH = screen.Width, screen.Height
 			notifyEv := xproto.ConfigureNotifyEvent{Event: x.rootID, Window: x.rootID, AboveSibling: 0,
 				X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
 				BorderWidth: 0, OverrideRedirect: false}
 			xproto.SendEvent(x.x.Conn(), false, x.rootID, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 
+			// we need to trigger a move so that the correct scale is picked up
 			err := xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
+				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+				[]uint32{uint32(screen.X + 1), uint32(screen.Y + 1), uint32(screen.Width - 2), uint32(screen.Height - 2)}).Check()
+			if err != nil {
+				fyne.LogError("Configure Window Error", err)
+			}
+
+			// and then set the correct location
+			err = xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 				[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
 			if err != nil {

@@ -9,7 +9,6 @@ import (
 func (l *desktop) newDesktopWindowFull() fyne.Window {
 	desk := l.app.NewWindow(RootWindowName)
 	desk.SetPadded(false)
-	desk.SetFullScreen(true)
 
 	desk.SetMaster()
 	desk.SetOnClosed(func() {
