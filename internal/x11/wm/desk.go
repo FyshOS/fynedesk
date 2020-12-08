@@ -58,8 +58,6 @@ type x11WM struct {
 	rootID       xproto.Window
 	transientMap map[xproto.Window][]xproto.Window
 	oldRoot      *xgraphics.Image
-
-	primaryX, primaryY, primaryW, primaryH int
 }
 
 type moveResizeType uint32
@@ -342,12 +340,6 @@ func (x *x11WM) configureRoots() {
 		maxY = fyne.Max(maxY, screen.Y+screen.Height)
 
 		if screen == fynedesk.Instance().Screens().Primary() {
-			if x.primaryX == screen.X && x.primaryY == screen.Y &&
-				x.primaryW == screen.Width && x.primaryH == screen.Height {
-				continue // our screen has not changed
-			}
-			x.primaryX, x.primaryY = screen.X, screen.Y
-			x.primaryW, x.primaryH = screen.Width, screen.Height
 			notifyEv := xproto.ConfigureNotifyEvent{Event: x.rootID, Window: x.rootID, AboveSibling: 0,
 				X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
 				BorderWidth: 0, OverrideRedirect: false}
