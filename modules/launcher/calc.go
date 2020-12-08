@@ -63,7 +63,7 @@ func (c *calc) isExpression(input string) bool {
 	return c.exprRegex.MatchString(input) && !c.numRegex.MatchString(input)
 }
 
-// newURLs creates a new module that will show URLs in the launcher suggestions
+// newCalcSuggest creates a new module that will show calculations in the launcher suggestions
 func newCalcSuggest() fynedesk.Module {
 	expr, _ := regexp.Compile("^[0-9.+\\-*/()]+$")
 	num, _ := regexp.Compile("^[0-9.]+$")
