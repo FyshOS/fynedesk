@@ -11,6 +11,7 @@ type Settings struct {
 	launcherZoomScale      float64
 	launcherDisableZoom    bool
 	launcherDisableTaskbar bool
+	clockFormatting        string
 
 	moduleNames []string
 }
@@ -109,4 +110,18 @@ func (s *Settings) ModuleNames() []string {
 // SetModuleNames supports configuring the modules that should be loaded
 func (s *Settings) SetModuleNames(mods []string) {
 	s.moduleNames = mods
+}
+
+// ClockFormatting returns the format that the clock uses for displaying the time. Either 12h or 24h.
+func (s *Settings) ClockFormatting() string {
+	return s.clockFormatting
+}
+
+// SetClockFormatting support setting the format that the clock should display
+func (s *Settings) SetClockFormatting(format string) {
+	if format == "24h" {
+		s.clockFormatting = format
+	} else {
+		s.clockFormatting = "12h"
+	}
 }

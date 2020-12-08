@@ -247,8 +247,7 @@ func (c *client) NotifyUnMaximize() {
 }
 
 func (c *client) RaiseAbove(win fynedesk.Window) {
-	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
-	topID := c.wm.WinIDForScreen(screen)
+	topID := c.wm.RootID()
 	if win != nil {
 		topID = win.(*client).id
 	}

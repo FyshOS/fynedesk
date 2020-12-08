@@ -3,9 +3,11 @@
 package wm // import "fyne.io/fynedesk/internal/x11/wm"
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"image"
+	"math"
 	"os"
 	"os/exec"
 	"strconv"
@@ -19,7 +21,9 @@ import (
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
+	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
+	"github.com/nfnt/resize"
 
 	"fyne.io/fyne"
 	deskDriver "fyne.io/fyne/driver/desktop"
@@ -28,6 +32,7 @@ import (
 	"fyne.io/fynedesk/internal/ui"
 	"fyne.io/fynedesk/internal/x11"
 	xwin "fyne.io/fynedesk/internal/x11/win"
+	wmTheme "fyne.io/fynedesk/theme"
 	"fyne.io/fynedesk/wm"
 )
 
@@ -50,8 +55,11 @@ type x11WM struct {
 	currentBindings []*fynedesk.Shortcut
 
 	died         bool
-	rootIDs      []xproto.Window
+	rootID       xproto.Window
 	transientMap map[xproto.Window][]xproto.Window
+	oldRoot      *xgraphics.Image
+
+	primaryX, primaryY, primaryW, primaryH int
 }
 
 type moveResizeType uint32
@@ -332,28 +340,50 @@ func (x *x11WM) configureRoots() {
 	if fynedesk.Instance() == nil {
 		return
 	}
-	width, height := 0, 0
+
+	minX, minY, maxX, maxY := math.MaxInt16, math.MaxInt16, 0, 0
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
-		win := x.WinIDForScreen(screen)
-		if win == 0 {
-			continue
+		minX = fyne.Min(minX, screen.X)
+		minY = fyne.Min(minY, screen.Y)
+		maxX = fyne.Max(maxX, screen.X+screen.Width)
+		maxY = fyne.Max(maxY, screen.Y+screen.Height)
+
+		if screen == fynedesk.Instance().Screens().Primary() {
+			if x.primaryX == screen.X && x.primaryY == screen.Y &&
+				x.primaryW == screen.Width && x.primaryH == screen.Height {
+				continue // our screen has not changed
+			}
+			x.primaryX, x.primaryY = screen.X, screen.Y
+			x.primaryW, x.primaryH = screen.Width, screen.Height
+			notifyEv := xproto.ConfigureNotifyEvent{Event: x.rootID, Window: x.rootID, AboveSibling: 0,
+				X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
+				BorderWidth: 0, OverrideRedirect: false}
+			xproto.SendEvent(x.x.Conn(), false, x.rootID, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
+
+			// we need to trigger a move so that the correct scale is picked up
+			err := xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
+				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+				[]uint32{uint32(screen.X + 1), uint32(screen.Y + 1), uint32(screen.Width - 2), uint32(screen.Height - 2)}).Check()
+			if err != nil {
+				fyne.LogError("Configure Window Error", err)
+			}
+
+			// and then set the correct location
+			err = xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
+				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
+				[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
+			if err != nil {
+				fyne.LogError("Configure Window Error", err)
+			}
 		}
-		if screen.X+screen.Width > width {
-			width = screen.X + screen.Width
-		}
-		if screen.Y+screen.Height > height {
-			height = screen.Y + screen.Height
-		}
-		xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
-			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
-		notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
-			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
-			BorderWidth: 0, OverrideRedirect: false}
-		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 	}
-	ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: width, Height: height})              // The array will grow when virtual desktops are supported
-	ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(width), Height: uint(height)}}) // The array will grow when virtual desktops are supported
+
+	rootWidth := maxX - minX
+	rootHeight := maxY - minY
+
+	ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: rootWidth, Height: rootHeight})              // The size will grow when virtual desktops are supported
+	ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(rootWidth), Height: uint(rootHeight)}}) // The array will grow when virtual desktops are supported
+	go x.updateBackgrounds()
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
@@ -387,30 +417,11 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 	}
 
 	name := x11.WindowName(x.x, win)
-	for _, screen := range fynedesk.Instance().Screens().Screens() {
-		if !x.isRootTitle(name) || screenNameFromRootTitle(name) != screen.Name {
-			continue
-		}
-		found := false
-		for _, id := range x.rootIDs {
-			if id == win {
-				found = true
-			}
-		}
-		if !found {
-			x.rootIDs = append(x.rootIDs, win)
-		}
-		xcoord = int16(screen.X)
-		ycoord = int16(screen.Y)
-		width = uint16(screen.Width)
-		height = uint16(screen.Height)
-		notifyEv := xproto.ConfigureNotifyEvent{Event: win, Window: win, AboveSibling: 0,
-			X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
-			BorderWidth: 0, OverrideRedirect: false}
-		xproto.SendEvent(x.x.Conn(), false, win, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
+	if x.isRootTitle(name) {
+		x.rootID = win
 
 		x.configureRoots() // we added a root window, so reconfigure
-		break
+		return
 	}
 	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
@@ -423,11 +434,6 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 func (x *x11WM) destroyWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil {
-		for i, id := range x.rootIDs {
-			if id == win {
-				x.rootIDs = append(x.rootIDs[:i], x.rootIDs[i+1:]...)
-			}
-		}
 		return
 	}
 	transient := x11.WindowTransientForGet(x.x, win)
@@ -477,18 +483,8 @@ func (x *x11WM) frameExisting() {
 	}
 }
 
-func (x *x11WM) WinIDForScreen(screen *fynedesk.Screen) xproto.Window {
-	screenName := screen.Name
-	for _, id := range x.rootIDs {
-		name := x11.WindowName(x.x, id)
-		if !x.isRootTitle(name) {
-			continue
-		}
-		if screenNameFromRootTitle(name) == screenName {
-			return id
-		}
-	}
-	return 0
+func (x *x11WM) RootID() xproto.Window {
+	return x.rootID
 }
 
 func (x *x11WM) hideWindow(win xproto.Window) {
@@ -536,21 +532,19 @@ func (x *x11WM) setupBindings() {
 		for {
 			<-deskListener
 			// this uses the state from the previous bind call
-			for _, r := range x.rootIDs {
-				x.unbindShortcuts(r)
-			}
+			x.unbindShortcuts(x.rootID)
 			for _, c := range x.clients {
 				x.unbindShortcuts(c.(x11.XWin).ChildID())
 			}
 			x.currentBindings = nil
 
 			// this call sets up the new cache of shortcuts
-			for _, r := range x.rootIDs {
-				x.bindShortcuts(r)
-			}
+			x.bindShortcuts(x.rootID)
 			for _, c := range x.clients {
 				x.bindShortcuts(c.(x11.XWin).ChildID())
 			}
+
+			go x.updateBackgrounds()
 		}
 	}()
 }
@@ -678,4 +672,66 @@ func (x *x11WM) unbindShortcuts(win xproto.Window) {
 	for _, shortcut := range x.currentBindings {
 		x.unbindShortcut(shortcut, win)
 	}
+}
+
+func (x *x11WM) updatedBackgroundImage() image.Image {
+	path := fynedesk.Instance().Settings().Background()
+	if path != "" {
+		file, err := os.Open(path)
+		if err != nil {
+			fyne.LogError("Failed to open background image", err)
+		}
+		img, _, err := image.Decode(file)
+		if err != nil {
+			fyne.LogError("Failed to read background image", err)
+		}
+		_ = file.Close()
+		return img
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(wmTheme.Background.StaticContent))
+	if err != nil {
+		fyne.LogError("Failed to read background resource", err)
+	}
+	return img
+}
+
+func (x *x11WM) updateBackgrounds() {
+	geom, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(x.x.RootWin())).Reply()
+	if err != nil {
+		fyne.LogError("Unable to look up root geometry", err)
+		return
+	}
+	root := xgraphics.New(x.x, image.Rect(0, 0, int(geom.Width), int(geom.Height)))
+
+	data := x.updatedBackgroundImage()
+	for _, screen := range fynedesk.Instance().Screens().Screens() {
+		scaled := resize.Resize(uint(screen.Width), uint(screen.Height), data, resize.Lanczos3)
+		for y := screen.Y; y < screen.Y+screen.Height; y++ {
+			for x := screen.X; x < screen.X+screen.Width; x++ {
+				root.Set(x, y, scaled.At(x-screen.X, y-screen.Y))
+			}
+		}
+	}
+
+	root.XSurfaceSet(x.x.RootWin())
+	root.XDraw()
+	root.XPaint(x.x.RootWin())
+
+	if x.oldRoot != nil {
+		x.oldRoot.Destroy()
+		x.oldRoot = nil
+	}
+
+	err = xprop.ChangeProp32(x.x, x.x.RootWin(), "_XROOTPMAP_ID", "PIXMAP", uint(root.Pixmap))
+	if err != nil {
+		fyne.LogError("rootprop", err)
+	}
+	err = xprop.ChangeProp32(x.x, x.x.RootWin(), "ESETROOT_PMAP_ID", "PIXMAP", uint(root.Pixmap))
+	if err != nil {
+		fyne.LogError("esetrootprop", err)
+	}
+
+	// save root so we can free it later if not needed
+	x.oldRoot = root
 }

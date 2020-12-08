@@ -120,6 +120,13 @@ func (f *fileDialog) makeUI() fyne.CanvasObject {
 				f.file.onClosedCallback(true)
 			}
 			callback(storage.OpenFileFromURI(f.selected.location))
+		} else if f.file.isDirectory() {
+			callback := f.file.callback.(func(fyne.ListableURI, error))
+			f.win.Hide()
+			if f.file.onClosedCallback != nil {
+				f.file.onClosedCallback(true)
+			}
+			callback(f.dir, nil)
 		}
 	})
 	f.open.Style = widget.PrimaryButton
@@ -136,6 +143,8 @@ func (f *fileDialog) makeUI() fyne.CanvasObject {
 		if f.file.callback != nil {
 			if f.file.save {
 				f.file.callback.(func(fyne.URIWriteCloser, error))(nil, nil)
+			} else if f.file.isDirectory() {
+				f.file.callback.(func(fyne.ListableURI, error))(nil, nil)
 			} else {
 				f.file.callback.(func(fyne.URIReadCloser, error))(nil, nil)
 			}
@@ -157,7 +166,11 @@ func (f *fileDialog) makeUI() fyne.CanvasObject {
 	scrollBread := widget.NewHScrollContainer(f.breadcrumb)
 	body := fyne.NewContainerWithLayout(layout.NewBorderLayout(scrollBread, nil, nil, nil),
 		scrollBread, f.fileScroll)
-	header := widget.NewLabelWithStyle(label+" File", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	title := label + " File"
+	if f.file.isDirectory() {
+		title = label + " Folder"
+	}
+	header := widget.NewLabelWithStyle(title, fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
 
 	favorites := f.loadFavorites()
 
@@ -206,21 +219,21 @@ func (f *fileDialog) refreshDir(dir fyne.ListableURI) {
 		return
 	}
 	if parent != nil && parent.String() != dir.String() {
-		fi := &fileDialogItem{picker: f,
-			name: "(Parent)", location: parent, dir: true}
+		fi := &fileDialogItem{picker: f, name: "(Parent)", location: parent, dir: true}
 		fi.ExtendBaseWidget(fi)
 		icons = append(icons, fi)
 	}
+
 	for _, file := range files {
 		if isHidden(file) {
 			continue
 		}
 
-		_, err := storage.ListerForURI(file)
-		if err == nil {
-			// URI points to a directory
-			icons = append(icons, f.newFileItem(file, true))
-
+		listable, err := storage.ListerForURI(file)
+		if f.file.isDirectory() && err != nil {
+			continue
+		} else if err == nil { // URI points to a directory
+			icons = append(icons, f.newFileItem(listable, true)) // Pass the listable URI to avoid doing the same check in FileIcon
 		} else if f.file.filter == nil || f.file.filter.Matches(file) {
 			icons = append(icons, f.newFileItem(file, false))
 		}
@@ -273,6 +286,10 @@ func (f *fileDialog) setLocation(dir fyne.ListableURI) error {
 		)
 	}
 
+	if f.file.isDirectory() {
+		f.fileName.SetText(dir.Name())
+		f.open.Enable()
+	}
 	f.refreshDir(dir)
 
 	return nil
@@ -479,6 +496,10 @@ func (f *FileDialog) SetOnClosed(closed func()) {
 
 // SetFilter sets a filter for limiting files that can be chosen in the file dialog.
 func (f *FileDialog) SetFilter(filter storage.FileFilter) {
+	if f.isDirectory() {
+		fyne.LogError("Cannot set a filter for a folder dialog", nil)
+		return
+	}
 	f.filter = filter
 	if f.dialog != nil {
 		f.dialog.refreshDir(f.dialog.dir)

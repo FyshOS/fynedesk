@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"sort"
@@ -11,9 +12,11 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/cmd/fyne_settings/settings"
+	"fyne.io/fyne/container"
 	"fyne.io/fyne/dialog"
 	deskDriver "fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/layout"
+	"fyne.io/fyne/storage"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
@@ -60,23 +63,34 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		bgPathClear.Disable()
 	}
 	bgLabel := widget.NewLabelWithStyle("Background", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	bgDialog := dialog.NewFileOpen(func(file fyne.URIReadCloser, err error) {
+		if err != nil || file == nil {
+			return
+		}
+
+		// not advisable for cross-platform but we are desktop only
+		path := file.URI().String()[7:]
+		// TODO add a nice preview :)
+		_ = file.Close()
+
+		bgPath.SetText(path)
+		bgPathClear.Enable()
+	}, d.win)
+	bgDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".jpeg", ".png", ".svg"}))
+	if dir, err := getPicturesDir(); err == nil {
+		bgDialog.SetLocation(dir)
+	} else {
+		fyne.LogError("error finding pictures dir, falling back to home directory", err)
+	}
 
 	bgButtons := widget.NewHBox(bgPathClear,
 		widget.NewButtonWithIcon("", theme.SearchIcon(), func() {
-			dialog.ShowFileOpen(func(file fyne.URIReadCloser, err error) {
-				if err != nil || file == nil {
-					return
-				}
-
-				// not advisable for cross-platform but we are desktop only
-				path := file.URI().String()[7:]
-				// TODO add a nice preview :)
-				_ = file.Close()
-
-				bgPath.SetText(path)
-				bgPathClear.Enable()
-			}, d.win)
+			bgDialog.Show()
 		}))
+
+	clockLabel := widget.NewLabelWithStyle("Clock Format", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	clockFormat := &widget.Radio{Options: []string{"12h", "24h"}, Required: true, Horizontal: true}
+	clockFormat.SetSelected(d.settings.ClockFormatting())
 
 	themeLabel := widget.NewLabel(d.settings.IconTheme())
 	themeIcons := fyne.NewContainerWithLayout(layout.NewHBoxLayout())
@@ -90,21 +104,24 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		}
 		themeList.AddObject(themeButton)
 	}
-	top := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, bgLabel, bgButtons),
-		bgLabel, bgPath, bgButtons)
+
+	bg := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, bgLabel, bgButtons), bgLabel, bgPath, bgButtons)
+	time := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, clockLabel, clockFormat), clockLabel, clockFormat)
+	top := container.NewVBox(bg, time)
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	themeCurrent := widget.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
-	middle := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, themeCurrent, themeFormLabel, nil),
+	bottom := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, themeCurrent, themeFormLabel, nil),
 		themeCurrent, themeFormLabel, widget.NewScrollContainer(themeList))
 
 	applyButton := widget.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
 			d.settings.setBackground(bgPath.Text)
 			d.settings.setIconTheme(themeLabel.Text)
+			d.settings.setClockFormatting(clockFormat.Selected)
 		}})
 
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, applyButton, nil, nil), top, applyButton, middle)
+	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, applyButton, nil, nil), top, applyButton, bottom)
 }
 
 func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) {
@@ -360,4 +377,30 @@ func modifierToString(mods deskDriver.Modifier) string {
 		}
 	}
 	return strings.Join(s, "+")
+}
+
+func getPicturesDir() (fyne.ListableURI, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	const xdg = "xdg-user-dir"
+	if _, err := exec.LookPath(xdg); err == nil {
+		cmd := exec.Command(xdg, "PICTURES")
+
+		out, err := cmd.Output()
+		location := string(out[:len(out)-1]) // Remove \n at the end
+		if err == nil && location != home {
+			uri := storage.NewFileURI(location)
+			return storage.ListerForURI(uri)
+		}
+	}
+
+	uri, err := storage.Child(storage.NewFileURI(home), "Pictures")
+	if err != nil {
+		return nil, err
+	}
+
+	return storage.ListerForURI(uri)
 }

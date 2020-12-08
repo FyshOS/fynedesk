@@ -6,96 +6,48 @@ import (
 	"fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/internal/cache"
 	"fyne.io/fyne/internal/widget"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/storage"
 	"fyne.io/fyne/theme"
 )
+
+// TreeNodeID represents the unique id of a tree node.
+type TreeNodeID = string
 
 const treeDividerHeight = 1
 
 var _ fyne.Widget = (*Tree)(nil)
 
 // Tree widget displays hierarchical data.
-// Each node of the tree must be identified by a Unique ID.
+// Each node of the tree must be identified by a Unique TreeNodeID.
 type Tree struct {
 	BaseWidget
-	Root     string
-	selected string
-	Offset   fyne.Position
+	Root TreeNodeID
 
-	ChildUIDs          func(uid string) (c []string)                         // Return a sorted slice of Children Unique IDs for the given Node Unique ID
-	IsBranch           func(uid string) (ok bool)                            // Return true if the given Unique ID represents a Branch
-	CreateNode         func(branch bool) (o fyne.CanvasObject)               // Return a CanvasObject that can represent a Branch (if branch is true), or a Leaf (if branch is false)
-	UpdateNode         func(uid string, branch bool, node fyne.CanvasObject) // Called to update the given CanvasObject to represent the data at the given Unique ID
-	OnBranchOpened     func(uid string)                                      // Called when a Branch is opened
-	OnBranchClosed     func(uid string)                                      // Called when a Branch is closed
-	OnSelectionChanged func(uid string)                                      // Called when the Node with the given Unique ID is selected.
+	ChildUIDs      func(uid TreeNodeID) (c []TreeNodeID)                     // Return a sorted slice of Children TreeNodeIDs for the given Node TreeNodeID
+	CreateNode     func(branch bool) (o fyne.CanvasObject)                   // Return a CanvasObject that can represent a Branch (if branch is true), or a Leaf (if branch is false)
+	IsBranch       func(uid TreeNodeID) (ok bool)                            // Return true if the given TreeNodeID represents a Branch
+	OnBranchClosed func(uid TreeNodeID)                                      // Called when a Branch is closed
+	OnBranchOpened func(uid TreeNodeID)                                      // Called when a Branch is opened
+	OnSelected     func(uid TreeNodeID)                                      // Called when the Node with the given TreeNodeID is selected.
+	OnUnselected   func(uid TreeNodeID)                                      // Called when the Node with the given TreeNodeID is unselected.
+	UpdateNode     func(uid TreeNodeID, branch bool, node fyne.CanvasObject) // Called to update the given CanvasObject to represent the data at the given TreeNodeID
 
-	open          map[string]bool
 	branchMinSize fyne.Size
 	leafMinSize   fyne.Size
+	offset        fyne.Position
+	open          map[TreeNodeID]bool
+	scroller      *ScrollContainer
+	selected      []TreeNodeID
 }
 
-// NewTreeWithFiles creates a new tree with the given file system URI.
-func NewTreeWithFiles(root fyne.URI) (t *Tree) {
-	t = &Tree{
-		Root: root.String(),
-		ChildUIDs: func(uid string) (c []string) {
-			luri, err := storage.ListerForURI(storage.NewURI(uid))
-			if err != nil {
-				fyne.LogError("Unable to get lister for "+uid, err)
-			} else {
-				uris, err := luri.List()
-				if err != nil {
-					fyne.LogError("Unable to list "+luri.String(), err)
-				} else {
-					for _, u := range uris {
-						c = append(c, u.String())
-					}
-				}
-			}
-			return
-		},
-		IsBranch: func(uid string) bool {
-			_, err := storage.ListerForURI(storage.NewURI(uid))
-			return err == nil
-		},
-		CreateNode: func(branch bool) fyne.CanvasObject {
-			var icon fyne.CanvasObject
-			if branch {
-				icon = NewIcon(nil)
-			} else {
-				icon = NewFileIcon(nil)
-			}
-			return fyne.NewContainerWithLayout(layout.NewHBoxLayout(), icon, NewLabel("Template Object"))
-		},
-	}
-	t.UpdateNode = func(uid string, branch bool, node fyne.CanvasObject) {
-		uri := storage.NewURI(uid)
-		c := node.(*fyne.Container)
-		if branch {
-			var r fyne.Resource
-			if t.IsBranchOpen(uid) {
-				// Set open folder icon
-				r = theme.FolderOpenIcon()
-			} else {
-				// Set folder icon
-				r = theme.FolderIcon()
-			}
-			c.Objects[0].(*Icon).SetResource(r)
-		} else {
-			// Set file uri to update icon
-			c.Objects[0].(*FileIcon).SetURI(uri)
-		}
-		l := c.Objects[1].(*Label)
-		if t.Root == uid {
-			l.SetText(uid)
-		} else {
-			l.SetText(uri.Name())
-		}
-	}
+// NewTree returns a new performant tree widget defined by the passed functions.
+// childUIDs returns the child TreeNodeIDs of the given node.
+// isBranch returns true if the given node is a branch, false if it is a leaf.
+// create returns a new template object that can be cached.
+// update is used to apply data at specified data location to the passed template CanvasObject.
+func NewTree(childUIDs func(TreeNodeID) []TreeNodeID, isBranch func(TreeNodeID) bool, create func(bool) fyne.CanvasObject, update func(TreeNodeID, bool, fyne.CanvasObject)) *Tree {
+	t := &Tree{ChildUIDs: childUIDs, IsBranch: isBranch, CreateNode: create, UpdateNode: update}
 	t.ExtendBaseWidget(t)
-	return
+	return t
 }
 
 // NewTreeWithStrings creates a new tree with the given string map.
@@ -124,13 +76,13 @@ func NewTreeWithStrings(data map[string][]string) (t *Tree) {
 // CloseAllBranches closes all branches in the tree.
 func (t *Tree) CloseAllBranches() {
 	t.propertyLock.Lock()
-	t.open = make(map[string]bool)
+	t.open = make(map[TreeNodeID]bool)
 	t.propertyLock.Unlock()
 	t.Refresh()
 }
 
-// CloseBranch closes the branch with the given Unique ID.
-func (t *Tree) CloseBranch(uid string) {
+// CloseBranch closes the branch with the given TreeNodeID.
+func (t *Tree) CloseBranch(uid TreeNodeID) {
 	t.ensureOpenMap()
 	t.propertyLock.Lock()
 	t.open[uid] = false
@@ -146,6 +98,7 @@ func (t *Tree) CreateRenderer() fyne.WidgetRenderer {
 	t.ExtendBaseWidget(t)
 	c := newTreeContent(t)
 	s := NewScrollContainer(c)
+	t.scroller = s
 	r := &treeRenderer{
 		BaseRenderer: widget.NewBaseRenderer([]fyne.CanvasObject{s}),
 		tree:         t,
@@ -153,10 +106,10 @@ func (t *Tree) CreateRenderer() fyne.WidgetRenderer {
 		scroller:     s,
 	}
 	s.onOffsetChanged = func() {
-		if t.Offset == s.Offset {
+		if t.offset == s.Offset {
 			return
 		}
-		t.Offset = s.Offset
+		t.offset = s.Offset
 		c.Refresh()
 	}
 	r.updateMinSizes()
@@ -164,8 +117,8 @@ func (t *Tree) CreateRenderer() fyne.WidgetRenderer {
 	return r
 }
 
-// IsBranchOpen returns true if the branch with the given Unique ID is expanded.
-func (t *Tree) IsBranchOpen(uid string) bool {
+// IsBranchOpen returns true if the branch with the given TreeNodeID is expanded.
+func (t *Tree) IsBranchOpen(uid TreeNodeID) bool {
 	if uid == t.Root {
 		return true // Root is always open
 	}
@@ -194,8 +147,8 @@ func (t *Tree) OpenAllBranches() {
 	t.Refresh()
 }
 
-// OpenBranch opens the branch with the given Unique ID.
-func (t *Tree) OpenBranch(uid string) {
+// OpenBranch opens the branch with the given TreeNodeID.
+func (t *Tree) OpenBranch(uid TreeNodeID) {
 	t.ensureOpenMap()
 	t.propertyLock.Lock()
 	t.open[uid] = true
@@ -223,18 +176,76 @@ func (t *Tree) Resize(size fyne.Size) {
 	t.Refresh() // trigger a redraw
 }
 
-// SetSelection updates the current selection to the node with the given Unique ID.
-func (t *Tree) SetSelection(uid string) {
-	t.selected = uid
+// Select marks the specified node to be selected
+func (t *Tree) Select(uid TreeNodeID) {
+	if len(t.selected) > 0 {
+		if uid == t.selected[0] {
+			return // no change
+		}
+		if f := t.OnUnselected; f != nil {
+			f(t.selected[0])
+		}
+	}
+	t.selected = []TreeNodeID{uid}
+	if t.scroller != nil {
+		var found bool
+		var y int
+		var size fyne.Size
+		t.walkAll(func(id TreeNodeID, branch bool, depth int) {
+			m := t.leafMinSize
+			if branch {
+				m = t.branchMinSize
+			}
+			if id == uid {
+				found = true
+				size = m
+			} else if !found {
+				// Root node is not rendered unless it has been customized
+				if t.Root == "" && id == "" {
+					// This is root node, skip
+					return
+				}
+				// If this is not the first item, add a divider
+				if y > 0 {
+					y += treeDividerHeight
+				}
+
+				y += m.Height
+			}
+		})
+		if y < t.scroller.Offset.Y {
+			t.scroller.Offset.Y = y
+		} else if y+size.Height > t.scroller.Offset.Y+t.scroller.Size().Height {
+			t.scroller.Offset.Y = y + size.Height - t.scroller.Size().Height
+		}
+		t.scroller.onOffsetChanged()
+		// TODO Setting a node as selected should open all parents if they aren't already
+	}
 	t.Refresh()
+	if f := t.OnSelected; f != nil {
+		f(uid)
+	}
 }
 
-// ToggleBranch flips the state of the branch with the given Unique ID.
+// ToggleBranch flips the state of the branch with the given TreeNodeID.
 func (t *Tree) ToggleBranch(uid string) {
 	if t.IsBranchOpen(uid) {
 		t.CloseBranch(uid)
 	} else {
 		t.OpenBranch(uid)
+	}
+}
+
+// Unselect marks the specified node to be not selected
+func (t *Tree) Unselect(uid TreeNodeID) {
+	if len(t.selected) == 0 {
+		return
+	}
+
+	t.selected = nil
+	t.Refresh()
+	if f := t.OnUnselected; f != nil {
+		f(uid)
 	}
 }
 
@@ -263,8 +274,8 @@ func (t *Tree) walk(uid string, depth int, onNode func(string, bool, int)) {
 	}
 }
 
-// walkAll visits every open node of the tree and calls the given callback with node Unique ID, whether node is branch, and the depth of node.
-func (t *Tree) walkAll(onNode func(string, bool, int)) {
+// walkAll visits every open node of the tree and calls the given callback with TreeNodeID, whether node is branch, and the depth of node.
+func (t *Tree) walkAll(onNode func(TreeNodeID, bool, int)) {
 	t.walk(t.Root, 0, onNode)
 }
 
@@ -371,7 +382,7 @@ func (r *treeContentRenderer) Layout(size fyne.Size) {
 	branches := make(map[string]*branch)
 	leaves := make(map[string]*leaf)
 
-	offsetY := r.treeContent.tree.Offset.Y
+	offsetY := r.treeContent.tree.offset.Y
 	viewport := r.treeContent.viewport
 	width := fyne.Max(size.Width, viewport.Width)
 	y := 0
@@ -393,7 +404,7 @@ func (r *treeContentRenderer) Layout(size fyne.Size) {
 			if numDividers < len(r.dividers) {
 				divider = r.dividers[numDividers]
 			} else {
-				divider = widget.NewDivider()
+				divider = NewSeparator()
 				r.dividers = append(r.dividers, divider)
 			}
 			divider.Move(fyne.NewPos(theme.Padding(), y))
@@ -605,10 +616,7 @@ func (n *treeNode) MouseOut() {
 }
 
 func (n *treeNode) Tapped(*fyne.PointEvent) {
-	n.tree.SetSelection(n.uid)
-	if f := n.tree.OnSelectionChanged; f != nil {
-		f(n.uid)
-	}
+	n.tree.Select(n.uid)
 }
 
 func (n *treeNode) partialRefresh() {
@@ -689,7 +697,7 @@ func (r *treeNodeRenderer) partialRefresh() {
 	if r.treeNode.icon != nil {
 		r.treeNode.icon.Refresh()
 	}
-	if r.treeNode.uid == r.treeNode.tree.selected {
+	if len(r.treeNode.tree.selected) > 0 && r.treeNode.uid == r.treeNode.tree.selected[0] {
 		r.indicator.FillColor = theme.PrimaryColor()
 	} else if r.treeNode.hovered {
 		r.indicator.FillColor = theme.HoverColor()
@@ -700,7 +708,6 @@ func (r *treeNodeRenderer) partialRefresh() {
 	canvas.Refresh(r.treeNode.super())
 }
 
-var _ fyne.DoubleTappable = (*branch)(nil)
 var _ fyne.Widget = (*branch)(nil)
 
 type branch struct {
@@ -719,16 +726,11 @@ func newBranch(tree *Tree, content fyne.CanvasObject) (b *branch) {
 	return
 }
 
-func (b *branch) DoubleTapped(*fyne.PointEvent) {
-	b.tree.ToggleBranch(b.uid)
-}
-
 func (b *branch) update(uid string, depth int) {
 	b.treeNode.update(uid, depth)
 	b.icon.(*branchIcon).update(uid, depth)
 }
 
-var _ fyne.DoubleTappable = (*branchIcon)(nil)
 var _ fyne.Tappable = (*branchIcon)(nil)
 
 type branchIcon struct {
@@ -743,10 +745,6 @@ func newBranchIcon(tree *Tree) (i *branchIcon) {
 	}
 	i.ExtendBaseWidget(i)
 	return
-}
-
-func (i *branchIcon) DoubleTapped(*fyne.PointEvent) {
-	// Do nothing - this stops the event propagating to branch
 }
 
 func (i *branchIcon) Refresh() {
