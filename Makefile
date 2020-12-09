@@ -18,3 +18,8 @@ uninstall:
 	-rm $(DESTDIR)$(PREFIX)/bin/fynedesk_runner
 	-rm $(DESTDIR)$(PREFIX)/bin/fynedesk
 	-rm $(DESTDIR)$(PREFIX)/share/xsessions/fynedesk.desktop
+
+run:
+	// This needs to run with -j2 (make run -j2) to run concurrently
+	DISPLAY=:0 Xephyr :1 -screen 1280x720 &
+	DISPLAY=:1 fynedesk

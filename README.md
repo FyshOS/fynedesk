@@ -33,8 +33,7 @@ Once installed you could set `$GOPATH/fynedesk` as your window manager (usually
 using .xinitrc).
 You can also run it in an embedded X window for testing using:
 
-    DISPLAY=:0 Xephyr :1 -screen 1280x720 &
-    DISPLAY=:1 fynedesk
+    make run -j2
 
 It should look like this:
 
