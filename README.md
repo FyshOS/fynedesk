@@ -33,7 +33,7 @@ Once installed you could set `$GOPATH/fynedesk` as your window manager (usually
 using .xinitrc).
 You can also run it in an embedded X window for testing using:
 
-    make run -j2
+    make embed
 
 It should look like this:
 
