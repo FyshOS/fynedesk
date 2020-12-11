@@ -138,7 +138,7 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		w.desk.WindowManager().Close()
 	}))
 
-	popup := widget.NewPopUpMenuAtPosition(fyne.NewMenu("Account", items...), root.Canvas(), fyne.NewPos(0, 0))
+	popup := widget.NewPopUpMenuAtPosition(fyne.NewMenu("Account", items...), root.Canvas(), fyne.NewPos(0, 0)) //lint:ignore SA1019 Sort this out when deprecations gets sorted out upstream
 
 	bottomLeft := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
 	popup.Move(bottomLeft.Subtract(fyne.NewPos(0, popup.MinSize().Height)))

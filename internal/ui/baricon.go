@@ -138,7 +138,7 @@ func (bi *barIcon) TappedSecondary(*fyne.PointEvent) {
 
 	c := fyne.CurrentApp().Driver().CanvasForObject(bi)
 	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(bi)
-	widget.ShowPopUpMenuAtPosition(fyne.NewMenu("", []*fyne.MenuItem{addRemove}...), c, pos)
+	menu = widget.NewPopUpMenuAtPosition(fyne.NewMenu("", []*fyne.MenuItem{addRemove}...), c, pos) //lint:ignore SA1019 Sort this out when deprecations gets sorted out upstream
 }
 
 // CreateRenderer is a private method to fyne which links this widget to its renderer
