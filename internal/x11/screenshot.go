@@ -41,9 +41,8 @@ func copyPixel(in []byte, out []uint8, i int) {
 	b := in[i]
 	g := in[i+1]
 	r := in[i+2]
-	a := in[i+3]
 	out[i] = r
 	out[i+1] = g
 	out[i+2] = b
-	out[i+3] = a
+	out[i+3] = 0xff // some colour maps / depths don't include alpha
 }
