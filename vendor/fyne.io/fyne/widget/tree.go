@@ -18,6 +18,8 @@ var _ fyne.Widget = (*Tree)(nil)
 
 // Tree widget displays hierarchical data.
 // Each node of the tree must be identified by a Unique TreeNodeID.
+//
+// Since: 1.4
 type Tree struct {
 	BaseWidget
 	Root TreeNodeID
@@ -44,6 +46,8 @@ type Tree struct {
 // isBranch returns true if the given node is a branch, false if it is a leaf.
 // create returns a new template object that can be cached.
 // update is used to apply data at specified data location to the passed template CanvasObject.
+//
+// Since: 1.4
 func NewTree(childUIDs func(TreeNodeID) []TreeNodeID, isBranch func(TreeNodeID) bool, create func(bool) fyne.CanvasObject, update func(TreeNodeID, bool, fyne.CanvasObject)) *Tree {
 	t := &Tree{ChildUIDs: childUIDs, IsBranch: isBranch, CreateNode: create, UpdateNode: update}
 	t.ExtendBaseWidget(t)
@@ -52,6 +56,8 @@ func NewTree(childUIDs func(TreeNodeID) []TreeNodeID, isBranch func(TreeNodeID) 
 
 // NewTreeWithStrings creates a new tree with the given string map.
 // Data must contain a mapping for the root, which defaults to empty string ("").
+//
+// Since: 1.4
 func NewTreeWithStrings(data map[string][]string) (t *Tree) {
 	t = &Tree{
 		ChildUIDs: func(uid string) (c []string) {
@@ -430,10 +436,10 @@ func (r *treeContentRenderer) Layout(size fyne.Size) {
 				b, ok := r.branches[uid]
 				if !ok {
 					b = r.getBranch()
-					b.update(uid, depth)
 					if f := r.treeContent.tree.UpdateNode; f != nil {
 						f(uid, true, b.Content())
 					}
+					b.update(uid, depth)
 				}
 				branches[uid] = b
 				n = b.treeNode
@@ -441,10 +447,10 @@ func (r *treeContentRenderer) Layout(size fyne.Size) {
 				l, ok := r.leaves[uid]
 				if !ok {
 					l = r.getLeaf()
-					l.update(uid, depth)
 					if f := r.treeContent.tree.UpdateNode; f != nil {
 						f(uid, false, l.Content())
 					}
+					l.update(uid, depth)
 				}
 				leaves[uid] = l
 				n = l.treeNode
