@@ -48,12 +48,15 @@ func (l *desktop) showCaptureSave(img image.Image) {
 	preview := canvas.NewImageFromImage(img)
 	preview.FillMode = canvas.ImageFillContain
 	w.SetContent(container.NewBorder(nil, buttons, nil, nil, preview))
-	w.Resize(fyne.NewSize(400, 250))
+	w.Resize(fyne.NewSize(480, 360))
 	w.Show()
 }
 
 func saveImage(pix image.Image, w fyne.Window) {
 	d := dialog.NewFileSave(func(write fyne.URIWriteCloser, err error) {
+		if write == nil { // cancelled
+			return
+		}
 		if err != nil {
 			dialog.ShowError(err, w)
 		}
