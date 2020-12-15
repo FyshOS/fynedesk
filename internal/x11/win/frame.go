@@ -231,7 +231,7 @@ func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image
 			data[i] = byte(b)
 			data[i+1] = byte(g)
 			data[i+2] = byte(r)
-			data[i+3] = 0
+			data[i+3] = 0xff
 
 			i += 4
 		}

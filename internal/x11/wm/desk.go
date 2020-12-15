@@ -76,11 +76,12 @@ const (
 	moveResizeMoveKeyboard moveResizeType = 10
 	moveResizeCancel       moveResizeType = 11
 
-	keyCodeEscape = 9
-	keyCodeTab    = 23
-	keyCodeReturn = 36
-	keyCodeAlt    = 64
-	keyCodeSpace  = 65
+	keyCodeEscape      = 9
+	keyCodeTab         = 23
+	keyCodeReturn      = 36
+	keyCodeAlt         = 64
+	keyCodeSpace       = 65
+	keyCodePrintScreen = 107
 
 	keyCodeEnter = 108
 	keyCodeLeft  = 113
@@ -153,6 +154,11 @@ func (x *x11WM) Blank() {
 		time.Sleep(time.Second / 3)
 		exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
 	}()
+}
+
+func (x *x11WM) Capture() image.Image {
+	root := x.x.RootWin()
+	return x11.CaptureWindow(x.x.Conn(), root)
 }
 
 func (x *x11WM) Close() {
@@ -235,6 +241,8 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 	switch n {
 	case fyne.KeySpace:
 		return keyCodeSpace
+	case deskDriver.KeyPrintScreen:
+		return keyCodePrintScreen
 	case fyne.KeyTab:
 		return keyCodeTab
 	case fynedesk.KeyBrightnessDown:
@@ -265,7 +273,6 @@ func (x *x11WM) modifierToKeyMask(m deskDriver.Modifier) uint16 {
 }
 
 func (x *x11WM) runLoop() {
-	x.setupBindings()
 	conn := x.x.Conn()
 
 	for {
