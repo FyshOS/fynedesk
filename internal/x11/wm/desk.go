@@ -347,13 +347,23 @@ func (x *x11WM) configureRoots() {
 		maxY = fyne.Max(maxY, screen.Y+screen.Height)
 
 		if screen == fynedesk.Instance().Screens().Primary() {
+			priX, priY, priW, priH := 0, 0, 0, 0
+			geom, err := xproto.GetGeometry(x.x.Conn(), xproto.Drawable(x.rootID)).Reply()
+			if err == nil {
+				priX, priY = int(geom.X), int(geom.Y)
+				priW, priH = int(geom.Width), int(geom.Height)
+			}
+			if screen.X == priX && screen.Y == priY && screen.Width == priW && screen.Height == priH {
+				continue
+			}
+
 			notifyEv := xproto.ConfigureNotifyEvent{Event: x.rootID, Window: x.rootID, AboveSibling: 0,
 				X: int16(screen.X), Y: int16(screen.Y), Width: uint16(screen.Width), Height: uint16(screen.Height),
 				BorderWidth: 0, OverrideRedirect: false}
 			xproto.SendEvent(x.x.Conn(), false, x.rootID, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 
 			// we need to trigger a move so that the correct scale is picked up
-			err := xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			err = xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
 				[]uint32{uint32(screen.X + 1), uint32(screen.Y + 1), uint32(screen.Width - 2), uint32(screen.Height - 2)}).Check()
 			if err != nil {
