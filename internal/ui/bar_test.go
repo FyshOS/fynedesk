@@ -7,7 +7,6 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/test"
 	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
 
 	wmTest "fyne.io/fynedesk/test"
 	wmTheme "fyne.io/fynedesk/theme"
@@ -144,7 +143,7 @@ func TestZoomScaleChange(t *testing.T) {
 
 	testBar.mouseInside = true
 	testBar.mousePosition = testBar.children[0].Position()
-	widget.Refresh(testBar)
+	testBar.Refresh()
 	firstWidth := testBar.children[0].Size().Width
 
 	testBar.desk.Settings().(*wmTest.Settings).SetLauncherZoomScale(2.0)
@@ -153,7 +152,7 @@ func TestZoomScaleChange(t *testing.T) {
 
 	testBar.mouseInside = true
 	testBar.mousePosition = testBar.children[0].Position()
-	widget.Refresh(testBar)
+	testBar.Refresh()
 	secondWidth := testBar.children[0].Size().Width
 
 	zoomTest := false
@@ -173,7 +172,7 @@ func TestIconZoomDisabled(t *testing.T) {
 
 	testBar.mouseInside = true
 	testBar.mousePosition = testBar.children[0].Position()
-	widget.Refresh(testBar)
+	testBar.Refresh()
 
 	width := testBar.children[0].Size().Width
 	assert.NotEqual(t, testBar.desk.Settings().LauncherIconSize(), width)
@@ -184,7 +183,7 @@ func TestIconZoomDisabled(t *testing.T) {
 
 	testBar.mouseInside = true
 	testBar.mousePosition = testBar.children[0].Position()
-	widget.Refresh(testBar)
+	testBar.Refresh()
 
 	width = testBar.children[0].Size().Width
 	assert.Equal(t, testBar.desk.Settings().LauncherIconSize(), width)

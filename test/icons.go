@@ -36,8 +36,7 @@ func (tad *testAppData) Icon(theme string, size int) fyne.Resource {
 }
 
 type testAppProvider struct {
-	screens []*fynedesk.Screen
-	apps    []fynedesk.AppData
+	apps []fynedesk.AppData
 }
 
 // NewAppProvider returns a simple provider of applications from the provided list of app names

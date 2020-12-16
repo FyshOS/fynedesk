@@ -33,20 +33,18 @@ func (b *sound) StatusAreaWidget() fyne.CanvasObject {
 		return nil
 	}
 
-	b.bar = widget.NewProgressBar()
-	b.bar.Max = 100
-	b.mute = widget.NewButtonWithIcon("", wmtheme.SoundIcon, b.toggleMute)
-	b.mute.HideShadow = true
-	less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
+	b.bar = &widget.ProgressBar{Max: 100}
+	b.mute = &widget.Button{Icon: wmtheme.SoundIcon, Importance: widget.LowImportance, OnTapped: b.toggleMute}
+
+	less := &widget.Button{Icon: theme.ContentRemoveIcon(), Importance: widget.LowImportance, OnTapped: func() {
 		b.offsetValue(-5)
-	})
-	less.HideShadow = true
-	more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
+	}}
+
+	more := &widget.Button{Icon: theme.ContentAddIcon(), Importance: widget.LowImportance, OnTapped: func() {
 		b.offsetValue(5)
-	})
-	more.HideShadow = true
-	sound := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
-		less, b.bar, more)
+	}}
+
+	sound := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more), less, b.bar, more)
 
 	go b.offsetValue(0)
 	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, b.mute, nil), b.mute, sound)

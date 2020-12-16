@@ -1,6 +1,7 @@
 package theme // import "fyne.io/fynedesk/theme"
 
 //go:generate fyne bundle -package theme -o bundled.go assets
+//lint:file-ignore SA1019 These deprecation can not be fixed until fyne 2.0
 
 import (
 	"image/color"

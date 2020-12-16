@@ -44,8 +44,6 @@ func SendNotification(n *Notification) {
 }
 
 type notifications struct {
-	notifs []Notification
-
 	listener func(*Notification)
 }
 

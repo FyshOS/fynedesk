@@ -67,9 +67,8 @@ func extractArgs(args []string) []string {
 //Run executes the command for this fdo app
 func (data *fdoApplicationData) Run(env []string) error {
 	vars := os.Environ()
-	for _, e := range env {
-		vars = append(vars, e)
-	}
+	vars = append(vars, env...)
+
 	commands := strings.Split(data.exec, " ")
 	command := commands[0]
 	if command[0] == '"' {

@@ -58,6 +58,7 @@ func TestParseColor(t *testing.T) {
 
 	id, c = parseColor("  c #000000", 1) // special case, id is spaces
 	assert.Equal(t, " ", id)
+	assert.Equal(t, &color.NRGBA{R: 0x0, G: 0x0, B: 0x0, A: 0xff}, c)
 }
 
 func TestParseDimensions(t *testing.T) {

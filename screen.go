@@ -30,6 +30,7 @@ type Screen struct {
 // CanvasScale calculates the scale for the contents of a desktop canvas on this screen
 func (s *Screen) CanvasScale() float32 {
 	user := userScale()
+	//lint:ignore SA1019 We need an upgrade-path for users
 	if user == fyne.SettingsScaleAuto {
 		user = 1.0
 	}
@@ -50,6 +51,8 @@ func userScale() float32 {
 
 	if env != "auto" {
 		setting := fyne.CurrentApp().Settings().Scale()
+
+		//lint:ignore SA1019 We need an upgrade-path for users
 		if setting != fyne.SettingsScaleAuto && setting != 0.0 {
 			return setting
 		}

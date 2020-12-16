@@ -21,7 +21,6 @@ type x11ScreensProvider struct {
 	primary *fynedesk.Screen
 	single  bool
 	x       *x11WM
-	root    xproto.Window
 
 	onChange []func()
 }

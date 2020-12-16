@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fyne.io/fyne"
+	"fyne.io/fyne/container"
 	deskDriver "fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
@@ -157,7 +158,7 @@ func newAppPicker(title string, callback func(fynedesk.AppData)) *picker {
 	})
 
 	appList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
-	appScroller := widget.NewScrollContainer(appList)
+	appScroller := container.NewScroll(appList)
 	l := &picker{win: win, desk: fynedesk.Instance(), appList: appList, callback: callback}
 
 	entry := &appEntry{pick: l}
