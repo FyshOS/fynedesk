@@ -18,3 +18,7 @@ uninstall:
 	-rm $(DESTDIR)$(PREFIX)/bin/fynedesk_runner
 	-rm $(DESTDIR)$(PREFIX)/bin/fynedesk
 	-rm $(DESTDIR)$(PREFIX)/share/xsessions/fynedesk.desktop
+
+embed:
+	DISPLAY=:0 Xephyr :1 -screen 1280x720 &
+	DISPLAY=:1 fynedesk
