@@ -4,7 +4,6 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/container"
 	deskDriver "fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
@@ -157,7 +156,7 @@ func newAppPicker(title string, callback func(fynedesk.AppData)) *picker {
 		}
 	})
 
-	appList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
+	appList := container.NewVBox()
 	appScroller := container.NewScroll(appList)
 	l := &picker{win: win, desk: fynedesk.Instance(), appList: appList, callback: callback}
 
@@ -178,8 +177,7 @@ func newAppPicker(title string, callback func(fynedesk.AppData)) *picker {
 		win.Close()
 	})
 
-	win.SetContent(fyne.NewContainerWithLayout(layout.NewBorderLayout(entry, cancel, nil, nil),
-		entry, appScroller, cancel))
+	win.SetContent(container.NewBorder(entry, cancel, nil, nil, appScroller))
 	win.Resize(fyne.NewSize(300,
 		cancel.MinSize().Height*4+theme.Padding()*6+entry.MinSize().Height))
 	win.CenterOnScreen()

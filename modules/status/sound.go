@@ -2,7 +2,7 @@ package status
 
 import (
 	"fyne.io/fyne"
-	"fyne.io/fyne/layout"
+	"fyne.io/fyne/container"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 	"github.com/mafik/pulseaudio"
@@ -44,10 +44,10 @@ func (b *sound) StatusAreaWidget() fyne.CanvasObject {
 		b.offsetValue(5)
 	}}
 
-	sound := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more), less, b.bar, more)
+	sound := container.NewBorder(nil, nil, less, more, b.bar)
 
 	go b.offsetValue(0)
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, b.mute, nil), b.mute, sound)
+	return container.NewBorder(nil, nil, b.mute, nil, sound)
 }
 
 // Metadata returns ModuleMetadata

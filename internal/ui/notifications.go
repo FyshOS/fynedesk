@@ -4,7 +4,7 @@ import (
 	"time"
 
 	"fyne.io/fyne"
-	"fyne.io/fyne/layout"
+	"fyne.io/fyne/container"
 	"fyne.io/fyne/widget"
 
 	"fyne.io/fynedesk/wm"
@@ -58,7 +58,7 @@ func (n *notifications) newMessage(message *wm.Notification) {
 }
 
 func startNotifications() fyne.CanvasObject {
-	box := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
+	box := container.NewVBox()
 
 	n := &notifications{list: box}
 	wm.SetNotificationListener(n.newMessage)

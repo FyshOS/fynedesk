@@ -6,7 +6,7 @@ import (
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
+	"fyne.io/fyne/container"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
@@ -22,7 +22,7 @@ type background struct {
 }
 
 func (b *background) CreateRenderer() fyne.WidgetRenderer {
-	c := fyne.NewContainerWithLayout(layout.NewMaxLayout(), b.loadModules()...)
+	c := container.NewMax(b.loadModules()...)
 	return &backgroundRenderer{b: b, c: c}
 }
 
