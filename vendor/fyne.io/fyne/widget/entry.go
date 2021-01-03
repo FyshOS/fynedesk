@@ -4,12 +4,15 @@ import (
 	"image/color"
 	"math"
 	"strings"
+	"time"
 	"unicode"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/data/binding"
 	"fyne.io/fyne/driver/desktop"
 	"fyne.io/fyne/driver/mobile"
+	"fyne.io/fyne/internal/cache"
 	"fyne.io/fyne/theme"
 )
 
@@ -31,8 +34,10 @@ var _ mobile.Keyboardable = (*Entry)(nil)
 // Entry widget allows simple text to be input when focused.
 type Entry struct {
 	DisableableWidget
-	shortcut    fyne.ShortcutHandler
-	Text        string
+	shortcut fyne.ShortcutHandler
+	Text     string
+	// Since: 2.0.0
+	TextStyle   fyne.TextStyle
 	PlaceHolder string
 	OnChanged   func(string) `json:"-"`
 	Password    bool
@@ -69,7 +74,9 @@ type Entry struct {
 	// TODO: Add OnSelectChanged
 
 	// ActionItem is a small item which is displayed at the outer right of the entry (like a password revealer)
-	ActionItem fyne.CanvasObject
+	ActionItem   fyne.CanvasObject
+	textSource   binding.String
+	textListener binding.DataListener
 }
 
 // NewEntry creates a new single line entry widget.
@@ -77,6 +84,16 @@ func NewEntry() *Entry {
 	e := &Entry{}
 	e.ExtendBaseWidget(e)
 	return e
+}
+
+// NewEntryWithData returns an Entry widget connected to the specified data source.
+//
+// Since: 2.0.0
+func NewEntryWithData(data binding.String) *Entry {
+	entry := NewEntry()
+	entry.Bind(data)
+
+	return entry
 }
 
 // NewMultiLineEntry creates a new entry that allows multiple lines
@@ -92,6 +109,41 @@ func NewPasswordEntry() *Entry {
 	e.ExtendBaseWidget(e)
 	e.ActionItem = newPasswordRevealer(e)
 	return e
+}
+
+// Bind connects the specified data source to this Entry.
+// The current value will be displayed and any changes in the data will cause the widget to update.
+// User interactions with this Entry will set the value into the data source.
+//
+// Since: 2.0.0
+func (e *Entry) Bind(data binding.String) {
+	e.Unbind()
+	e.textSource = data
+
+	var convertErr error
+	e.Validator = func(string) error {
+		return convertErr
+	}
+	e.textListener = binding.NewDataListener(func() {
+		val, err := data.Get()
+		if err != nil {
+			convertErr = err
+			e.SetValidationError(err)
+			return
+		}
+		e.Text = val
+		convertErr = nil
+		e.Refresh()
+		if cache.IsRendered(e) {
+			e.Refresh()
+		}
+	})
+	data.AddListener(e.textListener)
+
+	e.OnChanged = func(s string) {
+		convertErr = data.Set(s)
+		e.SetValidationError(convertErr)
+	}
 }
 
 // CreateRenderer is a private method to Fyne which links this widget to its renderer
@@ -123,7 +175,7 @@ func (e *Entry) CreateRenderer() fyne.WidgetRenderer {
 		objects = append(objects, e.ActionItem)
 	}
 
-	return &entryRenderer{line, cursor, []fyne.CanvasObject{}, objects, e}
+	return &entryRenderer{line, cursor, []fyne.CanvasObject{}, nil, objects, e}
 }
 
 // Cursor returns the cursor type of this widget
@@ -327,12 +379,12 @@ func (e *Entry) MouseDown(m *desktop.MouseEvent) {
 	if e.selectKeyDown {
 		e.selecting = true
 	}
-	if e.selecting && !e.selectKeyDown && m.Button == desktop.LeftMouseButton {
+	if e.selecting && !e.selectKeyDown && m.Button == desktop.MouseButtonPrimary {
 		e.selecting = false
 	}
 	e.propertyLock.Unlock()
 
-	e.updateMousePointer(&m.PointEvent, m.Button == desktop.RightMouseButton)
+	e.updateMousePointer(&m.PointEvent, m.Button == desktop.MouseButtonSecondary)
 }
 
 // MouseUp called on mouse release
@@ -425,6 +477,10 @@ func (e *Entry) Tapped(ev *fyne.PointEvent) {
 //
 // Implements: fyne.SecondaryTappable
 func (e *Entry) TappedSecondary(pe *fyne.PointEvent) {
+	if e.Disabled() && e.concealed() {
+		return // no popup options for a disabled concealed field
+	}
+
 	cutItem := fyne.NewMenuItem("Cut", func() {
 		clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
 		e.cutToClipboard(clipboard)
@@ -444,10 +500,6 @@ func (e *Entry) TappedSecondary(pe *fyne.PointEvent) {
 	popUpPos := entryPos.Add(fyne.NewPos(pe.Position.X, pe.Position.Y))
 	c := fyne.CurrentApp().Driver().CanvasForObject(super)
 
-	if e.Disabled() && e.concealed() {
-		return // no popup options for a disabled concealed field
-	}
-
 	var menu *fyne.Menu
 	if e.Disabled() {
 		menu = fyne.NewMenu("", copyItem, selectAllItem)
@@ -456,7 +508,8 @@ func (e *Entry) TappedSecondary(pe *fyne.PointEvent) {
 	} else {
 		menu = fyne.NewMenu("", cutItem, copyItem, pasteItem, selectAllItem)
 	}
-	e.popUp = newPopUpMenu(menu, c)
+
+	e.popUp = NewPopUpMenu(menu, c)
 	e.popUp.ShowAtPosition(popUpPos)
 }
 
@@ -645,6 +698,22 @@ func (e *Entry) TypedRune(r rune) {
 // Implements: fyne.Shortcutable
 func (e *Entry) TypedShortcut(shortcut fyne.Shortcut) {
 	e.shortcut.TypedShortcut(shortcut)
+}
+
+// Unbind disconnects any configured data source from this Entry.
+// The current value will remain at the last value of the data source.
+//
+// Since: 2.0.0
+func (e *Entry) Unbind() {
+	e.OnChanged = nil
+	if e.textSource == nil || e.textListener == nil {
+		return
+	}
+
+	e.Validator = nil
+	e.textSource.RemoveListener(e.textListener)
+	e.textListener = nil
+	e.textSource = nil
 }
 
 // concealed tells the rendering textProvider if we are a concealed field
@@ -952,7 +1021,7 @@ func (e *Entry) textProvider() *textProvider {
 
 // textStyle tells the rendering textProvider our style
 func (e *Entry) textStyle() fyne.TextStyle {
-	return fyne.TextStyle{}
+	return e.TextStyle
 }
 
 // textWrap tells the rendering textProvider our wrapping
@@ -1013,6 +1082,7 @@ var _ fyne.WidgetRenderer = (*entryRenderer)(nil)
 type entryRenderer struct {
 	line, cursor *canvas.Rectangle
 	selection    []fyne.CanvasObject
+	cursorAnim   *fyne.Animation
 
 	objects []fyne.CanvasObject
 	entry   *Entry
@@ -1110,7 +1180,15 @@ func (r *entryRenderer) Refresh() {
 	if focused {
 		r.cursor.Show()
 		r.line.FillColor = theme.FocusColor()
+		if r.cursorAnim == nil {
+			r.cursorAnim = makeCursorAnimation(r.cursor)
+			r.cursorAnim.Start()
+		}
 	} else {
+		if r.cursorAnim != nil {
+			r.cursorAnim.Stop()
+			r.cursorAnim = nil
+		}
 		r.cursor.Hide()
 		if r.entry.Disabled() {
 			r.line.FillColor = theme.DisabledTextColor()
@@ -1176,9 +1254,9 @@ func (r *entryRenderer) buildSelection() {
 
 	provider := r.entry.textProvider()
 	// Convert column, row into x,y
-	getCoordinates := func(column int, row int) (int, int) {
+	getCoordinates := func(column int, row int) (float32, float32) {
 		sz := provider.lineSizeToColumn(column, row)
-		return sz.Width + theme.Padding()*2, sz.Height*row + theme.Padding()*2
+		return sz.Width + theme.Padding()*2, sz.Height*float32(row) + theme.Padding()*2
 	}
 
 	lineHeight := r.entry.text.charMinSize().Height
@@ -1254,7 +1332,7 @@ func (r *entryRenderer) moveCursor() {
 	size := provider.lineSizeToColumn(r.entry.CursorColumn, r.entry.CursorRow)
 	provider.propertyLock.RUnlock()
 	xPos := size.Width
-	yPos := size.Height * r.entry.CursorRow
+	yPos := size.Height * float32(r.entry.CursorRow)
 	r.entry.propertyLock.RUnlock()
 
 	r.entry.propertyLock.Lock()
@@ -1354,4 +1432,18 @@ func getTextWhitespaceRegion(row []rune, col int) (int, int) {
 		end += col // otherwise include the text slice position
 	}
 	return start, end
+}
+
+func makeCursorAnimation(cursor *canvas.Rectangle) *fyne.Animation {
+	cursorOpaque := theme.FocusColor()
+	r, g, b, _ := theme.FocusColor().RGBA()
+	cursorDim := color.NRGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 0x16}
+	anim := canvas.NewColorRGBAAnimation(cursorDim, cursorOpaque, time.Second/2, func(c color.Color) {
+		cursor.FillColor = c
+		cursor.Refresh()
+	})
+	anim.Repeat = true
+	anim.AutoReverse = true
+
+	return anim
 }

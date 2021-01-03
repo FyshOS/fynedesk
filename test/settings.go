@@ -7,8 +7,8 @@ type Settings struct {
 	background             string
 	iconTheme              string
 	launcherIcons          []string
-	launcherIconSize       int
-	launcherZoomScale      float64
+	launcherIconSize       float32
+	launcherZoomScale      float32
 	launcherDisableZoom    bool
 	launcherDisableTaskbar bool
 	clockFormatting        string
@@ -56,7 +56,7 @@ func (s *Settings) SetLauncherIcons(icons []string) {
 }
 
 // LauncherIconSize returns the standard (non-zoomed) icon size for app launcher
-func (s *Settings) LauncherIconSize() int {
+func (s *Settings) LauncherIconSize() float32 {
 	if s.launcherIconSize == 0 {
 		return 32
 	}
@@ -64,7 +64,7 @@ func (s *Settings) LauncherIconSize() int {
 }
 
 // SetLauncherIconSize allows configuring the icon size in app launcher
-func (s *Settings) SetLauncherIconSize(size int) {
+func (s *Settings) SetLauncherIconSize(size float32) {
 	s.launcherIconSize = size
 }
 
@@ -89,7 +89,7 @@ func (s *Settings) SetLauncherDisableZoom(zoom bool) {
 }
 
 // LauncherZoomScale returns how much the icons should zoom when hovered
-func (s *Settings) LauncherZoomScale() float64 {
+func (s *Settings) LauncherZoomScale() float32 {
 	if s.launcherZoomScale == 0 {
 		return 1.5
 	}
@@ -97,7 +97,7 @@ func (s *Settings) LauncherZoomScale() float64 {
 }
 
 // SetLauncherZoomScale supports setting the scale value for hovered bar icons
-func (s *Settings) SetLauncherZoomScale(scale float64) {
+func (s *Settings) SetLauncherZoomScale(scale float32) {
 	s.launcherZoomScale = scale
 }
 

@@ -21,23 +21,24 @@ import (
 )
 
 const (
-	scrollSpeed      = 10
+	scrollSpeed      = float32(10)
 	doubleClickDelay = 300 // ms (maximum interval between clicks for double click detection)
 )
 
 var (
-	cursorMap    map[desktop.Cursor]*glfw.Cursor
+	cursorMap    map[desktop.StandardCursor]*glfw.Cursor
 	defaultTitle = "Fyne Application"
 )
 
 func initCursors() {
-	cursorMap = map[desktop.Cursor]*glfw.Cursor{
+	cursorMap = map[desktop.StandardCursor]*glfw.Cursor{
 		desktop.DefaultCursor:   glfw.CreateStandardCursor(glfw.ArrowCursor),
 		desktop.TextCursor:      glfw.CreateStandardCursor(glfw.IBeamCursor),
 		desktop.CrosshairCursor: glfw.CreateStandardCursor(glfw.CrosshairCursor),
 		desktop.PointerCursor:   glfw.CreateStandardCursor(glfw.HandCursor),
 		desktop.HResizeCursor:   glfw.CreateStandardCursor(glfw.HResizeCursor),
 		desktop.VResizeCursor:   glfw.CreateStandardCursor(glfw.VResizeCursor),
+		desktop.HiddenCursor:    nil,
 	}
 }
 
@@ -51,11 +52,12 @@ type window struct {
 	decorate   bool
 	fixedSize  bool
 
-	cursor   *glfw.Cursor
-	canvas   *glCanvas
-	title    string
-	icon     fyne.Resource
-	mainmenu *fyne.MainMenu
+	cursor       desktop.Cursor
+	customCursor *glfw.Cursor
+	canvas       *glCanvas
+	title        string
+	icon         fyne.Resource
+	mainmenu     *fyne.MainMenu
 
 	clipboard fyne.Clipboard
 
@@ -561,30 +563,56 @@ func (w *window) findObjectAtPositionMatching(canvas *glCanvas, mouse fyne.Posit
 	return driver.FindObjectAtPositionMatching(mouse, matches, canvas.Overlays().Top(), canvas.menu, canvas.Content())
 }
 
-func fyneToNativeCursor(cursor desktop.Cursor) *glfw.Cursor {
-	ret, ok := cursorMap[cursor]
-	if !ok {
-		return cursorMap[desktop.DefaultCursor]
+func fyneToNativeCursor(cursor desktop.Cursor) (*glfw.Cursor, bool) {
+	switch v := cursor.(type) {
+	case desktop.StandardCursor:
+		ret, ok := cursorMap[v]
+		if !ok {
+			return cursorMap[desktop.DefaultCursor], false
+		}
+		return ret, false
+	default:
+		img, x, y := cursor.Image()
+		if img == nil {
+			return nil, true
+		}
+		return glfw.CreateCursor(img, x, y), true
 	}
-	return ret
 }
 
 func (w *window) mouseMoved(viewport *glfw.Window, xpos float64, ypos float64) {
 	w.mousePos = fyne.NewPos(internal.UnscaleInt(w.canvas, int(xpos)), internal.UnscaleInt(w.canvas, int(ypos)))
 
-	cursor := cursorMap[desktop.DefaultCursor]
+	cursor := desktop.Cursor(desktop.DefaultCursor)
+
 	obj, pos, _ := w.findObjectAtPositionMatching(w.canvas, w.mousePos, func(object fyne.CanvasObject) bool {
 		if cursorable, ok := object.(desktop.Cursorable); ok {
-			fyneCursor := cursorable.Cursor()
-			cursor = fyneToNativeCursor(fyneCursor)
+			cursor = cursorable.Cursor()
 		}
 
 		_, hover := object.(desktop.Hoverable)
 		return hover
 	})
 
-	w.cursor = cursor
-	viewport.SetCursor(cursor)
+	if w.cursor != cursor {
+		// cursor has changed, store new cursor and apply change via glfw
+		rawCursor, isCustomCursor := fyneToNativeCursor(cursor)
+		w.cursor = cursor
+
+		if rawCursor == nil {
+			viewport.SetInputMode(glfw.CursorMode, glfw.CursorHidden)
+		} else {
+			viewport.SetInputMode(glfw.CursorMode, glfw.CursorNormal)
+			viewport.SetCursor(rawCursor)
+		}
+		if w.customCursor != nil {
+			w.customCursor.Destroy()
+			w.customCursor = nil
+		}
+		if isCustomCursor {
+			w.customCursor = rawCursor
+		}
+	}
 	if obj != nil && !w.objIsDragged(obj) {
 		ev := new(desktop.MouseEvent)
 		ev.AbsolutePosition = w.mousePos
@@ -609,8 +637,7 @@ func (w *window) mouseMoved(viewport *glfw.Window, xpos float64, ypos float64) {
 			ev := new(fyne.DragEvent)
 			ev.AbsolutePosition = w.mousePos
 			ev.Position = w.mousePos.Subtract(w.mouseDraggedOffset).Subtract(draggedObjPos)
-			ev.DraggedX = w.mousePos.X - w.mouseDragPos.X
-			ev.DraggedY = w.mousePos.Y - w.mouseDragPos.Y
+			ev.Dragged = fyne.NewDelta(w.mousePos.X-w.mouseDragPos.X, w.mousePos.Y-w.mouseDragPos.Y)
 			wd := w.mouseDragged
 			w.queueEvent(func() { wd.Dragged(ev) })
 
@@ -715,7 +742,7 @@ func (w *window) mouseClicked(_ *glfw.Window, btn glfw.MouseButton, action glfw.
 			w.mousePressed = co
 		} else if action == glfw.Release {
 			if co == w.mousePressed {
-				if button == desktop.RightMouseButton && altTap {
+				if button == desktop.MouseButtonSecondary && altTap {
 					w.queueEvent(func() { co.(fyne.SecondaryTappable).TappedSecondary(ev) })
 				}
 			}
@@ -723,7 +750,7 @@ func (w *window) mouseClicked(_ *glfw.Window, btn glfw.MouseButton, action glfw.
 	}
 
 	// Check for double click/tap on left mouse button
-	if action == glfw.Release && button == desktop.LeftMouseButton {
+	if action == glfw.Release && button == desktop.MouseButtonPrimary {
 		_, doubleTap := co.(fyne.DoubleTappable)
 		if doubleTap {
 			w.mouseClickCount++
@@ -776,8 +803,7 @@ func (w *window) mouseScrolled(viewport *glfw.Window, xoff float64, yoff float64
 			xoff, yoff = yoff, xoff
 		}
 		ev := &fyne.ScrollEvent{}
-		ev.DeltaX = int(xoff * scrollSpeed)
-		ev.DeltaY = int(yoff * scrollSpeed)
+		ev.Scrolled = fyne.NewDelta(float32(xoff)*scrollSpeed, float32(yoff)*scrollSpeed)
 		wid.Scrolled(ev)
 	}
 }
@@ -799,12 +825,14 @@ func convertMouseButton(btn glfw.MouseButton, mods glfw.ModifierKey) (desktop.Mo
 	switch btn {
 	case glfw.MouseButton1:
 		if rightClick {
-			button = desktop.RightMouseButton
+			button = desktop.MouseButtonSecondary
 		} else {
-			button = desktop.LeftMouseButton
+			button = desktop.MouseButtonPrimary
 		}
 	case glfw.MouseButton2:
-		button = desktop.RightMouseButton
+		button = desktop.MouseButtonSecondary
+	case glfw.MouseButton3:
+		button = desktop.MouseButtonTertiary
 	}
 	return button, modifier
 }
@@ -951,19 +979,6 @@ func (w *window) keyPressed(_ *glfw.Window, key glfw.Key, scancode int, action g
 	keyEvent := &fyne.KeyEvent{Name: keyName}
 	keyDesktopModifier := desktopModifier(mods)
 
-	if keyName == fyne.KeyTab {
-		if keyDesktopModifier == 0 {
-			if action != glfw.Release {
-				w.canvas.FocusNext()
-			}
-			return
-		} else if keyDesktopModifier == desktop.ShiftModifier {
-			if action != glfw.Release {
-				w.canvas.FocusPrevious()
-			}
-			return
-		}
-	}
 	if action == glfw.Press {
 		if w.canvas.Focused() != nil {
 			if focused, ok := w.canvas.Focused().(desktop.Keyable); ok {
@@ -982,6 +997,17 @@ func (w *window) keyPressed(_ *glfw.Window, key glfw.Key, scancode int, action g
 		}
 		return
 	} // key repeat will fall through to TypedKey and TypedShortcut
+
+	if keyName == fyne.KeyTab {
+		// at this point we know action != glfw.Release
+		if keyDesktopModifier == 0 {
+			w.canvas.FocusNext()
+			return
+		} else if keyDesktopModifier == desktop.ShiftModifier {
+			w.canvas.FocusPrevious()
+			return
+		}
+	}
 
 	var shortcut fyne.Shortcut
 	ctrlMod := desktop.ControlModifier
@@ -1206,11 +1232,11 @@ func (w *window) create() {
 		initWindowHints()
 
 		pixWidth, pixHeight := w.screenSize(w.canvas.size)
-		pixWidth = fyne.Max(pixWidth, w.width)
+		pixWidth = int(fyne.Max(float32(pixWidth), float32(w.width)))
 		if pixWidth == 0 {
 			pixWidth = 10
 		}
-		pixHeight = fyne.Max(pixHeight, w.height)
+		pixHeight = int(fyne.Max(float32(pixHeight), float32(w.height)))
 		if pixHeight == 0 {
 			pixHeight = 10
 		}

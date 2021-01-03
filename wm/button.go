@@ -9,7 +9,7 @@ import (
 
 const (
 	// CloseCursor is the mouse cursor that indicates a close action
-	CloseCursor desktop.Cursor = iota + desktop.VResizeCursor // add to the end of the fyne list
+	CloseCursor desktop.StandardCursor = iota + desktop.VResizeCursor // add to the end of the fyne list
 )
 
 type closeButton struct {

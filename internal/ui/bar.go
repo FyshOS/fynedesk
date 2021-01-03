@@ -22,7 +22,7 @@ type bar struct {
 	mouseInside   bool                // Is the mouse inside of the bar?
 	mousePosition fyne.Position       // The current coordinates of the mouse cursor
 
-	iconSize       int
+	iconSize       float32
 	iconScale      float32
 	disableTaskbar bool
 	disableZoom    bool
@@ -261,7 +261,7 @@ func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 func newBar(desk fynedesk.Desktop) *bar {
 	bar := &bar{desk: desk}
 	bar.ExtendBaseWidget(bar)
-	bar.iconSize = desk.Settings().LauncherIconSize()
+	bar.iconSize = float32(desk.Settings().LauncherIconSize())
 	bar.iconScale = float32(desk.Settings().LauncherZoomScale())
 	bar.disableTaskbar = desk.Settings().LauncherDisableTaskbar()
 

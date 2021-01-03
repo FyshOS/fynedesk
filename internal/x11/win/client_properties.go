@@ -49,7 +49,7 @@ func (c *clientProperties) Icon() fyne.Resource {
 	}
 
 	settings := fynedesk.Instance().Settings()
-	iconSize := int(float64(settings.LauncherIconSize()) * settings.LauncherZoomScale())
+	iconSize := int(settings.LauncherIconSize() * settings.LauncherZoomScale())
 	xIcon := windowIcon(c.c.wm.X(), c.c.win, iconSize, iconSize)
 	if len(xIcon.Bytes()) != 0 {
 		c.iconCache = fyne.NewStaticResource(c.Title(), xIcon.Bytes())

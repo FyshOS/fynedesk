@@ -122,7 +122,7 @@ func (bi *barIcon) TappedSecondary(*fyne.PointEvent) {
 		return
 	}
 
-	var menu *widget.PopUp
+	var menu *widget.PopUpMenu
 	addRemove := fyne.NewMenuItem("Remove "+app.Name(), func() {
 		if bi.windowData != nil {
 			addToBar(app)
@@ -138,7 +138,8 @@ func (bi *barIcon) TappedSecondary(*fyne.PointEvent) {
 
 	c := fyne.CurrentApp().Driver().CanvasForObject(bi)
 	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(bi)
-	menu = widget.NewPopUpMenuAtPosition(fyne.NewMenu("", []*fyne.MenuItem{addRemove}...), c, pos) //lint:ignore SA1019 Sort this out when deprecations gets sorted out upstream
+	menu = widget.NewPopUpMenu(fyne.NewMenu("", []*fyne.MenuItem{addRemove}...), c)
+	menu.ShowAtPosition(pos)
 }
 
 // CreateRenderer is a private method to fyne which links this widget to its renderer

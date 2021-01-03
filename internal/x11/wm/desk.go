@@ -339,10 +339,10 @@ func (x *x11WM) configureRoots() {
 
 	minX, minY, maxX, maxY := math.MaxInt16, math.MaxInt16, 0, 0
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
-		minX = fyne.Min(minX, screen.X)
-		minY = fyne.Min(minY, screen.Y)
-		maxX = fyne.Max(maxX, screen.X+screen.Width)
-		maxY = fyne.Max(maxY, screen.Y+screen.Height)
+		minX = min(minX, screen.X)
+		minY = min(minY, screen.Y)
+		maxX = max(maxX, screen.X+screen.Width)
+		maxY = max(maxY, screen.Y+screen.Height)
 
 		if screen == fynedesk.Instance().Screens().Primary() {
 			priX, priY, priW, priH := 0, 0, 0, 0
@@ -734,4 +734,20 @@ func (x *x11WM) updateBackgrounds() {
 
 	// save root so we can free it later if not needed
 	x.oldRoot = root
+}
+
+func max(a, b int) int {
+	if a > b {
+		return a
+	}
+
+	return b
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+
+	return b
 }

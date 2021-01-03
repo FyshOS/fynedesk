@@ -2,6 +2,7 @@ package test
 
 import (
 	"image"
+	"strings"
 	"testing"
 	"time"
 
@@ -11,6 +12,7 @@ import (
 	"fyne.io/fyne/internal/driver"
 	"fyne.io/fyne/internal/test"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
@@ -32,9 +34,23 @@ func AssertImageMatches(t *testing.T, masterFilename string, img image.Image, ms
 	return test.AssertImageMatches(t, masterFilename, img, msgAndArgs...)
 }
 
+// AssertRendersToMarkup asserts that the given canvas renders the expected markup.
+// The expected markup is stripped by leading common whitespace retaining the relative indentation
+// and thus matching the indentation of the output of the used markup renderer.
+//
+// Be aware, that the indentation has to use tab characters ('\t') instead of spaces.
+// Every element starts on a new line indented one more than its parent.
+// Closing elements stand on their own line, too, using the same indentation as the opening element.
+// The only exception to this are text elements which do not contain line breaks unless the text includes them.
+//
+// Since: 2.0.0
+func AssertRendersToMarkup(t *testing.T, expected string, c fyne.Canvas, msgAndArgs ...interface{}) bool {
+	return assert.Equal(t, removeCommonIndent(expected), snapshot(c), msgAndArgs...)
+}
+
 // Drag drags at an absolute position on the canvas.
 // deltaX/Y is the dragging distance: <0 for dragging up/left, >0 for dragging down/right.
-func Drag(c fyne.Canvas, pos fyne.Position, deltaX, deltaY int) {
+func Drag(c fyne.Canvas, pos fyne.Position, deltaX, deltaY float32) {
 	matches := func(object fyne.CanvasObject) bool {
 		if _, ok := object.(fyne.Draggable); ok {
 			return true
@@ -47,8 +63,7 @@ func Drag(c fyne.Canvas, pos fyne.Position, deltaX, deltaY int) {
 	}
 	e := &fyne.DragEvent{
 		PointEvent: fyne.PointEvent{Position: p},
-		DraggedX:   deltaX,
-		DraggedY:   deltaY,
+		Dragged:    fyne.Delta{DX: deltaX, DY: deltaY},
 	}
 	o.(fyne.Draggable).Dragged(e)
 	o.(fyne.Draggable).DragEnd()
@@ -124,7 +139,7 @@ func MoveMouse(c fyne.Canvas, pos fyne.Position) {
 
 // Scroll scrolls at an absolute position on the canvas.
 // deltaX/Y is the scrolling distance: <0 for scrolling up/left, >0 for scrolling down/right.
-func Scroll(c fyne.Canvas, pos fyne.Position, deltaX, deltaY int) {
+func Scroll(c fyne.Canvas, pos fyne.Position, deltaX, deltaY float32) {
 	matches := func(object fyne.CanvasObject) bool {
 		if _, ok := object.(fyne.Scrollable); ok {
 			return true
@@ -136,7 +151,7 @@ func Scroll(c fyne.Canvas, pos fyne.Position, deltaX, deltaY int) {
 		return
 	}
 
-	e := &fyne.ScrollEvent{DeltaX: deltaX, DeltaY: deltaY}
+	e := &fyne.ScrollEvent{Scrolled: fyne.Delta{DX: deltaX, DY: deltaY}}
 	o.(fyne.Scrollable).Scrolled(e)
 }
 
@@ -266,4 +281,68 @@ func typeChars(chars []rune, keyDown func(rune)) {
 	for _, char := range chars {
 		keyDown(char)
 	}
+}
+
+func removeCommonIndent(raw string) string {
+	skipFirstLine := false
+	if len(raw) > 0 && raw[0] == '\n' {
+		raw = raw[1:]
+	} else {
+		skipFirstLine = true
+	}
+	lines := strings.Split(raw, "\n")
+	minIndentSize := getMinIndent(lines, skipFirstLine)
+	lines = removeIndent(lines, minIndentSize, skipFirstLine)
+	return strings.Join(lines, "\n")
+}
+
+func isSpace(r rune) bool {
+	switch r {
+	case ' ', '\t':
+		return true
+	default:
+		return false
+	}
+}
+
+func getMinIndent(lines []string, skipFirstLine bool) int {
+	const maxInt = int(^uint(0) >> 1)
+	minIndentSize := maxInt
+
+	for i, line := range lines {
+		if i == 0 && skipFirstLine {
+			continue
+		}
+
+		indentSize := 0
+		for _, r := range line {
+			if isSpace(r) {
+				indentSize++
+			} else {
+				break
+			}
+		}
+
+		if len(line) == indentSize {
+			if i == len(lines)-1 && indentSize < minIndentSize {
+				lines[i] = ""
+			}
+		} else if indentSize < minIndentSize {
+			minIndentSize = indentSize
+		}
+	}
+	return minIndentSize
+}
+
+func removeIndent(lines []string, n int, skipFirstLine bool) []string {
+	for i, line := range lines {
+		if i == 0 && skipFirstLine {
+			continue
+		}
+
+		if len(lines[i]) >= n {
+			lines[i] = line[n:]
+		}
+	}
+	return lines
 }

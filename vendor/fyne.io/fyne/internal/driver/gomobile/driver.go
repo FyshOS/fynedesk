@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/internal"
+	"fyne.io/fyne/internal/animation"
 	"fyne.io/fyne/internal/driver"
 	"fyne.io/fyne/internal/painter"
 	pgl "fyne.io/fyne/internal/painter/gl"
@@ -29,8 +30,9 @@ type mobileDriver struct {
 	app   app.App
 	glctx gl.Context
 
-	windows []fyne.Window
-	device  *device
+	windows   []fyne.Window
+	device    *device
+	animation *animation.Runner
 }
 
 // Declare conformity with Driver
@@ -62,7 +64,7 @@ func (d *mobileDriver) currentWindow() fyne.Window {
 	return d.windows[len(d.windows)-1]
 }
 
-func (d *mobileDriver) RenderedTextSize(text string, size int, style fyne.TextStyle) fyne.Size {
+func (d *mobileDriver) RenderedTextSize(text string, size float32, style fyne.TextStyle) fyne.Size {
 	return painter.RenderedTextSize(text, size, style)
 }
 
@@ -143,7 +145,7 @@ func (d *mobileDriver) Run() {
 				}
 
 				if d.freeDirtyTextures(canvas) {
-					newSize := fyne.NewSize(int(float32(currentSize.WidthPx)/canvas.scale), int(float32(currentSize.HeightPx)/canvas.scale))
+					newSize := fyne.NewSize(float32(currentSize.WidthPx)/canvas.scale, float32(currentSize.HeightPx)/canvas.scale)
 
 					if canvas.minSizeChanged() {
 						canvas.ensureMinSize()
@@ -410,5 +412,7 @@ func (d *mobileDriver) Device() fyne.Device {
 // NewGoMobileDriver sets up a new Driver instance implemented using the Go
 // Mobile extension and OpenGL bindings.
 func NewGoMobileDriver() fyne.Driver {
-	return new(mobileDriver)
+	d := new(mobileDriver)
+	d.animation = &animation.Runner{}
+	return d
 }

@@ -81,7 +81,7 @@ func (l *desktop) setupRoot() {
 	}
 
 	scale := l.screens.Primary().CanvasScale()
-	l.root.Resize(fyne.NewSize(int(float32(l.screens.Primary().Width)/scale), int(float32(l.screens.Primary().Height)/scale)))
+	l.root.Resize(fyne.NewSize(float32(l.screens.Primary().Width)/scale, float32(l.screens.Primary().Height)/scale))
 }
 
 func (l *desktop) Run() {
@@ -201,7 +201,7 @@ func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSetting
 		l.updateBackgrounds(s.Background())
 		l.widgets.reloadModules(l.Modules())
 
-		l.bar.iconSize = l.Settings().LauncherIconSize()
+		l.bar.iconSize = float32(l.Settings().LauncherIconSize())
 		l.bar.iconScale = float32(l.Settings().LauncherZoomScale())
 		l.bar.disableZoom = l.Settings().LauncherDisableZoom()
 		l.bar.updateIcons()

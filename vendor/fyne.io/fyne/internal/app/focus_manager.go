@@ -21,10 +21,42 @@ func NewFocusManager(c fyne.CanvasObject) *FocusManager {
 }
 
 // Focus focuses the given obj.
-func (f *FocusManager) Focus(obj fyne.Focusable) {
+func (f *FocusManager) Focus(obj fyne.Focusable) bool {
 	f.Lock()
 	defer f.Unlock()
+	if obj != nil {
+		var hiddenAncestor fyne.CanvasObject
+		hidden := false
+		found := driver.WalkCompleteObjectTree(
+			f.content,
+			func(object fyne.CanvasObject, _, _ fyne.Position, _ fyne.Size) bool {
+				if hiddenAncestor == nil && !object.Visible() {
+					hiddenAncestor = object
+				}
+				if object == obj.(fyne.CanvasObject) {
+					hidden = hiddenAncestor != nil
+					return true
+				}
+				return false
+			},
+			func(object, _ fyne.CanvasObject) {
+				if hiddenAncestor == object {
+					hiddenAncestor = nil
+				}
+			},
+		)
+		if !found {
+			return false
+		}
+		if hidden {
+			return true
+		}
+		if dis, ok := obj.(fyne.Disableable); ok && dis.Disabled() {
+			return true
+		}
+	}
 	f.focus(obj)
+	return true
 }
 
 // Focused returns the currently focused object or nil if none.
@@ -69,10 +101,6 @@ func (f *FocusManager) focus(obj fyne.Focusable) {
 		return
 	}
 
-	if dis, ok := obj.(fyne.Disableable); ok && dis.Disabled() {
-		obj = nil
-	}
-
 	if f.focused != nil {
 		f.focused.FocusLost()
 	}
@@ -83,9 +111,13 @@ func (f *FocusManager) focus(obj fyne.Focusable) {
 }
 
 func (f *FocusManager) nextInChain(current fyne.Focusable) fyne.Focusable {
-	var first, next fyne.Focusable
+	return f.nextWithWalker(current, driver.WalkVisibleObjectTree)
+}
+
+func (f *FocusManager) nextWithWalker(current fyne.Focusable, walker walkerFunc) fyne.Focusable {
+	var next fyne.Focusable
 	found := current == nil // if we have no starting point then pretend we matched already
-	driver.WalkVisibleObjectTree(f.content, func(obj fyne.CanvasObject, _ fyne.Position, _ fyne.Position, _ fyne.Size) bool {
+	walker(f.content, func(obj fyne.CanvasObject, _ fyne.Position, _ fyne.Position, _ fyne.Size) bool {
 		if w, ok := obj.(fyne.Disableable); ok && w.Disabled() {
 			// disabled widget cannot receive focus
 			return false
@@ -100,51 +132,26 @@ func (f *FocusManager) nextInChain(current fyne.Focusable) fyne.Focusable {
 			next = focus
 			return true
 		}
+		if next == nil {
+			next = focus
+		}
 
 		if obj == current.(fyne.CanvasObject) {
 			found = true
-		}
-		if first == nil {
-			first = focus
 		}
 
 		return false
 	}, nil)
 
-	if next != nil {
-		return next
-	}
-	return first
+	return next
 }
 
 func (f *FocusManager) previousInChain(current fyne.Focusable) fyne.Focusable {
-	var last, previous fyne.Focusable
-	found := false
-	driver.WalkVisibleObjectTree(f.content, func(obj fyne.CanvasObject, _ fyne.Position, _ fyne.Position, _ fyne.Size) bool {
-		if w, ok := obj.(fyne.Disableable); ok && w.Disabled() {
-			// disabled widget cannot receive focus
-			return false
-		}
-
-		focus, ok := obj.(fyne.Focusable)
-		if !ok {
-			return false
-		}
-
-		if current != nil && obj == current.(fyne.CanvasObject) {
-			found = true
-		}
-		last = focus
-
-		if !found {
-			previous = focus
-		}
-
-		return false // we cannot exit early - until we make a reverse tree walk...
-	}, nil)
-
-	if previous != nil {
-		return previous
-	}
-	return last
+	return f.nextWithWalker(current, driver.ReverseWalkVisibleObjectTree)
 }
+
+type walkerFunc func(
+	fyne.CanvasObject,
+	func(fyne.CanvasObject, fyne.Position, fyne.Position, fyne.Size) bool,
+	func(fyne.CanvasObject, fyne.CanvasObject),
+) bool

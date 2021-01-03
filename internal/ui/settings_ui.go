@@ -41,7 +41,7 @@ func (d *settingsUI) populateThemeIcons(box *fyne.Container, theme string) {
 		if appData == nil { // if app was removed!
 			continue
 		}
-		iconRes := appData.Icon(theme, int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(fynedesk.Instance().Screens().Primary().CanvasScale())))
+		iconRes := appData.Icon(theme, int((d.settings.LauncherIconSize()*d.settings.LauncherZoomScale())*fynedesk.Instance().Screens().Primary().CanvasScale()))
 		icon := widget.NewIcon(iconRes)
 		box.Add(icon)
 	}
@@ -125,7 +125,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) {
 	var icons []fyne.CanvasObject
-	iconSize := fynedesk.Instance().Settings().LauncherIconSize()
+	iconSize := float32(fynedesk.Instance().Settings().LauncherIconSize())
 	for i, appName := range d.launcherIcons {
 		index := i // capture
 		appData := fynedesk.Instance().IconProvider().FindAppFromName(appName)
@@ -158,7 +158,7 @@ func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) 
 		if index >= len(d.launcherIcons)-1 {
 			right.Disable()
 		}
-		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(fynedesk.Instance().Screens().Primary().CanvasScale())))
+		iconRes := appData.Icon(d.settings.IconTheme(), int((d.settings.LauncherIconSize()*d.settings.LauncherZoomScale())*fynedesk.Instance().Screens().Primary().CanvasScale()))
 		icon := canvas.NewImageFromResource(iconRes)
 		icon.FillMode = canvas.ImageFillContain
 		icon.SetMinSize(fyne.NewSize(iconSize, iconSize))
@@ -173,7 +173,7 @@ func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) 
 }
 
 func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
-	iconWidth := fynedesk.Instance().Settings().LauncherIconSize()
+	iconWidth := float32(fynedesk.Instance().Settings().LauncherIconSize())
 	addButton := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {})
 	addIcon := canvas.NewImageFromResource(theme.ContentAddIcon())
 	addIcon.FillMode = canvas.ImageFillContain
@@ -192,10 +192,10 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	bar := container.NewHScroll(orderList)
 
 	iconSize := widget.NewEntry()
-	iconSize.SetText(fmt.Sprintf("%d", d.settings.LauncherIconSize()))
+	iconSize.SetText(fmt.Sprintf("%0.0f", d.settings.LauncherIconSize()))
 
 	zoomScale := widget.NewEntry()
-	zoomScale.SetText(fmt.Sprintf("%f", d.settings.LauncherZoomScale()))
+	zoomScale.SetText(fmt.Sprintf("%0.2f", d.settings.LauncherZoomScale()))
 
 	sizeCell := widget.NewHBox(widget.NewLabel("Launcher Icon Size:"), iconSize)
 	zoomCell := widget.NewHBox(widget.NewLabel("Launcher Zoom Scale:"), zoomScale)
@@ -217,14 +217,14 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 				fyne.LogError("error setting launcher icon size", err)
 				size = 32
 			}
-			d.settings.setLauncherIconSize(size)
+			d.settings.setLauncherIconSize(float32(size))
 
 			scale, err := strconv.ParseFloat(zoomScale.Text, 32)
 			if err != nil {
 				fyne.LogError("Error setting launcher zoom scale", err)
 				scale = 2.0
 			}
-			d.settings.setLauncherZoomScale(scale)
+			d.settings.setLauncherZoomScale(float32(scale))
 			d.settings.setLauncherDisableTaskbar(disableTaskbar.Checked)
 			d.settings.setLauncherDisableZoom(disableZoom.Checked)
 

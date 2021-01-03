@@ -19,37 +19,37 @@ var (
 	FyneAboutBackground = resourceFyneaboutbgPng
 
 	// BatteryIcon is the material design icon for battery in light and dark theme
-	BatteryIcon = theme.NewThemedResource(resourceBatterySvg, nil)
+	BatteryIcon = theme.NewThemedResource(resourceBatterySvg)
 	// BrightnessIcon is the material design icon for brightness in light and dark theme
-	BrightnessIcon = theme.NewThemedResource(resourceBrightnessSvg, nil)
+	BrightnessIcon = theme.NewThemedResource(resourceBrightnessSvg)
 	// CalculateIcon is the material design icon for a calculator in light and dark theme
-	CalculateIcon = theme.NewThemedResource(resourceCalculateSvg, nil)
+	CalculateIcon = theme.NewThemedResource(resourceCalculateSvg)
 	// DisplayIcon is the material design icon for computer displays in light and dark theme
-	DisplayIcon = theme.NewThemedResource(resourceDisplaySvg, nil)
+	DisplayIcon = theme.NewThemedResource(resourceDisplaySvg)
 	// InternetIcon is the material design icon for the internet in light and dark theme
-	InternetIcon = theme.NewThemedResource(resourceInternetSvg, nil)
+	InternetIcon = theme.NewThemedResource(resourceInternetSvg)
 	// UserIcon is the material design icon for a user in light and dark theme
-	UserIcon = theme.NewThemedResource(resourcePersonSvg, nil)
+	UserIcon = theme.NewThemedResource(resourcePersonSvg)
 
 	// BrokenImageIcon is the material design icon for a broken image
-	BrokenImageIcon = theme.NewThemedResource(resourceBrokenimageSvg, nil)
+	BrokenImageIcon = theme.NewThemedResource(resourceBrokenimageSvg)
 	// MaximizeIcon is the material design icon for maximizing a window
-	MaximizeIcon = theme.NewThemedResource(resourceMaximizeSvg, nil)
+	MaximizeIcon = theme.NewThemedResource(resourceMaximizeSvg)
 	// IconifyIcon is the material design icon for minimizing a window
-	IconifyIcon = theme.NewThemedResource(resourceMinimizeSvg, nil)
+	IconifyIcon = theme.NewThemedResource(resourceMinimizeSvg)
 	// KeyboardIcon is the material design icon for the keyboard settings
-	KeyboardIcon = theme.NewThemedResource(resourceKeyboardSvg, nil)
+	KeyboardIcon = theme.NewThemedResource(resourceKeyboardSvg)
 	// SoundIcon is the material design icon for sound in light and dark theme
-	SoundIcon = theme.NewThemedResource(resourceSoundSvg, nil)
+	SoundIcon = theme.NewThemedResource(resourceSoundSvg)
 	// MuteIcon is the material design icon for mute in light and dark theme
-	MuteIcon = theme.NewThemedResource(resourceMuteSvg, nil)
+	MuteIcon = theme.NewThemedResource(resourceMuteSvg)
 
 	// BorderWidth is the width of window frames
-	BorderWidth = 4
+	BorderWidth = float32(4)
 	// ButtonWidth is the width of window buttons
-	ButtonWidth = 28
+	ButtonWidth = float32(28)
 	// TitleHeight is the height of a frame titleBar
-	TitleHeight = 28
+	TitleHeight = float32(28)
 
 	// WidgetPanelBackgroundDark is the semi-transparent background matching the dark theme
 	WidgetPanelBackgroundDark = color.RGBA{0x42, 0x42, 0x42, 0xcc}

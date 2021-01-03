@@ -126,13 +126,13 @@ func TestIconSizeChange(t *testing.T) {
 	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App1", "App2", "App3"})
 	testBar.updateIconOrder()
 
-	assert.Equal(t, 32, testBar.icons[0].Size().Width)
+	assert.Equal(t, float32(32), testBar.icons[0].Size().Width)
 
 	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIconSize(64)
 	testBar.iconSize = testBar.desk.Settings().LauncherIconSize()
 	testBar.updateIcons()
 
-	assert.Equal(t, 64, testBar.icons[0].Size().Width)
+	assert.Equal(t, float32(64), testBar.icons[0].Size().Width)
 }
 
 func TestZoomScaleChange(t *testing.T) {

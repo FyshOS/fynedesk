@@ -347,7 +347,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	iconBorderPixWidth := heightPix + x11.BorderWidth(x11.XWin(f.client))*2
 	widthPix := f.borderTopWidth + iconBorderPixWidth
-	f.canvas.Resize(fyne.NewSize(int(float32(widthPix)/scale)+1, wmTheme.TitleHeight))
+	f.canvas.Resize(fyne.NewSize((float32(widthPix)/scale)+1, wmTheme.TitleHeight))
 	img := f.canvas.Capture()
 
 	// TODO just copy the label minSize - smallest possible but maybe bigger than window width

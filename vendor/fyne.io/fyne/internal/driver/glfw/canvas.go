@@ -52,7 +52,7 @@ func (c *glCanvas) AddShortcut(shortcut fyne.Shortcut, handler func(shortcut fyn
 
 func (c *glCanvas) Capture() image.Image {
 	var img image.Image
-	runOnMain(func() {
+	runOnDraw(c.context.(*window), func() {
 		img = c.painter.Capture(c)
 	})
 	return img
@@ -66,7 +66,23 @@ func (c *glCanvas) Content() fyne.CanvasObject {
 }
 
 func (c *glCanvas) Focus(obj fyne.Focusable) {
-	c.focusManager().Focus(obj)
+	focusMgr := c.focusManager()
+	if focusMgr.Focus(obj) { // fast path – probably >99.9% of all cases
+		return
+	}
+
+	c.RLock()
+	focusMgrs := append([]*app.FocusManager{c.contentFocusMgr, c.menuFocusMgr}, c.overlays.ListFocusManagers()...)
+	c.RUnlock()
+
+	for _, mgr := range focusMgrs {
+		if focusMgr != mgr {
+			if mgr.Focus(obj) {
+				return
+			}
+		}
+	}
+	fyne.LogError("Failed to focus object which is not part of the canvas’ content, menu or overlays.", nil)
 }
 
 func (c *glCanvas) Focused() fyne.Focusable {
@@ -132,9 +148,9 @@ func (c *glCanvas) Padded() bool {
 
 func (c *glCanvas) PixelCoordinateForPosition(pos fyne.Position) (int, int) {
 	texScale := c.texScale
-	multiple := float64(c.Scale() * texScale)
-	scaleInt := func(x int) int {
-		return int(math.Round(float64(x) * multiple))
+	multiple := c.Scale() * texScale
+	scaleInt := func(x float32) int {
+		return int(math.Round(float64(x * multiple)))
 	}
 
 	return scaleInt(pos.X), scaleInt(pos.Y)
@@ -378,7 +394,7 @@ func (c *glCanvas) isMenuActive() bool {
 	return c.menu != nil && c.menu.(*MenuBar).IsActive()
 }
 
-func (c *glCanvas) menuHeight() int {
+func (c *glCanvas) menuHeight() float32 {
 	switch c.menu {
 	case nil:
 		// no menu or native menu -> does not consume space on the canvas

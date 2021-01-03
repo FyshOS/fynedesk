@@ -12,8 +12,6 @@ import (
 // TreeNodeID represents the unique id of a tree node.
 type TreeNodeID = string
 
-const treeDividerHeight = 1
-
 var _ fyne.Widget = (*Tree)(nil)
 
 // Tree widget displays hierarchical data.
@@ -195,7 +193,7 @@ func (t *Tree) Select(uid TreeNodeID) {
 	t.selected = []TreeNodeID{uid}
 	if t.scroller != nil {
 		var found bool
-		var y int
+		var y float32
 		var size fyne.Size
 		t.walkAll(func(id TreeNodeID, branch bool, depth int) {
 			m := t.leafMinSize
@@ -213,7 +211,7 @@ func (t *Tree) Select(uid TreeNodeID) {
 				}
 				// If this is not the first item, add a divider
 				if y > 0 {
-					y += treeDividerHeight
+					y += separatorThickness
 				}
 
 				y += m.Height
@@ -375,6 +373,7 @@ type treeContentRenderer struct {
 	widget.BaseRenderer
 	treeContent *treeContent
 	dividers    []fyne.CanvasObject
+	objects     []fyne.CanvasObject
 	branches    map[string]*branch
 	leaves      map[string]*leaf
 	branchPool  pool
@@ -385,13 +384,14 @@ func (r *treeContentRenderer) Layout(size fyne.Size) {
 	r.treeContent.propertyLock.Lock()
 	defer r.treeContent.propertyLock.Unlock()
 
+	r.objects = nil
 	branches := make(map[string]*branch)
 	leaves := make(map[string]*leaf)
 
 	offsetY := r.treeContent.tree.offset.Y
 	viewport := r.treeContent.viewport
 	width := fyne.Max(size.Width, viewport.Width)
-	y := 0
+	y := float32(0)
 	numDividers := 0
 	// walkAll open branches and obtain nodes to render in scroller's viewport
 	r.treeContent.tree.walkAll(func(uid string, isBranch bool, depth int) {
@@ -414,10 +414,11 @@ func (r *treeContentRenderer) Layout(size fyne.Size) {
 				r.dividers = append(r.dividers, divider)
 			}
 			divider.Move(fyne.NewPos(theme.Padding(), y))
-			s := fyne.NewSize(width-2*theme.Padding(), treeDividerHeight)
+			s := fyne.NewSize(width-2*theme.Padding(), separatorThickness)
 			divider.Resize(s)
 			divider.Show()
-			y += treeDividerHeight
+			r.objects = append(r.objects, divider)
+			y += separatorThickness
 			numDividers++
 		}
 
@@ -443,6 +444,7 @@ func (r *treeContentRenderer) Layout(size fyne.Size) {
 				}
 				branches[uid] = b
 				n = b.treeNode
+				r.objects = append(r.objects, b)
 			} else {
 				l, ok := r.leaves[uid]
 				if !ok {
@@ -454,6 +456,7 @@ func (r *treeContentRenderer) Layout(size fyne.Size) {
 				}
 				leaves[uid] = l
 				n = l.treeNode
+				r.objects = append(r.objects, l)
 			}
 			if n != nil {
 				n.Move(fyne.NewPos(0, y))
@@ -502,31 +505,22 @@ func (r *treeContentRenderer) MinSize() (min fyne.Size) {
 
 		// If this is not the first item, add a divider
 		if min.Height > 0 {
-			min.Height += treeDividerHeight
+			min.Height += separatorThickness
 		}
 
 		m := r.treeContent.tree.leafMinSize
 		if isBranch {
 			m = r.treeContent.tree.branchMinSize
 		}
-		m.Width += depth * (theme.IconInlineSize() + theme.Padding())
+		m.Width += float32(depth) * (theme.IconInlineSize() + theme.Padding())
 		min.Width = fyne.Max(min.Width, m.Width)
 		min.Height += m.Height
 	})
 	return
 }
 
-func (r *treeContentRenderer) Objects() (objects []fyne.CanvasObject) {
-	r.treeContent.propertyLock.RLock()
-	objects = r.dividers
-	for _, b := range r.branches {
-		objects = append(objects, b)
-	}
-	for _, l := range r.leaves {
-		objects = append(objects, l)
-	}
-	r.treeContent.propertyLock.RUnlock()
-	return
+func (r *treeContentRenderer) Objects() []fyne.CanvasObject {
+	return r.objects
 }
 
 func (r *treeContentRenderer) Refresh() {
@@ -601,8 +595,8 @@ func (n *treeNode) CreateRenderer() fyne.WidgetRenderer {
 	}
 }
 
-func (n *treeNode) Indent() int {
-	return n.depth * (theme.IconInlineSize() + theme.Padding())
+func (n *treeNode) Indent() float32 {
+	return float32(n.depth) * (theme.IconInlineSize() + theme.Padding())
 }
 
 // MouseIn is called when a desktop pointer enters the widget
@@ -649,8 +643,8 @@ type treeNodeRenderer struct {
 }
 
 func (r *treeNodeRenderer) Layout(size fyne.Size) {
-	x := 0
-	y := 0
+	x := float32(0)
+	y := float32(0)
 	r.indicator.Move(fyne.NewPos(x, y))
 	s := fyne.NewSize(theme.Padding(), size.Height)
 	r.indicator.SetMinSize(s)
