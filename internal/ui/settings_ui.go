@@ -113,7 +113,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 	themeCurrent := container.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
 	bottom := container.NewBorder(nil, themeCurrent, themeFormLabel, nil, container.NewScroll(themeList))
 
-	applyButton := container.NewHBox(
+	applyButton := container.NewHBox(layout.NewSpacer(),
 		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
 			d.settings.setBackground(bgPath.Text)
 			d.settings.setIconTheme(themeLabel.Text)
