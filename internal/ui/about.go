@@ -5,7 +5,7 @@ import (
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
+	"fyne.io/fyne/container"
 	"fyne.io/fyne/widget"
 
 	wmTheme "fyne.io/fynedesk/theme"
@@ -27,7 +27,7 @@ func showAbout() {
 
 	title := widget.NewLabelWithStyle("Fyne Desk (develop)", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	authors := widget.NewLabel("\nAuthors:\n\n    Andy Williams\n    Stephen Houston\n")
-	buttons := fyne.NewContainerWithLayout(layout.NewGridLayout(3),
+	buttons := container.NewGridWithColumns(3,
 		newURLButton("Home Page", "https://fyne.io"),
 		newURLButton("Report Issue", "https://github.com/fyne-io/desktop/issues/new"),
 		newURLButton("Sponsor", "https://github.com/sponsors/fyne-io"),
@@ -36,9 +36,7 @@ func showAbout() {
 	bg := canvas.NewImageFromResource(wmTheme.FyneAboutBackground)
 	bg.FillMode = canvas.ImageFillContain
 	bg.Translucency = 0.67
-	w.SetContent(fyne.NewContainerWithLayout(layout.NewMaxLayout(), bg,
-		fyne.NewContainerWithLayout(layout.NewBorderLayout(title, buttons, nil, nil),
-			title, authors, buttons)))
+	w.SetContent(container.NewMax(bg, container.NewBorder(title, buttons, nil, nil, authors)))
 
 	w.CenterOnScreen()
 	w.Show()

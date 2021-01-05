@@ -116,7 +116,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		if c.Maximized() || c.Fullscreened() {
 			return
 		}
-		x.handleMoveResize(ev, c.(x11.XWin))
+		x.handleMoveResize(ev, c)
 	case "_NET_WM_STATE":
 		subMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[1]))
 		if err != nil {

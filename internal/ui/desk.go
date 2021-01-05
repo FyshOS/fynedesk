@@ -5,6 +5,7 @@ import (
 	"math"
 
 	"fyne.io/fyne"
+	"fyne.io/fyne/container"
 	deskDriver "fyne.io/fyne/driver/desktop"
 
 	"fyne.io/fynedesk"
@@ -64,7 +65,7 @@ func (l *desktop) createPrimaryContent() fyne.CanvasObject {
 	l.mouse = newMouse()
 	l.mouse.Hide()
 
-	return fyne.NewContainerWithLayout(l, newBackground(), l.bar, l.widgets, l.mouse)
+	return container.New(l, newBackground(), l.bar, l.widgets, l.mouse)
 }
 
 func (l *desktop) createRoot(screens fynedesk.ScreenList) fyne.Window {

@@ -7,7 +7,7 @@ import (
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
+	"fyne.io/fyne/container"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
 
@@ -61,10 +61,10 @@ func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 	batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
 	prop := canvas.NewRectangle(color.Transparent)
 	prop.SetMinSize(batteryIcon.MinSize().Add(fyne.NewSize(theme.Padding()*2, 0)))
-	icon := fyne.NewContainerWithLayout(layout.NewCenterLayout(), prop, batteryIcon)
+	icon := container.NewCenter(prop, batteryIcon)
 
 	go b.batteryTick()
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, icon, nil), icon, b.bar)
+	return container.NewBorder(nil, nil, icon, nil, b.bar)
 }
 
 // newBattery creates a new module that will show battery level in the status area

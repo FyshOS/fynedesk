@@ -66,7 +66,7 @@ func (b *bar) append(object fyne.CanvasObject) {
 
 // appendSeparator adds a separator between the default icons and the taskbar
 func (b *bar) appendSeparator() {
-	b.separator = canvas.NewRectangle(theme.TextColor())
+	b.separator = canvas.NewRectangle(theme.ForegroundColor())
 	b.append(b.separator)
 }
 
@@ -308,7 +308,7 @@ func (b *barRenderer) Objects() []fyne.CanvasObject {
 func (b *barRenderer) Refresh() {
 	b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
 	if b.appBar.separator != nil {
-		b.appBar.separator.FillColor = theme.TextColor()
+		b.appBar.separator.FillColor = theme.ForegroundColor()
 	}
 	b.objects = b.appBar.children
 	b.Layout(b.appBar.Size())

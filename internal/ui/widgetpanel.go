@@ -8,6 +8,7 @@ import (
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/canvas"
+	"fyne.io/fyne/container"
 	"fyne.io/fyne/layout"
 	"fyne.io/fyne/theme"
 	"fyne.io/fyne/widget"
@@ -32,7 +33,7 @@ func (w *widgetRenderer) Layout(size fyne.Size) {
 }
 
 func (w *widgetRenderer) Refresh() {
-	w.panel.clock.Color = theme.TextColor()
+	w.panel.clock.Color = theme.ForegroundColor()
 	canvas.Refresh(w.panel.clock)
 }
 
@@ -94,7 +95,7 @@ func (w *widgetPanel) createClock() {
 	style.Monospace = true
 
 	w.clock = &canvas.Text{
-		Color:     theme.TextColor(),
+		Color:     theme.ForegroundColor(),
 		Text:      w.formattedTime(),
 		Alignment: fyne.TextAlignCenter,
 		TextStyle: style,
@@ -164,7 +165,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		w.date,
 		w.notifications}
 
-	w.modules = fyne.NewContainerWithLayout(layout.NewVBoxLayout())
+	w.modules = container.NewVBox()
 	objects = append(objects, layout.NewSpacer(), w.modules, appExecButton, account)
 	w.loadModules(w.desk.Modules())
 
