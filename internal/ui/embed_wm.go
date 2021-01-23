@@ -3,7 +3,7 @@ package ui
 import (
 	"image"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"fyne.io/fynedesk"
 )

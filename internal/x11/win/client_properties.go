@@ -5,7 +5,7 @@ package win
 import (
 	"strings"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/ui"

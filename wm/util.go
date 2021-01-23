@@ -3,8 +3,8 @@ package wm
 import (
 	"math"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/test"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 )
 
 // FindObjectAtPixelPositionMatching looks for objects in the given canvas that are under pixel

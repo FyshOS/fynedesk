@@ -3,7 +3,7 @@ package ui
 import (
 	"runtime/debug"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 )
 
 func (l *desktop) newDesktopWindowFull() fyne.Window {

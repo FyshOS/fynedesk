@@ -3,7 +3,7 @@
 package wm
 
 import (
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"

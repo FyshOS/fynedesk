@@ -6,7 +6,7 @@ import (
 	"image"
 	"math"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/xproto"
 )

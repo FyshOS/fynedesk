@@ -25,8 +25,8 @@ import (
 	"github.com/BurntSushi/xgbutil/xprop"
 	"github.com/nfnt/resize"
 
-	"fyne.io/fyne"
-	deskDriver "fyne.io/fyne/driver/desktop"
+	"fyne.io/fyne/v2"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/ui"

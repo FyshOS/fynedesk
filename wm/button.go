@@ -1,9 +1,9 @@
 package wm
 
 import (
-	"fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"fyne.io/fynedesk"
 )
 
@@ -21,7 +21,7 @@ func (c *closeButton) Cursor() desktop.Cursor {
 }
 
 func (c *closeButton) MouseIn(*desktop.MouseEvent) {
-	c.Style = widget.PrimaryButton
+	c.Importance = widget.HighImportance
 	c.Refresh()
 }
 
@@ -29,7 +29,7 @@ func (c *closeButton) MouseMoved(*desktop.MouseEvent) {
 }
 
 func (c *closeButton) MouseOut() {
-	c.Style = widget.DefaultButton
+	c.Importance = widget.MediumImportance
 	c.Refresh()
 }
 

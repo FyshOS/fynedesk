@@ -13,7 +13,7 @@ import (
 	"github.com/jackmordaunt/icns"
 	"howett.net/plist"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"

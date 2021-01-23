@@ -1,6 +1,6 @@
 package ui
 
-import "fyne.io/fyne"
+import "fyne.io/fyne/v2"
 
 func (l *desktop) newDesktopWindowEmbed() fyne.Window {
 	win := l.app.NewWindow("Embedded " + RootWindowName)

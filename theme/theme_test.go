@@ -3,9 +3,9 @@ package theme
 import (
 	"testing"
 
-	"fyne.io/fyne"
-	_ "fyne.io/fyne/test"
-	"fyne.io/fyne/theme"
+	"fyne.io/fyne/v2"
+	_ "fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 
 	"github.com/stretchr/testify/assert"
 )

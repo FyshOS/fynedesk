@@ -9,8 +9,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"fyne.io/fyne"
-	_ "fyne.io/fyne/test"
+	"fyne.io/fyne/v2"
+	_ "fyne.io/fyne/v2/test"
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/test"

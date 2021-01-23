@@ -5,7 +5,7 @@ import (
 	"os"
 	"strconv"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 )
 
 // ScreenList provides information about available physical screens for Fyne desktop
@@ -30,10 +30,6 @@ type Screen struct {
 // CanvasScale calculates the scale for the contents of a desktop canvas on this screen
 func (s *Screen) CanvasScale() float32 {
 	user := userScale()
-	//lint:ignore SA1019 We need an upgrade-path for users
-	if user == fyne.SettingsScaleAuto {
-		user = 1.0
-	}
 
 	return float32(math.Round(float64(s.Scale*user*10.0))) / 10.0
 }
@@ -53,7 +49,7 @@ func userScale() float32 {
 		setting := fyne.CurrentApp().Settings().Scale()
 
 		//lint:ignore SA1019 We need an upgrade-path for users
-		if setting != fyne.SettingsScaleAuto && setting != 0.0 {
+		if setting != -1 && setting != 0.0 {
 			return setting
 		}
 	}

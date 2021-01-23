@@ -1,6 +1,6 @@
 package fynedesk
 
-import "fyne.io/fyne"
+import "fyne.io/fyne/v2"
 
 // AppData is an interface for accessing information about application icons
 type AppData interface {

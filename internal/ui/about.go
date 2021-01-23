@@ -3,10 +3,10 @@ package ui
 import (
 	"net/url"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/container"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 
 	wmTheme "fyne.io/fynedesk/theme"
 )

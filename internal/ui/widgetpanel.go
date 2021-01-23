@@ -1,17 +1,16 @@
 package ui
 
 import (
-	"image/color"
 	"os"
 	"path"
 	"time"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/container"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
@@ -19,6 +18,7 @@ import (
 
 type widgetRenderer struct {
 	panel *widgetPanel
+	bg    *canvas.Rectangle
 
 	layout  fyne.Layout
 	objects []fyne.CanvasObject
@@ -29,20 +29,20 @@ func (w *widgetRenderer) MinSize() fyne.Size {
 }
 
 func (w *widgetRenderer) Layout(size fyne.Size) {
-	w.layout.Layout(w.objects, size)
+	w.bg.Resize(size)
+	w.layout.Layout(w.objects[1:], size)
 }
 
 func (w *widgetRenderer) Refresh() {
-	w.panel.clock.Color = theme.ForegroundColor()
-	canvas.Refresh(w.panel.clock)
-}
-
-func (w *widgetRenderer) BackgroundColor() color.Color {
 	r, _, _, _ := theme.BackgroundColor().RGBA()
 	if uint8(r) > 0x99 {
-		return wmtheme.WidgetPanelBackgroundLight
+		w.bg.FillColor = wmtheme.WidgetPanelBackgroundLight
 	}
-	return wmtheme.WidgetPanelBackgroundDark
+	w.bg.FillColor = wmtheme.WidgetPanelBackgroundDark
+	w.bg.Refresh()
+
+	w.panel.clock.Color = theme.ForegroundColor()
+	canvas.Refresh(w.panel.clock)
 }
 
 func (w *widgetRenderer) Objects() []fyne.CanvasObject {
@@ -160,7 +160,9 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	})
 	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), ShowAppLauncher)
 
+	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackgroundDark)
 	objects := []fyne.CanvasObject{
+		bg,
 		w.clock,
 		w.date,
 		w.notifications}
@@ -171,6 +173,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 
 	return &widgetRenderer{
 		panel:   w,
+		bg:      bg,
 		layout:  layout.NewVBoxLayout(),
 		objects: objects,
 	}

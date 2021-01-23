@@ -1,11 +1,11 @@
 package ui
 
 import (
-	"fyne.io/fyne"
-	"fyne.io/fyne/container"
-	deskDriver "fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 	wmTheme "fyne.io/fynedesk/theme"
@@ -62,8 +62,8 @@ func (l *picker) setActiveIndex(index int) {
 		return
 	}
 
-	l.appList.Objects[l.activeIndex].(*widget.Button).Style = widget.DefaultButton
-	l.appList.Objects[index].(*widget.Button).Style = widget.PrimaryButton
+	l.appList.Objects[l.activeIndex].(*widget.Button).Importance = widget.MediumImportance
+	l.appList.Objects[index].(*widget.Button).Importance = widget.HighImportance
 	l.activeIndex = index
 	l.appList.Refresh()
 }
@@ -86,7 +86,7 @@ func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 		})
 
 		if i == 0 {
-			app.Style = widget.PrimaryButton
+			app.Importance = widget.HighImportance
 		}
 		appList = append(appList, app)
 	}
@@ -126,7 +126,7 @@ func (l *picker) loadSuggestionsMatching(input string) []fyne.CanvasObject {
 			})
 
 			if i == 0 {
-				button.Style = widget.PrimaryButton
+				button.Importance = widget.HighImportance
 			}
 			suggestList = append(suggestList, button)
 		}

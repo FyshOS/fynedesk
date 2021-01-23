@@ -6,7 +6,7 @@ package theme // import "fyne.io/fynedesk/theme"
 import (
 	"image/color"
 
-	"fyne.io/fyne/theme"
+	"fyne.io/fyne/v2/theme"
 )
 
 var (

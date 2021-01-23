@@ -9,16 +9,16 @@ import (
 	"strconv"
 	"strings"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/cmd/fyne_settings/settings"
-	"fyne.io/fyne/container"
-	"fyne.io/fyne/dialog"
-	deskDriver "fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/storage"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/cmd/fyne_settings/settings"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/storage"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
@@ -83,7 +83,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		fyne.LogError("error finding pictures dir, falling back to home directory", err)
 	}
 
-	bgButtons := widget.NewHBox(bgPathClear,
+	bgButtons := container.NewHBox(bgPathClear,
 		widget.NewButtonWithIcon("", theme.SearchIcon(), func() {
 			bgDialog.Show()
 		}))
@@ -114,7 +114,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 	bottom := container.NewBorder(nil, themeCurrent, themeFormLabel, nil, container.NewScroll(themeList))
 
 	applyButton := container.NewHBox(layout.NewSpacer(),
-		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+		&widget.Button{Text: "Apply", Importance: widget.HighImportance, OnTapped: func() {
 			d.settings.setBackground(bgPath.Text)
 			d.settings.setIconTheme(themeLabel.Text)
 			d.settings.setClockFormatting(clockFormat.Selected)
@@ -192,9 +192,11 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	bar := container.NewHScroll(orderList)
 
 	iconSize := widget.NewEntry()
+	iconSize.Wrapping = fyne.TextWrapOff
 	iconSize.SetText(fmt.Sprintf("%0.0f", d.settings.LauncherIconSize()))
 
 	zoomScale := widget.NewEntry()
+	zoomScale.Wrapping = fyne.TextWrapOff
 	zoomScale.SetText(fmt.Sprintf("%0.2f", d.settings.LauncherZoomScale()))
 
 	sizeCell := container.NewHBox(widget.NewLabel("Launcher Icon Size:"), iconSize)
@@ -206,11 +208,11 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	disableZoom := widget.NewCheck("Disable Zoom", nil)
 	disableZoom.SetChecked(d.settings.LauncherDisableZoom())
 
-	details := widget.NewGroup("Configuration",
+	details := widget.NewCard("Configuration", "",
 		container.NewGridWithColumns(2, sizeCell, zoomCell, disableTaskbar, disableZoom))
 
 	applyButton := container.NewHBox(layout.NewSpacer(),
-		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+		&widget.Button{Text: "Apply", Importance: widget.HighImportance, OnTapped: func() {
 			size, err := strconv.Atoi(iconSize.Text)
 			if err != nil {
 				fyne.LogError("error setting launcher icon size", err)
@@ -230,8 +232,8 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 			d.settings.setLauncherIcons(d.launcherIcons)
 		}})
 
-	header := widget.NewGroup("Icons")
-	return container.NewBorder(header, applyButton, nil, nil, container.NewVBox(bar, details))
+	return container.NewBorder(nil, applyButton, nil, nil,
+		widget.NewCard("Icons", "", container.NewVBox(bar, details)))
 }
 
 func (d *settingsUI) loadAdvancedScreen() fyne.CanvasObject {
@@ -246,10 +248,10 @@ func (d *settingsUI) loadAdvancedScreen() fyne.CanvasObject {
 		modules = append(modules, check)
 	}
 	content := container.NewGridWithColumns(2, d.loadScreensGroup(),
-		widget.NewGroup("Modules", modules...))
+		widget.NewCard("Modules", "", container.NewVBox(modules...)))
 
 	applyButton := container.NewHBox(layout.NewSpacer(),
-		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+		&widget.Button{Text: "Apply", Importance: widget.HighImportance, OnTapped: func() {
 			var names []string
 			for _, item := range modules {
 				check := item.(*widget.Check)
@@ -276,9 +278,9 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 		mods = append(mods, widget.NewLabel(modifierToString(shortcut.Modifier)))
 		keys = append(keys, widget.NewLabel(string(shortcut.KeyName)))
 	}
-	rows := container.NewHBox(widget.NewGroup("Action", names...),
-		widget.NewGroup("Modifier", mods...),
-		widget.NewGroup("Key Name", keys...))
+	rows := container.NewHBox(widget.NewCard("Action", "", container.NewVBox(names...)),
+		widget.NewCard("Modifier", "", container.NewVBox(mods...)),
+		widget.NewCard("Key Name", "", container.NewVBox(keys...)))
 	grid := container.NewScroll(rows)
 
 	applyButton := container.NewHBox(layout.NewSpacer(),
@@ -308,7 +310,7 @@ func loadScreensTable() fyne.CanvasObject {
 		values2.Add(widget.NewLabel(fmt.Sprintf("%.1f", screen.CanvasScale())))
 	}
 
-	return widget.NewHBox(names, labels1, values1, labels2, values2)
+	return container.NewHBox(names, labels1, values1, labels2, values2)
 }
 
 func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
@@ -323,8 +325,7 @@ func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
 
 	userScale := fyne.CurrentApp().Settings().Scale()
 	content := container.NewVBox(widget.NewLabel(fmt.Sprintf("User scale: %0.2f", userScale)))
-	screens := widget.NewGroup("Screens", displays, content)
-	screens.Append(loadScreensTable())
+	screens := widget.NewCard("Screens", "", container.NewVBox(displays, content, loadScreensTable()))
 	return screens
 }
 

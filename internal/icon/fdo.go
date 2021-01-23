@@ -13,7 +13,7 @@ import (
 	"strconv"
 	"strings"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"fyne.io/fynedesk"
 	wmTheme "fyne.io/fynedesk/theme"

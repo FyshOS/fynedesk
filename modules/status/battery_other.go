@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"strings"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 )
 
 func (b *battery) value() (float64, error) {

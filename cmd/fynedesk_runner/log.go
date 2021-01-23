@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"time"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 )
 
 func crashLogPath() string {

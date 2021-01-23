@@ -1,9 +1,9 @@
 package fynedesk
 
 import (
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
-	deskDriver "fyne.io/fyne/driver/desktop"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 )
 
 const (

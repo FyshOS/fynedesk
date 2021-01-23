@@ -5,7 +5,7 @@ package win
 import (
 	"image"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"

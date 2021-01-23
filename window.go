@@ -3,7 +3,7 @@ package fynedesk
 import (
 	"image"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 )
 
 // Window represents a single managed window within a window manager.

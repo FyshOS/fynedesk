@@ -1,32 +1,34 @@
-# fyne.io/fyne v1.4.2-0.20210102200819-774c0c30a376
-fyne.io/fyne
-fyne.io/fyne/app
-fyne.io/fyne/canvas
-fyne.io/fyne/cmd/fyne_settings/settings
-fyne.io/fyne/container
-fyne.io/fyne/data/binding
-fyne.io/fyne/dialog
-fyne.io/fyne/driver/desktop
-fyne.io/fyne/driver/mobile
-fyne.io/fyne/driver/software
-fyne.io/fyne/internal
-fyne.io/fyne/internal/animation
-fyne.io/fyne/internal/app
-fyne.io/fyne/internal/cache
-fyne.io/fyne/internal/driver
-fyne.io/fyne/internal/driver/glfw
-fyne.io/fyne/internal/driver/gomobile
-fyne.io/fyne/internal/painter
-fyne.io/fyne/internal/painter/gl
-fyne.io/fyne/internal/painter/software
-fyne.io/fyne/internal/test
-fyne.io/fyne/internal/widget
-fyne.io/fyne/layout
-fyne.io/fyne/storage
-fyne.io/fyne/test
-fyne.io/fyne/theme
-fyne.io/fyne/tools/playground
-fyne.io/fyne/widget
+# fyne.io/fyne/v2 v2.0.0
+fyne.io/fyne/v2
+fyne.io/fyne/v2/app
+fyne.io/fyne/v2/canvas
+fyne.io/fyne/v2/cmd/fyne_settings/settings
+fyne.io/fyne/v2/container
+fyne.io/fyne/v2/data/binding
+fyne.io/fyne/v2/dialog
+fyne.io/fyne/v2/driver/desktop
+fyne.io/fyne/v2/driver/mobile
+fyne.io/fyne/v2/driver/software
+fyne.io/fyne/v2/internal
+fyne.io/fyne/v2/internal/animation
+fyne.io/fyne/v2/internal/app
+fyne.io/fyne/v2/internal/cache
+fyne.io/fyne/v2/internal/driver
+fyne.io/fyne/v2/internal/driver/glfw
+fyne.io/fyne/v2/internal/driver/gomobile
+fyne.io/fyne/v2/internal/painter
+fyne.io/fyne/v2/internal/painter/gl
+fyne.io/fyne/v2/internal/painter/software
+fyne.io/fyne/v2/internal/repository
+fyne.io/fyne/v2/internal/test
+fyne.io/fyne/v2/internal/widget
+fyne.io/fyne/v2/layout
+fyne.io/fyne/v2/storage
+fyne.io/fyne/v2/storage/repository
+fyne.io/fyne/v2/test
+fyne.io/fyne/v2/theme
+fyne.io/fyne/v2/tools/playground
+fyne.io/fyne/v2/widget
 # github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298
 github.com/BurntSushi/freetype-go/freetype
 github.com/BurntSushi/freetype-go/freetype/raster
@@ -59,9 +61,11 @@ github.com/BurntSushi/xgbutil/xwindow
 github.com/Knetic/govaluate
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/fredbi/uri v0.0.0-20181227131451-3dcfdacbaaf3
+github.com/fredbi/uri
 # github.com/fsnotify/fsnotify v1.4.9
 github.com/fsnotify/fsnotify
-# github.com/fyne-io/mobile v0.1.2-0.20201127155338-06aeb98410cc
+# github.com/fyne-io/mobile v0.1.2
 github.com/fyne-io/mobile/app
 github.com/fyne-io/mobile/app/internal/callfn
 github.com/fyne-io/mobile/event/key

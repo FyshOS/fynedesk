@@ -1,6 +1,6 @@
 package fynedesk
 
-import "fyne.io/fyne"
+import "fyne.io/fyne/v2"
 
 // ModuleMetadata is the information required to describe a module in FyneDesk
 type ModuleMetadata struct {

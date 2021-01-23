@@ -7,11 +7,11 @@ import (
 	"image"
 	"time"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/test"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/tools/playground"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/tools/playground"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
