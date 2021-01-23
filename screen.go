@@ -48,7 +48,6 @@ func userScale() float32 {
 	if env != "auto" {
 		setting := fyne.CurrentApp().Settings().Scale()
 
-		//lint:ignore SA1019 We need an upgrade-path for users
 		if setting != -1 && setting != 0.0 {
 			return setting
 		}
