@@ -192,6 +192,7 @@ func (c *client) NotifyGeometry(x int, y int, width uint, height uint) {
 func (c *client) NotifyFullscreen() {
 	c.full = true
 	c.frame.maximizeApply()
+	x11.WindowExtendedHintsAdd(c.wm.X(), c.win, "_NET_WM_STATE_FULLSCREEN")
 }
 
 func (c *client) NotifyIconify() {
@@ -230,6 +231,7 @@ func (c *client) NotifyMoveResizeEnded() {
 func (c *client) NotifyUnFullscreen() {
 	c.full = false
 	c.frame.unmaximizeApply()
+	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_FULLSCREEN")
 }
 
 func (c *client) NotifyUnIconify() {
