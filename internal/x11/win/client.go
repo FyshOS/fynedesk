@@ -145,7 +145,6 @@ func (c *client) FrameID() xproto.Window {
 
 func (c *client) Fullscreen() {
 	c.fullscreenMessage(x11.WindowStateActionAdd)
-	x11.WindowExtendedHintsAdd(c.wm.X(), c.win, "_NET_WM_STATE_FULLSCREEN")
 }
 
 func (c *client) Fullscreened() bool {
@@ -304,7 +303,6 @@ func (c *client) TopWindow() bool {
 
 func (c *client) Unfullscreen() {
 	c.fullscreenMessage(x11.WindowStateActionRemove)
-	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_FULLSCREEN")
 }
 
 func (c *client) Uniconify() {
