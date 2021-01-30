@@ -31,7 +31,7 @@ type frame struct {
 	resizeStartWidth, resizeStartHeight uint16
 	mouseX, mouseY                      int16
 	resizeStartX, resizeStartY          int16
-	resizeBottom                        bool
+	resizeBottom, resizeTop             bool
 	resizeLeft, resizeRight             bool
 	moveOnly                            bool
 
@@ -459,13 +459,19 @@ func (f *frame) mouseDrag(x, y int16) {
 		return
 	}
 
-	if f.resizeBottom || f.resizeLeft || f.resizeRight && !windowSizeFixed(f.client.wm.X(), f.client.win) {
+	if f.moveOnly {
+		f.updateGeometry(f.x+moveDeltaX, f.y+moveDeltaY, f.width, f.height, false)
+	} else if f.resizeTop || f.resizeBottom || f.resizeLeft || f.resizeRight && !windowSizeFixed(f.client.wm.X(), f.client.win) {
 		deltaX := x - f.resizeStartX
 		deltaY := y - f.resizeStartY
 		x := f.x
+		y := f.y
 		width := int16(f.resizeStartWidth)
 		height := int16(f.resizeStartHeight)
-		if f.resizeBottom {
+		if f.resizeTop {
+			y += moveDeltaY
+			height -= deltaY
+		} else if f.resizeBottom {
 			height += deltaY
 		}
 		if f.resizeLeft {
@@ -482,14 +488,11 @@ func (f *frame) mouseDrag(x, y int16) {
 		if height < 0 {
 			height = 0
 		}
-		f.updateGeometry(x, f.y, uint16(width), uint16(height), false)
-	} else if f.moveOnly {
-		f.updateGeometry(f.x+moveDeltaX, f.y+moveDeltaY, f.width, f.height, false)
+		f.updateGeometry(x, y, uint16(width), uint16(height), false)
 	}
 }
 
 func (f *frame) mouseMotion(x, y int16) {
-	titleHeight := x11.TitleHeight(x11.XWin(f.client))
 	relX := x - f.x
 	relY := y - f.y
 
@@ -527,10 +530,8 @@ func (f *frame) mouseMotion(x, y int16) {
 				hov.MouseMoved(&desktop.MouseEvent{})
 			}
 		}
-	} else if uint16(relY) > titleHeight {
-		if !f.client.Maximized() && !f.client.Fullscreened() && !windowSizeFixed(f.client.wm.X(), f.client.win) {
-			cursor = f.lookupResizeCursor(relX, relY)
-		}
+	} else if !f.client.Maximized() && !f.client.Fullscreened() && !windowSizeFixed(f.client.wm.X(), f.client.win) {
+		cursor = f.lookupResizeCursor(relX, relY)
 	}
 
 	if obj == nil && f.hovered != nil {
@@ -550,8 +551,15 @@ func (f *frame) mouseMotion(x, y int16) {
 
 func (f *frame) lookupResizeCursor(x, y int16) xproto.Cursor {
 	cornerSize := x11.ButtonWidth(x11.XWin(f.client))
+	edgeSize := x11.BorderWidth(x11.XWin(f.client))
 
-	if y >= int16(f.height-cornerSize) { // bottom
+	if y < int16(x11.TitleHeight(x11.XWin(f.client))) { // top left or right
+		if x < int16(edgeSize) {
+			return x11.ResizeTopLeftCursor
+		} else if x >= int16(f.width-edgeSize) {
+			return x11.ResizeTopRightCursor
+		}
+	} else if y >= int16(f.height-cornerSize) { // bottom
 		if x < int16(cornerSize) {
 			return x11.ResizeBottomLeftCursor
 		} else if x >= int16(f.width-cornerSize) {
@@ -584,6 +592,7 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 	}
 
 	buttonWidth := x11.ButtonWidth(x11.XWin(f.client))
+	borderWidth := x11.BorderWidth(x11.XWin(f.client))
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
 	f.mouseX = x
 	f.mouseY = y
@@ -597,19 +606,30 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 	f.resizeBottom = false
 	f.resizeLeft = false
 	f.resizeRight = false
+	f.resizeTop = false
 	f.moveOnly = false
 
-	if relY >= int16(titleHeight) && !windowSizeFixed(f.client.wm.X(), f.client.win) {
-		if relY >= int16(f.height-buttonWidth) {
-			f.resizeBottom = true
-		}
-		if relX < int16(buttonWidth) {
-			f.resizeLeft = true
-		} else if relX >= int16(f.width-buttonWidth) {
-			f.resizeRight = true
-		}
-	} else if relY < int16(titleHeight) {
+	if relY < int16(titleHeight) && relX >= int16(borderWidth) && relX < int16(f.width-borderWidth) {
 		f.moveOnly = true
+	} else if !windowSizeFixed(f.client.wm.X(), f.client.win) {
+		if relY < int16(titleHeight) {
+			if relX < int16(borderWidth) {
+				f.resizeLeft = true
+				f.resizeTop = true
+			} else if relX >= int16(f.width-borderWidth) {
+				f.resizeRight = true
+				f.resizeTop = true
+			}
+		} else {
+			if relY >= int16(f.height-buttonWidth) {
+				f.resizeBottom = true
+			}
+			if relX < int16(buttonWidth) {
+				f.resizeLeft = true
+			} else if relX >= int16(f.width-buttonWidth) {
+				f.resizeRight = true
+			}
+		}
 	}
 
 	f.client.wm.RaiseToTop(f.client)

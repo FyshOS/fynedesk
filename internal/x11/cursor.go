@@ -25,6 +25,10 @@ var (
 	ResizeLeftCursor xproto.Cursor
 	// ResizeRightCursor is the right resize X11 cursor
 	ResizeRightCursor xproto.Cursor
+	// ResizeTopLeftCursor is the top left resize X11 cursor
+	ResizeTopLeftCursor xproto.Cursor
+	// ResizeTopRightCursor is the top right resize X11 cursor
+	ResizeTopRightCursor xproto.Cursor
 )
 
 func createCursor(x *xgbutil.XUtil, builtin uint16) xproto.Cursor {
@@ -46,4 +50,6 @@ func LoadCursors(x *xgbutil.XUtil) {
 	ResizeBottomRightCursor = createCursor(x, xcursor.BottomRightCorner)
 	ResizeLeftCursor = createCursor(x, xcursor.LeftSide)
 	ResizeRightCursor = createCursor(x, xcursor.RightSide)
+	ResizeTopLeftCursor = createCursor(x, xcursor.TopLeftCorner)
+	ResizeTopRightCursor = createCursor(x, xcursor.TopRightCorner)
 }
