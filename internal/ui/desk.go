@@ -103,7 +103,7 @@ func (l *desktop) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32) {
 	screenW := uint32(screen.Width)
 	screenH := uint32(screen.Height)
 	if l.screens.Primary() == screen {
-		return screenW - uint32(float32(l.widgets.Size().Width)*screen.CanvasScale()), screenH
+		return screenW - uint32(widgetPanelWidth*screen.CanvasScale()), screenH
 	}
 	return screenW, screenH
 }
