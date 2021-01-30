@@ -2,7 +2,9 @@ package icon // import "fyne.io/fynedesk/internal/icon"
 
 import (
 	"bufio"
+	"bytes"
 	"fmt"
+	"image/png"
 	"io/ioutil"
 	"math"
 	"os"
@@ -11,13 +13,13 @@ import (
 	"strconv"
 	"strings"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"fyne.io/fynedesk"
 	wmTheme "fyne.io/fynedesk/theme"
 )
 
-var iconExtensions = []string{".png", ".svg"}
+var iconExtensions = []string{".png", ".svg", ".xpm"}
 
 //fdoApplicationData is a structure that contains information about .desktop files
 type fdoApplicationData struct {
@@ -65,9 +67,8 @@ func extractArgs(args []string) []string {
 //Run executes the command for this fdo app
 func (data *fdoApplicationData) Run(env []string) error {
 	vars := os.Environ()
-	for _, e := range env {
-		vars = append(vars, e)
-	}
+	vars = append(vars, env...)
+
 	commands := strings.Split(data.exec, " ")
 	command := commands[0]
 	if command[0] == '"' {
@@ -76,7 +77,7 @@ func (data *fdoApplicationData) Run(env []string) error {
 
 	cmd := exec.Command(command)
 	if len(commands) > 1 {
-		cmd.Args = extractArgs(commands[1:])
+		cmd.Args = extractArgs(commands) // Args[0] should be binary path
 	}
 
 	cmd.Env = vars
@@ -88,6 +89,19 @@ func loadIcon(path string) fyne.Resource {
 	if err != nil {
 		fyne.LogError("Failed to load image", err)
 		return nil
+	}
+
+	if path[len(path)-4:] == ".xpm" {
+		var w bytes.Buffer
+		img := parseXPM(data)
+		err := png.Encode(&w, img)
+		data = w.Bytes()
+
+		if err != nil {
+			fyne.LogError("Failed to re-encode XPM image", err)
+			return nil
+		}
+		path = path[:len(path)-4] + ".png"
 	}
 
 	return fyne.NewStaticResource(filepath.Base(path), data)
@@ -313,7 +327,7 @@ func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconNa
 	}
 	// If the requested icon wasn't found in the specific size or scalable dirs
 	// of the theme try all sizes within theme and all icon dirs besides apps
-	var subIconDirs = []string{"apps", "actions", "devices", "emblems", "mimetypes", "places", "status"}
+	var subIconDirs = []string{"apps", "actions", "devices", "emblems", "legacy", "mimetypes", "places", "status"}
 	iconSizeInt, err := strconv.Atoi(iconSize)
 	if err != nil {
 		iconSizeInt = 32

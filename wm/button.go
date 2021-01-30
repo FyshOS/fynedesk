@@ -1,15 +1,15 @@
 package wm
 
 import (
-	"fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 	"fyne.io/fynedesk"
 )
 
 const (
 	// CloseCursor is the mouse cursor that indicates a close action
-	CloseCursor desktop.Cursor = iota + desktop.VResizeCursor // add to the end of the fyne list
+	CloseCursor desktop.StandardCursor = iota + desktop.VResizeCursor // add to the end of the fyne list
 )
 
 type closeButton struct {
@@ -21,7 +21,7 @@ func (c *closeButton) Cursor() desktop.Cursor {
 }
 
 func (c *closeButton) MouseIn(*desktop.MouseEvent) {
-	c.Style = widget.PrimaryButton
+	c.Importance = widget.HighImportance
 	c.Refresh()
 }
 
@@ -29,14 +29,14 @@ func (c *closeButton) MouseMoved(*desktop.MouseEvent) {
 }
 
 func (c *closeButton) MouseOut() {
-	c.Style = widget.DefaultButton
+	c.Importance = widget.MediumImportance
 	c.Refresh()
 }
 
 func newCloseButton(win fynedesk.Window) *closeButton {
 	b := &closeButton{}
 	b.ExtendBaseWidget(b)
-	b.HideShadow = true
+	b.Importance = widget.LowImportance
 	b.OnTapped = func() {
 		win.Close()
 	}

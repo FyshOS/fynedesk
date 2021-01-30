@@ -3,9 +3,9 @@ package ui
 import (
 	"math"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/theme"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/theme"
 )
 
 // Declare conformity with Layout interface
@@ -39,11 +39,8 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0]
 	objects = objects[1:]
 
-	offset := 0.0
-	barWidth := len(objects)*(bl.bar.iconSize+theme.Padding()) - theme.Padding()
-	if !bl.bar.disableTaskbar {
-		barWidth = barWidth - bl.bar.iconSize + separatorWidth
-	}
+	offset := float32(0.0)
+	barWidth := bl.calculateBarWidth(objects)
 	barLeft := (size.Width - barWidth) / 2
 	iconLeft := barLeft
 
@@ -56,24 +53,24 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 				if iconLeft+separatorWidth+theme.Padding() < mouseX {
 					offset += separatorWidth
 				} else if iconLeft < mouseX {
-					offset += float64(separatorWidth + theme.Padding())
+					offset += separatorWidth + theme.Padding()
 				}
 			} else {
 				iconCenter := iconLeft + bl.bar.iconSize/2
 				offsetX := float64(mouseX - iconCenter)
 
-				scale := float64(bl.bar.iconScale) - (math.Abs(offsetX) / (float64(bl.bar.iconSize) * iconZoomDistance))
-				newSize := float64(bl.bar.iconSize) * scale
-				if int(newSize) < bl.bar.iconSize {
-					newSize = float64(bl.bar.iconSize)
+				scale := bl.bar.iconScale - (float32(math.Abs(offsetX)) / (bl.bar.iconSize * iconZoomDistance))
+				newSize := bl.bar.iconSize * scale
+				if newSize < bl.bar.iconSize {
+					newSize = bl.bar.iconSize
 				}
-				child.Resize(fyne.NewSize(int(newSize), int(newSize)))
+				child.Resize(fyne.NewSize(newSize, newSize))
 
 				if iconLeft+bl.bar.iconSize+theme.Padding() < mouseX {
-					offset += newSize - float64(bl.bar.iconSize)
+					offset += newSize - bl.bar.iconSize
 				} else if iconLeft < mouseX {
-					ratio := float64(mouseX-iconLeft) / float64(bl.bar.iconSize+theme.Padding())
-					offset += (newSize-float64(bl.bar.iconSize))*ratio + float64(theme.Padding())
+					ratio := (mouseX - iconLeft) / (bl.bar.iconSize + theme.Padding())
+					offset += (newSize-bl.bar.iconSize)*ratio + theme.Padding()
 				}
 			}
 		} else {
@@ -91,9 +88,9 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 		iconLeft += theme.Padding()
 	}
 
-	x := barLeft - int(offset)
+	x := barLeft - offset
 	zoomLeft := x
-	tallHeight := int(float32(bl.bar.iconSize) * bl.bar.iconScale)
+	tallHeight := bl.bar.iconSize * bl.bar.iconScale
 	for _, child := range objects {
 		width := child.Size().Width
 		height := child.Size().Height
@@ -121,22 +118,25 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 // For a barLayout this is the width of the widest item and the height is
 // the sum of of all children combined with padding between each.
 func (bl *barLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	barWidth := 0
-	iconCount := len(objects)
-	if !bl.bar.disableTaskbar {
-		iconCount--
-		barWidth = (iconCount * (bl.bar.iconSize + theme.Padding())) + separatorWidth
-	} else {
-		barWidth = iconCount * (bl.bar.iconSize + theme.Padding())
-	}
+	barWidth := bl.calculateBarWidth(objects)
 
 	barLeft := (bl.bar.Size().Width - barWidth) / 2
 	mouseX := bl.mousePosition.X
 	if !bl.bar.disableZoom && bl.mouseInside && mouseX >= barLeft && mouseX < barLeft+barWidth {
-		return fyne.NewSize(barWidth, int(float32(bl.bar.iconSize)*bl.bar.iconScale))
+		return fyne.NewSize(barWidth, bl.bar.iconSize*bl.bar.iconScale)
 	}
 
 	return fyne.NewSize(barWidth, bl.bar.iconSize)
+}
+
+func (bl *barLayout) calculateBarWidth(objects []fyne.CanvasObject) float32 {
+	iconCount := float32(len(objects))
+	if !bl.bar.disableTaskbar {
+		iconCount--
+		return (iconCount * (bl.bar.iconSize + theme.Padding())) + separatorWidth
+	}
+
+	return iconCount * (bl.bar.iconSize + theme.Padding())
 }
 
 // newBarLayout returns a horizontal icon bar

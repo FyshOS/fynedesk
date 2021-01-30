@@ -4,10 +4,9 @@ import (
 	"image/color"
 	"testing"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/test"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 
 	wmTest "fyne.io/fynedesk/test"
 	wmTheme "fyne.io/fynedesk/theme"
@@ -127,13 +126,13 @@ func TestIconSizeChange(t *testing.T) {
 	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App1", "App2", "App3"})
 	testBar.updateIconOrder()
 
-	assert.Equal(t, 32, testBar.icons[0].Size().Width)
+	assert.Equal(t, float32(32), testBar.icons[0].Size().Width)
 
 	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIconSize(64)
 	testBar.iconSize = testBar.desk.Settings().LauncherIconSize()
 	testBar.updateIcons()
 
-	assert.Equal(t, 64, testBar.icons[0].Size().Width)
+	assert.Equal(t, float32(64), testBar.icons[0].Size().Width)
 }
 
 func TestZoomScaleChange(t *testing.T) {
@@ -144,7 +143,7 @@ func TestZoomScaleChange(t *testing.T) {
 
 	testBar.mouseInside = true
 	testBar.mousePosition = testBar.children[0].Position()
-	widget.Refresh(testBar)
+	testBar.Refresh()
 	firstWidth := testBar.children[0].Size().Width
 
 	testBar.desk.Settings().(*wmTest.Settings).SetLauncherZoomScale(2.0)
@@ -153,7 +152,7 @@ func TestZoomScaleChange(t *testing.T) {
 
 	testBar.mouseInside = true
 	testBar.mousePosition = testBar.children[0].Position()
-	widget.Refresh(testBar)
+	testBar.Refresh()
 	secondWidth := testBar.children[0].Size().Width
 
 	zoomTest := false
@@ -173,7 +172,7 @@ func TestIconZoomDisabled(t *testing.T) {
 
 	testBar.mouseInside = true
 	testBar.mousePosition = testBar.children[0].Position()
-	widget.Refresh(testBar)
+	testBar.Refresh()
 
 	width := testBar.children[0].Size().Width
 	assert.NotEqual(t, testBar.desk.Settings().LauncherIconSize(), width)
@@ -184,7 +183,7 @@ func TestIconZoomDisabled(t *testing.T) {
 
 	testBar.mouseInside = true
 	testBar.mousePosition = testBar.children[0].Position()
-	widget.Refresh(testBar)
+	testBar.Refresh()
 
 	width = testBar.children[0].Size().Width
 	assert.Equal(t, testBar.desk.Settings().LauncherIconSize(), width)

@@ -1,6 +1,10 @@
 package fynedesk
 
-import "fyne.io/fyne"
+import (
+	"image"
+
+	"fyne.io/fyne/v2"
+)
 
 // Window represents a single managed window within a window manager.
 // There may be borders or not depending on configuration.
@@ -11,16 +15,17 @@ type Window interface {
 	Maximized() bool    // Is the window Maximized?
 	TopWindow() bool    // Is this the window on top?
 
-	Close()            // Close this window and possibly the application running it
-	Focus()            // Ask this window to get input focus
-	Fullscreen()       // Request to fullscreen this window
-	Iconify()          // Request to iconify this window
-	Maximize()         // Request to resize this window to it's largest possible size
-	RaiseAbove(Window) // Raise this window above a given other window
-	RaiseToTop()       // Raise this window to the top of the stack
-	Unfullscreen()     // Request to unfullscreen this window
-	Uniconify()        // Request to restore this window and possibly children of this window from being minimized
-	Unmaximize()       // Request to restore this window to its size before being maximized
+	Capture() image.Image // Capture the contents of this window to an image
+	Close()               // Close this window and possibly the application running it
+	Focus()               // Ask this window to get input focus
+	Fullscreen()          // Request to fullscreen this window
+	Iconify()             // Request to iconify this window
+	Maximize()            // Request to resize this window to it's largest possible size
+	RaiseAbove(Window)    // Raise this window above a given other window
+	RaiseToTop()          // Raise this window to the top of the stack
+	Unfullscreen()        // Request to unfullscreen this window
+	Uniconify()           // Request to restore this window and possibly children of this window from being minimized
+	Unmaximize()          // Request to restore this window to its size before being maximized
 
 	Properties() WindowProperties // Request the properties set on this window
 }

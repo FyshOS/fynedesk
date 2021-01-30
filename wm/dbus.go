@@ -3,7 +3,7 @@ package wm
 import (
 	"errors"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"github.com/godbus/dbus/v5"
 )

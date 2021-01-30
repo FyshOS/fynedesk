@@ -2,20 +2,23 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"os/exec"
 	"runtime"
 	"sort"
 	"strconv"
 	"strings"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/cmd/fyne_settings/settings"
-	"fyne.io/fyne/dialog"
-	deskDriver "fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/cmd/fyne_settings/settings"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/storage"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
@@ -38,9 +41,9 @@ func (d *settingsUI) populateThemeIcons(box *fyne.Container, theme string) {
 		if appData == nil { // if app was removed!
 			continue
 		}
-		iconRes := appData.Icon(theme, int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(fynedesk.Instance().Screens().Primary().CanvasScale())))
+		iconRes := appData.Icon(theme, int((d.settings.LauncherIconSize()*d.settings.LauncherZoomScale())*fynedesk.Instance().Screens().Primary().CanvasScale()))
 		icon := widget.NewIcon(iconRes)
-		box.AddObject(icon)
+		box.Add(icon)
 	}
 	box.Refresh()
 }
@@ -60,56 +63,69 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		bgPathClear.Disable()
 	}
 	bgLabel := widget.NewLabelWithStyle("Background", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	bgDialog := dialog.NewFileOpen(func(file fyne.URIReadCloser, err error) {
+		if err != nil || file == nil {
+			return
+		}
 
-	bgButtons := widget.NewHBox(bgPathClear,
+		// not advisable for cross-platform but we are desktop only
+		path := file.URI().String()[7:]
+		// TODO add a nice preview :)
+		_ = file.Close()
+
+		bgPath.SetText(path)
+		bgPathClear.Enable()
+	}, d.win)
+	bgDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".jpeg", ".png", ".svg"}))
+	if dir, err := getPicturesDir(); err == nil {
+		bgDialog.SetLocation(dir)
+	} else {
+		fyne.LogError("error finding pictures dir, falling back to home directory", err)
+	}
+
+	bgButtons := container.NewHBox(bgPathClear,
 		widget.NewButtonWithIcon("", theme.SearchIcon(), func() {
-			dialog.ShowFileOpen(func(file fyne.URIReadCloser, err error) {
-				if err != nil || file == nil {
-					return
-				}
-
-				// not advisable for cross-platform but we are desktop only
-				path := file.URI().String()[7:]
-				// TODO add a nice preview :)
-				_ = file.Close()
-
-				bgPath.SetText(path)
-				bgPathClear.Enable()
-			}, d.win)
+			bgDialog.Show()
 		}))
 
+	clockLabel := widget.NewLabelWithStyle("Clock Format", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	clockFormat := &widget.RadioGroup{Options: []string{"12h", "24h"}, Required: true, Horizontal: true}
+	clockFormat.SetSelected(d.settings.ClockFormatting())
+
 	themeLabel := widget.NewLabel(d.settings.IconTheme())
-	themeIcons := fyne.NewContainerWithLayout(layout.NewHBoxLayout())
+	themeIcons := container.NewHBox()
 	d.populateThemeIcons(themeIcons, d.settings.IconTheme())
-	themeList := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
+	themeList := container.NewVBox()
 	for _, themeName := range fynedesk.Instance().IconProvider().AvailableThemes() {
 		themeButton := widget.NewButton(themeName, nil)
 		themeButton.OnTapped = func() {
 			themeLabel.SetText(themeButton.Text)
 			d.populateThemeIcons(themeIcons, themeButton.Text)
 		}
-		themeList.AddObject(themeButton)
+		themeList.Add(themeButton)
 	}
-	top := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, bgLabel, bgButtons),
-		bgLabel, bgPath, bgButtons)
+
+	bg := container.NewBorder(nil, nil, bgLabel, bgButtons, bgPath)
+	time := container.NewBorder(nil, nil, clockLabel, clockFormat)
+	top := container.NewVBox(bg, time)
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	themeCurrent := widget.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
-	middle := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, themeCurrent, themeFormLabel, nil),
-		themeCurrent, themeFormLabel, widget.NewScrollContainer(themeList))
+	themeCurrent := container.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
+	bottom := container.NewBorder(nil, themeCurrent, themeFormLabel, nil, container.NewScroll(themeList))
 
-	applyButton := widget.NewHBox(layout.NewSpacer(),
-		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+	applyButton := container.NewHBox(layout.NewSpacer(),
+		&widget.Button{Text: "Apply", Importance: widget.HighImportance, OnTapped: func() {
 			d.settings.setBackground(bgPath.Text)
 			d.settings.setIconTheme(themeLabel.Text)
+			d.settings.setClockFormatting(clockFormat.Selected)
 		}})
 
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(top, applyButton, nil, nil), top, applyButton, middle)
+	return container.NewBorder(top, applyButton, nil, nil, bottom)
 }
 
-func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) {
+func (d *settingsUI) populateOrderList(list *fyne.Container, add fyne.CanvasObject) {
 	var icons []fyne.CanvasObject
-	iconSize := fynedesk.Instance().Settings().LauncherIconSize()
+	iconSize := float32(fynedesk.Instance().Settings().LauncherIconSize())
 	for i, appName := range d.launcherIcons {
 		index := i // capture
 		appData := fynedesk.Instance().IconProvider().FindAppFromName(appName)
@@ -142,28 +158,28 @@ func (d *settingsUI) populateOrderList(list *widget.Box, add fyne.CanvasObject) 
 		if index >= len(d.launcherIcons)-1 {
 			right.Disable()
 		}
-		iconRes := appData.Icon(d.settings.IconTheme(), int((float64(d.settings.LauncherIconSize())*d.settings.LauncherZoomScale())*float64(fynedesk.Instance().Screens().Primary().CanvasScale())))
+		iconRes := appData.Icon(d.settings.IconTheme(), int((d.settings.LauncherIconSize()*d.settings.LauncherZoomScale())*fynedesk.Instance().Screens().Primary().CanvasScale()))
 		icon := canvas.NewImageFromResource(iconRes)
 		icon.FillMode = canvas.ImageFillContain
 		icon.SetMinSize(fyne.NewSize(iconSize, iconSize))
 		label := widget.NewLabelWithStyle(appName, fyne.TextAlignCenter, fyne.TextStyle{})
-		hbox := widget.NewVBox(icon, label, widget.NewHBox(left, remove, right))
+		hbox := container.NewVBox(icon, label, container.NewHBox(left, remove, right))
 		icons = append(icons, hbox)
 	}
 
 	icons = append(icons, add)
-	list.Children = icons
+	list.Objects = icons
 	list.Refresh()
 }
 
 func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
-	iconWidth := fynedesk.Instance().Settings().LauncherIconSize()
+	iconWidth := float32(fynedesk.Instance().Settings().LauncherIconSize())
 	addButton := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {})
 	addIcon := canvas.NewImageFromResource(theme.ContentAddIcon())
 	addIcon.FillMode = canvas.ImageFillContain
 	addIcon.SetMinSize(fyne.NewSize(iconWidth, iconWidth))
-	addItem := widget.NewVBox(addIcon, widget.NewLabel("Add Icon"), addButton)
-	orderList := widget.NewHBox()
+	addItem := container.NewVBox(addIcon, widget.NewLabel("Add Icon"), addButton)
+	orderList := container.NewHBox()
 	d.populateOrderList(orderList, addItem)
 
 	addButton.OnTapped = func() {
@@ -173,16 +189,18 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 		}).Show()
 	}
 
-	bar := widget.NewHScrollContainer(orderList)
+	bar := container.NewHScroll(orderList)
 
 	iconSize := widget.NewEntry()
-	iconSize.SetText(fmt.Sprintf("%d", d.settings.LauncherIconSize()))
+	iconSize.Wrapping = fyne.TextWrapOff
+	iconSize.SetText(fmt.Sprintf("%0.0f", d.settings.LauncherIconSize()))
 
 	zoomScale := widget.NewEntry()
-	zoomScale.SetText(fmt.Sprintf("%f", d.settings.LauncherZoomScale()))
+	zoomScale.Wrapping = fyne.TextWrapOff
+	zoomScale.SetText(fmt.Sprintf("%0.2f", d.settings.LauncherZoomScale()))
 
-	sizeCell := widget.NewHBox(widget.NewLabel("Launcher Icon Size:"), iconSize)
-	zoomCell := widget.NewHBox(widget.NewLabel("Launcher Zoom Scale:"), zoomScale)
+	sizeCell := container.NewHBox(widget.NewLabel("Launcher Icon Size:"), iconSize)
+	zoomCell := container.NewHBox(widget.NewLabel("Launcher Zoom Scale:"), zoomScale)
 
 	disableTaskbar := widget.NewCheck("Disable Taskbar", nil)
 	disableTaskbar.SetChecked(d.settings.LauncherDisableTaskbar())
@@ -190,34 +208,32 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	disableZoom := widget.NewCheck("Disable Zoom", nil)
 	disableZoom.SetChecked(d.settings.LauncherDisableZoom())
 
-	details := widget.NewGroup("Configuration",
-		fyne.NewContainerWithLayout(layout.NewGridLayout(2),
-			sizeCell, zoomCell, disableTaskbar, disableZoom))
+	details := widget.NewCard("Configuration", "",
+		container.NewGridWithColumns(2, sizeCell, zoomCell, disableTaskbar, disableZoom))
 
-	applyButton := widget.NewHBox(layout.NewSpacer(),
-		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+	applyButton := container.NewHBox(layout.NewSpacer(),
+		&widget.Button{Text: "Apply", Importance: widget.HighImportance, OnTapped: func() {
 			size, err := strconv.Atoi(iconSize.Text)
 			if err != nil {
 				fyne.LogError("error setting launcher icon size", err)
 				size = 32
 			}
-			d.settings.setLauncherIconSize(size)
+			d.settings.setLauncherIconSize(float32(size))
 
 			scale, err := strconv.ParseFloat(zoomScale.Text, 32)
 			if err != nil {
 				fyne.LogError("Error setting launcher zoom scale", err)
 				scale = 2.0
 			}
-			d.settings.setLauncherZoomScale(scale)
+			d.settings.setLauncherZoomScale(float32(scale))
 			d.settings.setLauncherDisableTaskbar(disableTaskbar.Checked)
 			d.settings.setLauncherDisableZoom(disableZoom.Checked)
 
 			d.settings.setLauncherIcons(d.launcherIcons)
 		}})
 
-	header := widget.NewGroup("Icons")
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(header, applyButton, nil, nil),
-		header, applyButton, widget.NewVBox(bar, details))
+	return container.NewBorder(nil, applyButton, nil, nil,
+		widget.NewCard("Icons", "", container.NewVBox(bar, details)))
 }
 
 func (d *settingsUI) loadAdvancedScreen() fyne.CanvasObject {
@@ -231,11 +247,11 @@ func (d *settingsUI) loadAdvancedScreen() fyne.CanvasObject {
 		check.SetChecked(enabled)
 		modules = append(modules, check)
 	}
-	content := fyne.NewContainerWithLayout(layout.NewGridLayout(2), d.loadScreensGroup(),
-		widget.NewGroup("Modules", modules...))
+	content := container.NewGridWithColumns(2, d.loadScreensGroup(),
+		widget.NewCard("Modules", "", container.NewVBox(modules...)))
 
-	applyButton := widget.NewHBox(layout.NewSpacer(),
-		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
+	applyButton := container.NewHBox(layout.NewSpacer(),
+		&widget.Button{Text: "Apply", Importance: widget.HighImportance, OnTapped: func() {
 			var names []string
 			for _, item := range modules {
 				check := item.(*widget.Check)
@@ -247,8 +263,7 @@ func (d *settingsUI) loadAdvancedScreen() fyne.CanvasObject {
 			d.settings.setModuleNames(names)
 		}})
 
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, applyButton, nil, nil),
-		applyButton, content)
+	return container.NewBorder(nil, applyButton, nil, nil, content)
 }
 
 func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
@@ -263,41 +278,39 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 		mods = append(mods, widget.NewLabel(modifierToString(shortcut.Modifier)))
 		keys = append(keys, widget.NewLabel(string(shortcut.KeyName)))
 	}
-	rows := widget.NewHBox(widget.NewGroup("Action", names...),
-		widget.NewGroup("Modifier", mods...),
-		widget.NewGroup("Key Name", keys...))
-	grid := widget.NewScrollContainer(rows)
+	rows := container.NewHBox(widget.NewCard("Action", "", container.NewVBox(names...)),
+		widget.NewCard("Modifier", "", container.NewVBox(mods...)),
+		widget.NewCard("Key Name", "", container.NewVBox(keys...)))
+	grid := container.NewScroll(rows)
 
-	applyButton := widget.NewHBox(layout.NewSpacer(),
-		&widget.Button{Text: "Apply", Style: widget.PrimaryButton, OnTapped: func() {
-		}})
+	applyButton := container.NewHBox(layout.NewSpacer(),
+		&widget.Button{Text: "Apply", Importance: widget.HighImportance})
 
-	return fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, applyButton, nil, nil),
-		applyButton, grid)
+	return container.NewBorder(nil, applyButton, nil, nil, grid)
 }
 
 func loadScreensTable() fyne.CanvasObject {
-	names := widget.NewVBox()
-	labels1 := widget.NewVBox()
-	values1 := widget.NewVBox()
-	labels2 := widget.NewVBox()
-	values2 := widget.NewVBox()
+	names := container.NewVBox()
+	labels1 := container.NewVBox()
+	values1 := container.NewVBox()
+	labels2 := container.NewVBox()
+	values2 := container.NewVBox()
 
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
-		names.Append(widget.NewLabelWithStyle(screen.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
-		labels1.Append(widget.NewLabel("Width"))
-		values1.Append(widget.NewLabel(fmt.Sprintf("%dpx", screen.Width)))
-		labels2.Append(widget.NewLabel("Height"))
-		values2.Append(widget.NewLabel(fmt.Sprintf("%dpx", screen.Height)))
+		names.Add(widget.NewLabelWithStyle(screen.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
+		labels1.Add(widget.NewLabel("Width"))
+		values1.Add(widget.NewLabel(fmt.Sprintf("%dpx", screen.Width)))
+		labels2.Add(widget.NewLabel("Height"))
+		values2.Add(widget.NewLabel(fmt.Sprintf("%dpx", screen.Height)))
 
-		names.Append(widget.NewLabel(""))
-		labels1.Append(widget.NewLabel("Scale"))
-		values1.Append(widget.NewLabel(fmt.Sprintf("%.1f", screen.Scale)))
-		labels2.Append(widget.NewLabel("Applied"))
-		values2.Append(widget.NewLabel(fmt.Sprintf("%.1f", screen.CanvasScale())))
+		names.Add(widget.NewLabel(""))
+		labels1.Add(widget.NewLabel("Scale"))
+		values1.Add(widget.NewLabel(fmt.Sprintf("%.1f", screen.Scale)))
+		labels2.Add(widget.NewLabel("Applied"))
+		values2.Add(widget.NewLabel(fmt.Sprintf("%.1f", screen.CanvasScale())))
 	}
 
-	return widget.NewHBox(names, labels1, values1, labels2, values2)
+	return container.NewHBox(names, labels1, values1, labels2, values2)
 }
 
 func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
@@ -311,9 +324,8 @@ func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
 	}
 
 	userScale := fyne.CurrentApp().Settings().Scale()
-	content := widget.NewVBox(widget.NewLabel(fmt.Sprintf("User scale: %0.2f", userScale)))
-	screens := widget.NewGroup("Screens", displays, content)
-	screens.Append(loadScreensTable())
+	content := container.NewVBox(widget.NewLabel(fmt.Sprintf("User scale: %0.2f", userScale)))
+	screens := widget.NewCard("Screens", "", container.NewVBox(displays, content, loadScreensTable()))
 	return screens
 }
 
@@ -324,17 +336,17 @@ func showSettings(deskSettings *deskSettings) {
 	ui.win = w
 	fyneSettings := settings.NewSettings()
 
-	tabs := widget.NewTabContainer(
-		&widget.TabItem{Text: "Fyne Settings", Icon: theme.FyneLogo(),
+	tabs := container.NewAppTabs(
+		&container.TabItem{Text: "Fyne Settings", Icon: theme.FyneLogo(),
 			Content: fyneSettings.LoadAppearanceScreen(w)},
-		&widget.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
+		&container.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
 			Content: ui.loadAppearanceScreen()},
-		&widget.TabItem{Text: "App Bar", Icon: wmtheme.IconifyIcon, Content: ui.loadBarScreen()},
-		&widget.TabItem{Text: "Keyboard", Icon: wmtheme.KeyboardIcon, Content: ui.loadKeyboardScreen()},
-		&widget.TabItem{Text: "Advanced", Icon: theme.SettingsIcon(),
+		&container.TabItem{Text: "App Bar", Icon: wmtheme.IconifyIcon, Content: ui.loadBarScreen()},
+		&container.TabItem{Text: "Keyboard", Icon: wmtheme.KeyboardIcon, Content: ui.loadKeyboardScreen()},
+		&container.TabItem{Text: "Advanced", Icon: theme.SettingsIcon(),
 			Content: ui.loadAdvancedScreen()},
 	)
-	tabs.SetTabLocation(widget.TabLocationLeading)
+	tabs.SetTabLocation(container.TabLocationLeading)
 	w.SetContent(tabs)
 
 	w.Resize(fyne.NewSize(480, 320))
@@ -360,4 +372,30 @@ func modifierToString(mods deskDriver.Modifier) string {
 		}
 	}
 	return strings.Join(s, "+")
+}
+
+func getPicturesDir() (fyne.ListableURI, error) {
+	home, err := os.UserHomeDir()
+	if err != nil {
+		return nil, err
+	}
+
+	const xdg = "xdg-user-dir"
+	if _, err := exec.LookPath(xdg); err == nil {
+		cmd := exec.Command(xdg, "PICTURES")
+
+		out, err := cmd.Output()
+		location := string(out[:len(out)-1]) // Remove \n at the end
+		if err == nil && location != home {
+			uri := storage.NewFileURI(location)
+			return storage.ListerForURI(uri)
+		}
+	}
+
+	uri, err := storage.Child(storage.NewFileURI(home), "Pictures")
+	if err != nil {
+		return nil, err
+	}
+
+	return storage.ListerForURI(uri)
 }

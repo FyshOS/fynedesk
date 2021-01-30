@@ -1,7 +1,7 @@
 package wm
 
 import (
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 )
 
 var (
@@ -44,8 +44,6 @@ func SendNotification(n *Notification) {
 }
 
 type notifications struct {
-	notifs []Notification
-
 	listener func(*Notification)
 }
 

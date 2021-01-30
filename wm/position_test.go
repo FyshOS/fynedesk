@@ -14,8 +14,8 @@ func TestPositionForNewWindow_TopLeft(t *testing.T) {
 	screen := &fynedesk.Screen{X: 50, Y: 0, Width: 500, Height: 500, Scale: 1}
 	x, y, _, _ := PositionForNewWindow(0, 0, 100, 100, true, test.NewScreensProvider(screen))
 
-	assert.Equal(t, 50+theme.BorderWidth, x)
-	assert.Equal(t, theme.TitleHeight, y)
+	assert.Equal(t, 50+int(theme.BorderWidth), x)
+	assert.Equal(t, int(theme.TitleHeight), y)
 }
 
 func TestPositionForNewWindow_TopLeftBorderless(t *testing.T) {

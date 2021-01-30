@@ -8,7 +8,6 @@ type embeddedScreensProvider struct {
 }
 
 func (esp embeddedScreensProvider) RefreshScreens() {
-	return
 }
 
 func (esp embeddedScreensProvider) AddChangeListener(func()) {

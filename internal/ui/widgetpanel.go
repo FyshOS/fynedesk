@@ -1,16 +1,16 @@
 package ui
 
 import (
-	"image/color"
 	"os"
 	"path"
 	"time"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
@@ -18,6 +18,7 @@ import (
 
 type widgetRenderer struct {
 	panel *widgetPanel
+	bg    *canvas.Rectangle
 
 	layout  fyne.Layout
 	objects []fyne.CanvasObject
@@ -28,20 +29,20 @@ func (w *widgetRenderer) MinSize() fyne.Size {
 }
 
 func (w *widgetRenderer) Layout(size fyne.Size) {
-	w.layout.Layout(w.objects, size)
+	w.bg.Resize(size)
+	w.layout.Layout(w.objects[1:], size)
 }
 
 func (w *widgetRenderer) Refresh() {
-	w.panel.clock.Color = theme.TextColor()
-	canvas.Refresh(w.panel.clock)
-}
-
-func (w *widgetRenderer) BackgroundColor() color.Color {
 	r, _, _, _ := theme.BackgroundColor().RGBA()
 	if uint8(r) > 0x99 {
-		return wmtheme.WidgetPanelBackgroundLight
+		w.bg.FillColor = wmtheme.WidgetPanelBackgroundLight
 	}
-	return wmtheme.WidgetPanelBackgroundDark
+	w.bg.FillColor = wmtheme.WidgetPanelBackgroundDark
+	w.bg.Refresh()
+
+	w.panel.clock.Color = theme.ForegroundColor()
+	canvas.Refresh(w.panel.clock)
 }
 
 func (w *widgetRenderer) Objects() []fyne.CanvasObject {
@@ -68,7 +69,7 @@ func (w *widgetPanel) clockTick() {
 	go func() {
 		for {
 			<-tick.C
-			w.clock.Text = formattedTime()
+			w.clock.Text = w.formattedTime()
 			canvas.Refresh(w.clock)
 
 			w.date.SetText(formattedDate())
@@ -77,8 +78,12 @@ func (w *widgetPanel) clockTick() {
 	}()
 }
 
-func formattedTime() string {
-	return time.Now().Format("15:04pm")
+func (w *widgetPanel) formattedTime() string {
+	if w.desk.Settings().ClockFormatting() == "12h" {
+		return time.Now().Format("03:04pm")
+	}
+
+	return time.Now().Format("15:04")
 }
 
 func formattedDate() string {
@@ -90,8 +95,8 @@ func (w *widgetPanel) createClock() {
 	style.Monospace = true
 
 	w.clock = &canvas.Text{
-		Color:     theme.TextColor(),
-		Text:      formattedTime(),
+		Color:     theme.ForegroundColor(),
+		Text:      w.formattedTime(),
 		Alignment: fyne.TextAlignCenter,
 		TextStyle: style,
 		TextSize:  3 * theme.TextSize(),
@@ -106,7 +111,7 @@ func (w *widgetPanel) createClock() {
 }
 
 func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
-	isEmbed := w.desk.(*desktop).controlWin == nil
+	isEmbed := w.desk.(*desktop).root.Title() != RootWindowName
 	items := []*fyne.MenuItem{
 		fyne.NewMenuItem("About", func() {
 			showAbout()
@@ -129,7 +134,7 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		closeLabel = "Quit"
 	}
 
-	root := w.desk.(*desktop).primaryWin
+	root := w.desk.(*desktop).root
 	items = append(items, fyne.NewMenuItem(closeLabel, func() {
 		w.desk.WindowManager().Close()
 	}))
@@ -137,8 +142,8 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), root.Canvas())
 
 	bottomLeft := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
-	popup.Move(bottomLeft.Subtract(fyne.NewPos(0, popup.MinSize().Height)))
 	popup.Resize(fyne.NewSize(from.Size().Width, popup.MinSize().Height))
+	popup.ShowAtPosition(bottomLeft.Subtract(fyne.NewPos(0, popup.MinSize().Height)))
 }
 
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
@@ -155,17 +160,20 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	})
 	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), ShowAppLauncher)
 
+	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackgroundDark)
 	objects := []fyne.CanvasObject{
+		bg,
 		w.clock,
 		w.date,
 		w.notifications}
 
-	w.modules = fyne.NewContainerWithLayout(layout.NewVBoxLayout())
+	w.modules = container.NewVBox()
 	objects = append(objects, layout.NewSpacer(), w.modules, appExecButton, account)
 	w.loadModules(w.desk.Modules())
 
 	return &widgetRenderer{
 		panel:   w,
+		bg:      bg,
 		layout:  layout.NewVBoxLayout(),
 		objects: objects,
 	}

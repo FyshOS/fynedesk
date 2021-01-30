@@ -13,7 +13,7 @@ import (
 	"github.com/jackmordaunt/icns"
 	"howett.net/plist"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
@@ -53,6 +53,11 @@ func (m *macOSAppBundle) Icon(_ string, _ int) fyne.Resource {
 
 	var data bytes.Buffer
 	err = png.Encode(&data, icon)
+	if err != nil {
+		fyne.LogError("Failed to encode icon data for "+m.iconPath, err)
+		return wmtheme.BrokenImageIcon
+	}
+
 	iconName := filepath.Base(m.iconPath)
 	m.iconCache = fyne.NewStaticResource(strings.Replace(iconName, ".icns", ".png", 1), data.Bytes())
 	return m.iconCache

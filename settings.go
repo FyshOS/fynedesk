@@ -4,12 +4,13 @@ package fynedesk
 type DeskSettings interface {
 	Background() string
 	IconTheme() string
+	ClockFormatting() string
 
 	LauncherIcons() []string
-	LauncherIconSize() int
+	LauncherIconSize() float32
 	LauncherDisableTaskbar() bool
 	LauncherDisableZoom() bool
-	LauncherZoomScale() float64
+	LauncherZoomScale() float32
 
 	ModuleNames() []string
 

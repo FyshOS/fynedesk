@@ -4,11 +4,12 @@ import (
 	"image/color"
 	"time"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	deskDriver "fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 )
@@ -37,11 +38,12 @@ func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 		res = s.win.Properties().Icon()
 	}
 
+	bg := canvas.NewRectangle(color.Transparent)
 	img := canvas.NewImageFromResource(res)
 	text := widget.NewLabel(title)
 	text.Wrapping = fyne.TextTruncate
-	return &switchIconRenderer{icon: s,
-		img: img, text: text, objects: []fyne.CanvasObject{img, text}}
+	return &switchIconRenderer{icon: s, bg: bg,
+		img: img, text: text, objects: []fyne.CanvasObject{bg, img, text}}
 }
 
 // FocusGained is called when this icon gets focus - it becomes the candidate for window raising
@@ -81,12 +83,15 @@ func newSwitchIcon(p *Switcher, win fynedesk.Window) *switchIcon {
 type switchIconRenderer struct {
 	icon *switchIcon
 
+	bg      *canvas.Rectangle
 	img     *canvas.Image
 	text    *widget.Label
 	objects []fyne.CanvasObject
 }
 
-func (s switchIconRenderer) Layout(fyne.Size) {
+func (s switchIconRenderer) Layout(size fyne.Size) {
+	s.bg.Move(fyne.NewPos(-theme.Padding(), -theme.Padding()))
+	s.bg.Resize(size.Add(fyne.NewSize(theme.Padding()*2, theme.Padding()*2)))
 	s.img.Resize(fyne.NewSize(switcherIconSize, switcherIconSize))
 	s.text.Resize(fyne.NewSize(switcherIconSize, switcherTextSize))
 	s.text.Move(fyne.NewPos(0, switcherIconSize+theme.Padding()))
@@ -97,14 +102,12 @@ func (s switchIconRenderer) MinSize() fyne.Size {
 }
 
 func (s switchIconRenderer) Refresh() {
-	canvas.Refresh(s.icon)
-}
-
-func (s switchIconRenderer) BackgroundColor() color.Color {
 	if s.icon.current {
-		return theme.PrimaryColor()
+		s.bg.FillColor = theme.PrimaryColor()
+	} else {
+		s.bg.FillColor = color.Transparent
 	}
-	return theme.BackgroundColor()
+	canvas.Refresh(s.icon)
 }
 
 func (s switchIconRenderer) Objects() []fyne.CanvasObject {
@@ -183,7 +186,7 @@ func (s *Switcher) loadUI(title string) fyne.Window {
 		win = fyne.CurrentApp().NewWindow(title)
 	}
 
-	win.SetContent(widget.NewHBox(s.icons...))
+	win.SetContent(container.NewHBox(s.icons...))
 	win.CenterOnScreen()
 	win.SetTitle(title)
 

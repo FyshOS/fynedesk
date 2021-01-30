@@ -3,7 +3,7 @@
 package wm
 
 import (
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"github.com/BurntSushi/xgb/randr"
 	"github.com/BurntSushi/xgb/xproto"
@@ -21,7 +21,6 @@ type x11ScreensProvider struct {
 	primary *fynedesk.Screen
 	single  bool
 	x       *x11WM
-	root    xproto.Window
 
 	onChange []func()
 }

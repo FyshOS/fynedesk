@@ -6,9 +6,9 @@ import (
 	"fyne.io/fynedesk"
 	wmTest "fyne.io/fynedesk/test"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/test"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 )
 
@@ -49,8 +49,8 @@ func TestLauncher_ListActive(t *testing.T) {
 	test.Type(launcher.entry, "App")
 	launcher.entry.TypedKey(&fyne.KeyEvent{Name: fyne.KeyDown})
 	assert.Equal(t, 1, launcher.activeIndex)
-	assert.Equal(t, widget.DefaultButton, launcher.appList.Objects[0].(*widget.Button).Style)
-	assert.Equal(t, widget.PrimaryButton, launcher.appList.Objects[1].(*widget.Button).Style)
+	assert.Equal(t, widget.MediumImportance, launcher.appList.Objects[0].(*widget.Button).Importance)
+	assert.Equal(t, widget.HighImportance, launcher.appList.Objects[1].(*widget.Button).Importance)
 }
 
 func TestLauncher_setActiveIndex(t *testing.T) {

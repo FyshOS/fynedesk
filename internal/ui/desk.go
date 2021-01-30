@@ -4,8 +4,9 @@ import (
 	"fmt"
 	"math"
 
-	"fyne.io/fyne"
-	deskDriver "fyne.io/fyne/driver/desktop"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/wm"
@@ -26,39 +27,28 @@ type desktop struct {
 	screens  fynedesk.ScreenList
 	settings fynedesk.DeskSettings
 
-	run                 func()
-	newDesktopWindow    func(string) fyne.Window
-	backgroundScreenMap map[*background]*fynedesk.Screen
-	moduleCache         []fynedesk.Module
+	run         func()
+	moduleCache []fynedesk.Module
 
-	bar        *bar
-	widgets    *widgetPanel
-	mouse      fyne.CanvasObject
-	controlWin fyne.Window
-	primaryWin fyne.Window
-	roots      []fyne.Window
-	refreshing bool
+	bar     *bar
+	widgets *widgetPanel
+	mouse   fyne.CanvasObject
+	root    fyne.Window
 }
 
 func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0].(*background)
-	screen := l.backgroundScreenMap[bg]
-	if screen == nil {
-		return
-	}
 	bg.Resize(size)
 
-	if screen == l.screens.Primary() {
-		barHeight := l.bar.MinSize().Height
-		l.bar.Resize(fyne.NewSize(size.Width, barHeight+1)) // add 1 so rounding cannot trigger mouse out on bottom edge
-		l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
-		l.bar.Refresh()
+	barHeight := l.bar.MinSize().Height
+	l.bar.Resize(fyne.NewSize(size.Width, barHeight+1)) // add 1 so rounding cannot trigger mouse out on bottom edge
+	l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
+	l.bar.Refresh()
 
-		widgetsWidth := l.widgets.MinSize().Width
-		l.widgets.Resize(fyne.NewSize(widgetsWidth, size.Height))
-		l.widgets.Move(fyne.NewPos(size.Width-widgetsWidth, 0))
-		l.widgets.Refresh()
-	}
+	widgetsWidth := l.widgets.MinSize().Width
+	l.widgets.Resize(fyne.NewSize(widgetsWidth, size.Height))
+	l.widgets.Move(fyne.NewPos(size.Width-widgetsWidth, 0))
+	l.widgets.Refresh()
 }
 
 func (l *desktop) MinSize(_ []fyne.CanvasObject) fyne.Size {
@@ -66,93 +56,33 @@ func (l *desktop) MinSize(_ []fyne.CanvasObject) fyne.Size {
 }
 
 func (l *desktop) updateBackgrounds(path string) {
-	for bg := range l.backgroundScreenMap {
-		bg.updateBackground(path)
-	}
+	l.root.Content().(*fyne.Container).Objects[0].(*background).updateBackground(path)
 }
 
-func (l *desktop) createPrimaryContent() {
+func (l *desktop) createPrimaryContent() fyne.CanvasObject {
 	l.bar = newBar(l)
 	l.widgets = newWidgetPanel(l)
 	l.mouse = newMouse()
+	l.mouse.Hide()
+
+	return container.New(l, newBackground(), l.bar, l.widgets, l.mouse)
 }
 
-func (l *desktop) createRoot(screen *fynedesk.Screen) {
-	win := l.newDesktopWindow(screen.Name)
-	l.roots = append(l.roots, win)
-	bg := newBackground()
-	l.backgroundScreenMap[bg] = screen
-	if screen == l.screens.Primary() {
-		l.primaryWin = win
-		l.createPrimaryContent()
-		win.SetOnClosed(func() {
-			if l.controlWin != nil && !l.refreshing {
-				l.controlWin.Close()
-			}
-		})
-		win.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
-		l.mouse.Hide()
-	} else {
-		win.SetContent(fyne.NewContainerWithLayout(l, bg))
-	}
-	win.Show()
+func (l *desktop) createRoot(screens fynedesk.ScreenList) fyne.Window {
+	win := l.newDesktopWindowFull()
+
+	win.SetContent(l.createPrimaryContent())
+
+	return win
 }
 
-func (l *desktop) ensureSufficientRoots() {
-	if len(l.screens.Screens()) >= len(l.roots) {
-		diff := len(l.screens.Screens()) - len(l.roots)
-		count := len(l.screens.Screens()) - diff - 1
-		for i := 0; i < diff; i++ {
-			l.createRoot(l.screens.Screens()[count])
-			count++
-		}
-	} else {
-		diff := len(l.roots) - len(l.screens.Screens())
-		count := len(l.roots) - diff
-		for i := 0; i < diff; i++ {
-			root := l.roots[count]
-			root.SetOnClosed(nil)
-			bg := root.Content().(*fyne.Container).Objects[0].(*background)
-			delete(l.backgroundScreenMap, bg)
-			root.Close()
-			count++
-		}
-		l.roots = l.roots[:len(l.screens.Screens())]
+func (l *desktop) setupRoot() {
+	if l.root == nil {
+		l.root = l.createRoot(l.screens)
 	}
-}
 
-func (l *desktop) setupRoots() {
-	if len(l.roots) == 0 {
-		for _, screen := range l.screens.Screens() {
-			l.createRoot(screen)
-		}
-		return
-	}
-	l.ensureSufficientRoots()
-	for i, root := range l.roots {
-		screen := l.screens.Screens()[i]
-		root.Hide()
-		root.SetOnClosed(nil)
-		root.SetTitle(fmt.Sprintf("%s%s", RootWindowName, screen.Name))
-		bg := root.Content().(*fyne.Container).Objects[0].(*background)
-		l.backgroundScreenMap[bg] = screen
-		if screen == l.screens.Primary() {
-			l.primaryWin = root
-			if l.bar == nil && l.widgets == nil && l.mouse == nil {
-				l.createPrimaryContent()
-			}
-			root.SetOnClosed(func() {
-				if !l.refreshing {
-					l.controlWin.Close()
-				}
-			})
-			root.SetContent(fyne.NewContainerWithLayout(l, bg, l.bar, l.widgets, l.mouse))
-			l.mouse.Hide() // temporarily we do not draw mouse (using X default)
-		} else {
-			root.SetContent(fyne.NewContainerWithLayout(l, bg))
-		}
-		root.Show()
-	}
+	scale := l.screens.Primary().CanvasScale()
+	l.root.Resize(fyne.NewSize(float32(l.screens.Primary().Width)/scale, float32(l.screens.Primary().Height)/scale))
 }
 
 func (l *desktop) Run() {
@@ -242,12 +172,6 @@ func (l *desktop) scaleVars(scale float32) []string {
 	}
 }
 
-func (l *desktop) screensChanged() {
-	l.refreshing = true
-	l.setupRoots()
-	l.refreshing = false
-}
-
 // MouseInNotify can be called by the window manager to alert the desktop that the cursor has entered the canvas
 func (l *desktop) MouseInNotify(pos fyne.Position) {
 	if l.bar == nil {
@@ -278,7 +202,7 @@ func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSetting
 		l.updateBackgrounds(s.Background())
 		l.widgets.reloadModules(l.Modules())
 
-		l.bar.iconSize = l.Settings().LauncherIconSize()
+		l.bar.iconSize = float32(l.Settings().LauncherIconSize())
 		l.bar.iconScale = float32(l.Settings().LauncherZoomScale())
 		l.bar.disableZoom = l.Settings().LauncherDisableZoom()
 		l.bar.updateIcons()
@@ -304,6 +228,11 @@ func (l *desktop) registerShortcuts() {
 		func() {
 			// dummy - the wm handles app switcher
 		})
+	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Window", KeyName: deskDriver.KeyPrintScreen,
+		Modifier: deskDriver.ShiftModifier},
+		l.screenshotWindow)
+	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Screen", KeyName: deskDriver.KeyPrintScreen},
+		l.screenshot)
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
@@ -317,18 +246,10 @@ func (l *desktop) Screens() fynedesk.ScreenList {
 func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider, screenProvider fynedesk.ScreenList) fynedesk.Desktop {
 	desk := newDesktop(app, wm, icons)
 	desk.run = desk.runFull
-	desk.newDesktopWindow = desk.newDesktopWindowFull
-	screenProvider.AddChangeListener(desk.screensChanged)
+	screenProvider.AddChangeListener(desk.setupRoot)
 	desk.screens = screenProvider
 
-	desk.controlWin = desk.app.NewWindow(RootWindowName)
-	desk.controlWin.Resize(fyne.NewSize(1, 1))
-	desk.controlWin.SetMaster()
-	desk.controlWin.SetOnClosed(func() {
-		desk.wm.Close()
-	})
-
-	desk.setupRoots()
+	desk.setupRoot()
 	return desk
 }
 
@@ -339,9 +260,9 @@ func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 func NewEmbeddedDesktop(app fyne.App, icons fynedesk.ApplicationProvider) fynedesk.Desktop {
 	desk := newDesktop(app, &embededWM{}, icons)
 	desk.run = desk.runEmbed
-	desk.newDesktopWindow = desk.newDesktopWindowEmbed
 
-	desk.setupRoots()
+	desk.root = desk.newDesktopWindowEmbed()
+	desk.root.SetContent(desk.createPrimaryContent())
 	return desk
 }
 
@@ -351,7 +272,6 @@ func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 	fynedesk.SetInstance(desk)
 	desk.settings = newDeskSettings()
 	desk.addSettingsChangeListener()
-	desk.backgroundScreenMap = make(map[*background]*fynedesk.Screen)
 
 	desk.registerShortcuts()
 	return desk

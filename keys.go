@@ -1,9 +1,9 @@
 package fynedesk
 
 import (
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
-	deskDriver "fyne.io/fyne/driver/desktop"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 )
 
 const (
@@ -14,6 +14,13 @@ const (
 	KeyBrightnessDown fyne.KeyName = "BrightnessDown"
 	// KeyBrightnessUp is the virtual keyboard key for increasing brightness
 	KeyBrightnessUp fyne.KeyName = "BrightnessUp"
+
+	// KeyVolumeMute is the virtual keyboard key for muting sound
+	KeyVolumeMute fyne.KeyName = "VolumeMute"
+	// KeyVolumeDown is the virtual keyboard key for reducing sound level
+	KeyVolumeDown fyne.KeyName = "VolumeDown"
+	// KeyVolumeUp is the virtual keyboard key for increasing sound level
+	KeyVolumeUp fyne.KeyName = "VolumeUp"
 )
 
 // Declare conformity with Shortcut interface

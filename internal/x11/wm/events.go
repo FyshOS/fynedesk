@@ -3,7 +3,7 @@
 package wm
 
 import (
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
@@ -116,7 +116,7 @@ func (x *x11WM) handleClientMessage(ev xproto.ClientMessageEvent) {
 		if c.Maximized() || c.Fullscreened() {
 			return
 		}
-		x.handleMoveResize(ev, c.(x11.XWin))
+		x.handleMoveResize(ev, c)
 	case "_NET_WM_STATE":
 		subMsgAtom, err := xprop.AtomName(x.x, xproto.Atom(ev.Data.Data32[1]))
 		if err != nil {
@@ -224,8 +224,8 @@ func (x *x11WM) handleMouseEnter(ev xproto.EnterNotifyEvent) {
 func (x *x11WM) handleMouseLeave(ev xproto.LeaveNotifyEvent) {
 	if mouseNotify, ok := fynedesk.Instance().(notify.MouseNotify); ok {
 		screen := fynedesk.Instance().Screens().ScreenForGeometry(int(ev.RootX), int(ev.RootY), 0, 0)
-		mouseNotify.MouseInNotify(fyne.NewPos(int(float32(ev.RootX)/screen.CanvasScale()),
-			int(float32(ev.RootY)/screen.CanvasScale())))
+		mouseNotify.MouseInNotify(fyne.NewPos(float32(ev.RootX)/screen.CanvasScale(),
+			float32(ev.RootY)/screen.CanvasScale()))
 	}
 }
 

@@ -3,8 +3,8 @@ package wm
 import (
 	"math"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/test"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
 )
 
 // FindObjectAtPixelPositionMatching looks for objects in the given canvas that are under pixel
@@ -71,12 +71,12 @@ func findObjectAtPositionMatching(mouse fyne.Position, matches func(object fyne.
 	return found, foundPos
 }
 
-func unscaleInt(c fyne.Canvas, v int) int {
+func unscaleInt(c fyne.Canvas, v int) float32 {
 	switch c.Scale() {
 	case 1.0:
-		return v
+		return float32(v)
 	default:
-		return int(float32(v) / c.Scale())
+		return float32(v) / c.Scale()
 	}
 }
 

@@ -17,7 +17,6 @@ func NewScreensProvider(screens ...*fynedesk.Screen) fynedesk.ScreenList {
 }
 
 func (tsp *testScreensProvider) RefreshScreens() {
-	return
 }
 
 func (tsp *testScreensProvider) AddChangeListener(func()) {

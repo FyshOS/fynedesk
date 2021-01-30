@@ -3,9 +3,9 @@ package ui
 import (
 	"time"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk/wm"
 )
@@ -22,7 +22,7 @@ func (n *notification) show(list *fyne.Container) {
 	title.Wrapping = fyne.TextTruncate
 	text := widget.NewLabel(n.message.Body)
 	text.Wrapping = fyne.TextWrapWord
-	n.renderer = widget.NewVBox(title, text)
+	n.renderer = container.NewVBox(title, text)
 
 	list.Objects = append(list.Objects, n.renderer)
 	list.Refresh()
@@ -58,7 +58,7 @@ func (n *notifications) newMessage(message *wm.Notification) {
 }
 
 func startNotifications() fyne.CanvasObject {
-	box := fyne.NewContainerWithLayout(layout.NewVBoxLayout())
+	box := container.NewVBox()
 
 	n := &notifications{list: box}
 	wm.SetNotificationListener(n.newMessage)

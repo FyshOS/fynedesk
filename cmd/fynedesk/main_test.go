@@ -3,7 +3,7 @@ package main
 import (
 	"testing"
 
-	"fyne.io/fyne/test"
+	"fyne.io/fyne/v2/test"
 )
 
 func TestNewDesktop(t *testing.T) {

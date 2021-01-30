@@ -3,11 +3,11 @@ package ui
 import (
 	"image/color"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	deskDriver "fyne.io/fyne/driver/desktop"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 	wmTheme "fyne.io/fynedesk/theme"
@@ -22,7 +22,7 @@ type bar struct {
 	mouseInside   bool                // Is the mouse inside of the bar?
 	mousePosition fyne.Position       // The current coordinates of the mouse cursor
 
-	iconSize       int
+	iconSize       float32
 	iconScale      float32
 	disableTaskbar bool
 	disableZoom    bool
@@ -66,7 +66,7 @@ func (b *bar) append(object fyne.CanvasObject) {
 
 // appendSeparator adds a separator between the default icons and the taskbar
 func (b *bar) appendSeparator() {
-	b.separator = canvas.NewRectangle(theme.TextColor())
+	b.separator = canvas.NewRectangle(theme.ForegroundColor())
 	b.append(b.separator)
 }
 
@@ -261,11 +261,13 @@ func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 func newBar(desk fynedesk.Desktop) *bar {
 	bar := &bar{desk: desk}
 	bar.ExtendBaseWidget(bar)
-	bar.iconSize = desk.Settings().LauncherIconSize()
+	bar.iconSize = float32(desk.Settings().LauncherIconSize())
 	bar.iconScale = float32(desk.Settings().LauncherZoomScale())
 	bar.disableTaskbar = desk.Settings().LauncherDisableTaskbar()
 
-	desk.WindowManager().AddStackListener(bar)
+	if wm := desk.WindowManager(); wm != nil {
+		wm.AddStackListener(bar)
+	}
 	bar.appendLauncherIcons()
 
 	return bar
@@ -306,7 +308,7 @@ func (b *barRenderer) Objects() []fyne.CanvasObject {
 func (b *barRenderer) Refresh() {
 	b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
 	if b.appBar.separator != nil {
-		b.appBar.separator.FillColor = theme.TextColor()
+		b.appBar.separator.FillColor = theme.ForegroundColor()
 	}
 	b.objects = b.appBar.children
 	b.Layout(b.appBar.Size())
@@ -314,7 +316,6 @@ func (b *barRenderer) Refresh() {
 	canvas.Refresh(b.appBar.separator)
 }
 
-// Destroy destroys the renderer
+// Destroy tidies up resources
 func (b *barRenderer) Destroy() {
-
 }

@@ -5,7 +5,7 @@ import (
 	"strings"
 	"sync"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"fyne.io/fynedesk"
 )
@@ -14,10 +14,11 @@ type deskSettings struct {
 	background             string
 	iconTheme              string
 	launcherIcons          []string
-	launcherIconSize       int
+	launcherIconSize       float32
 	launcherDisableTaskbar bool
 	launcherDisableZoom    bool
-	launcherZoomScale      float64
+	launcherZoomScale      float32
+	clockFormatting        string
 
 	moduleNames []string
 
@@ -37,7 +38,7 @@ func (d *deskSettings) LauncherIcons() []string {
 	return d.launcherIcons
 }
 
-func (d *deskSettings) LauncherIconSize() int {
+func (d *deskSettings) LauncherIconSize() float32 {
 	return d.launcherIconSize
 }
 
@@ -49,12 +50,16 @@ func (d *deskSettings) LauncherDisableZoom() bool {
 	return d.launcherDisableZoom
 }
 
-func (d *deskSettings) LauncherZoomScale() float64 {
+func (d *deskSettings) LauncherZoomScale() float32 {
 	return d.launcherZoomScale
 }
 
 func (d *deskSettings) ModuleNames() []string {
 	return d.moduleNames
+}
+
+func (d *deskSettings) ClockFormatting() string {
+	return d.clockFormatting
 }
 
 func (d *deskSettings) AddChangeListener(listener chan fynedesk.DeskSettings) {
@@ -106,9 +111,9 @@ func (d *deskSettings) setLauncherIcons(defaultApps []string) {
 	d.apply()
 }
 
-func (d *deskSettings) setLauncherIconSize(size int) {
+func (d *deskSettings) setLauncherIconSize(size float32) {
 	d.launcherIconSize = size
-	fyne.CurrentApp().Preferences().SetInt("launchericonsize", d.launcherIconSize)
+	fyne.CurrentApp().Preferences().SetInt("launchericonsize", int(d.launcherIconSize))
 	d.apply()
 }
 
@@ -124,9 +129,9 @@ func (d *deskSettings) setLauncherDisableZoom(zoom bool) {
 	d.apply()
 }
 
-func (d *deskSettings) setLauncherZoomScale(scale float64) {
+func (d *deskSettings) setLauncherZoomScale(scale float32) {
 	d.launcherZoomScale = scale
-	fyne.CurrentApp().Preferences().SetFloat("launcherzoomscale", d.launcherZoomScale)
+	fyne.CurrentApp().Preferences().SetFloat("launcherzoomscale", float64(d.launcherZoomScale))
 	d.apply()
 }
 
@@ -134,6 +139,12 @@ func (d *deskSettings) setModuleNames(names []string) {
 	newModuleNames := strings.Join(names, "|")
 	d.moduleNames = names
 	fyne.CurrentApp().Preferences().SetString("modulenames", newModuleNames)
+	d.apply()
+}
+
+func (d *deskSettings) setClockFormatting(format string) {
+	d.clockFormatting = format
+	fyne.CurrentApp().Preferences().SetString("clockformatting", d.clockFormatting)
 	d.apply()
 }
 
@@ -166,7 +177,7 @@ func (d *deskSettings) load() {
 		}
 	}
 
-	d.launcherIconSize = fyne.CurrentApp().Preferences().Int("launchericonsize")
+	d.launcherIconSize = float32(fyne.CurrentApp().Preferences().Int("launchericonsize"))
 	if d.launcherIconSize == 0 {
 		d.launcherIconSize = 48
 	}
@@ -174,7 +185,7 @@ func (d *deskSettings) load() {
 	d.launcherDisableTaskbar = fyne.CurrentApp().Preferences().Bool("launcherdisabletaskbar")
 	d.launcherDisableZoom = fyne.CurrentApp().Preferences().Bool("launcherdisablezoom")
 
-	d.launcherZoomScale = fyne.CurrentApp().Preferences().Float("launcherzoomscale")
+	d.launcherZoomScale = float32(fyne.CurrentApp().Preferences().Float("launcherzoomscale"))
 	if d.launcherZoomScale == 0.0 {
 		d.launcherZoomScale = 2.0
 	}
@@ -183,6 +194,8 @@ func (d *deskSettings) load() {
 	if moduleNames != "" {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
+
+	d.clockFormatting = fyne.CurrentApp().Preferences().StringWithFallback("clockformatting", "12h")
 }
 
 // newDeskSettings loads the user's preferences from environment or config

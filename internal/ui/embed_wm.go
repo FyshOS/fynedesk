@@ -1,6 +1,10 @@
 package ui
 
 import (
+	"image"
+
+	"fyne.io/fyne/v2"
+
 	"fyne.io/fynedesk"
 )
 
@@ -50,6 +54,13 @@ func (e *embededWM) Blank() {
 	// no-op, we don't control screen brightness
 }
 
+func (e *embededWM) Capture() image.Image {
+	return nil // would mean accessing the underling OS screen functions...
+}
+
 func (e *embededWM) Close() {
-	// no-op, just allow exit
+	windows := fyne.CurrentApp().Driver().AllWindows()
+	if len(windows) > 0 {
+		windows[0].Close() // ensure our root is asked to close as well
+	}
 }

@@ -3,7 +3,9 @@
 package win
 
 import (
-	"fyne.io/fyne"
+	"image"
+
+	"fyne.io/fyne/v2"
 
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -63,6 +65,10 @@ func NewClient(win xproto.Window, wm x11.XWM) x11.XWin {
 	return c
 }
 
+func (c *client) Capture() image.Image {
+	return x11.CaptureWindow(c.wm.Conn(), c.FrameID())
+}
+
 func (c *client) ChildID() xproto.Window {
 	return c.win
 }
@@ -100,10 +106,14 @@ func (c *client) Close() {
 		fyne.LogError("Get Delete Window Error", err)
 		return
 	}
-	cm, err := xevent.NewClientMessage(32, c.win, protocols,
-		int(delWin))
-	err = xproto.SendEventChecked(c.wm.Conn(), false, c.win, 0,
-		string(cm.Bytes())).Check()
+
+	cm, err := xevent.NewClientMessage(32, c.win, protocols, int(delWin))
+	if err != nil {
+		fyne.LogError("Get ClientMessage Error", err)
+		return
+	}
+
+	err = xproto.SendEventChecked(c.wm.Conn(), false, c.win, 0, string(cm.Bytes())).Check()
 	if err != nil {
 		fyne.LogError("Window Delete Error", err)
 	}
@@ -135,7 +145,6 @@ func (c *client) FrameID() xproto.Window {
 
 func (c *client) Fullscreen() {
 	c.fullscreenMessage(x11.WindowStateActionAdd)
-	x11.WindowExtendedHintsAdd(c.wm.X(), c.win, "_NET_WM_STATE_FULLSCREEN")
 }
 
 func (c *client) Fullscreened() bool {
@@ -182,6 +191,7 @@ func (c *client) NotifyGeometry(x int, y int, width uint, height uint) {
 func (c *client) NotifyFullscreen() {
 	c.full = true
 	c.frame.maximizeApply()
+	x11.WindowExtendedHintsAdd(c.wm.X(), c.win, "_NET_WM_STATE_FULLSCREEN")
 }
 
 func (c *client) NotifyIconify() {
@@ -220,6 +230,7 @@ func (c *client) NotifyMoveResizeEnded() {
 func (c *client) NotifyUnFullscreen() {
 	c.full = false
 	c.frame.unmaximizeApply()
+	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_FULLSCREEN")
 }
 
 func (c *client) NotifyUnIconify() {
@@ -241,8 +252,7 @@ func (c *client) NotifyUnMaximize() {
 }
 
 func (c *client) RaiseAbove(win fynedesk.Window) {
-	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
-	topID := c.wm.WinIDForScreen(screen)
+	topID := c.wm.RootID()
 	if win != nil {
 		topID = win.(*client).id
 	}
@@ -288,15 +298,11 @@ func (c *client) SizeMin() (uint, uint) {
 }
 
 func (c *client) TopWindow() bool {
-	if c.wm.TopWindow() == c {
-		return true
-	}
-	return false
+	return c.wm.TopWindow() == c
 }
 
 func (c *client) Unfullscreen() {
 	c.fullscreenMessage(x11.WindowStateActionRemove)
-	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_FULLSCREEN")
 }
 
 func (c *client) Uniconify() {
@@ -310,10 +316,6 @@ func (c *client) Unmaximize() {
 
 func (c *client) fullscreenMessage(action x11.WindowStateAction) {
 	ewmh.WmStateReq(c.wm.X(), c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
-}
-
-func (c *client) getWindowGeometry() (int16, int16, uint16, uint16) {
-	return c.frame.getGeometry()
 }
 
 func (c *client) maximizeMessage(action x11.WindowStateAction) {
@@ -370,11 +372,13 @@ func (c *client) stateMessage(state int) {
 		fyne.LogError("Error getting X Atom", err)
 		return
 	}
-	cm, err := xevent.NewClientMessage(32, c.win, stateChangeAtom,
-		state)
+	cm, err := xevent.NewClientMessage(32, c.win, stateChangeAtom, state)
 	if err != nil {
 		fyne.LogError("Error creating client message", err)
 		return
 	}
 	err = xevent.SendRootEvent(c.wm.X(), cm, xproto.EventMaskSubstructureNotify|xproto.EventMaskSubstructureRedirect)
+	if err != nil {
+		fyne.LogError("Error sending root event", err)
+	}
 }

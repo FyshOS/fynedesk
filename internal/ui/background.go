@@ -4,11 +4,11 @@ import (
 	"image/color"
 	"os"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
@@ -17,13 +17,12 @@ import (
 type background struct {
 	widget.BaseWidget
 
-	objects       []fyne.CanvasObject
-	wallpaper     *canvas.Image
-	wallpaperPath string
+	objects   []fyne.CanvasObject
+	wallpaper *canvas.Image
 }
 
 func (b *background) CreateRenderer() fyne.WidgetRenderer {
-	c := fyne.NewContainerWithLayout(layout.NewMaxLayout(), b.loadModules()...)
+	c := container.NewMax(b.loadModules()...)
 	return &backgroundRenderer{b: b, c: c}
 }
 

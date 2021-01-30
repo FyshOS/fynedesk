@@ -3,7 +3,7 @@ package test
 import (
 	"strings"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
 
 	"fyne.io/fynedesk"
 	wmTheme "fyne.io/fynedesk/theme"
@@ -36,8 +36,7 @@ func (tad *testAppData) Icon(theme string, size int) fyne.Resource {
 }
 
 type testAppProvider struct {
-	screens []*fynedesk.Screen
-	apps    []fynedesk.AppData
+	apps []fynedesk.AppData
 }
 
 // NewAppProvider returns a simple provider of applications from the provided list of app names
