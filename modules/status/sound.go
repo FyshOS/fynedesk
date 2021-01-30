@@ -26,6 +26,20 @@ func newSound() fynedesk.Module {
 	return &sound{}
 }
 
+func (b *sound) Shortcuts() map[*fynedesk.Shortcut]func() {
+	return map[*fynedesk.Shortcut]func(){
+		fynedesk.NewShortcut("Mute Sound", fynedesk.KeyVolumeMute, fynedesk.AnyModifier): func() {
+			b.toggleMute()
+		},
+		fynedesk.NewShortcut("Increase Sound Volume", fynedesk.KeyVolumeDown, fynedesk.AnyModifier): func() {
+			b.offsetValue(-5)
+		},
+		fynedesk.NewShortcut("Reduce Sound Volume", fynedesk.KeyVolumeUp, fynedesk.AnyModifier): func() {
+			b.offsetValue(5)
+		},
+	}
+}
+
 // StatusAreaWidget builds the widget
 func (b *sound) StatusAreaWidget() fyne.CanvasObject {
 	if err := b.setup(); err != nil {

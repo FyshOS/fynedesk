@@ -342,7 +342,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 		b.SetMaximized(f.client.maximized)
 		// TODO maybe update icon?
 	}
-	f.canvas.SetScale(scale) //lint:ignore SA1019 Sort this out when other scaling changes are done
+	f.canvas.SetScale(scale)
 
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	iconBorderPixWidth := heightPix + x11.BorderWidth(x11.XWin(f.client))*2

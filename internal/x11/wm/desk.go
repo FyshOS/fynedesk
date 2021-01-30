@@ -87,6 +87,10 @@ const (
 
 	keyCodeBrightLess = 232
 	keyCodeBrightMore = 233
+
+	keyCodeVolumeMute = 121
+	keyCodeVolumeLess = 122
+	keyCodeVolumeMore = 123
 )
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
@@ -125,17 +129,15 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	ewmh.CurrentDesktopSet(mgr.x, 0)                                     // Will always be 0 until virtual desktops are supported
 
 	x11.LoadCursors(conn)
-	mgr.setupX11DPIForScale(a.Settings().Scale())
 
 	listener := make(chan fyne.Settings)
 	a.Settings().AddChangeListener(listener)
 	go func() {
 		for {
-			s := <-listener
+			<-listener
 			for _, c := range mgr.clients {
 				c.(x11.XWin).SettingsChanged()
 			}
-			mgr.setupX11DPIForScale(s.Scale())
 			mgr.configureRoots()
 		}
 	}()
@@ -247,6 +249,12 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 		return keyCodeBrightLess
 	case fynedesk.KeyBrightnessUp:
 		return keyCodeBrightMore
+	case fynedesk.KeyVolumeMute:
+		return keyCodeVolumeMute
+	case fynedesk.KeyVolumeDown:
+		return keyCodeVolumeLess
+	case fynedesk.KeyVolumeUp:
+		return keyCodeVolumeMore
 	}
 
 	return 0
@@ -337,6 +345,7 @@ func (x *x11WM) configureRoots() {
 		return
 	}
 
+	x.setupX11DPIHints()
 	minX, minY, maxX, maxY := math.MaxInt16, math.MaxInt16, 0, 0
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
 		minX = min(minX, screen.X)
@@ -567,8 +576,11 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	windowClientListStackingUpdate(x)
 }
 
-func (x *x11WM) setupX11DPIForScale(scale float32) {
-	cmd := exec.Command("xrandr", "--dpi", strconv.Itoa(int(float32(baselineDPI)*scale)))
+func (x *x11WM) setupX11DPIHints() {
+	// TODO move from global once xrandr --dpi <dpi>/<output> is better supported
+	canvasScale := fynedesk.Instance().Screens().Primary().CanvasScale()
+	dpi := int(float32(baselineDPI) * canvasScale)
+	cmd := exec.Command("xrandr", "--dpi", strconv.Itoa(dpi))
 	_ = cmd.Start() // if it fails that's a shame but it's just info
 }
 
