@@ -87,6 +87,10 @@ const (
 
 	keyCodeBrightLess = 232
 	keyCodeBrightMore = 233
+
+	keyCodeVolumeMute = 121
+	keyCodeVolumeLess = 122
+	keyCodeVolumeMore = 123
 )
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
@@ -247,6 +251,12 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 		return keyCodeBrightLess
 	case fynedesk.KeyBrightnessUp:
 		return keyCodeBrightMore
+	case fynedesk.KeyVolumeMute:
+		return keyCodeVolumeMute
+	case fynedesk.KeyVolumeDown:
+		return keyCodeVolumeLess
+	case fynedesk.KeyVolumeUp:
+		return keyCodeVolumeMore
 	}
 
 	return 0
