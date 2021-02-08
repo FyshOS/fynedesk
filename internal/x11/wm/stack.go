@@ -86,7 +86,7 @@ func (s *stack) clientForWin(id xproto.Window) x11.XWin {
 func (s *stack) getWindowsFromClients(clients []fynedesk.Window) []xproto.Window {
 	var wins []xproto.Window
 	for _, cli := range clients {
-		wins = append(wins, cli.(x11.XWin).FrameID())
+		wins = append(wins, cli.(x11.XWin).ChildID())
 	}
 	return wins
 }
