@@ -28,6 +28,7 @@ type desktop struct {
 	settings fynedesk.DeskSettings
 
 	run         func()
+	showMenu    func(*fyne.Menu, fyne.Position)
 	moduleCache []fynedesk.Module
 
 	bar     *bar
@@ -53,6 +54,10 @@ func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 
 func (l *desktop) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(640, 480) // tiny - window manager will scale up to screen size
+}
+
+func (l *desktop) ShowMenuAt(menu *fyne.Menu, pos fyne.Position) {
+	l.showMenu(menu, pos)
 }
 
 func (l *desktop) updateBackgrounds(path string) {
@@ -260,6 +265,7 @@ func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 func NewEmbeddedDesktop(app fyne.App, icons fynedesk.ApplicationProvider) fynedesk.Desktop {
 	desk := newDesktop(app, &embededWM{}, icons)
 	desk.run = desk.runEmbed
+	desk.showMenu = desk.showMenuEmbed
 
 	desk.root = desk.newDesktopWindowEmbed()
 	desk.root.SetContent(desk.createPrimaryContent())
@@ -268,6 +274,7 @@ func NewEmbeddedDesktop(app fyne.App, icons fynedesk.ApplicationProvider) fynede
 
 func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider) *desktop {
 	desk := &desktop{app: app, wm: wm, icons: icons, screens: newEmbeddedScreensProvider()}
+	desk.showMenu = desk.showMenuFull
 
 	fynedesk.SetInstance(desk)
 	desk.settings = newDeskSettings()

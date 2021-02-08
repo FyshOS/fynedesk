@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 )
@@ -83,6 +84,13 @@ func (td *Desktop) Screens() fynedesk.ScreenList {
 // Settings returns an in-memory test settings implementation
 func (td *Desktop) Settings() fynedesk.DeskSettings {
 	return td.settings
+}
+
+// ShowMenuAt is used to show a menu overlay above the desktop
+func (td *Desktop) ShowMenuAt(menu *fyne.Menu, pos fyne.Position) {
+	wid := widget.NewPopUpMenu(menu, test.Canvas())
+	wid.Resize(wid.MinSize())
+	wid.ShowAtPosition(pos)
 }
 
 // WindowManager returns the window manager for this desktop, an in-memory test instance unless

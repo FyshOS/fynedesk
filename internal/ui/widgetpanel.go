@@ -8,7 +8,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -141,23 +140,9 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		w.desk.WindowManager().Close()
 	}))
 
-	win := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
-	for _, i := range items {
-		action := i.Action
-		i.Action = func() {
-			win.Close()
-			action()
-		}
-	}
-
-	win.SetTitle("FyneDesk Menu")
-	win.SetContent(widget.NewMenu(fyne.NewMenu("Account", items...)))
-
-	menuSize := fyne.NewSize(widgetPanelWidth, win.Content().MinSize().Height)
-	win.SetFixedSize(true)
-	win.Resize(menuSize)
-	win.Content().Resize(menuSize)
-	win.Show()
+	winSize := w.desk.(*desktop).root.Canvas().Size()
+	pos := fyne.NewPos(winSize.Width, winSize.Height)
+	w.desk.ShowMenuAt(fyne.NewMenu("Account", items...), pos)
 }
 
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
