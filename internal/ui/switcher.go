@@ -139,7 +139,7 @@ func (s *Switcher) setCurrent(i int) {
 }
 
 // Next selects the next logical lower window in the stack.
-// If the bottom most window is selected then it will wrap to the topmost.
+// If the bottom most window is selected then it will wrap to the top most window.
 // This will be raised if the change is applied by calling HideApply.
 func (s *Switcher) Next() {
 	if len(s.icons) == 0 {
@@ -155,7 +155,7 @@ func (s *Switcher) Next() {
 }
 
 // Previous selects the next logical higher window in the stack.
-// If the top most window was selected it wraps to the lowest.
+// If the top most window was selected it will wrap to the lowest window.
 // This will be raised if the change is applied by calling HideApply.
 func (s *Switcher) Previous() {
 	if len(s.icons) == 0 {
@@ -196,8 +196,8 @@ func (s *Switcher) loadUI(title string) fyne.Window {
 func (s *Switcher) loadIcons(list []fynedesk.Window) []fyne.CanvasObject {
 	var ret []fyne.CanvasObject
 
-	for _, item := range list {
-		ret = append(ret, newSwitchIcon(s, item))
+	for i := len(list) - 1; i >= 0; i-- {
+		ret = append(ret, newSwitchIcon(s, list[i]))
 	}
 
 	return ret

@@ -61,7 +61,7 @@ func (s *stack) TopWindow() fynedesk.Window {
 	if len(s.clients) == 0 {
 		return nil
 	}
-	return s.clients[0]
+	return s.clients[len(s.clients)-1]
 }
 
 func (s *stack) Windows() []fynedesk.Window {
@@ -69,7 +69,7 @@ func (s *stack) Windows() []fynedesk.Window {
 }
 
 func (s *stack) addToStack(win fynedesk.Window) {
-	s.clients = append([]fynedesk.Window{win}, s.clients...)
+	s.clients = append(s.clients, win)
 	s.mappingOrder = append(s.mappingOrder, win.(x11.XWin))
 }
 

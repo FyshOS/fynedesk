@@ -35,12 +35,7 @@ func windowClientListUpdate(wm *x11WM) {
 }
 
 func windowClientListStackingUpdate(wm *x11WM) {
-	wins := wm.getWindowsFromClients(wm.clients)
-	// The list of clients in our stack is top to bottom but client list stacking wants bottom to top
-	for i, j := 0, len(wins)-1; i < j; i, j = i+1, j-1 {
-		wins[i], wins[j] = wins[j], wins[i]
-	}
-	ewmh.ClientListStackingSet(wm.X(), wins)
+	ewmh.ClientListStackingSet(wm.X(), wm.getWindowsFromClients(wm.clients))
 }
 
 func windowOverrideGet(x *xgbutil.XUtil, win xproto.Window) bool {
