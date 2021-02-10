@@ -5,6 +5,7 @@ package win
 import (
 	"context"
 	"image"
+	"sync"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -31,7 +32,7 @@ type frame struct {
 	resizeStartWidth, resizeStartHeight uint16
 	mouseX, mouseY                      int16
 	resizeStartX, resizeStartY          int16
-	resizeBottom, resizeTop             bool
+	resizeBottom                        bool
 	resizeLeft, resizeRight             bool
 	moveOnly                            bool
 
@@ -42,8 +43,19 @@ type frame struct {
 	clickCount int
 	cancelFunc context.CancelFunc
 
+	configureGeometry                *geometryData
+	configureQuitQueue               chan string
+	lastConfiguredX, lastConfiguredY int16
+
 	canvas test.WindowlessCanvas
 	client *client
+}
+
+type geometryData struct {
+	mu   sync.RWMutex
+	last []uint16
+
+	next chan struct{}
 }
 
 func newFrame(c *client) *frame {
@@ -448,30 +460,31 @@ func (f *frame) maximizeApply() {
 }
 
 func (f *frame) mouseDrag(x, y int16) {
+	if f.configureQuitQueue == nil {
+		f.configureGeometry = &geometryData{next: make(chan struct{})}
+		f.configureQuitQueue = make(chan string)
+		f.lastConfiguredX = f.mouseX
+		f.lastConfiguredY = f.mouseY
+		go f.processConfigureQueue(f.configureQuitQueue)
+	}
 	if f.client.Maximized() || f.client.Fullscreened() {
 		return
 	}
-	moveDeltaX := x - f.mouseX
-	moveDeltaY := y - f.mouseY
+	moveDeltaX := x - f.lastConfiguredX
+	moveDeltaY := y - f.lastConfiguredY
 	f.mouseX = x
 	f.mouseY = y
 	if moveDeltaX == 0 && moveDeltaY == 0 {
 		return
 	}
 
-	if f.moveOnly {
-		f.updateGeometry(f.x+moveDeltaX, f.y+moveDeltaY, f.width, f.height, false)
-	} else if f.resizeTop || f.resizeBottom || f.resizeLeft || f.resizeRight && !windowSizeFixed(f.client.wm.X(), f.client.win) {
+	if f.resizeBottom || f.resizeLeft || f.resizeRight && !windowSizeFixed(f.client.wm.X(), f.client.win) {
 		deltaX := x - f.resizeStartX
 		deltaY := y - f.resizeStartY
 		x := f.x
-		y := f.y
 		width := int16(f.resizeStartWidth)
 		height := int16(f.resizeStartHeight)
-		if f.resizeTop {
-			y += moveDeltaY
-			height -= deltaY
-		} else if f.resizeBottom {
+		if f.resizeBottom {
 			height += deltaY
 		}
 		if f.resizeLeft {
@@ -488,11 +501,44 @@ func (f *frame) mouseDrag(x, y int16) {
 		if height < 0 {
 			height = 0
 		}
-		f.updateGeometry(x, y, uint16(width), uint16(height), false)
+		f.configureGeometry.Set([]uint16{uint16(x), uint16(f.y), uint16(width), uint16(height), uint16(f.mouseX), uint16(f.mouseY)})
+	} else if f.moveOnly {
+		f.configureGeometry.Set([]uint16{uint16(f.x + moveDeltaX), uint16(f.y + moveDeltaY), uint16(f.width), uint16(f.height), uint16(f.mouseX), uint16(f.mouseY)})
+	}
+}
+
+func (cg *geometryData) Set(geom []uint16) {
+	cg.last = geom
+	old := cg.next
+	cg.next = make(chan struct{})
+	close(old)
+}
+
+func (cg *geometryData) Get() ([]uint16, <-chan struct{}) {
+	last := cg.last
+	next := cg.next
+
+	return last, next
+}
+
+func (f *frame) processConfigureQueue(quitQueue chan string) {
+	geom := []uint16{uint16(f.x), uint16(f.y), f.width, f.height}
+	_, hasNext := f.configureGeometry.Get()
+	for {
+		select {
+		case <-quitQueue:
+			return
+		case <-hasNext:
+			geom, hasNext = f.configureGeometry.Get()
+			f.updateGeometry(int16(geom[0]), int16(geom[1]), uint16(geom[2]), uint16(geom[3]), false)
+			f.lastConfiguredX = int16(geom[4])
+			f.lastConfiguredY = int16(geom[5])
+		}
 	}
 }
 
 func (f *frame) mouseMotion(x, y int16) {
+	titleHeight := x11.TitleHeight(x11.XWin(f.client))
 	relX := x - f.x
 	relY := y - f.y
 
@@ -530,8 +576,10 @@ func (f *frame) mouseMotion(x, y int16) {
 				hov.MouseMoved(&desktop.MouseEvent{})
 			}
 		}
-	} else if !f.client.Maximized() && !f.client.Fullscreened() && !windowSizeFixed(f.client.wm.X(), f.client.win) {
-		cursor = f.lookupResizeCursor(relX, relY)
+	} else if uint16(relY) > titleHeight {
+		if !f.client.Maximized() && !f.client.Fullscreened() && !windowSizeFixed(f.client.wm.X(), f.client.win) {
+			cursor = f.lookupResizeCursor(relX, relY)
+		}
 	}
 
 	if obj == nil && f.hovered != nil {
@@ -551,15 +599,8 @@ func (f *frame) mouseMotion(x, y int16) {
 
 func (f *frame) lookupResizeCursor(x, y int16) xproto.Cursor {
 	cornerSize := x11.ButtonWidth(x11.XWin(f.client))
-	edgeSize := x11.BorderWidth(x11.XWin(f.client))
 
-	if y < int16(x11.TitleHeight(x11.XWin(f.client))) { // top left or right
-		if x < int16(edgeSize) {
-			return x11.ResizeTopLeftCursor
-		} else if x >= int16(f.width-edgeSize) {
-			return x11.ResizeTopRightCursor
-		}
-	} else if y >= int16(f.height-cornerSize) { // bottom
+	if y >= int16(f.height-cornerSize) { // bottom
 		if x < int16(cornerSize) {
 			return x11.ResizeBottomLeftCursor
 		} else if x >= int16(f.width-cornerSize) {
@@ -592,7 +633,6 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 	}
 
 	buttonWidth := x11.ButtonWidth(x11.XWin(f.client))
-	borderWidth := x11.BorderWidth(x11.XWin(f.client))
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
 	f.mouseX = x
 	f.mouseY = y
@@ -606,36 +646,29 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 	f.resizeBottom = false
 	f.resizeLeft = false
 	f.resizeRight = false
-	f.resizeTop = false
 	f.moveOnly = false
 
-	if relY < int16(titleHeight) && relX >= int16(borderWidth) && relX < int16(f.width-borderWidth) {
-		f.moveOnly = true
-	} else if !windowSizeFixed(f.client.wm.X(), f.client.win) {
-		if relY < int16(titleHeight) {
-			if relX < int16(borderWidth) {
-				f.resizeLeft = true
-				f.resizeTop = true
-			} else if relX >= int16(f.width-borderWidth) {
-				f.resizeRight = true
-				f.resizeTop = true
-			}
-		} else {
-			if relY >= int16(f.height-buttonWidth) {
-				f.resizeBottom = true
-			}
-			if relX < int16(buttonWidth) {
-				f.resizeLeft = true
-			} else if relX >= int16(f.width-buttonWidth) {
-				f.resizeRight = true
-			}
+	if relY >= int16(titleHeight) && !windowSizeFixed(f.client.wm.X(), f.client.win) {
+		if relY >= int16(f.height-buttonWidth) {
+			f.resizeBottom = true
 		}
+		if relX < int16(buttonWidth) {
+			f.resizeLeft = true
+		} else if relX >= int16(f.width-buttonWidth) {
+			f.resizeRight = true
+		}
+	} else if relY < int16(titleHeight) {
+		f.moveOnly = true
 	}
 
 	f.client.wm.RaiseToTop(f.client)
 }
 
 func (f *frame) mouseRelease(x, y int16, b xproto.Button) {
+	if f.configureQuitQueue != nil {
+		f.configureQuitQueue <- "stop"
+		f.configureQuitQueue = nil
+	}
 	if b != xproto.ButtonIndex1 {
 		return
 	}
