@@ -14,13 +14,13 @@ type WindowManager interface {
 }
 
 // Stack describes an ordered list of windows.
-// The order of the windows in this list is bottom to top from what is visible on screen.
-// TopWindow() returns the last element in the stack which is the top most window on screen.
+// The order of the windows in this list matches the stacking order on screen.
+// TopWindow() returns the 0th element with each item after that being stacked below the previous.
 type Stack interface {
 	AddWindow(Window)    // Add a new window to the stack
-	RaiseToTop(Window)   // Request that the passed window become top of the stack
+	RaiseToTop(Window)   // Request that the passed window become top of the stack.
 	RemoveWindow(Window) // Remove a specified window from the stack
-	TopWindow() Window   // Get the top most window currently visible
+	TopWindow() Window   // Get the currently top most window
 	Windows() []Window   // Return a list of all managed windows. This should not be modified
 }
 

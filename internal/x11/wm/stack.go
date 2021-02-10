@@ -65,7 +65,11 @@ func (s *stack) TopWindow() fynedesk.Window {
 }
 
 func (s *stack) Windows() []fynedesk.Window {
-	return s.clients
+	var ret []fynedesk.Window
+	for i := len(s.clients) - 1; i >= 0; i-- {
+		ret = append(ret, s.clients[i])
+	}
+	return ret
 }
 
 func (s *stack) addToStack(win fynedesk.Window) {
