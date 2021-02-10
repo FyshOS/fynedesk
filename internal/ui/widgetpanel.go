@@ -16,6 +16,8 @@ import (
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
+const widgetPanelWidth = float32(200)
+
 type widgetRenderer struct {
 	panel *widgetPanel
 	bg    *canvas.Rectangle
@@ -134,16 +136,13 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		closeLabel = "Quit"
 	}
 
-	root := w.desk.(*desktop).root
 	items = append(items, fyne.NewMenuItem(closeLabel, func() {
 		w.desk.WindowManager().Close()
 	}))
 
-	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), root.Canvas())
-
-	bottomLeft := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
-	popup.Resize(fyne.NewSize(from.Size().Width, popup.MinSize().Height))
-	popup.ShowAtPosition(bottomLeft.Subtract(fyne.NewPos(0, popup.MinSize().Height)))
+	winSize := w.desk.(*desktop).root.Canvas().Size()
+	pos := fyne.NewPos(winSize.Width, winSize.Height)
+	w.desk.ShowMenuAt(fyne.NewMenu("Account", items...), pos)
 }
 
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
@@ -177,6 +176,10 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		layout:  layout.NewVBoxLayout(),
 		objects: objects,
 	}
+}
+
+func (w *widgetPanel) MinSize() fyne.Size {
+	return fyne.NewSize(widgetPanelWidth, 200)
 }
 
 func (w *widgetPanel) reloadModules(mods []fynedesk.Module) {

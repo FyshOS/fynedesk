@@ -1,6 +1,10 @@
 package fynedesk
 
-import "image"
+import (
+	"image"
+
+	"fyne.io/fyne/v2"
+)
 
 // WindowManager describes a full window manager which may be loaded as part of the setup.
 type WindowManager interface {
@@ -11,6 +15,7 @@ type WindowManager interface {
 	Capture() image.Image // Capture the contents of the whole desktop to an image
 	Close()
 	Run()
+	ShowMenuOverlay(*fyne.Menu, fyne.Size, fyne.Position)
 }
 
 // Stack describes an ordered list of windows.

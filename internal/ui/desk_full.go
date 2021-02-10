@@ -4,6 +4,7 @@ import (
 	"runtime/debug"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/widget"
 )
 
 func (l *desktop) newDesktopWindowFull() fyne.Window {
@@ -29,4 +30,10 @@ func (l *desktop) runFull() {
 	}()
 
 	l.root.ShowAndRun()
+}
+
+func (l *desktop) showMenuFull(menu *fyne.Menu, pos fyne.Position) {
+	height := widget.NewMenu(menu).MinSize().Height
+	size := fyne.NewSize(widgetPanelWidth, height)
+	l.wm.ShowMenuOverlay(menu, size, pos)
 }

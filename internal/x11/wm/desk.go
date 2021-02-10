@@ -27,6 +27,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/ui"
@@ -52,10 +53,11 @@ type x11WM struct {
 
 	currentBindings []*fynedesk.Shortcut
 
-	died         bool
-	rootID       xproto.Window
-	transientMap map[xproto.Window][]xproto.Window
-	oldRoot      *xgraphics.Image
+	died           bool
+	rootID, menuID xproto.Window
+	menuWin        fyne.Window
+	transientMap   map[xproto.Window][]xproto.Window
+	oldRoot        *xgraphics.Image
 }
 
 type moveResizeType uint32
@@ -91,6 +93,8 @@ const (
 	keyCodeVolumeMute = 121
 	keyCodeVolumeLess = 122
 	keyCodeVolumeMore = 123
+
+	windowNameMenu = "FyneDesk Menu"
 )
 
 // NewX11WindowManager sets up a new X11 Window Manager to control a desktop in X11.
@@ -200,6 +204,36 @@ func (x *x11WM) Conn() *xgb.Conn {
 func (x *x11WM) Run() {
 	x.setupBindings()
 	go x.runLoop()
+}
+
+func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, _ fyne.Position) {
+	// TODO add support for menu position, not needed yet
+	win := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
+	for i, item := range m.Items {
+		if i == 0 {
+			// fix an issue where menu does not resize
+			item.Label = item.Label + "                                           "
+		}
+		action := item.Action
+		item.Action = func() {
+			action()
+			win.Close()
+		}
+	}
+
+	win.SetContent(widget.NewMenu(m))
+
+	win.SetTitle(windowNameMenu)
+	win.SetFixedSize(true)
+	win.Resize(s)
+	win.Content().Resize(s)
+
+	win.SetOnClosed(func() {
+		x.menuID = 0
+		x.menuWin = nil
+	})
+	win.Show()
+	x.menuWin = win
 }
 
 func (x *x11WM) X() *xgbutil.XUtil {
@@ -597,6 +631,24 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 			x.framedExisting = true
 			go x.frameExisting()
 		}
+		return
+	}
+	if name == windowNameMenu {
+		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
+		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
+		x.menuID = win
+		xproto.ChangeWindowAttributes(x.Conn(), win, xproto.CwEventMask, []uint32{xproto.EventMaskLeaveWindow})
+
+		attrs, _ := xproto.GetGeometry(x.Conn(), xproto.Drawable(win)).Reply()
+		w, h := int(attrs.Width), int(attrs.Height)
+
+		mx := fynedesk.Instance().Screens().Primary().Width - w
+		my := fynedesk.Instance().Screens().Primary().Height - h
+		xproto.ConfigureWindowChecked(x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(mx), uint32(my),
+			uint32(w), uint32(h)})
+
+		xproto.MapWindow(x.Conn(), win)
 		return
 	}
 
