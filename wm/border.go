@@ -52,7 +52,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 		win.Iconify()
 	}}
 
-	title := widget.NewLabel(win.Properties().Title())
+	title := canvas.NewText(win.Properties().Title(), theme.ForegroundColor())
 	titleBar := newColoredHBox(win.Focused(), win, makeFiller(0),
 		newCloseButton(win),
 		max,
@@ -77,7 +77,7 @@ type Border struct {
 	widget.BaseWidget
 	content *fyne.Container
 	focused bool
-	title   *widget.Label
+	title   *canvas.Text
 	max     *widget.Button
 	win     fynedesk.Window
 }
@@ -122,14 +122,8 @@ func (c *Border) SetMaximized(isMax bool) {
 
 // SetTitle updates the title portion of this border and refreshes.
 func (c *Border) SetTitle(title string) {
-	c.title.SetText(title)
-}
-
-func (r *coloredBoxRenderer) BackgroundColor() color.Color {
-	if r.b.focused {
-		return theme.BackgroundColor()
-	}
-	return theme.DisabledButtonColor()
+	c.title.Text = title
+	c.title.Refresh()
 }
 
 func newColoredHBox(focused bool, win fynedesk.Window, objs ...fyne.CanvasObject) *Border {
@@ -162,4 +156,12 @@ func (r *coloredBoxRenderer) Objects() []fyne.CanvasObject {
 }
 
 func (r *coloredBoxRenderer) Refresh() {
+	r.b.title.Color = theme.ForegroundColor()
+	r.b.title.Refresh()
+
+	if r.b.focused {
+		r.bg.FillColor = theme.BackgroundColor()
+	}
+	r.bg.FillColor = theme.DisabledButtonColor()
+	r.bg.Refresh()
 }
