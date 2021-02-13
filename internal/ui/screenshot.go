@@ -3,6 +3,7 @@ package ui
 import (
 	"image"
 	"image/png"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -25,28 +26,30 @@ func (l *desktop) screenshotWindow() {
 		return
 	}
 
-	img := win.Capture()
-	if img == nil {
-		return
+	if img := win.Capture(); img != nil {
+		l.showCaptureSave(img)
 	}
-	l.showCaptureSave(img)
 }
 
 func (l *desktop) showCaptureSave(img image.Image) {
 	w := fyne.CurrentApp().NewWindow("Screenshot")
-	save := widget.NewButton("Save...", func() {
-		saveImage(img, w)
-	})
-	save.Importance = widget.HighImportance
+
+	save := &widget.Button{Text: "Save...",
+		Importance: widget.HighImportance,
+		OnTapped: func() {
+			saveImage(img, w)
+		},
+	}
+
 	buttons := container.NewHBox(
 		layout.NewSpacer(),
-		widget.NewButton("Cancel", func() {
-			w.Close()
-		}),
-		save)
+		widget.NewButton("Cancel", w.Close),
+		save,
+	)
 
 	preview := canvas.NewImageFromImage(img)
 	preview.FillMode = canvas.ImageFillContain
+
 	w.SetContent(container.NewBorder(nil, buttons, nil, nil, preview))
 	w.Resize(fyne.NewSize(480, 360))
 	w.Show()
@@ -57,17 +60,31 @@ func saveImage(pix image.Image, w fyne.Window) {
 		if write == nil { // cancelled
 			return
 		}
+
 		if err != nil {
+			dialog.ShowError(err, w)
+		} else if err = png.Encode(write, pix); err != nil {
 			dialog.ShowError(err, w)
 		}
 
-		err = png.Encode(write, pix)
+		err = write.Close()
 		if err != nil {
 			dialog.ShowError(err, w)
 		}
 
 		w.Close()
 	}, w)
+
 	d.SetFilter(storage.NewMimeTypeFileFilter([]string{"image/png"}))
+
+	now := time.Now().Format("20060102T150405") // YYYYMMDD"T"HHMMSS
+	d.SetFileName("screenshot-" + now + ".png")
+
+	if dir, err := getPicturesDir(); err == nil {
+		d.SetLocation(dir)
+	} else {
+		fyne.LogError("error finding pictures dir, falling back to home directory", err)
+	}
+
 	d.Show()
 }
