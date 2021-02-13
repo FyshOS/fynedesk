@@ -3,6 +3,7 @@ package ui
 import (
 	"image"
 	"image/png"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -75,7 +76,9 @@ func saveImage(pix image.Image, w fyne.Window) {
 	}, w)
 
 	d.SetFilter(storage.NewMimeTypeFileFilter([]string{"image/png"}))
-	d.SetFileName("screenshot.png")
+
+	now := time.Now().Format("20060102T150405") // YYYYMMDD"T"HHMMSS
+	d.SetFileName("screenshot-" + now + ".png")
 
 	if dir, err := getPicturesDir(); err == nil {
 		d.SetLocation(dir)
