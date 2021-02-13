@@ -10,7 +10,7 @@
 
 # About
 
-[Fyne](https://fyne.io) is an easy to use UI toolkit and app API written in Go.
+[Fyne](https://fyne.io) is an easy-to-use UI toolkit and app API written in Go.
 It is designed to build applications that run on desktop and mobile devices with a
 single codebase.
 
@@ -42,13 +42,13 @@ To run a showcase of the features of Fyne execute the following:
 And you should see something like this (after you click a few buttons):
 
 <p align="center" markdown="1" style="max-width: 100%">
-  <img src="img/widgets-dark.png" width="752" height="594" alt="Fyne Hello Light Theme" style="max-width: 100%" />
+  <img src="img/widgets-dark.png" width="752" height="617" alt="Fyne Hello Light Theme" style="max-width: 100%" />
 </p>
 
 Or if you are using the light theme:
 
 <p align="center" markdown="1" style="max-width: 100%">
-  <img src="img/widgets-light.png" width="752" height="594" alt="Fyne Hello Light Theme" style="max-width: 100%" />
+  <img src="img/widgets-light.png" width="752" height="617" alt="Fyne Hello Light Theme" style="max-width: 100%" />
 </p>
 
 # Getting Started
