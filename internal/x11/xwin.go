@@ -24,7 +24,7 @@ type XWin interface {
 	SettingsChanged()
 
 	NotifyBorderChange()
-	NotifyGeometry(int, int, uint, uint)
+	NotifyGeometry(int, int, uint, uint, bool)
 	NotifyMoveResizeEnded()
 
 	NotifyMaximize()

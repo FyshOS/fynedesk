@@ -280,7 +280,8 @@ func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
 		c.Refresh()
 	case "WM_NORMAL_HINTS":
 		// Force a reconfigure to make sure the client is constrained to the new size hints
-		c.NotifyGeometry(c.Geometry())
+		x, y, w, h := c.Geometry()
+		c.NotifyGeometry(x, y, w, h, false)
 	case "_MOTIF_WM_HINTS":
 		c.NotifyBorderChange()
 	}
@@ -402,5 +403,5 @@ func (x *x11WM) moveResize(moveX, moveY int16, c x11.XWin) {
 	}
 	x.moveResizingLastX = moveX
 	x.moveResizingLastY = moveY
-	c.NotifyGeometry(x.moveResizingX, x.moveResizingY, uint(w), uint(h))
+	c.NotifyGeometry(x.moveResizingX, x.moveResizingY, uint(w), uint(h), true)
 }

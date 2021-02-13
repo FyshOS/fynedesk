@@ -184,8 +184,12 @@ func (c *client) NotifyBorderChange() {
 	}
 }
 
-func (c *client) NotifyGeometry(x int, y int, width uint, height uint) {
-	c.frame.queueGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
+func (c *client) NotifyGeometry(x int, y int, width uint, height uint, queue bool) {
+	if queue {
+		c.frame.queueGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
+		return
+	}
+	c.frame.updateGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
 }
 
 func (c *client) NotifyFullscreen() {

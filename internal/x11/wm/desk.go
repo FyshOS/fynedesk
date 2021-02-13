@@ -446,16 +446,16 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 
 			if c.Properties().Decorated() {
 				if !c.Fullscreened() {
-					c.NotifyGeometry(x, y, uint(ev.Width+(borderWidth*2)), uint(ev.Height+borderWidth+titleHeight))
+					c.NotifyGeometry(x, y, uint(ev.Width+(borderWidth*2)), uint(ev.Height+borderWidth+titleHeight), false)
 				} else {
-					c.NotifyGeometry(x, y, uint(ev.Width), uint(ev.Height))
+					c.NotifyGeometry(x, y, uint(ev.Width), uint(ev.Height), false)
 				}
 			} else {
 				if ev.X == 0 && ev.Y == 0 {
 					ev.X = int16(x)
 					ev.Y = int16(y)
 				}
-				c.NotifyGeometry(int(ev.X), int(ev.Y), uint(ev.Width), uint(ev.Height))
+				c.NotifyGeometry(int(ev.X), int(ev.Y), uint(ev.Width), uint(ev.Height), false)
 			}
 		}
 		return
