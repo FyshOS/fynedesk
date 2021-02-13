@@ -42,6 +42,8 @@ type x11WM struct {
 	x                       *xgbutil.XUtil
 	framedExisting          bool
 	moveResizing            bool
+	moveResizingX           int
+	moveResizingY           int
 	moveResizingStartX      int16
 	moveResizingStartY      int16
 	moveResizingLastX       int16

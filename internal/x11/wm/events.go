@@ -257,12 +257,12 @@ func (x *x11WM) handleMoveResize(ev xproto.ClientMessageEvent, c x11.XWin) {
 	x.moveResizingLastY = int16(ev.Data.Data32[1])
 	x.moveResizingStartX = x.moveResizingLastX
 	x.moveResizingStartY = x.moveResizingLastY
-	_, _, x.moveResizingStartWidth, x.moveResizingStartHeight = c.Geometry()
+	x.moveResizingX, x.moveResizingY, x.moveResizingStartWidth, x.moveResizingStartHeight = c.Geometry()
 	x.moveResizingType = moveResizeType(ev.Data.Data32[2])
-	xproto.GrabPointer(x.x.Conn(), true, c.FrameID(),
+	xproto.GrabPointer(x.x.Conn(), false, c.FrameID(),
 		xproto.EventMaskButtonPress|xproto.EventMaskButtonRelease|xproto.EventMaskPointerMotion,
 		xproto.GrabModeAsync, xproto.GrabModeAsync, x.x.RootWin(), xproto.CursorNone, xproto.TimeCurrentTime)
-	xproto.GrabKeyboard(x.x.Conn(), true, c.FrameID(), xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
+	xproto.GrabKeyboard(x.x.Conn(), false, c.FrameID(), xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
 }
 
 func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
@@ -348,7 +348,7 @@ func (x *x11WM) moveResizeEnd(c x11.XWin) {
 }
 
 func (x *x11WM) moveResize(moveX, moveY int16, c x11.XWin) {
-	xcoord, ycoord, width, height := c.Geometry()
+	_, _, width, height := c.Geometry()
 	w := int16(width)
 	h := int16(height)
 	deltaW := moveX - x.moveResizingLastX
@@ -359,18 +359,18 @@ func (x *x11WM) moveResize(moveX, moveY int16, c x11.XWin) {
 	switch x.moveResizingType {
 	case moveResizeTopLeft:
 		//Move both X,Y coords and resize both W,H
-		xcoord += int(deltaW)
-		ycoord += int(deltaH)
+		x.moveResizingX += int(deltaW)
+		x.moveResizingY += int(deltaH)
 
 		w = int16(x.moveResizingStartWidth) - deltaX
 		h = int16(x.moveResizingStartHeight) - deltaY
 	case moveResizeTop:
 		//Move Y coord and resize H
-		ycoord += int(deltaH)
+		x.moveResizingY += int(deltaH)
 		h = int16(x.moveResizingStartHeight) - deltaY
 	case moveResizeTopRight:
 		//Move Y coord and resize both W,H
-		ycoord += int(deltaH)
+		x.moveResizingY += int(deltaH)
 		w = int16(x.moveResizingStartWidth) + deltaX
 		h = int16(x.moveResizingStartHeight) - deltaY
 	case moveResizeRight:
@@ -385,21 +385,22 @@ func (x *x11WM) moveResize(moveX, moveY int16, c x11.XWin) {
 		h = int16(x.moveResizingStartHeight) + deltaY
 	case moveResizeBottomLeft:
 		//Move X coord and resize both W,H
-		xcoord += int(deltaW)
+		x.moveResizingX += int(deltaW)
 		w = int16(x.moveResizingStartWidth) - deltaX
 		h = int16(x.moveResizingStartHeight) + deltaY
 	case moveResizeLeft:
 		//Move X coord and resize W
-		xcoord += int(deltaW)
+		x.moveResizingX += int(deltaW)
 		w = int16(x.moveResizingStartWidth) - deltaX
 	case moveResizeMove, moveResizeMoveKeyboard:
 		//Move both X,Y coords and no resize
-		xcoord += int(deltaW)
-		ycoord += int(deltaH)
+		x.moveResizingX += int(deltaW)
+		x.moveResizingY += int(deltaH)
 	case moveResizeCancel:
 		x.moveResizeEnd(c)
+		return
 	}
 	x.moveResizingLastX = moveX
 	x.moveResizingLastY = moveY
-	c.NotifyGeometry(xcoord, ycoord, uint(w), uint(h))
+	c.NotifyGeometry(x.moveResizingX, x.moveResizingY, uint(w), uint(h))
 }

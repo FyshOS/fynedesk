@@ -30,6 +30,7 @@ type frame struct {
 	childWidth, childHeight             uint16
 	resizeStartWidth, resizeStartHeight uint16
 	mouseX, mouseY                      int16
+	moveX, moveY                        int16
 	resizeStartX, resizeStartY          int16
 	resizeBottom, resizeTop             bool
 	resizeLeft, resizeRight             bool
@@ -42,8 +43,17 @@ type frame struct {
 	clickCount int
 	cancelFunc context.CancelFunc
 
+	configureChan     chan configureGeometry
+	configureQuitChan chan struct{}
+
 	canvas test.WindowlessCanvas
 	client *client
+}
+
+type configureGeometry struct {
+	x, y          int16
+	width, height uint16
+	force         bool
 }
 
 func newFrame(c *client) *frame {
@@ -217,6 +227,36 @@ func (f *frame) checkScale() {
 	if f.height-titleHeight-borderWidth != f.childHeight {
 		f.updateGeometry(f.x, f.y, f.width, f.height, true)
 		f.notifyInnerGeometry()
+	}
+}
+
+func (f *frame) configureLoop() {
+	var lastGeometry configureGeometry
+	var change = false
+	for {
+		select {
+		case g := <-f.configureChan:
+			lastGeometry = g
+			change = true
+		case <-f.configureQuitChan:
+			return
+		default:
+			if change && f.configureChan != nil {
+				if lastGeometry.x != 0 && lastGeometry.y != 0 && lastGeometry.width != 0 && lastGeometry.height != 0 {
+					f.updateGeometry(lastGeometry.x, lastGeometry.y, lastGeometry.width, lastGeometry.height, lastGeometry.force)
+					change = false
+				}
+			}
+		}
+	}
+}
+
+func (f *frame) closeQueueGeometry() {
+	if f.configureChan != nil {
+		close(f.configureChan)
+		f.configureQuitChan <- struct{}{}
+		f.configureChan = nil
+		f.configureQuitChan = nil
 	}
 }
 
@@ -460,22 +500,23 @@ func (f *frame) mouseDrag(x, y int16) {
 	}
 
 	if f.moveOnly {
-		f.updateGeometry(f.x+moveDeltaX, f.y+moveDeltaY, f.width, f.height, false)
-	} else if f.resizeTop || f.resizeBottom || f.resizeLeft || f.resizeRight && !windowSizeFixed(f.client.wm.X(), f.client.win) {
+		f.moveX += moveDeltaX
+		f.moveY += moveDeltaY
+		f.queueGeometry(f.moveX, f.moveY, f.width, f.height, false)
+	}
+	if f.resizeTop || f.resizeBottom || f.resizeLeft || f.resizeRight && !windowSizeFixed(f.client.wm.X(), f.client.win) {
 		deltaX := x - f.resizeStartX
 		deltaY := y - f.resizeStartY
-		x := f.x
-		y := f.y
 		width := int16(f.resizeStartWidth)
 		height := int16(f.resizeStartHeight)
 		if f.resizeTop {
-			y += moveDeltaY
+			f.moveY += moveDeltaY
 			height -= deltaY
 		} else if f.resizeBottom {
 			height += deltaY
 		}
 		if f.resizeLeft {
-			x += moveDeltaX
+			f.moveX += moveDeltaX
 			width -= deltaX
 		} else if f.resizeRight {
 			width += deltaX
@@ -488,7 +529,7 @@ func (f *frame) mouseDrag(x, y int16) {
 		if height < 0 {
 			height = 0
 		}
-		f.updateGeometry(x, y, uint16(width), uint16(height), false)
+		f.queueGeometry(f.moveX, f.moveY, uint16(width), uint16(height), false)
 	}
 }
 
@@ -601,6 +642,8 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 
 	relX := x - f.x
 	relY := y - f.y
+	f.moveX = f.x
+	f.moveY = f.y
 	f.resizeStartWidth = f.width
 	f.resizeStartHeight = f.height
 	f.resizeBottom = false
@@ -636,6 +679,7 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 }
 
 func (f *frame) mouseRelease(x, y int16, b xproto.Button) {
+	f.closeQueueGeometry()
 	if b != xproto.ButtonIndex1 {
 		return
 	}
@@ -754,6 +798,15 @@ func (f *frame) unmaximizeApply() {
 	f.updateGeometry(f.client.restoreX, f.client.restoreY, f.client.restoreWidth, f.client.restoreHeight, true)
 	f.notifyInnerGeometry()
 	f.applyTheme(true)
+}
+
+func (f *frame) queueGeometry(x int16, y int16, width uint16, height uint16, force bool) {
+	if f.configureChan == nil {
+		f.configureChan = make(chan configureGeometry, 5)
+		f.configureQuitChan = make(chan struct{})
+		go f.configureLoop()
+	}
+	f.configureChan <- configureGeometry{x, y, width, height, force}
 }
 
 func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {

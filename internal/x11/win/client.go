@@ -185,7 +185,7 @@ func (c *client) NotifyBorderChange() {
 }
 
 func (c *client) NotifyGeometry(x int, y int, width uint, height uint) {
-	c.frame.updateGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
+	c.frame.queueGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
 }
 
 func (c *client) NotifyFullscreen() {
@@ -224,6 +224,7 @@ func (c *client) NotifyMouseRelease(x, y int16, b xproto.Button) {
 }
 
 func (c *client) NotifyMoveResizeEnded() {
+	c.frame.closeQueueGeometry()
 	c.frame.notifyInnerGeometry()
 }
 
