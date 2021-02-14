@@ -1,6 +1,10 @@
 package status
 
 import (
+	"fmt"
+	"strconv"
+	"strings"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
@@ -24,6 +28,35 @@ type sound struct {
 
 func newSound() fynedesk.Module {
 	return &sound{}
+}
+
+func (b *sound) LaunchSuggestions(input string) []fynedesk.LaunchSuggestion {
+	lower := strings.ToLower(input)
+	matches := false
+	val := lower
+	if startsWith(lower, "volume ") {
+		matches = true
+		if len(lower) > 7 {
+			val = lower[7:]
+		} else {
+			val = ""
+		}
+	} else if startsWith(lower, "vol ") {
+		matches = true
+		if len(lower) > 4 {
+			val = lower[4:]
+		} else {
+			val = ""
+		}
+	} else if startsWith(lower, "mute") || startsWith(lower, "unmute") {
+		matches = true
+	}
+
+	if matches {
+		return []fynedesk.LaunchSuggestion{&volItem{input: val, s: b}}
+	}
+
+	return nil
 }
 
 func (b *sound) Shortcuts() map[*fynedesk.Shortcut]func() {
@@ -87,4 +120,58 @@ func (b *sound) offsetValue(diff int) {
 	}
 
 	b.setValue(value)
+}
+
+type volItem struct {
+	input string
+	s     *sound
+}
+
+func (i *volItem) Icon() fyne.Resource {
+	return wmtheme.SoundIcon
+}
+
+func (i *volItem) Title() string {
+	if startsWith(i.input, "up") {
+		return "Volume up"
+	} else if startsWith(i.input, "down") {
+		return "Volume down"
+	} else if val, err := strconv.Atoi(i.input); err == nil {
+		return fmt.Sprintf("Volume %d%%", val)
+	}
+
+	if i.s.muted() {
+		return "Unmute volume"
+	}
+	return "Mute volume"
+}
+
+func (i *volItem) Launch() {
+	if startsWith(i.input, "up") {
+		i.s.offsetValue(5)
+	} else if startsWith(i.input, "down") {
+		i.s.offsetValue(-5)
+	} else if val, err := strconv.Atoi(i.input); err == nil {
+		if val < 0 {
+			val = 0
+		} else if val > 100 {
+			val = 100
+		}
+		i.s.setValue(val)
+	}
+
+	i.s.toggleMute()
+}
+
+func startsWith(haystack, needle string) bool {
+	if haystack == "" {
+		return false
+	}
+	if haystack == needle {
+		return true
+	}
+	if len(haystack) < len(needle) {
+		return haystack == needle[:len(haystack)]
+	}
+	return strings.IndexAny(haystack, needle) == 0
 }
