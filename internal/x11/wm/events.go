@@ -4,6 +4,7 @@ package wm
 
 import (
 	"fyne.io/fyne/v2"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
@@ -165,11 +166,14 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 }
 
 func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
-	super := ev.State&xproto.ModMask4 != 0
+	userMod := ev.State&xproto.ModMask4 != 0
+	if fynedesk.Instance().Settings().KeyboardModifier() == deskDriver.AltModifier {
+		userMod = ev.State&xproto.ModMask1 != 0
+	}
 	ctrl := ev.State&xproto.ModMaskControl != 0
 	shift := ev.State&xproto.ModMaskShift != 0
 
-	if super && !ctrl {
+	if userMod && !ctrl {
 		// These methods are about app switcher, we don't want them overridden!
 		// Apart from Tab they will only be called once the keyboard grab is in effect.
 		if ev.Detail == keyCodeTab {
@@ -204,7 +208,11 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 }
 
 func (x *x11WM) handleKeyRelease(ev xproto.KeyReleaseEvent) {
-	if ev.Detail == keyCodeSuper {
+	userMod := keyCodeSuper
+	if fynedesk.Instance().Settings().KeyboardModifier() == deskDriver.AltModifier {
+		userMod = keyCodeAlt
+	}
+	if ev.Detail == xproto.Keycode(userMod) {
 		x.applyAppSwitcher()
 	}
 }

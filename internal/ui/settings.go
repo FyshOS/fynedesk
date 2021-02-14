@@ -6,6 +6,7 @@ import (
 	"sync"
 
 	"fyne.io/fyne/v2"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 
 	"fyne.io/fynedesk"
 )
@@ -20,6 +21,7 @@ type deskSettings struct {
 	launcherZoomScale      float32
 	clockFormatting        string
 
+	modifier    deskDriver.Modifier
 	moduleNames []string
 
 	listenerLock    sync.Mutex
@@ -52,6 +54,10 @@ func (d *deskSettings) LauncherDisableZoom() bool {
 
 func (d *deskSettings) LauncherZoomScale() float32 {
 	return d.launcherZoomScale
+}
+
+func (d *deskSettings) KeyboardModifier() deskDriver.Modifier {
+	return d.modifier
 }
 
 func (d *deskSettings) ModuleNames() []string {
@@ -135,6 +141,12 @@ func (d *deskSettings) setLauncherZoomScale(scale float32) {
 	d.apply()
 }
 
+func (d *deskSettings) setKeyboardModifier(mod deskDriver.Modifier) {
+	d.modifier = mod
+	fyne.CurrentApp().Preferences().SetInt("keyboardmodifier", int(d.modifier))
+	d.apply()
+}
+
 func (d *deskSettings) setModuleNames(names []string) {
 	newModuleNames := strings.Join(names, "|")
 	d.moduleNames = names
@@ -194,6 +206,7 @@ func (d *deskSettings) load() {
 	if moduleNames != "" {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
+	d.modifier = deskDriver.Modifier(fyne.CurrentApp().Preferences().Int("keyboardmodifier"))
 
 	d.clockFormatting = fyne.CurrentApp().Preferences().StringWithFallback("clockformatting", "12h")
 }
