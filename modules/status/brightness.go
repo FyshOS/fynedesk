@@ -72,6 +72,10 @@ func (b *brightness) setValue(value int) {
 }
 
 func (b *brightness) LaunchSuggestions(input string) []fynedesk.LaunchSuggestion {
+	if _, err := b.value(); err != nil {
+		return nil // don't load if not present
+	}
+
 	lower := strings.ToLower(input)
 	matches := false
 	val := lower
