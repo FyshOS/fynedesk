@@ -18,6 +18,11 @@ func (b *sound) Destroy() {
 	b.client.Close()
 }
 
+func (b *sound) muted() bool {
+	m, _ := b.client.Mute()
+	return m
+}
+
 func (b *sound) value() (int, error) {
 	volume, err := b.client.Volume()
 	if err != nil {

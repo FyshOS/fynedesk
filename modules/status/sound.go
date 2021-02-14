@@ -49,6 +49,9 @@ func (b *sound) StatusAreaWidget() fyne.CanvasObject {
 
 	b.bar = &widget.ProgressBar{Max: 100}
 	b.mute = &widget.Button{Icon: wmtheme.SoundIcon, Importance: widget.LowImportance, OnTapped: b.toggleMute}
+	if b.muted() {
+		b.mute.SetIcon(wmtheme.MuteIcon)
+	}
 
 	less := &widget.Button{Icon: theme.ContentRemoveIcon(), Importance: widget.LowImportance, OnTapped: func() {
 		b.offsetValue(-5)
