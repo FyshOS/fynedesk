@@ -79,8 +79,8 @@ const (
 	keyCodeEscape      = 9
 	keyCodeTab         = 23
 	keyCodeReturn      = 36
-	keyCodeAlt         = 64
 	keyCodeSpace       = 65
+	keyCodeSuper       = 133
 	keyCodePrintScreen = 107
 
 	keyCodeEnter = 108
@@ -304,6 +304,9 @@ func (x *x11WM) modifierToKeyMask(m deskDriver.Modifier) uint16 {
 	}
 	if m&deskDriver.ShiftModifier != 0 {
 		mask |= xproto.ModMaskShift
+	}
+	if m&deskDriver.SuperModifier != 0 {
+		mask |= xproto.ModMask4
 	}
 
 	if mask == 0 {

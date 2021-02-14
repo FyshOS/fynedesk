@@ -10,7 +10,7 @@ import (
 )
 
 // switcherInstance and the methods below manage the X to ui.Switcher bindings.
-// This is needed due to the way that releasing Alt is only reported if we grab the whole keyboard.
+// This is needed due to the way that releasing Super is only reported if we grab the whole keyboard.
 // Therefore the UI cannot handle keyboard input - so we add it here instead.
 var switcherInstance *ui.Switcher
 
