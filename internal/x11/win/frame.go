@@ -484,7 +484,7 @@ func (f *frame) maximizeApply() {
 }
 
 func (f *frame) mouseDrag(x, y int16) {
-	if f.client.Maximized() || f.client.Fullscreened() {
+	if f.client.Fullscreened() {
 		return
 	}
 	moveDeltaX := x - f.mouseX
@@ -492,6 +492,13 @@ func (f *frame) mouseDrag(x, y int16) {
 	f.mouseX = x
 	f.mouseY = y
 	if moveDeltaX == 0 && moveDeltaY == 0 {
+		return
+	}
+	if f.client.Maximized() {
+		if uint16(moveDeltaX) > x11.ButtonWidth(x11.XWin(f.client)) ||
+			uint16(moveDeltaY) > x11.TitleHeight(x11.XWin(f.client)) {
+			f.client.Unmaximize()
+		}
 		return
 	}
 
@@ -675,7 +682,6 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 }
 
 func (f *frame) mouseRelease(x, y int16, b xproto.Button) {
-	f.endConfigureLoop()
 	if b != xproto.ButtonIndex1 {
 		return
 	}
