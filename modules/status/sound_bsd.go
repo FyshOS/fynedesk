@@ -70,12 +70,6 @@ func (b *sound) setValue(vol int) {
 }
 
 func (b *sound) toggleMute() {
-	oldVal, err := b.value()
-	if err != nil {
-		fyne.LogError("toggleMute() failed", err)
-		return
-	}
-
 	if !muted {
 		b.setValue(0)
 	} else {
