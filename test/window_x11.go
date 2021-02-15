@@ -30,7 +30,7 @@ func (w *Window) NotifyBorderChange() {
 }
 
 // NotifyGeometry is called when the window is instructed to change it's geometry
-func (w *Window) NotifyGeometry(int, int, uint, uint, bool) {
+func (w *Window) NotifyGeometry(int, int, uint, uint) {
 	// no-op
 }
 
