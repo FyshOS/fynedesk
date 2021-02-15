@@ -43,8 +43,7 @@ type frame struct {
 	clickCount int
 	cancelFunc context.CancelFunc
 
-	configureChan     chan configureGeometry
-	configureQuitChan chan struct{}
+	pendingGeometry chan *configureGeometry
 
 	canvas test.WindowlessCanvas
 	client *client
@@ -231,32 +230,29 @@ func (f *frame) checkScale() {
 }
 
 func (f *frame) configureLoop() {
-	var lastGeometry configureGeometry
+	var lastGeometry *configureGeometry
 	var change = false
 	for {
 		select {
-		case g := <-f.configureChan:
+		case g, ok := <-f.pendingGeometry:
+			if g == nil || !ok {
+				f.pendingGeometry = nil
+				return
+			}
 			lastGeometry = g
 			change = true
-		case <-f.configureQuitChan:
-			return
 		default:
-			if change && f.configureChan != nil {
-				if lastGeometry.x != 0 && lastGeometry.y != 0 && lastGeometry.width != 0 && lastGeometry.height != 0 {
-					f.updateGeometry(lastGeometry.x, lastGeometry.y, lastGeometry.width, lastGeometry.height, lastGeometry.force)
-					change = false
-				}
+			if change && lastGeometry != nil {
+				f.updateGeometry(lastGeometry.x, lastGeometry.y, lastGeometry.width, lastGeometry.height, lastGeometry.force)
+				change = false
 			}
 		}
 	}
 }
 
-func (f *frame) closeQueueGeometry() {
-	if f.configureChan != nil {
-		close(f.configureChan)
-		f.configureQuitChan <- struct{}{}
-		f.configureChan = nil
-		f.configureQuitChan = nil
+func (f *frame) endConfigureLoop() {
+	if f.pendingGeometry != nil {
+		close(f.pendingGeometry)
 	}
 }
 
@@ -679,7 +675,7 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 }
 
 func (f *frame) mouseRelease(x, y int16, b xproto.Button) {
-	f.closeQueueGeometry()
+	f.endConfigureLoop()
 	if b != xproto.ButtonIndex1 {
 		return
 	}
@@ -801,12 +797,11 @@ func (f *frame) unmaximizeApply() {
 }
 
 func (f *frame) queueGeometry(x int16, y int16, width uint16, height uint16, force bool) {
-	if f.configureChan == nil {
-		f.configureChan = make(chan configureGeometry, 5)
-		f.configureQuitChan = make(chan struct{})
+	if f.pendingGeometry == nil {
+		f.pendingGeometry = make(chan *configureGeometry, 5)
 		go f.configureLoop()
 	}
-	f.configureChan <- configureGeometry{x, y, width, height, force}
+	f.pendingGeometry <- &configureGeometry{x, y, width, height, force}
 }
 
 func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {

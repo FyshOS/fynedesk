@@ -184,11 +184,7 @@ func (c *client) NotifyBorderChange() {
 	}
 }
 
-func (c *client) NotifyGeometry(x int, y int, width uint, height uint, queue bool) {
-	if queue {
-		c.frame.queueGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
-		return
-	}
+func (c *client) NotifyGeometry(x int, y int, width uint, height uint) {
 	c.frame.updateGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
 }
 
@@ -228,7 +224,7 @@ func (c *client) NotifyMouseRelease(x, y int16, b xproto.Button) {
 }
 
 func (c *client) NotifyMoveResizeEnded() {
-	c.frame.closeQueueGeometry()
+	c.frame.endConfigureLoop()
 	c.frame.notifyInnerGeometry()
 }
 
@@ -254,6 +250,10 @@ func (c *client) NotifyUnMaximize() {
 	c.frame.unmaximizeApply()
 	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_MAXIMIZED_VERT")
 	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
+}
+
+func (c *client) QueueMoveResizeGeometry(x int, y int, width uint, height uint) {
+	c.frame.queueGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
 }
 
 func (c *client) RaiseAbove(win fynedesk.Window) {

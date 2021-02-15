@@ -24,7 +24,7 @@ type XWin interface {
 	SettingsChanged()
 
 	NotifyBorderChange()
-	NotifyGeometry(int, int, uint, uint, bool)
+	NotifyGeometry(int, int, uint, uint)
 	NotifyMoveResizeEnded()
 
 	NotifyMaximize()
@@ -38,4 +38,6 @@ type XWin interface {
 	NotifyMouseMotion(int16, int16)
 	NotifyMousePress(int16, int16, xproto.Button)
 	NotifyMouseRelease(int16, int16, xproto.Button)
+
+	QueueMoveResizeGeometry(int, int, uint, uint)
 }
