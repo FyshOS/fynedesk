@@ -4,6 +4,7 @@ package wm
 
 import (
 	"github.com/BurntSushi/xgb/xproto"
+	"github.com/BurntSushi/xgbutil/ewmh"
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/x11"
@@ -50,6 +51,11 @@ func (s *stack) RemoveWindow(win fynedesk.Window) {
 
 	if s.TopWindow() != nil {
 		s.TopWindow().Focus()
+	} else {
+		// focus root
+		if wm := fynedesk.Instance().WindowManager().(*x11WM); wm.X() != nil {
+			ewmh.ActiveWindowReq(wm.X(), wm.rootID)
+		}
 	}
 
 	for _, l := range s.listeners {
