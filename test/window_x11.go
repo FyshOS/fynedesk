@@ -89,6 +89,11 @@ func (w *Window) NotifyMouseRelease(int16, int16, xproto.Button) {
 	// no-op
 }
 
+// QueueMoveResizeGeometry is called when a MoveResize event reports new geometry
+func (w *Window) QueueMoveResizeGeometry(int, int, uint, uint) {
+	// no-op
+}
+
 // Refresh is called when the window should update with new border state
 func (w *Window) Refresh() {
 	// no-op

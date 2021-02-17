@@ -38,4 +38,6 @@ type XWin interface {
 	NotifyMouseMotion(int16, int16)
 	NotifyMousePress(int16, int16, xproto.Button)
 	NotifyMouseRelease(int16, int16, xproto.Button)
+
+	QueueMoveResizeGeometry(int, int, uint, uint)
 }
