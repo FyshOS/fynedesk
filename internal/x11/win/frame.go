@@ -490,13 +490,11 @@ func (f *frame) mouseDrag(x, y int16) {
 	}
 	moveDeltaX := x - f.mouseX
 	moveDeltaY := y - f.mouseY
-	f.mouseX = x
-	f.mouseY = y
 	if moveDeltaX == 0 && moveDeltaY == 0 {
 		return
 	}
 	if f.client.Maximized() {
-		if uint16(moveDeltaX) > x11.ButtonWidth(x11.XWin(f.client)) ||
+		if uint16(moveDeltaX) > x11.TitleHeight(x11.XWin(f.client)) ||
 			uint16(moveDeltaY) > x11.TitleHeight(x11.XWin(f.client)) {
 			diff := f.mouseX - f.x
 			scale := float64(f.client.restoreWidth) / float64(f.width)
@@ -510,6 +508,8 @@ func (f *frame) mouseDrag(x, y int16) {
 		}
 		return
 	}
+	f.mouseX = x
+	f.mouseY = y
 
 	if f.moveOnly {
 		f.moveX += moveDeltaX
@@ -640,7 +640,7 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 		f.client.Focus()
 		return
 	}
-	if f.client.Maximized() || f.client.Fullscreened() {
+	if f.client.Fullscreened() {
 		return
 	}
 
@@ -666,7 +666,7 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 
 	if relY < int16(titleHeight) && relX >= int16(borderWidth) && relX < int16(f.width-borderWidth) {
 		f.moveOnly = true
-	} else if !windowSizeFixed(f.client.wm.X(), f.client.win) {
+	} else if !windowSizeFixed(f.client.wm.X(), f.client.win) && !f.client.Maximized() {
 		if relY < int16(titleHeight) {
 			if relX < int16(borderWidth) {
 				f.resizeLeft = true
