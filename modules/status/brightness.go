@@ -52,6 +52,10 @@ func (b *brightness) offsetValue(diff int) {
 	floatVal, _ := b.value()
 	value := int(floatVal*100) + diff
 
+	b.setValue(value)
+}
+
+func (b *brightness) setValue(value int) {
 	if value < 5 {
 		value = 5
 	} else if value > 100 {
@@ -65,6 +69,44 @@ func (b *brightness) offsetValue(diff int) {
 		newVal, _ := b.value()
 		b.bar.SetValue(newVal)
 	}
+}
+
+func (b *brightness) LaunchSuggestions(input string) []fynedesk.LaunchSuggestion {
+	if _, err := b.value(); err != nil {
+		return nil // don't load if not present
+	}
+
+	lower := strings.ToLower(input)
+	matches := false
+	val := lower
+	if startsWith(lower, "brightness ") {
+		matches = true
+		if len(lower) > 11 {
+			val = lower[11:]
+		} else {
+			val = ""
+		}
+	} else if startsWith(lower, "bright ") {
+		matches = true
+		if len(lower) > 7 {
+			val = lower[7:]
+		} else {
+			val = ""
+		}
+	} else if startsWith(lower, "backlight ") {
+		matches = true
+		if len(lower) > 10 {
+			val = lower[10:]
+		} else {
+			val = ""
+		}
+	}
+
+	if matches {
+		return []fynedesk.LaunchSuggestion{&brightItem{input: val, b: b}}
+	}
+
+	return nil
 }
 
 func (b *brightness) Metadata() fynedesk.ModuleMetadata {
@@ -110,4 +152,33 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 // newBrightness creates a new module that will show screen brightness in the status area
 func newBrightness() fynedesk.Module {
 	return &brightness{}
+}
+
+type brightItem struct {
+	input string
+	b     *brightness
+}
+
+func (i *brightItem) Icon() fyne.Resource {
+	return wmtheme.BrightnessIcon
+}
+
+func (i *brightItem) Title() string {
+	if startsWith(i.input, "down") {
+		return "Brightness down"
+	} else if val, err := strconv.Atoi(i.input); err == nil {
+		return fmt.Sprintf("Brightness %d%%", val)
+	}
+
+	return "Brightness up"
+}
+
+func (i *brightItem) Launch() {
+	if startsWith(i.input, "down") {
+		i.b.offsetValue(-5)
+	} else if val, err := strconv.Atoi(i.input); err == nil {
+		i.b.setValue(val)
+	}
+
+	i.b.offsetValue(5)
 }

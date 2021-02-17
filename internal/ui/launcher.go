@@ -78,22 +78,20 @@ func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 	var appList []fyne.CanvasObject
 
 	dataRange := l.desk.IconProvider().FindAppsMatching(input)
-	for i, data := range dataRange {
+	for _, data := range dataRange {
 		appData := data // capture for goroutine below
 		app := widget.NewButtonWithIcon(appData.Name(), wmTheme.BrokenImageIcon, func() {
 			l.callback(appData)
 			l.win.Close()
 		})
 
-		if i == 0 {
-			app.Importance = widget.HighImportance
-		}
 		appList = append(appList, app)
 	}
 	go l.loadIcons(dataRange, appList)
 
-	if len(appList) == 0 && l.showMods {
-		return l.loadSuggestionsMatching(input)
+	appList = append(appList, l.loadSuggestionsMatching(input)...)
+	if len(appList) > 0 {
+		appList[0].(*widget.Button).Importance = widget.HighImportance
 	}
 
 	return appList
@@ -118,16 +116,13 @@ func (l *picker) loadSuggestionsMatching(input string) []fyne.CanvasObject {
 			continue
 		}
 
-		for i, item := range suggest.LaunchSuggestions(input) {
+		for _, item := range suggest.LaunchSuggestions(input) {
 			launchData := item // capture for goroutine below
 			button := widget.NewButtonWithIcon(item.Title(), item.Icon(), func() {
 				l.win.Close()
 				launchData.Launch()
 			})
 
-			if i == 0 {
-				button.Importance = widget.HighImportance
-			}
 			suggestList = append(suggestList, button)
 		}
 	}

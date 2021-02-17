@@ -13,7 +13,10 @@ import (
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
-var volume int
+var (
+	muted  bool
+	volume int
+)
 
 // Destroy tidies up resources
 func (b *sound) Destroy() {
@@ -21,6 +24,10 @@ func (b *sound) Destroy() {
 		return
 	}
 	b.client.Close()
+}
+
+func (b *sound) muted() bool {
+	return muted
 }
 
 func (b *sound) value() (int, error) {
@@ -39,6 +46,7 @@ func (b *sound) value() (int, error) {
 func (b *sound) setup() error {
 	_, err := b.value()
 	if volume == 0 {
+		muted = true
 		volume = 75 // we loaded in mute mode perhapse
 	}
 	return err
@@ -62,16 +70,10 @@ func (b *sound) setValue(vol int) {
 }
 
 func (b *sound) toggleMute() {
-	oldVal, err := b.value()
-	if err != nil {
-		fyne.LogError("toggleMute() failed", err)
-		return
-	}
-
-	mute := oldVal != 0
-	if mute {
+	if !muted {
 		b.setValue(0)
 	} else {
 		b.setValue(volume)
 	}
+	muted = !muted
 }
