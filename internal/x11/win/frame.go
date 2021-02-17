@@ -797,7 +797,7 @@ func (f *frame) unmaximizeApply() {
 
 func (f *frame) queueGeometry(x int16, y int16, width uint16, height uint16, force bool) {
 	if f.pendingGeometry == nil {
-		f.pendingGeometry = make(chan *configureGeometry, 5)
+		f.pendingGeometry = make(chan *configureGeometry, 50)
 		go f.configureLoop()
 	}
 	f.pendingGeometry <- &configureGeometry{x, y, width, height, force}
