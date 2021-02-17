@@ -81,6 +81,7 @@ const (
 	keyCodeEscape      = 9
 	keyCodeTab         = 23
 	keyCodeReturn      = 36
+	keyCodeAlt         = 64
 	keyCodeSpace       = 65
 	keyCodeSuper       = 133
 	keyCodePrintScreen = 107
@@ -298,6 +299,10 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 
 func (x *x11WM) modifierToKeyMask(m deskDriver.Modifier) uint16 {
 	mask := uint16(0)
+	if m&fynedesk.UserModifier != 0 {
+		m |= fynedesk.Instance().Settings().KeyboardModifier()
+	}
+
 	if m&deskDriver.AltModifier != 0 {
 		mask |= xproto.ModMask1
 	}

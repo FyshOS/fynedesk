@@ -223,13 +223,13 @@ func (l *desktop) addSettingsChangeListener() {
 }
 
 func (l *desktop) registerShortcuts() {
-	l.AddShortcut(fynedesk.NewShortcut("Show Launcher", fyne.KeySpace, deskDriver.SuperModifier),
+	l.AddShortcut(fynedesk.NewShortcut("Show Launcher", fyne.KeySpace, fynedesk.UserModifier),
 		ShowAppLauncher)
-	l.AddShortcut(fynedesk.NewShortcut("Switch App Next", fyne.KeyTab, deskDriver.SuperModifier),
+	l.AddShortcut(fynedesk.NewShortcut("Switch App Next", fyne.KeyTab, fynedesk.UserModifier),
 		func() {
 			// dummy - the wm handles app switcher
 		})
-	l.AddShortcut(fynedesk.NewShortcut("Switch App Previous", fyne.KeyTab, deskDriver.SuperModifier|deskDriver.ShiftModifier),
+	l.AddShortcut(fynedesk.NewShortcut("Switch App Previous", fyne.KeyTab, fynedesk.UserModifier|deskDriver.ShiftModifier),
 		func() {
 			// dummy - the wm handles app switcher
 		})
