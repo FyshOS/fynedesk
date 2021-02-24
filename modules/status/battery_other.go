@@ -11,6 +11,15 @@ import (
 	"fyne.io/fyne/v2"
 )
 
+func (b *battery) powered() (bool, error) {
+	status, err := ioutil.ReadFile("/sys/class/power_supply/BAT0/status")
+	if err != nil {
+		return true, err // assume power if no battery info
+	}
+
+	return strings.ToLower(strings.TrimSpace(string(status))) != "discharging", nil
+}
+
 func (b *battery) value() (float64, error) {
 	nowFile, fullFile := pickChargeOrEnergy()
 	fullStr, err1 := ioutil.ReadFile(fullFile)

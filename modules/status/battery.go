@@ -23,6 +23,7 @@ var batteryMeta = fynedesk.ModuleMetadata{
 type battery struct {
 	bar  *widget.ProgressBar
 	done bool
+	icon *widget.Icon
 }
 
 func pickChargeOrEnergy() (string, string) {
@@ -39,6 +40,11 @@ func (b *battery) batteryTick() {
 		for !b.done {
 			val, _ := b.value()
 			b.bar.SetValue(val)
+			if on, err := b.powered(); on || err != nil {
+				b.icon.SetResource(wmtheme.PowerIcon)
+			} else {
+				b.icon.SetResource(wmtheme.BatteryIcon)
+			}
 			<-tick.C
 		}
 	}()
@@ -58,10 +64,10 @@ func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 	}
 
 	b.bar = widget.NewProgressBar()
-	batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
+	b.icon = widget.NewIcon(wmtheme.BatteryIcon)
 	prop := canvas.NewRectangle(color.Transparent)
-	prop.SetMinSize(batteryIcon.MinSize().Add(fyne.NewSize(theme.Padding()*2, 0)))
-	icon := container.NewCenter(prop, batteryIcon)
+	prop.SetMinSize(b.icon.MinSize().Add(fyne.NewSize(theme.Padding()*2, 0)))
+	icon := container.NewCenter(prop, b.icon)
 
 	go b.batteryTick()
 	return container.NewBorder(nil, nil, icon, nil, b.bar)
