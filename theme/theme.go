@@ -28,6 +28,8 @@ var (
 	DisplayIcon = theme.NewThemedResource(resourceDisplaySvg)
 	// InternetIcon is the material design icon for the internet in light and dark theme
 	InternetIcon = theme.NewThemedResource(resourceInternetSvg)
+	// PowerIcon is the material design icon for a power connection in light and dark theme
+	PowerIcon = theme.NewThemedResource(resourcePowerSvg)
 	// UserIcon is the material design icon for a user in light and dark theme
 	UserIcon = theme.NewThemedResource(resourcePersonSvg)
 
