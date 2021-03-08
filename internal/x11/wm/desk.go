@@ -81,6 +81,7 @@ const (
 	keyCodeEscape      = 9
 	keyCodeTab         = 23
 	keyCodeReturn      = 36
+	keyCodeAlt         = 64
 	keyCodeSpace       = 65
 	keyCodeSuper       = 133
 	keyCodePrintScreen = 107
@@ -211,11 +212,7 @@ func (x *x11WM) Run() {
 func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, _ fyne.Position) {
 	// TODO add support for menu position, not needed yet
 	win := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
-	for i, item := range m.Items {
-		if i == 0 {
-			// fix an issue where menu does not resize
-			item.Label = item.Label + "                                           "
-		}
+	for _, item := range m.Items {
 		action := item.Action
 		item.Action = func() {
 			action()
@@ -223,12 +220,12 @@ func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, _ fyne.Position) {
 		}
 	}
 
-	win.SetContent(widget.NewMenu(m))
-
+	p := widget.NewPopUpMenu(m, win.Canvas())
 	win.SetTitle(windowNameMenu)
 	win.SetFixedSize(true)
 	win.Resize(s)
-	win.Content().Resize(s)
+	p.Show()
+	p.Resize(s)
 
 	win.SetOnClosed(func() {
 		x.menuID = 0
@@ -298,6 +295,14 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 
 func (x *x11WM) modifierToKeyMask(m deskDriver.Modifier) uint16 {
 	mask := uint16(0)
+	if m&fynedesk.UserModifier != 0 {
+		if fynedesk.Instance().Settings().KeyboardModifier() == deskDriver.AltModifier {
+			m |= deskDriver.AltModifier
+		} else {
+			m |= deskDriver.SuperModifier
+		}
+	}
+
 	if m&deskDriver.AltModifier != 0 {
 		mask |= xproto.ModMask1
 	}

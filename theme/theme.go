@@ -1,7 +1,6 @@
 package theme // import "fyne.io/fynedesk/theme"
 
 //go:generate fyne bundle -package theme -o bundled.go assets
-//lint:file-ignore SA1019 These deprecation can not be fixed until fyne 2.0
 
 import (
 	"image/color"
@@ -14,7 +13,7 @@ var (
 	PointerDefault = resourcePointerPng
 
 	// Background is the default background image
-	Background = resourceLochfyneJpg
+	Background = resourceSwedishPineJpg
 	// FyneAboutBackground is the image used as a background to the about screen
 	FyneAboutBackground = resourceFyneaboutbgPng
 
@@ -28,6 +27,8 @@ var (
 	DisplayIcon = theme.NewThemedResource(resourceDisplaySvg)
 	// InternetIcon is the material design icon for the internet in light and dark theme
 	InternetIcon = theme.NewThemedResource(resourceInternetSvg)
+	// PowerIcon is the material design icon for a power connection in light and dark theme
+	PowerIcon = theme.NewThemedResource(resourcePowerSvg)
 	// UserIcon is the material design icon for a user in light and dark theme
 	UserIcon = theme.NewThemedResource(resourcePersonSvg)
 

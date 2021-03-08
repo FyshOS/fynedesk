@@ -275,18 +275,44 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 
 	for _, shortcut := range shortcuts {
 		names = append(names, widget.NewLabel(shortcut.ShortcutName()))
-		mods = append(mods, widget.NewLabel(modifierToString(shortcut.Modifier)))
+		mods = append(mods, widget.NewLabel(modifierToString(shortcut.Modifier, d.settings.modifier)))
 		keys = append(keys, widget.NewLabel(string(shortcut.KeyName)))
 	}
+	modVBox := container.NewVBox(mods...)
 	rows := container.NewHBox(widget.NewCard("Action", "", container.NewVBox(names...)),
-		widget.NewCard("Modifier", "", container.NewVBox(mods...)),
+		widget.NewCard("Modifier", "", modVBox),
 		widget.NewCard("Key Name", "", container.NewVBox(keys...)))
 	grid := container.NewScroll(rows)
 
-	applyButton := container.NewHBox(layout.NewSpacer(),
-		&widget.Button{Text: "Apply", Importance: widget.HighImportance})
+	userMod := d.settings.modifier
+	modType := widget.NewRadioGroup([]string{"Super", "Alt"}, func(mod string) {
+		if mod == "Alt" {
+			userMod = deskDriver.AltModifier
+		} else {
+			userMod = deskDriver.SuperModifier
+		}
 
-	return container.NewBorder(nil, applyButton, nil, nil, grid)
+		var mods []fyne.CanvasObject
+		for _, shortcut := range shortcuts {
+			mods = append(mods, widget.NewLabel(modifierToString(shortcut.Modifier, userMod)))
+		}
+		modVBox.Objects = mods
+		modVBox.Refresh()
+	})
+	modType.Horizontal = true
+	if d.settings.modifier == deskDriver.AltModifier {
+		modType.Selected = "Alt"
+	} else {
+		modType.Selected = "Super"
+	}
+
+	applyButton := container.NewHBox(layout.NewSpacer(),
+		&widget.Button{Text: "Apply", Importance: widget.HighImportance, OnTapped: func() {
+			d.settings.setKeyboardModifier(userMod)
+		}})
+
+	return container.NewBorder(container.NewHBox(widget.NewLabel("Preferred modifier key: "), modType),
+		applyButton, nil, nil, grid)
 }
 
 func loadScreensTable() fyne.CanvasObject {
@@ -353,8 +379,12 @@ func showSettings(deskSettings *deskSettings) {
 	w.Show()
 }
 
-func modifierToString(mods deskDriver.Modifier) string {
+func modifierToString(mods deskDriver.Modifier, userMod deskDriver.Modifier) string {
 	var s []string
+	if (mods & fynedesk.UserModifier) != 0 {
+		mods |= userMod
+	}
+
 	if (mods & deskDriver.ShiftModifier) != 0 {
 		s = append(s, "Shift")
 	}

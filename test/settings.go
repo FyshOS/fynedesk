@@ -1,6 +1,10 @@
 package test
 
-import "fyne.io/fynedesk"
+import (
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
+
+	"fyne.io/fynedesk"
+)
 
 // Settings is a simple struct for managing settings within our tests
 type Settings struct {
@@ -99,6 +103,11 @@ func (s *Settings) LauncherZoomScale() float32 {
 // SetLauncherZoomScale supports setting the scale value for hovered bar icons
 func (s *Settings) SetLauncherZoomScale(scale float32) {
 	s.launcherZoomScale = scale
+}
+
+// KeyboardModifier returns the preferred keyboard modifier for shortcuts.
+func (s *Settings) KeyboardModifier() deskDriver.Modifier {
+	return deskDriver.SuperModifier
 }
 
 // ModuleNames returns the names of modules that should be enabled

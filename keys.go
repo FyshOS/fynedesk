@@ -9,6 +9,9 @@ import (
 const (
 	// AnyModifier is the shortcut modifier to use if the shortcut should always trigger - use sparingly
 	AnyModifier deskDriver.Modifier = 0
+	// UserModifier is the shortcut modifier to use if the shortcut should respect user preference.
+	// This will be offered as a choice of Alt or Super (Command)
+	UserModifier deskDriver.Modifier = deskDriver.SuperModifier << 1
 
 	// KeyBrightnessDown is the virtual keyboard key for reducing brightness
 	KeyBrightnessDown fyne.KeyName = "BrightnessDown"

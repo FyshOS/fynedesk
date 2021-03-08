@@ -162,9 +162,9 @@ func (i *volItem) Launch() {
 			val = 100
 		}
 		i.s.setValue(val)
+	} else {
+		i.s.toggleMute()
 	}
-
-	i.s.toggleMute()
 }
 
 func startsWith(haystack, needle string) bool {

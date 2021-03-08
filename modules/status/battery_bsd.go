@@ -4,6 +4,15 @@ package status
 
 import "syscall"
 
+func (b *battery) powered() (bool, error) {
+	val, err := syscall.Sysctl("hw.acpi.acline")
+	if err != nil {
+		return true, err
+	}
+
+	return val[0] == 1, nil
+}
+
 func (b *battery) value() (float64, error) {
 	val, err := syscall.Sysctl("hw.acpi.battery.life")
 	if err != nil {
