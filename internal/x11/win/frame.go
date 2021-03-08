@@ -495,8 +495,8 @@ func (f *frame) mouseDrag(x, y int16) {
 	}
 
 	if f.client.Maximized() {
-		if y > f.y + int16(x11.TitleHeight(x11.XWin(f.client))) &&
-			uint16(moveDeltaY) > (x11.TitleHeight(x11.XWin(f.client)) * 3) {
+		if y > f.y+int16(x11.TitleHeight(x11.XWin(f.client))) &&
+			uint16(moveDeltaY) > (x11.TitleHeight(x11.XWin(f.client))*3) {
 			diff := f.mouseX - f.x
 			scale := float64(f.client.restoreWidth) / float64(f.width)
 
