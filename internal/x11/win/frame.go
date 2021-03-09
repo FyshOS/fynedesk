@@ -25,6 +25,8 @@ import (
 	"fyne.io/fynedesk/wm"
 )
 
+const unmaximizeThreshold = 84
+
 type frame struct {
 	x, y                                int16
 	width, height                       uint16
@@ -495,8 +497,12 @@ func (f *frame) mouseDrag(x, y int16) {
 	}
 
 	if f.client.Maximized() {
-		if y > f.y+int16(x11.TitleHeight(x11.XWin(f.client))) &&
-			uint16(moveDeltaY) > (x11.TitleHeight(x11.XWin(f.client))*3) {
+		screen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
+		scale := screen.CanvasScale()
+		outsideBar := y > f.y+int16(x11.TitleHeight(x11.XWin(f.client))) || y < f.y
+
+		if outsideBar && uint16(math.Abs(float64(moveDeltaY))) >
+			uint16(math.Ceil(float64(unmaximizeThreshold)*float64(scale))) {
 			diff := f.mouseX - f.x
 			scale := float64(f.client.restoreWidth) / float64(f.width)
 
