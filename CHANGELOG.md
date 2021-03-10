@@ -3,7 +3,7 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
-## 0.2 - Ongoing
+## 0.2 - 16 March 2021
 
 ### Added
 
