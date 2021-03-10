@@ -7,18 +7,57 @@ More detailed release notes can be found on the [releases page](https://github.c
 
 ### Added
 
+* Support for desktop notifications
 * Created API for writing modules that plug in to FyneDesk
+* Add keyboard shortcut support for modules
+* Add volume control using pulseaudio
+* Print screen support for desktop and window capture
+* Crash logs are now saved before runner restarts the desktop
+* Add urls, calculations and sound/brightness to launcher
+* Add support for XPM icon format
+* Double tap title bar to maximise
+* Hover effects for window borders
+* Add option to use 24h time
+* Add support for "fake" transparency in X apps
+* Drag border to exit un-maximize
+* Support choosing between Alt and Win key for shortcuts
+* Add AC power indicator to battery module
 
 ### Changed
 
+* Updated to latest Fyne theme
+* Updated multi-monitor support
 * Bar icons can be added and removed from a new right-click menu
+* Move to makefile for system installation
+* Search user's local directory for applications
+* New Swedish Pine wallpaper
+* Better support for running in virtual machines
+* Improved background selection for settings
+* Account menu now appears over windows
 
 ### Fixed
+
+* Communicate the desktop DPI for better support in apps not using GTK, Qt or EFL
+* When starting with multiple screens that are not configured they overlap strangely (#129)
+* Update scaling per-screen for Qt apps
+* Drag and drop in Chrome browser (#156)
+* Firefox does not enter Fullscreen (#110)
+* Icon bar flicker when hovering
+* Add BSD support for all status modules
+* fix 12h time format (#145)
+* Killing Xorg with fynedesk_runner will not exit cleanly (137)
+* Menu opens with 0 height (#114)
+* Allow resize from top corners (#113)
+* Window border can leave trails (#165)
+* Crash on fast alt-tab (#122)
+* alt-space not reliable (#160)
+* Moving windows on external screens shows screen tearing (#161)
+* Applications can push other ones off the screen (#163)
 
 
 ## 0.1.3 - 15 April 2020
 
-Renamed package to fyne.io/fynedesk and repository to github.com/fyne-io/fynedesk.s
+Renamed package to fyne.io/fynedesk and repository to github.com/fyne-io/fynedesk.
 
 
 ## 0.1.2 - 13 April 2020
