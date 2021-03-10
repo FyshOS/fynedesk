@@ -5,6 +5,7 @@ fynedesk
 fynedesk_runner
 
 .idea
+.DS_Store
 
 internal/icon/testdata/applications/app3.desktop
 
