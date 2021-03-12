@@ -30,7 +30,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Bar icons can be added and removed from a new right-click menu
 * Move to makefile for system installation
 * Search user's local directory for applications
-* New Swedish Pine wallpaper
+* New Swedish Pine wallpaper by @Jacalz
 * Better support for running in virtual machines
 * Improved background selection for settings
 * Account menu now appears over windows
@@ -44,11 +44,11 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Firefox does not enter Fullscreen (#110)
 * Icon bar flicker when hovering
 * Add BSD support for all status modules
-* fix 12h time format (#145)
-* Killing Xorg with fynedesk_runner will not exit cleanly (137)
+* Fix 12h time format (#145)
+* Killing Xorg with fynedesk_runner will not exit cleanly (#137)
 * Menu opens with 0 height (#114)
 * Allow resize from top corners (#113)
-* Window border can leave trails (#165)
+* Windows can be slow to move around (#165)
 * Crash on fast alt-tab (#122)
 * alt-space not reliable (#160)
 * Moving windows on external screens shows screen tearing (#161)
