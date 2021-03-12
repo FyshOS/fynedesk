@@ -1,6 +1,11 @@
 package wm
 
 import (
+	"image/color"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -14,6 +19,8 @@ const (
 
 type closeButton struct {
 	widget.Button
+
+	bg *canvas.Rectangle
 }
 
 func (c *closeButton) Cursor() desktop.Cursor {
@@ -21,26 +28,28 @@ func (c *closeButton) Cursor() desktop.Cursor {
 }
 
 func (c *closeButton) MouseIn(*desktop.MouseEvent) {
-	c.Importance = widget.HighImportance
-	c.Refresh()
+	c.bg.FillColor = theme.FocusColor()
+	c.bg.Refresh()
 }
 
 func (c *closeButton) MouseMoved(*desktop.MouseEvent) {
 }
 
 func (c *closeButton) MouseOut() {
-	c.Importance = widget.MediumImportance
-	c.Refresh()
+	c.bg.FillColor = color.Transparent
+	c.bg.Refresh()
 }
 
-func newCloseButton(win fynedesk.Window) *closeButton {
+func newCloseButton(win fynedesk.Window) fyne.CanvasObject {
 	b := &closeButton{}
 	b.ExtendBaseWidget(b)
 	b.Importance = widget.LowImportance
+	b.bg = canvas.NewRectangle(color.Transparent)
+
 	b.OnTapped = func() {
 		win.Close()
 	}
 
 	b.Icon = theme.CancelIcon()
-	return b
+	return container.NewMax(b.bg, b)
 }
