@@ -649,11 +649,12 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 		x.menuID = win
 		xproto.ChangeWindowAttributes(x.Conn(), win, xproto.CwEventMask, []uint32{xproto.EventMaskLeaveWindow})
 
+		screen := fynedesk.Instance().Screens().Primary()
 		//attrs, _ := xproto.GetGeometry(x.Conn(), xproto.Drawable(win)).Reply()
-		w, h := 200, 159 // TODO figure out why this lookup does not work for BSD: int(attrs.Width), int(attrs.Height)
+		w, h := 200*screen.CanvasScale(), 169*screen.CanvasScale() // TODO figure out why this lookup does not work for BSD: int(attrs.Width), int(attrs.Height)
 
-		mx := fynedesk.Instance().Screens().Primary().Width - w
-		my := fynedesk.Instance().Screens().Primary().Height - h
+		mx := screen.X + screen.Width - int(w)
+		my := screen.Y + screen.Height - int(h)
 		xproto.ConfigureWindowChecked(x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(mx), uint32(my),
 			uint32(w), uint32(h)})
