@@ -94,7 +94,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 	toolbarButtonLabel := widget.NewLabelWithStyle("Toolbar Buttons", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	toolbarButton := &widget.Select{Options: []string{"Left", "Right"}}
-	clockFormat.SetSelected(d.settings.ToolbarButtonPosition())
+	toolbarButton.SetSelected(d.settings.ToolbarButtonPosition())
 
 	themeLabel := widget.NewLabel(d.settings.IconTheme())
 	themeIcons := container.NewHBox()
