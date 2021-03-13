@@ -139,12 +139,11 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 
 	listener := make(chan fyne.Settings)
 	a.Settings().AddChangeListener(listener)
+	a.Preferences().AddChangeListener(mgr.refreshBorders)
 	go func() {
 		for {
 			<-listener
-			for _, c := range mgr.clients {
-				c.(x11.XWin).SettingsChanged()
-			}
+			mgr.refreshBorders()
 			mgr.configureRoots()
 		}
 	}()
@@ -550,6 +549,12 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 
 func (x *x11WM) isRootTitle(title string) bool {
 	return strings.Index(title, ui.RootWindowName) == 0
+}
+
+func (x *x11WM) refreshBorders() {
+	for _, c := range x.clients {
+		c.(x11.XWin).SettingsChanged()
+	}
 }
 
 func screenNameFromRootTitle(title string) string {
