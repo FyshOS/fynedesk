@@ -57,7 +57,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 
 	var titleBar *Border
 	if buttonPos == "Right" {
-		titleBar = newColoredHBox(win.Focused(), win, layout.NewSpacer(),
+		titleBar = newColoredHBox(win.Focused(), win, makeFiller(1),
 			title,
 			layout.NewSpacer(),
 			min,
@@ -70,7 +70,6 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 			newCloseButton(win),
 			max,
 			min,
-			layout.NewSpacer(),
 			title,
 			layout.NewSpacer(),
 		)
@@ -189,7 +188,8 @@ func (r *coloredBoxRenderer) Refresh() {
 
 	if r.b.focused {
 		r.bg.FillColor = theme.BackgroundColor()
+	} else {
+		r.bg.FillColor = theme.DisabledButtonColor()
 	}
-	r.bg.FillColor = theme.DisabledButtonColor()
 	r.bg.Refresh()
 }
