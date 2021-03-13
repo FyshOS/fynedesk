@@ -291,6 +291,7 @@ func (c *client) SettingsChanged() {
 		return
 	}
 
+	c.frame.canvas = nil // force a full re-build of the border widgets
 	c.frame.updateScale()
 }
 
