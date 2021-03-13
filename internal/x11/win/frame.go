@@ -283,9 +283,9 @@ func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image
 }
 
 func (f *frame) createPixmaps(depth byte) error {
-	iconPix := x11.TitleHeight(x11.XWin(f.client))
-	iconAndBorderPix := iconPix + x11.BorderWidth(x11.XWin(f.client))*2
-	f.borderTopWidth = f.width - iconAndBorderPix
+	heightPix := x11.TitleHeight(x11.XWin(f.client))
+	rightWidthPix := f.topRightPixelWidth()
+	f.borderTopWidth = f.width - rightWidthPix
 
 	pid, err := xproto.NewPixmapId(f.client.wm.Conn())
 	if err != nil {
@@ -293,7 +293,7 @@ func (f *frame) createPixmaps(depth byte) error {
 	}
 
 	xproto.CreatePixmap(f.client.wm.Conn(), depth, pid,
-		xproto.Drawable(f.client.wm.X().Screen().Root), f.borderTopWidth, iconPix)
+		xproto.Drawable(f.client.wm.X().Screen().Root), f.borderTopWidth, heightPix)
 	f.borderTop = pid
 
 	pid, err = xproto.NewPixmapId(f.client.wm.Conn())
@@ -302,7 +302,7 @@ func (f *frame) createPixmaps(depth byte) error {
 	}
 
 	xproto.CreatePixmap(f.client.wm.Conn(), depth, pid,
-		xproto.Drawable(f.client.wm.X().Screen().Root), iconAndBorderPix, iconPix)
+		xproto.Drawable(f.client.wm.X().Screen().Root), rightWidthPix, heightPix)
 	f.borderTopRight = pid
 
 	return nil
@@ -339,23 +339,23 @@ func (f *frame) decorate(force bool) {
 		f.drawDecoration(f.borderTop, drawTop, f.borderTopRight, drawTopRight, depth)
 	}
 
-	iconSizePix := x11.TitleHeight(x11.XWin(f.client))
+	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	draw, _ := xproto.NewGcontextId(f.client.wm.Conn())
 	xproto.CreateGC(f.client.wm.Conn(), draw, xproto.Drawable(f.client.id), xproto.GcForeground, []uint32{bgColor})
-	rect := xproto.Rectangle{X: 0, Y: int16(iconSizePix), Width: f.width, Height: f.height - iconSizePix}
+	rect := xproto.Rectangle{X: 0, Y: int16(heightPix), Width: f.width, Height: f.height - heightPix}
 	xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 
-	iconAndBorderSizePix := iconSizePix + x11.BorderWidth(x11.XWin(f.client))*2
-	if f.borderTopWidth+iconAndBorderSizePix < f.width {
+	rightWidthPix := f.topRightPixelWidth()
+	if f.borderTopWidth+rightWidthPix < f.width {
 		rect := xproto.Rectangle{X: int16(f.borderTopWidth), Y: 0,
-			Width: f.width - f.borderTopWidth - iconAndBorderSizePix, Height: iconSizePix}
+			Width: f.width - f.borderTopWidth - rightWidthPix, Height: heightPix}
 		xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 	}
 
 	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), drawTop,
-		0, 0, 0, 0, f.borderTopWidth, iconSizePix)
+		0, 0, 0, 0, f.borderTopWidth, heightPix)
 	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), drawTopRight,
-		0, 0, int16(f.width-iconAndBorderSizePix), 0, iconAndBorderSizePix, iconSizePix)
+		0, 0, int16(f.width-rightWidthPix), 0, rightWidthPix, heightPix)
 }
 
 func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pidTopRight xproto.Pixmap, drawTopRight xproto.Gcontext, depth byte) {
@@ -384,8 +384,8 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	f.canvas.SetScale(scale)
 
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
-	iconBorderPixWidth := heightPix + x11.BorderWidth(x11.XWin(f.client))*2
-	widthPix := f.borderTopWidth + iconBorderPixWidth
+	rightWidthPix := f.topRightPixelWidth()
+	widthPix := f.borderTopWidth + rightWidthPix
 	f.canvas.Resize(fyne.NewSize((float32(widthPix)/scale)+1, wmTheme.TitleHeight))
 	img := f.canvas.Capture()
 
@@ -395,7 +395,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 		f.copyDecorationPixels(uint32(f.borderTopWidth), 1, 0, uint32(i), img, pidTop, drawTop, depth)
 	}
 
-	f.copyDecorationPixels(uint32(iconBorderPixWidth), uint32(heightPix), uint32(f.borderTopWidth), 0, img, pidTopRight, drawTopRight, depth)
+	f.copyDecorationPixels(uint32(rightWidthPix), uint32(heightPix), uint32(f.borderTopWidth), 0, img, pidTopRight, drawTopRight, depth)
 }
 
 func (f *frame) freePixmaps() {
@@ -802,6 +802,16 @@ func (f *frame) show() {
 
 	c.RaiseToTop()
 	c.Focus()
+}
+
+func (f *frame) topRightPixelWidth() uint16 {
+	iconPix := x11.TitleHeight(x11.XWin(f.client))
+	iconAndBorderPix := iconPix + x11.BorderWidth(x11.XWin(f.client))*2
+	if fynedesk.Instance().Settings().BorderButtonPosition() == "Right" {
+		iconAndBorderPix += iconAndBorderPix * 2
+	}
+
+	return iconAndBorderPix
 }
 
 func (f *frame) unmaximizeApply() {
