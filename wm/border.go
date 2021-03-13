@@ -53,19 +53,10 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 	}}
 
 	title := canvas.NewText(win.Properties().Title(), theme.ForegroundColor())
-	buttonPos := fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
+	buttonPos := fynedesk.Instance().Settings().BorderButtonPosition()
 
 	var titleBar *Border
-	if buttonPos == "Left" {
-		titleBar = newColoredHBox(win.Focused(), win, makeFiller(0),
-			newCloseButton(win),
-			max,
-			min,
-			layout.NewSpacer(),
-			title,
-			layout.NewSpacer(),
-		)
-	} else {
+	if buttonPos == "Right" {
 		titleBar = newColoredHBox(win.Focused(), win, layout.NewSpacer(),
 			title,
 			layout.NewSpacer(),
@@ -73,6 +64,15 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 			max,
 			newCloseButton(win),
 			makeFiller(0),
+		)
+	} else {
+		titleBar = newColoredHBox(win.Focused(), win, makeFiller(0),
+			newCloseButton(win),
+			max,
+			min,
+			layout.NewSpacer(),
+			title,
+			layout.NewSpacer(),
 		)
 	}
 
@@ -83,12 +83,12 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 		appIcon := canvas.NewImageFromResource(icon)
 		appIcon.SetMinSize(fyne.NewSize(wmTheme.TitleHeight, wmTheme.TitleHeight))
 
-		if buttonPos == "Left" {
-			titleBar.append(appIcon)
-			titleBar.append(makeFiller(1))
-		} else {
+		if buttonPos == "Right" {
 			titleBar.prepend(appIcon)
 			titleBar.prepend(makeFiller(1))
+		} else {
+			titleBar.append(appIcon)
+			titleBar.append(makeFiller(1))
 		}
 	}
 
