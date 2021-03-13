@@ -66,13 +66,13 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 			layout.NewSpacer(),
 		)
 	} else {
-		titleBar = newColoredHBox(win.Focused(), win, makeFiller(0),
-			layout.NewSpacer(),
+		titleBar = newColoredHBox(win.Focused(), win, layout.NewSpacer(),
 			title,
 			layout.NewSpacer(),
 			min,
 			max,
 			newCloseButton(win),
+			makeFiller(0),
 		)
 	}
 
@@ -88,6 +88,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 			titleBar.append(makeFiller(1))
 		} else {
 			titleBar.prepend(appIcon)
+			titleBar.prepend(makeFiller(1))
 		}
 	}
 
