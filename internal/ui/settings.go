@@ -19,7 +19,7 @@ type deskSettings struct {
 	launcherDisableTaskbar bool
 	launcherDisableZoom    bool
 	launcherZoomScale      float32
-	toolbarButtonPosition  string
+	borderButtonPosition   string
 	clockFormatting        string
 
 	modifier    deskDriver.Modifier
@@ -65,8 +65,8 @@ func (d *deskSettings) ModuleNames() []string {
 	return d.moduleNames
 }
 
-func (d *deskSettings) ToolbarButtonPosition() string {
-	return d.toolbarButtonPosition
+func (d *deskSettings) BorderButtonPosition() string {
+	return d.borderButtonPosition
 }
 
 func (d *deskSettings) ClockFormatting() string {
@@ -159,9 +159,9 @@ func (d *deskSettings) setModuleNames(names []string) {
 	d.apply()
 }
 
-func (d *deskSettings) setToolbarButtonPosition(pos string) {
-	d.toolbarButtonPosition = pos
-	fyne.CurrentApp().Preferences().SetString("toolbarbuttonposition", d.toolbarButtonPosition)
+func (d *deskSettings) setBorderButtonPosition(pos string) {
+	d.borderButtonPosition = pos
+	fyne.CurrentApp().Preferences().SetString("borderbuttonposition", d.borderButtonPosition)
 	d.apply()
 }
 
@@ -219,7 +219,7 @@ func (d *deskSettings) load() {
 	}
 	d.modifier = deskDriver.Modifier(fyne.CurrentApp().Preferences().Int("keyboardmodifier"))
 
-	d.toolbarButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("toolbarbuttonposition", "Left")
+	d.borderButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
 
 	d.clockFormatting = fyne.CurrentApp().Preferences().StringWithFallback("clockformatting", "12h")
 }

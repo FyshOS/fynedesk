@@ -53,7 +53,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 	}}
 
 	title := canvas.NewText(win.Properties().Title(), theme.ForegroundColor())
-	buttonPos := fyne.CurrentApp().Preferences().StringWithFallback("toolbarbuttonposition", "Left")
+	buttonPos := fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
 
 	var titleBar *Border
 	if buttonPos == "Left" {
