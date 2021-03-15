@@ -92,6 +92,10 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 	clockFormat := &widget.RadioGroup{Options: []string{"12h", "24h"}, Required: true, Horizontal: true}
 	clockFormat.SetSelected(d.settings.ClockFormatting())
 
+	borderButtonLabel := widget.NewLabelWithStyle("Border Button Position", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	borderButton := &widget.Select{Options: []string{"Left", "Right"}}
+	borderButton.SetSelected(d.settings.BorderButtonPosition())
+
 	themeLabel := widget.NewLabel(d.settings.IconTheme())
 	themeIcons := container.NewHBox()
 	d.populateThemeIcons(themeIcons, d.settings.IconTheme())
@@ -107,7 +111,8 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 	bg := container.NewBorder(nil, nil, bgLabel, bgButtons, bgPath)
 	time := container.NewBorder(nil, nil, clockLabel, clockFormat)
-	top := container.NewVBox(bg, time)
+	border := container.NewBorder(nil, nil, borderButtonLabel, borderButton)
+	top := container.NewVBox(bg, time, border)
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	themeCurrent := container.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
@@ -118,6 +123,7 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 			d.settings.setBackground(bgPath.Text)
 			d.settings.setIconTheme(themeLabel.Text)
 			d.settings.setClockFormatting(clockFormat.Selected)
+			d.settings.setBorderButtonPosition(borderButton.Selected)
 		}})
 
 	return container.NewBorder(top, applyButton, nil, nil, bottom)

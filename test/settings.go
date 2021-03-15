@@ -15,6 +15,7 @@ type Settings struct {
 	launcherZoomScale      float32
 	launcherDisableZoom    bool
 	launcherDisableTaskbar bool
+	borderButtonPosition   string
 	clockFormatting        string
 
 	moduleNames []string
@@ -118,6 +119,16 @@ func (s *Settings) ModuleNames() []string {
 // SetModuleNames supports configuring the modules that should be loaded
 func (s *Settings) SetModuleNames(mods []string) {
 	s.moduleNames = mods
+}
+
+// BorderButtonPosition returns the position of the toolbar buttons.
+func (s *Settings) BorderButtonPosition() string {
+	return s.borderButtonPosition
+}
+
+// SetBorderButtonPosition sets the toolbar button position.
+func (s *Settings) SetBorderButtonPosition(pos string) {
+	s.borderButtonPosition = pos
 }
 
 // ClockFormatting returns the format that the clock uses for displaying the time. Either 12h or 24h.

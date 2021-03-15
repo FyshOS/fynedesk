@@ -53,20 +53,42 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 	}}
 
 	title := canvas.NewText(win.Properties().Title(), theme.ForegroundColor())
-	titleBar := newColoredHBox(win.Focused(), win, makeFiller(0),
-		newCloseButton(win),
-		max,
-		min,
-		title,
-		layout.NewSpacer())
+	buttonPos := fynedesk.Instance().Settings().BorderButtonPosition()
+
+	var titleBar *Border
+	if buttonPos == "Right" {
+		titleBar = newColoredHBox(win.Focused(), win, makeFiller(1),
+			title,
+			layout.NewSpacer(),
+			min,
+			max,
+			newCloseButton(win),
+			makeFiller(0),
+		)
+	} else {
+		titleBar = newColoredHBox(win.Focused(), win, makeFiller(0),
+			newCloseButton(win),
+			max,
+			min,
+			title,
+			layout.NewSpacer(),
+		)
+	}
+
 	titleBar.title = title
 	titleBar.max = max
 
 	if icon != nil {
 		appIcon := canvas.NewImageFromResource(icon)
 		appIcon.SetMinSize(fyne.NewSize(wmTheme.TitleHeight, wmTheme.TitleHeight))
-		titleBar.append(appIcon)
-		titleBar.append(makeFiller(1))
+
+		if buttonPos == "Right" {
+			titleBar.prepend(appIcon)
+			titleBar.prepend(makeFiller(1))
+		} else {
+			titleBar.append(appIcon)
+			titleBar.append(makeFiller(1))
+		}
 	}
 
 	return titleBar
@@ -89,6 +111,11 @@ func (c *Border) DoubleTapped(*fyne.PointEvent) {
 		return
 	}
 	c.win.Maximize()
+}
+
+func (c *Border) prepend(obj fyne.CanvasObject) {
+	c.content.Objects = append([]fyne.CanvasObject{obj}, c.content.Objects...)
+	c.Refresh()
 }
 
 func (c *Border) append(obj fyne.CanvasObject) {
@@ -161,7 +188,8 @@ func (r *coloredBoxRenderer) Refresh() {
 
 	if r.b.focused {
 		r.bg.FillColor = theme.BackgroundColor()
+	} else {
+		r.bg.FillColor = theme.DisabledButtonColor()
 	}
-	r.bg.FillColor = theme.DisabledButtonColor()
 	r.bg.Refresh()
 }

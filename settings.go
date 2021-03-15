@@ -6,6 +6,7 @@ import deskDriver "fyne.io/fyne/v2/driver/desktop"
 type DeskSettings interface {
 	Background() string
 	IconTheme() string
+	BorderButtonPosition() string
 	ClockFormatting() string
 
 	LauncherIcons() []string
