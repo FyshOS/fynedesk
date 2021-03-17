@@ -3,7 +3,7 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
-## 0.2 - 16 March 2021
+## 0.2 - 22 March 2021
 
 ### Added
 
@@ -22,6 +22,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Drag border to exit un-maximize
 * Support choosing between Alt and Win key for shortcuts
 * Add AC power indicator to battery module
+* Add option to change border button position
 
 ### Changed
 
