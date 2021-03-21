@@ -107,6 +107,7 @@ func newBackground() *background {
 	} else {
 		bg = canvas.NewImageFromResource(wmtheme.Background)
 	}
+	bg.ScaleMode = canvas.ImageScaleFastest
 
 	ret := &background{wallpaper: bg}
 	ret.ExtendBaseWidget(ret)
