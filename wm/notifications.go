@@ -63,12 +63,16 @@ func (n *notifications) GetCapabilities() []string {
 	return []string{"body", "icon-static", "persistence"}
 }
 
-func startNotifications() *notifications {
-	n := &notifications{}
+func (n *notifications) register() {
 	err := RegisterService(n, "/org/freedesktop/Notifications", "org.freedesktop.Notifications")
 	if err != nil {
 		fyne.LogError("Could not start DBus notifications server, using local only", err)
 	}
+}
+
+func startNotifications() *notifications {
+	n := &notifications{}
+	go n.register()
 
 	return n
 }
