@@ -10,7 +10,7 @@ import (
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/icon"
 	"fyne.io/fynedesk/internal/ui"
-	"fyne.io/fynedesk/wm"
+	"fyne.io/fynedesk/internal/x11/wm"
 )
 
 func setupDesktop(a fyne.App) fynedesk.Desktop {
