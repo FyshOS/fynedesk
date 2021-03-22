@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fynedesk"
 
+	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal"
 	"fyne.io/fynedesk/internal/ui"
 )

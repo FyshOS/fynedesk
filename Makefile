@@ -6,8 +6,8 @@ LOCAL ?= $(shell test -d $(DESTDIR)/usr/local && echo "/local" || echo "")
 PREFIX ?= /usr$(LOCAL)
 
 build:
-	go build -o fynedesk_runner ./cmd/fynedesk_runner
-	go build -o fynedesk ./cmd/fynedesk
+	go build ./cmd/fynedesk_runner || (echo "Failed to build fynedesk_runner"; exit 1)
+	go build ./cmd/fynedesk || (echo "Failed to build fynedesk"; exit 1)
 
 install:
 	install -Dm00755 fynedesk_runner $(DESTDIR)$(PREFIX)/bin/fynedesk_runner

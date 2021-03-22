@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://godoc.org/fyne.io/fynedesk" title="GoDoc Reference" rel="nofollow"><img src="https://img.shields.io/badge/go-documentation-blue.svg?style=flat" alt="GoDoc Reference"></a>
-  <a href="https://github.com/fyne-io/fynedesk/releases/tag/v0.1.3" title="0.1.3 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.1.3-blue.svg?style=flat" alt="0.1.3 release"></a>
+  <a href="https://github.com/fyne-io/develop/releases/tag/v0.1.3" title="0.1.3 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.1.3-blue.svg?style=flat" alt="0.1.3 release"></a>
   <a href='http://gophers.slack.com/messages/fyne'><img src='https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=blue' alt='Join us on Slack' /></a>
 
   <br />
@@ -20,17 +20,22 @@ any contributions or feedback for the project.
 
 For a full desktop experience you will also need the following external tools installed:
 
-* xbacklight
-* arandr
+- xbacklight
+- arandr
 
 # Getting Started
 
-Using standard go tools you can install Fyne's desktop using:
+Using standard go tools you can install FyneDesk using:
+```
+go get fyne.io/fynedesk/cmd/fynedesk
+```
 
-    go get fyne.io/fynedesk/cmd/fynedesk
+Once installed you can run the following commands from the root of the installed fynedesk folder (usually $GOPATH/src/fyne.io/fynedesk/) to set up fynedesk as a selectable desktop option in your login manager (such as LightDM for example).
+```
+make
+sudo make install
+```
 
-Once installed you could set `$GOPATH/fynedesk` as your window manager (usually
-using .xinitrc).
 You can also run it in an embedded X window for testing using:
 
     make embed

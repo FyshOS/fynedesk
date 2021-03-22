@@ -167,6 +167,7 @@ func fdoLookupApplication(appName string) fynedesk.AppData {
 	if appName == "" {
 		return nil
 	}
+
 	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
 		testLocation := filepath.Join(dataDir, "applications", appName+".desktop")
