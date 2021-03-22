@@ -1,7 +1,11 @@
+# Ignore binaries
 cmd/fynedesk/fynedesk
 cmd/fynedesk_runner/fynedesk_runner
+fynedesk
+fynedesk_runner
 
 .idea
+.DS_Store
 
-internal/testdata/applications/app3.desktop
+internal/icon/testdata/applications/app3.desktop
 

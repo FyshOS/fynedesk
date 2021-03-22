@@ -6,7 +6,8 @@ import (
 	"log"
 	"runtime"
 
-	"fyne.io/fyne"
+	"fyne.io/fyne/v2"
+	"fyne.io/fynedesk"
 
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal"

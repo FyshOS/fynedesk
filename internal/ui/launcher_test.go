@@ -4,16 +4,16 @@ import (
 	"testing"
 
 	"fyne.io/fynedesk"
+	wmTest "fyne.io/fynedesk/test"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/test"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/widget"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestLauncher_ListMatches(t *testing.T) {
-	names := []string{"App 1", "App 2", "Another"}
-	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	setupIcons("App 1", "App 2", "Another")
 	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	apps := launcher.appButtonListMatching("App")
@@ -30,8 +30,7 @@ func TestLauncher_ListMatches(t *testing.T) {
 }
 
 func TestLauncher_ListTyped(t *testing.T) {
-	names := []string{"App 1", "App 2", "Another"}
-	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	setupIcons("App 1", "App 2", "Another")
 	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	assert.Equal(t, 0, len(launcher.appList.Objects))
@@ -42,8 +41,7 @@ func TestLauncher_ListTyped(t *testing.T) {
 }
 
 func TestLauncher_ListActive(t *testing.T) {
-	names := []string{"App 1", "App 2", "Another"}
-	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	setupIcons("App 1", "App 2", "Another")
 	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	assert.Equal(t, 0, len(launcher.appList.Objects))
@@ -51,13 +49,12 @@ func TestLauncher_ListActive(t *testing.T) {
 	test.Type(launcher.entry, "App")
 	launcher.entry.TypedKey(&fyne.KeyEvent{Name: fyne.KeyDown})
 	assert.Equal(t, 1, launcher.activeIndex)
-	assert.Equal(t, widget.DefaultButton, launcher.appList.Objects[0].(*widget.Button).Style)
-	assert.Equal(t, widget.PrimaryButton, launcher.appList.Objects[1].(*widget.Button).Style)
+	assert.Equal(t, widget.MediumImportance, launcher.appList.Objects[0].(*widget.Button).Importance)
+	assert.Equal(t, widget.HighImportance, launcher.appList.Objects[1].(*widget.Button).Importance)
 }
 
 func TestLauncher_setActiveIndex(t *testing.T) {
-	names := []string{"App 1", "App 2", "Another"}
-	fynedesk.SetInstance(&testDesk{icons: newTestAppProvider(names), settings: &testSettings{}})
+	setupIcons("App 1", "App 2", "Another")
 	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
 
 	launcher.appList.Objects = launcher.appButtonListMatching("App")
@@ -71,4 +68,10 @@ func TestLauncher_setActiveIndex(t *testing.T) {
 
 	launcher.setActiveIndex(-1)
 	assert.Equal(t, 1, launcher.activeIndex)
+}
+
+func setupIcons(icons ...string) {
+	desk := wmTest.NewDesktop()
+	desk.SetIconProvider(wmTest.NewAppProvider(icons...))
+	fynedesk.SetInstance(desk)
 }

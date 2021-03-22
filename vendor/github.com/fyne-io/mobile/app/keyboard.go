@@ -3,12 +3,23 @@ package app
 import "C"
 import "github.com/fyne-io/mobile/event/key"
 
+type KeyboardType int32
+
+const (
+	// DefaultKeyboard is the keyboard with default input style and "return" return key
+	DefaultKeyboard KeyboardType = iota
+	// SingleLineKeyboard is the keyboard with default input style and "Done" return key
+	SingleLineKeyboard
+	// NumberKeyboard is the keyboard with number input style and "Done" return key
+	NumberKeyboard
+)
+
 //export keyboardTyped
 func keyboardTyped(str *C.char) {
 	for _, r := range C.GoString(str) {
 		k := key.Event{
-			Rune: r,
-			Code: getCodeFromRune(r),
+			Rune:      r,
+			Code:      getCodeFromRune(r),
 			Direction: key.DirPress,
 		}
 		theApp.eventsIn <- k
@@ -21,11 +32,11 @@ func keyboardTyped(str *C.char) {
 //export keyboardDelete
 func keyboardDelete() {
 	theApp.eventsIn <- key.Event{
-		Code: key.CodeDeleteBackspace,
+		Code:      key.CodeDeleteBackspace,
 		Direction: key.DirPress,
 	}
 	theApp.eventsIn <- key.Event{
-		Code: key.CodeDeleteBackspace,
+		Code:      key.CodeDeleteBackspace,
 		Direction: key.DirRelease,
 	}
 }

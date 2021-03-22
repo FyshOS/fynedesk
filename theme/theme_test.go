@@ -3,9 +3,9 @@ package theme
 import (
 	"testing"
 
-	"fyne.io/fyne"
-	_ "fyne.io/fyne/test"
-	"fyne.io/fyne/theme"
+	"fyne.io/fyne/v2"
+	_ "fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -13,6 +13,8 @@ import (
 func TestIconResources(t *testing.T) {
 	assert.NotNil(t, BatteryIcon.Name())
 	assert.NotNil(t, BrightnessIcon.Name())
+	assert.NotNil(t, SoundIcon.Name())
+	assert.NotNil(t, MuteIcon.Name())
 }
 
 func TestIconTheme(t *testing.T) {

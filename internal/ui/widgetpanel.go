@@ -1,29 +1,26 @@
 package ui
 
 import (
-	"fmt"
-	"image/color"
-	"io/ioutil"
-	"log"
 	"os"
-	"os/exec"
 	"path"
-	"strconv"
-	"strings"
 	"time"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/layout"
-	"fyne.io/fyne/theme"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
+const widgetPanelWidth = float32(200)
+
 type widgetRenderer struct {
 	panel *widgetPanel
+	bg    *canvas.Rectangle
 
 	layout  fyne.Layout
 	objects []fyne.CanvasObject
@@ -34,20 +31,21 @@ func (w *widgetRenderer) MinSize() fyne.Size {
 }
 
 func (w *widgetRenderer) Layout(size fyne.Size) {
-	w.layout.Layout(w.objects, size)
+	w.bg.Resize(size)
+	w.layout.Layout(w.objects[1:], size)
 }
 
 func (w *widgetRenderer) Refresh() {
-	w.panel.clock.Color = theme.TextColor()
-	canvas.Refresh(w.panel.clock)
-}
-
-func (w *widgetRenderer) BackgroundColor() color.Color {
 	r, _, _, _ := theme.BackgroundColor().RGBA()
 	if uint8(r) > 0x99 {
-		return wmtheme.WidgetPanelBackgroundLight
+		w.bg.FillColor = wmtheme.WidgetPanelBackgroundLight
+	} else {
+		w.bg.FillColor = wmtheme.WidgetPanelBackgroundDark
 	}
-	return wmtheme.WidgetPanelBackgroundDark
+	w.bg.Refresh()
+
+	w.panel.clock.Color = theme.ForegroundColor()
+	canvas.Refresh(w.panel.clock)
 }
 
 func (w *widgetRenderer) Objects() []fyne.CanvasObject {
@@ -61,12 +59,12 @@ type widgetPanel struct {
 	widget.BaseWidget
 
 	desk       fynedesk.Desktop
-	root       fyne.Window
 	appExecWin fyne.Window
 
-	clock               *canvas.Text
-	date                *widget.Label
-	battery, brightness *widget.ProgressBar
+	clock         *canvas.Text
+	date          *widget.Label
+	modules       *fyne.Container
+	notifications fyne.CanvasObject
 }
 
 func (w *widgetPanel) clockTick() {
@@ -74,7 +72,7 @@ func (w *widgetPanel) clockTick() {
 	go func() {
 		for {
 			<-tick.C
-			w.clock.Text = formattedTime()
+			w.clock.Text = w.formattedTime()
 			canvas.Refresh(w.clock)
 
 			w.date.SetText(formattedDate())
@@ -83,84 +81,16 @@ func (w *widgetPanel) clockTick() {
 	}()
 }
 
-func (w *widgetPanel) batteryTick() {
-	tick := time.NewTicker(time.Second * 10)
-	go func() {
-		for {
-			value, _ := battery()
-			w.battery.SetValue(value)
-			<-tick.C
-		}
-	}()
-}
+func (w *widgetPanel) formattedTime() string {
+	if w.desk.Settings().ClockFormatting() == "12h" {
+		return time.Now().Format("03:04pm")
+	}
 
-func formattedTime() string {
-	return time.Now().Format("15:04pm")
+	return time.Now().Format("15:04")
 }
 
 func formattedDate() string {
 	return time.Now().Format("2 January")
-}
-
-func battery() (float64, error) {
-	nowStr, err1 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_now")
-	fullStr, err2 := ioutil.ReadFile("/sys/class/power_supply/BAT0/charge_full")
-	if err1 != nil || err2 != nil {
-		log.Println("Error reading battery info", err1)
-		return 0, err1
-	}
-
-	now, err1 := strconv.Atoi(strings.TrimSpace(string(nowStr)))
-	full, err2 := strconv.Atoi(strings.TrimSpace(string(fullStr)))
-	if err1 != nil || err2 != nil {
-		log.Println("Error converting battery info", err1)
-		return 0, err1
-	}
-
-	return float64(now) / float64(full), nil
-}
-
-func (w *widgetPanel) createBattery() {
-	if _, err := battery(); err == nil {
-		w.battery = widget.NewProgressBar()
-		go w.batteryTick()
-	}
-	if _, err := brightness(); err == nil {
-		w.brightness = widget.NewProgressBar()
-	}
-}
-
-func brightness() (float64, error) {
-	out, err := exec.Command("xbacklight").Output()
-	if err != nil {
-		log.Println("Error running xbacklight", err)
-		return 0, err
-	}
-	ret, err := strconv.ParseFloat(strings.TrimSpace(string(out)), 64)
-	if err != nil {
-		log.Println("Error reading brightness info", err)
-		return 0, err
-	}
-	return float64(ret) / 100, nil
-}
-
-func (w *widgetPanel) setBrightness(diff int) {
-	floatVal, _ := brightness()
-	value := int(floatVal*100) + diff
-
-	if value < 5 {
-		value = 5
-	} else if value > 100 {
-		value = 100
-	}
-
-	err := exec.Command("xbacklight", "-set", fmt.Sprintf("%d", value)).Run()
-	if err != nil {
-		log.Println("Error running xbacklight", err)
-	} else {
-		newVal, _ := brightness()
-		w.brightness.SetValue(newVal)
-	}
 }
 
 func (w *widgetPanel) createClock() {
@@ -168,8 +98,8 @@ func (w *widgetPanel) createClock() {
 	style.Monospace = true
 
 	w.clock = &canvas.Text{
-		Color:     theme.TextColor(),
-		Text:      formattedTime(),
+		Color:     theme.ForegroundColor(),
+		Text:      w.formattedTime(),
 		Alignment: fyne.TextAlignCenter,
 		TextStyle: style,
 		TextSize:  3 * theme.TextSize(),
@@ -184,6 +114,7 @@ func (w *widgetPanel) createClock() {
 }
 
 func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
+	isEmbed := w.desk.(*desktop).root.Title() != RootWindowName
 	items := []*fyne.MenuItem{
 		fyne.NewMenuItem("About", func() {
 			showAbout()
@@ -192,28 +123,27 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 			showSettings(w.desk.Settings().(*deskSettings))
 		}),
 	}
-	if w.desk.WindowManager() != nil {
+	if !isEmbed {
 		items = append(items, fyne.NewMenuItem("Blank Screen", w.desk.WindowManager().Blank))
-	}
-	if os.Getenv("FYNE_DESK_RUNNER") != "" && w.desk.(*deskLayout).wm != nil {
-		items = append(items, fyne.NewMenuItem("Reload", func() {
-			os.Exit(1)
-		}))
+		if os.Getenv("FYNE_DESK_RUNNER") != "" {
+			items = append(items, fyne.NewMenuItem("Reload", func() {
+				os.Exit(5)
+			}))
+		}
 	}
 
 	closeLabel := "Log Out"
-	if w.desk.(*deskLayout).wm == nil {
+	if isEmbed {
 		closeLabel = "Quit"
 	}
+
 	items = append(items, fyne.NewMenuItem(closeLabel, func() {
-		w.root.Close()
+		w.desk.WindowManager().Close()
 	}))
 
-	popup := widget.NewPopUpMenu(fyne.NewMenu("Account", items...), w.root.Canvas())
-
-	bottomLeft := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
-	popup.Move(bottomLeft.Subtract(fyne.NewPos(0, popup.MinSize().Height)))
-	popup.Resize(fyne.NewSize(from.Size().Width, popup.Content.MinSize().Height))
+	winSize := w.desk.(*desktop).root.Canvas().Size()
+	pos := fyne.NewPos(winSize.Width, winSize.Height)
+	w.desk.ShowMenuAt(fyne.NewMenu("Account", items...), pos)
 }
 
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
@@ -229,50 +159,57 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		w.showAccountMenu(account)
 	})
 	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), ShowAppLauncher)
+
+	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackgroundDark)
 	objects := []fyne.CanvasObject{
+		bg,
 		w.clock,
 		w.date,
-		layout.NewSpacer(),
-		appExecButton,
-	}
-	if _, err := battery(); err == nil {
-		batteryIcon := widget.NewIcon(wmtheme.BatteryIcon)
-		objects = append(objects,
-			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, batteryIcon, nil), batteryIcon, w.battery))
-	}
-	if _, err := brightness(); err == nil {
-		brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
-		less := widget.NewButtonWithIcon("", theme.ContentRemoveIcon(), func() {
-			w.setBrightness(-5)
-		})
-		more := widget.NewButtonWithIcon("", theme.ContentAddIcon(), func() {
-			w.setBrightness(5)
-		})
-		bright := fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, less, more),
-			less, w.brightness, more)
-		objects = append(objects,
-			fyne.NewContainerWithLayout(layout.NewBorderLayout(nil, nil, brightnessIcon, nil), brightnessIcon, bright))
-		go w.setBrightness(0)
-	}
-	objects = append(objects,
-		account)
+		w.notifications}
+
+	w.modules = container.NewVBox()
+	objects = append(objects, layout.NewSpacer(), w.modules, appExecButton, account)
+	w.loadModules(w.desk.Modules())
 
 	return &widgetRenderer{
 		panel:   w,
+		bg:      bg,
 		layout:  layout.NewVBoxLayout(),
 		objects: objects,
+	}
+}
+
+func (w *widgetPanel) MinSize() fyne.Size {
+	return fyne.NewSize(widgetPanelWidth, 200)
+}
+
+func (w *widgetPanel) reloadModules(mods []fynedesk.Module) {
+	w.modules.Objects = nil
+	w.loadModules(mods)
+	w.modules.Refresh()
+}
+
+func (w *widgetPanel) loadModules(mods []fynedesk.Module) {
+	for _, m := range mods {
+		if statusMod, ok := m.(fynedesk.StatusAreaModule); ok {
+			wid := statusMod.StatusAreaWidget()
+			if wid == nil {
+				continue
+			}
+
+			w.modules.Objects = append(w.modules.Objects, wid)
+		}
 	}
 }
 
 func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 	w := &widgetPanel{
 		desk:       rootDesk,
-		root:       rootDesk.Root(),
 		appExecWin: nil,
 	}
 	w.ExtendBaseWidget(w)
+	w.notifications = startNotifications()
 	w.createClock()
-	w.createBattery()
 
 	return w
 }

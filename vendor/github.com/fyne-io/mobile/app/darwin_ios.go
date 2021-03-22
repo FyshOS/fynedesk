@@ -9,7 +9,7 @@ package app
 
 /*
 #cgo CFLAGS: -x objective-c -DGL_SILENCE_DEPRECATION
-#cgo LDFLAGS: -framework Foundation -framework UIKit -framework GLKit -framework OpenGLES -framework QuartzCore
+#cgo LDFLAGS: -framework Foundation -framework UIKit -framework MobileCoreServices -framework GLKit -framework OpenGLES -framework QuartzCore -framework UserNotifications
 #include <sys/utsname.h>
 #include <stdint.h>
 #include <pthread.h>
@@ -24,10 +24,11 @@ void swapBuffers(GLintptr ctx);
 uint64_t threadID();
 
 UIEdgeInsets getDevicePadding();
-void showKeyboard();
+void showKeyboard(int keyboardType);
 void hideKeyboard();
 
-void showFileOpenPicker();
+void showFileOpenPicker(char* mimes, char *exts);
+void closeFileResource(void* urlPtr);
 */
 import "C"
 import (
@@ -36,6 +37,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	"unsafe"
 
 	"github.com/fyne-io/mobile/event/lifecycle"
 	"github.com/fyne-io/mobile/event/paint"
@@ -74,15 +76,15 @@ func main(f func(App)) {
 var pixelsPerPt float32
 var screenScale int // [UIScreen mainScreen].scale, either 1, 2, or 3.
 
-var DisplayMetrics struct{
-	WidthPx int
+var DisplayMetrics struct {
+	WidthPx  int
 	HeightPx int
 }
 
 //export setDisplayMetrics
 func setDisplayMetrics(width, height int, scale int) {
-	DisplayMetrics.WidthPx = width * scale
-	DisplayMetrics.HeightPx = height * scale
+	DisplayMetrics.WidthPx = width
+	DisplayMetrics.HeightPx = height
 }
 
 //export setScreen
@@ -124,16 +126,15 @@ func updateConfig(width, height, orientation int32) {
 		o = size.OrientationPortrait
 	case C.UIDeviceOrientationLandscapeLeft, C.UIDeviceOrientationLandscapeRight:
 		o = size.OrientationLandscape
+		width, height = height, width
 	}
-	widthPx := screenScale * int(width)
-	heightPx := screenScale * int(height)
 	insets := C.getDevicePadding()
 
 	theApp.eventsIn <- size.Event{
-		WidthPx:       widthPx,
-		HeightPx:      heightPx,
-		WidthPt:       geom.Pt(float32(widthPx) / pixelsPerPt),
-		HeightPt:      geom.Pt(float32(heightPx) / pixelsPerPt),
+		WidthPx:       int(width),
+		HeightPx:      int(height),
+		WidthPt:       geom.Pt(float32(width) / pixelsPerPt),
+		HeightPt:      geom.Pt(float32(height) / pixelsPerPt),
 		InsetTopPx:    int(float32(insets.top) * float32(screenScale)),
 		InsetBottomPx: int(float32(insets.bottom) * float32(screenScale)),
 		InsetLeftPx:   int(float32(insets.left) * float32(screenScale)),
@@ -208,7 +209,7 @@ func drawloop() {
 	runtime.LockOSThread()
 	defer runtime.UnlockOSThread()
 
-	for workAvailable := theApp.worker.WorkAvailable();;{
+	for workAvailable := theApp.worker.WorkAvailable(); ; {
 		select {
 		case <-workAvailable:
 			theApp.worker.DoWork()
@@ -258,8 +259,8 @@ func (a *app) loop(ctx C.GLintptr) {
 }
 
 // driverShowVirtualKeyboard requests the driver to show a virtual keyboard for text input
-func driverShowVirtualKeyboard() {
-	C.showKeyboard()
+func driverShowVirtualKeyboard(keyboard KeyboardType) {
+	C.showKeyboard(C.int(int32(keyboard)))
 }
 
 // driverHideVirtualKeyboard requests the driver to hide any visible virtual keyboard
@@ -267,20 +268,36 @@ func driverHideVirtualKeyboard() {
 	C.hideKeyboard()
 }
 
-var fileCallback func(string)
+var fileCallback func(string, func())
 
 //export filePickerReturned
-func filePickerReturned(str *C.char) {
+func filePickerReturned(str *C.char, urlPtr unsafe.Pointer) {
 	if fileCallback == nil {
 		return
 	}
 
-	fileCallback(C.GoString(str))
+	fileCallback(C.GoString(str), func() {
+		C.closeFileResource(urlPtr)
+	})
 	fileCallback = nil
 }
 
-func driverShowFileOpenPicker(callback func(string)) {
+func driverShowFileOpenPicker(callback func(string, func()), filter *FileFilter) {
 	fileCallback = callback
 
-	C.showFileOpenPicker()
+	mimes := strings.Join(filter.MimeTypes, "|")
+
+	// extensions must have the '.' removed for UTI lookups on iOS
+	extList := []string{}
+	for _, ext := range filter.Extensions {
+		extList = append(extList, ext[1:])
+	}
+	exts := strings.Join(extList, "|")
+
+	mimeStr := C.CString(mimes)
+	defer C.free(unsafe.Pointer(mimeStr))
+	extStr := C.CString(exts)
+	defer C.free(unsafe.Pointer(extStr))
+
+	C.showFileOpenPicker(mimeStr, extStr)
 }
