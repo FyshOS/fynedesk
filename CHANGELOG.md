@@ -23,6 +23,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Support choosing between Alt and Win key for shortcuts
 * Add AC power indicator to battery module
 * Add option to change border button position
+* Support pseudo transparency for apps like X terminals
 
 ### Changed
 
@@ -54,6 +55,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * alt-space not reliable (#160)
 * Moving windows on external screens shows screen tearing (#161)
 * Applications can push other ones off the screen (#163)
+* Reduce load/reload time by around 50%
 
 
 ## 0.1.3 - 15 April 2020
