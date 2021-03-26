@@ -26,6 +26,15 @@ func TestMacOSAppProvider_FindAppFromName(t *testing.T) {
 	assert.Equal(t, "Test", app.Name())
 }
 
+func TestMacOSAppProvider_FindAppFromName_Chrome(t *testing.T) {
+	provider := NewMacOSAppProvider()
+	provider.(*macOSAppProvider).rootDirs = []string{"testdata"}
+
+	app := provider.FindAppFromName("Chrome Test")
+	assert.NotNil(t, app)
+	assert.Equal(t, "Chrome Test", app.Name())
+}
+
 func TestMacOSAppProvider_FindAppFromWinInfo(t *testing.T) {
 	provider := NewMacOSAppProvider()
 	provider.(*macOSAppProvider).rootDirs = []string{"testdata"}

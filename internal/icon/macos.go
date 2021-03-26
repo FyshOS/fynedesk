@@ -26,6 +26,9 @@ type macOSAppBundle struct {
 	runPath    string
 	IconFile   string `plist:"CFBundleIconFile"`
 	iconPath   string
+
+	ChromeAppName string `plist:"CrAppModeShortcutName"`
+	ChromeAppID   string `plist:"CrAppModeShortcutID"`
 }
 
 func (m *macOSAppBundle) Name() string {
@@ -67,6 +70,7 @@ func loadAppBundle(name, path string) fynedesk.AppData {
 		fyne.LogError("Unable to read application plist", err)
 		return nil
 	}
+	defer buf.Close()
 
 	var data macOSAppBundle
 	data.DisplayName = name
@@ -77,6 +81,11 @@ func loadAppBundle(name, path string) fynedesk.AppData {
 		return nil
 	}
 	data.runPath = filepath.Join(path, "Contents", "MacOS", data.Executable)
+
+	if data.ChromeAppName != "" { // read Chrome metadata
+		data.DisplayName = data.ChromeAppName
+		data.Executable = "open -a Chrome --app-id=" + data.ChromeAppID
+	}
 
 	data.iconPath = filepath.Join(path, "Contents", "Resources", data.IconFile)
 	pos := strings.Index(data.iconPath, ".icns")
@@ -95,7 +104,12 @@ func (m *macOSAppProvider) FindIconsMatchingAppName(theme string, size int, appN
 }
 
 func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
+	user, _ := os.UserHomeDir()
 	for _, root := range m.rootDirs {
+		if root[0] == '~' {
+			root = user + root[1:]
+		}
+
 		files, err := ioutil.ReadDir(root)
 		if err != nil {
 			fyne.LogError("Could not read applications directory "+root, err)
@@ -133,11 +147,13 @@ func (m *macOSAppProvider) AvailableThemes() []string {
 func (m *macOSAppProvider) FindAppFromName(appName string) fynedesk.AppData {
 	var icon fynedesk.AppData
 	m.forEachApplication(func(name, path string) bool {
-		if name == appName {
-			icon = loadAppBundle(name, path)
-			if icon != nil {
-				return true
-			}
+		icon = loadAppBundle(name, path)
+		if icon == nil {
+			return false
+		}
+
+		if icon.Name() == appName && icon != nil {
+			return true
 		}
 
 		return false
@@ -165,14 +181,16 @@ func (m *macOSAppProvider) DefaultApps() []fynedesk.AppData {
 func (m *macOSAppProvider) FindAppsMatching(pattern string) []fynedesk.AppData {
 	var icons []fynedesk.AppData
 	m.forEachApplication(func(name, path string) bool {
-		if !strings.Contains(strings.ToLower(name), strings.ToLower(pattern)) {
+		app := loadAppBundle(name, path)
+		if app == nil {
 			return false
 		}
 
-		app := loadAppBundle(name, path)
-		if app != nil {
-			icons = append(icons, app)
+		if !strings.Contains(strings.ToLower(app.Name()), strings.ToLower(pattern)) {
+			return false
 		}
+
+		icons = append(icons, app)
 		return false
 	})
 
@@ -182,5 +200,5 @@ func (m *macOSAppProvider) FindAppsMatching(pattern string) []fynedesk.AppData {
 // NewMacOSAppProvider creates an instance of an ApplicationProvider that can find and decode macOS apps
 func NewMacOSAppProvider() fynedesk.ApplicationProvider {
 	return &macOSAppProvider{rootDirs: []string{"/Applications", "/Applications/Utilities",
-		"/System/Applications", "/System/Applications/Utilities"}}
+		"/System/Applications", "/System/Applications/Utilities", "~/Applications/Chrome Apps.localized"}}
 }
