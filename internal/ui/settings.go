@@ -217,7 +217,7 @@ func (d *deskSettings) load() {
 	if moduleNames != "" {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
-	d.modifier = deskDriver.Modifier(fyne.CurrentApp().Preferences().Int("keyboardmodifier"))
+	d.modifier = deskDriver.Modifier(fyne.CurrentApp().Preferences().IntWithFallback("keyboardmodifier", int(deskDriver.SuperModifier)))
 
 	d.borderButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
 
