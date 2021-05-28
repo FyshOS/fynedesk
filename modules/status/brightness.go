@@ -59,6 +59,10 @@ func (b *brightness) value() (float64, error) {
 		return val / max, nil
 	default:
 		out, err := exec.Command("xbacklight").Output()
+		if err != nil {
+			fyne.LogError("Error running xbacklight", err)
+			return 0, err
+		}
 
 		if strings.TrimSpace(string(out)) == "" {
 			return 0, errors.New("no back-lit screens found")
