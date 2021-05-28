@@ -5,7 +5,7 @@
 
   <br />
   <a href="https://goreportcard.com/report/fyne.io/fynedesk"><img src="https://goreportcard.com/badge/fyne.io/fynedesk" alt="Code Status" /></a>
-  <a href="https://travis-ci.org/fyne-io/fynedesk"><img src="https://travis-ci.org/fyne-io/fynedesk.svg" alt="Build Status" /></a>
+  <a href="https://github.com/fyne-io/fynedesk/actions"><img src="https://github.com/fyne-io/fynedesk/workflows/Platform%20Tests/badge.svg" alt="Build Status" /></a>
   <a href='https://coveralls.io/github/fyne-io/fynedesk?branch=develop'><img src='https://coveralls.io/repos/github/fyne-io/fynedesk/badge.svg?branch=develop' alt='Coverage Status' /></a>
 </p>
 

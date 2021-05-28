@@ -7,34 +7,34 @@ type embeddedScreensProvider struct {
 	screens []*fynedesk.Screen
 }
 
-func (esp embeddedScreensProvider) RefreshScreens() {
+func (esp *embeddedScreensProvider) RefreshScreens() {
 }
 
-func (esp embeddedScreensProvider) AddChangeListener(func()) {
+func (esp *embeddedScreensProvider) AddChangeListener(func()) {
 	// no-op
 }
 
-func (esp embeddedScreensProvider) Screens() []*fynedesk.Screen {
+func (esp *embeddedScreensProvider) Screens() []*fynedesk.Screen {
 	return esp.screens
 }
 
-func (esp embeddedScreensProvider) SetActive(s *fynedesk.Screen) {
+func (esp *embeddedScreensProvider) SetActive(s *fynedesk.Screen) {
 	esp.active = s
 }
 
-func (esp embeddedScreensProvider) Active() *fynedesk.Screen {
+func (esp *embeddedScreensProvider) Active() *fynedesk.Screen {
 	return esp.active
 }
 
-func (esp embeddedScreensProvider) Primary() *fynedesk.Screen {
+func (esp *embeddedScreensProvider) Primary() *fynedesk.Screen {
 	return esp.Screens()[0]
 }
 
-func (esp embeddedScreensProvider) ScreenForWindow(win fynedesk.Window) *fynedesk.Screen {
+func (esp *embeddedScreensProvider) ScreenForWindow(win fynedesk.Window) *fynedesk.Screen {
 	return esp.Screens()[0]
 }
 
-func (esp embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *fynedesk.Screen {
+func (esp *embeddedScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *fynedesk.Screen {
 	return esp.Screens()[0]
 }
 
