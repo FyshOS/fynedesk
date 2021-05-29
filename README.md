@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://godoc.org/fyne.io/fynedesk" title="GoDoc Reference" rel="nofollow"><img src="https://img.shields.io/badge/go-documentation-blue.svg?style=flat" alt="GoDoc Reference"></a>
-  <a href="https://github.com/fyne-io/develop/releases/tag/v0.1.3" title="0.1.3 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.1.3-blue.svg?style=flat" alt="0.1.3 release"></a>
+  <a href="https://github.com/fyne-io/fynedesk/releases/tag/v0.2.0" title="0.2.0 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.2.0-blue.svg?style=flat" alt="0.2.0 release"></a>
   <a href='http://gophers.slack.com/messages/fyne'><img src='https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=blue' alt='Join us on Slack' /></a>
 
   <br />
