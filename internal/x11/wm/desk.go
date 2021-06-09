@@ -655,8 +655,12 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 		xproto.ChangeWindowAttributes(x.Conn(), win, xproto.CwEventMask, []uint32{xproto.EventMaskLeaveWindow})
 
 		screen := fynedesk.Instance().Screens().Primary()
-		//attrs, _ := xproto.GetGeometry(x.Conn(), xproto.Drawable(win)).Reply()
-		w, h := 200*screen.CanvasScale(), 169*screen.CanvasScale() // TODO figure out why this lookup does not work for BSD: int(attrs.Width), int(attrs.Height)
+		// attrs, _ := xproto.GetGeometry(x.Conn(), xproto.Drawable(win)).Reply()
+		var height float32 = 136
+		if usingRunner() {
+			height = 169
+		}
+		w, h := 200*screen.CanvasScale(), height*screen.CanvasScale() // TODO figure out why this lookup does not work for BSD: int(attrs.Width), int(attrs.Height)
 
 		mx := screen.X + screen.Width - int(w)
 		my := screen.Y + screen.Height - int(h)
@@ -830,4 +834,8 @@ func min(a, b int) int {
 	}
 
 	return b
+}
+
+func usingRunner() bool {
+	return len(os.Getenv("FYNE_DESK_RUNNER")) > 0
 }
