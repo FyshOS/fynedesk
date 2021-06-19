@@ -21,4 +21,4 @@ uninstall:
 
 embed:
 	DISPLAY=:0 Xephyr :1 -screen 1280x720 &
-	DISPLAY=:1 fynedesk
+	DISPLAY=:1 go run ./cmd/fynedesk
