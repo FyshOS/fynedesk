@@ -40,7 +40,7 @@ func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 
 	bg := canvas.NewRectangle(color.Transparent)
 	img := canvas.NewImageFromResource(res)
-	text := widget.NewLabel(title)
+	text := widget.NewLabelWithStyle(title, fyne.TextAlignCenter, fyne.TextStyle{})
 	text.Wrapping = fyne.TextTruncate
 	return &switchIconRenderer{icon: s, bg: bg,
 		img: img, text: text, objects: []fyne.CanvasObject{bg, img, text}}
@@ -93,8 +93,8 @@ func (s switchIconRenderer) Layout(size fyne.Size) {
 	s.bg.Move(fyne.NewPos(-theme.Padding(), -theme.Padding()))
 	s.bg.Resize(size.Add(fyne.NewSize(theme.Padding()*2, theme.Padding()*2)))
 	s.img.Resize(fyne.NewSize(switcherIconSize, switcherIconSize))
-	s.text.Resize(fyne.NewSize(switcherIconSize, switcherTextSize))
-	s.text.Move(fyne.NewPos(0, switcherIconSize+theme.Padding()))
+	s.text.Resize(fyne.NewSize(switcherIconSize+theme.Padding()*2, switcherTextSize))
+	s.text.Move(fyne.NewPos(-theme.Padding()*1, switcherIconSize))
 }
 
 func (s switchIconRenderer) MinSize() fyne.Size {
