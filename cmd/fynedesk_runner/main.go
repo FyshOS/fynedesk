@@ -46,6 +46,9 @@ func main() {
 			} else if status == 512 { // X server unavailable
 				log.Println("X server went away")
 				return
+			} else if status == 2 {
+				log.Println("Failed to reconnect to X")
+				return
 			} else {
 				log.Println("Restart from status", status)
 			}
