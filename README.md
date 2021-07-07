@@ -68,3 +68,13 @@ Using standard go tools you can install the runner using:
 From then on execute that instead of the `fynedesk` command for a more 
 resillient desktop when testing out pre-release builds.
 
+# Shipping FyneDesk
+
+If you are installing FyneDesk by default on a distribution, or making it available as a standard option, you should consider the following points.
+You do not need to ship the library or any dependencies, but it is recommended to add the following apps as well:
+
+| app | go get | description |
+| --- | ------ | ----------- |
+| fin | `github.com/fyne-io/fin` | A display manager app that matches the look and feel of FyneDesk |
+
+Please do let us know if you package FyneDesk for your system, so we can include a link from here :).
