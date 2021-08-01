@@ -12,14 +12,17 @@ import (
 	"github.com/Knetic/govaluate"
 )
 
+var (
+	exprRegex = regexp.MustCompile(`^[0-9.+\-*/()]+$`)
+	numRegex  = regexp.MustCompile(`^[0-9.]+$`)
+)
+
 var calcMeta = fynedesk.ModuleMetadata{
 	Name:        "Launcher: Calculate",
 	NewInstance: newCalcSuggest,
 }
 
-type calc struct {
-	exprRegex, numRegex *regexp.Regexp
-}
+type calc struct{}
 
 func (c *calc) Destroy() {
 }
@@ -60,14 +63,12 @@ func (c *calc) Metadata() fynedesk.ModuleMetadata {
 
 // isExpression will return true if input is a mathematical expression unless it just contains a number
 func (c *calc) isExpression(input string) bool {
-	return c.exprRegex.MatchString(input) && !c.numRegex.MatchString(input)
+	return exprRegex.MatchString(input) && !numRegex.MatchString(input)
 }
 
 // newCalcSuggest creates a new module that will show calculations in the launcher suggestions
 func newCalcSuggest() fynedesk.Module {
-	expr, _ := regexp.Compile(`^[0-9.+\-*/()]+$`)
-	num, _ := regexp.Compile(`^[0-9.]+$`)
-	return &calc{exprRegex: expr, numRegex: num}
+	return &calc{}
 }
 
 type calcItem struct {
