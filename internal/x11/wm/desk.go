@@ -5,7 +5,6 @@ package wm // import "fyne.io/fynedesk/internal/x11/wm"
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"image"
 	"math"
 	"os"
@@ -701,7 +700,7 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 }
 
 func (x *x11WM) takeSelectionOwnership() {
-	name := fmt.Sprintf("WM_S%d", x.x.Conn().DefaultScreen)
+	name := "WM_S" + strconv.Itoa(x.x.Conn().DefaultScreen)
 	selAtom, err := xprop.Atm(x.x, name)
 	if err != nil {
 		fyne.LogError("Error getting selection atom", err)
