@@ -3,7 +3,6 @@
 package status
 
 import (
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
