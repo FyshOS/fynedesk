@@ -2,7 +2,6 @@ package status
 
 import (
 	"errors"
-	"fmt"
 	"image/color"
 	"os/exec"
 	"strconv"
@@ -92,13 +91,13 @@ func (b *brightness) setValue(value int) {
 
 	switch b.mode {
 	case brightnessctl:
-		err := exec.Command("brightnessctl", "set", fmt.Sprintf("%d%%", value)).Run()
+		err := exec.Command("brightnessctl", "set", strconv.Itoa(value)+"%").Run()
 		if err != nil {
 			fyne.LogError("Error running brightnessctl", err)
 			return
 		}
 	default:
-		err := exec.Command("xbacklight", "-set", fmt.Sprintf("%d", value)).Run()
+		err := exec.Command("xbacklight", "-set", strconv.Itoa(value)).Run()
 		if err != nil {
 			fyne.LogError("Error running xbacklight", err)
 			return
@@ -216,8 +215,8 @@ func (i *brightItem) Icon() fyne.Resource {
 func (i *brightItem) Title() string {
 	if startsWith(i.input, "down") {
 		return "Brightness down"
-	} else if val, err := strconv.Atoi(i.input); err == nil {
-		return fmt.Sprintf("Brightness %d%%", val)
+	} else if _, err := strconv.Atoi(i.input); err == nil {
+		return "Brightness " + i.input + "%"
 	}
 
 	return "Brightness up"

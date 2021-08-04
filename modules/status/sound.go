@@ -1,7 +1,6 @@
 package status
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -140,8 +139,8 @@ func (i *volItem) Title() string {
 		return "Volume up"
 	} else if startsWith(i.input, "down") {
 		return "Volume down"
-	} else if val, err := strconv.Atoi(i.input); err == nil {
-		return fmt.Sprintf("Volume %d%%", val)
+	} else if _, err := strconv.Atoi(i.input); err == nil {
+		return "Volume " + i.input + "%"
 	}
 
 	if i.s.muted() {

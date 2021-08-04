@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"os"
 	"os/exec"
 	"runtime"
@@ -199,11 +198,11 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 
 	iconSize := widget.NewEntry()
 	iconSize.Wrapping = fyne.TextWrapOff
-	iconSize.SetText(fmt.Sprintf("%0.0f", d.settings.LauncherIconSize()))
+	iconSize.SetText(strconv.FormatFloat(float64(d.settings.LauncherIconSize()), 'f', 0, 32))
 
 	zoomScale := widget.NewEntry()
 	zoomScale.Wrapping = fyne.TextWrapOff
-	zoomScale.SetText(fmt.Sprintf("%0.2f", d.settings.LauncherZoomScale()))
+	zoomScale.SetText(strconv.FormatFloat(float64(d.settings.LauncherZoomScale()), 'f', 2, 64))
 
 	sizeCell := container.NewHBox(widget.NewLabel("Launcher Icon Size:"), iconSize)
 	zoomCell := container.NewHBox(widget.NewLabel("Launcher Zoom Scale:"), zoomScale)
@@ -331,15 +330,15 @@ func loadScreensTable() fyne.CanvasObject {
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
 		names.Add(widget.NewLabelWithStyle(screen.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
 		labels1.Add(widget.NewLabel("Width"))
-		values1.Add(widget.NewLabel(fmt.Sprintf("%dpx", screen.Width)))
+		values1.Add(widget.NewLabel(strconv.Itoa(screen.Width) + "px"))
 		labels2.Add(widget.NewLabel("Height"))
-		values2.Add(widget.NewLabel(fmt.Sprintf("%dpx", screen.Height)))
+		values2.Add(widget.NewLabel(strconv.Itoa(screen.Height) + "px"))
 
 		names.Add(widget.NewLabel(""))
 		labels1.Add(widget.NewLabel("Scale"))
-		values1.Add(widget.NewLabel(fmt.Sprintf("%.1f", screen.Scale)))
+		values1.Add(widget.NewLabel(strconv.FormatFloat(float64(screen.Scale), 'f', 1, 32)))
 		labels2.Add(widget.NewLabel("Applied"))
-		values2.Add(widget.NewLabel(fmt.Sprintf("%.1f", screen.CanvasScale())))
+		values2.Add(widget.NewLabel(strconv.FormatFloat(float64(screen.CanvasScale()), 'f', 1, 32)))
 	}
 
 	return container.NewHBox(names, labels1, values1, labels2, values2)
@@ -356,7 +355,7 @@ func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
 	}
 
 	userScale := fyne.CurrentApp().Settings().Scale()
-	content := container.NewVBox(widget.NewLabel(fmt.Sprintf("User scale: %0.2f", userScale)))
+	content := container.NewVBox(widget.NewLabel("User scale: " + strconv.FormatFloat(float64(userScale), 'f', 2, 32)))
 	screens := widget.NewCard("Screens", "", container.NewVBox(displays, content, loadScreensTable()))
 	return screens
 }

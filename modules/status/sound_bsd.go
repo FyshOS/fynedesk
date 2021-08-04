@@ -3,7 +3,6 @@
 package status
 
 import (
-	"fmt"
 	"os/exec"
 	"strconv"
 	"strings"
@@ -53,7 +52,8 @@ func (b *sound) setup() error {
 }
 
 func (b *sound) setValue(vol int) {
-	level := fmt.Sprintf("%d:%d", vol, vol)
+	volStr := strconv.Itoa(vol)
+	level := vol + ":" + vol
 	cmd := exec.Command("mixer", "vol", level)
 	if err := cmd.Run(); err != nil {
 		fyne.LogError("Failed to set volume", err)

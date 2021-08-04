@@ -3,7 +3,6 @@ package icon // import "fyne.io/fynedesk/internal/icon"
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"image/png"
 	"io/ioutil"
 	"math"
@@ -234,11 +233,9 @@ func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDi
 	var closestMatch string
 	var difference int
 	for _, size := range sizes {
-		sizeDir := ""
+		sizeDir := strconv.Itoa(size)
 		if format == "32x32" {
-			sizeDir = fmt.Sprintf("%dx%d", size, size)
-		} else {
-			sizeDir = fmt.Sprintf("%d", size)
+			sizeDir = sizeDir + "x" + sizeDir
 		}
 		matchDir := ""
 		if joiner != "" {
@@ -389,7 +386,7 @@ func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconNa
 func fdoLookupIconPath(theme string, size int, iconName string) string {
 	locationLookup := fdoLookupXdgDataDirs()
 	iconTheme := theme
-	iconSize := fmt.Sprintf("%d", size)
+	iconSize := strconv.Itoa(size)
 	for _, dataDir := range locationLookup {
 		//Example is /usr/share/icons/icon_theme
 		dir := filepath.Join(dataDir, "icons", iconTheme)

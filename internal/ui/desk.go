@@ -1,8 +1,8 @@
 package ui
 
 import (
-	"fmt"
 	"math"
+	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -162,7 +162,7 @@ func (l *desktop) qtScreenScales() string {
 		}
 		// Qt toolkit cannot handle scale < 1
 		positiveScale := math.Max(1.0, float64(screen.CanvasScale()))
-		screenScales += fmt.Sprintf("%s=%1.1f", screen.Name, positiveScale)
+		screenScales += screen.Name + "=" + strconv.FormatFloat(positiveScale, 'f', 1, 32)
 	}
 	return screenScales
 }
@@ -171,9 +171,9 @@ func (l *desktop) scaleVars(scale float32) []string {
 	intScale := int(math.Round(float64(scale)))
 
 	return []string{
-		fmt.Sprintf("QT_SCREEN_SCALE_FACTORS=%s", l.qtScreenScales()),
-		fmt.Sprintf("GDK_SCALE=%d", intScale),
-		fmt.Sprintf("ELM_SCALE=%1.1f", scale),
+		"QT_SCREEN_SCALE_FACTORS=" + l.qtScreenScales(),
+		"GDK_SCALE=" + strconv.Itoa(intScale),
+		"ELM_SCALE=" + strconv.FormatFloat(float64(scale), 'f', 1, 32),
 	}
 }
 
