@@ -58,11 +58,16 @@ type Entry struct {
 
 	cursorAnim *entryCursorAnimation
 
+	dirty       bool
 	focused     bool
 	text        *textProvider
 	placeholder *textProvider
 	content     *entryContent
 	scroll      *widget.Scroll
+
+	// useful for Form validation (as the error text should only be shown when
+	// the entry is unfocused)
+	onFocusChanged func(bool)
 
 	// selectRow and selectColumn represent the selection start location
 	// The selection will span from selectRow/Column to CursorRow/Column -- note that the cursor
@@ -132,7 +137,7 @@ func (e *Entry) Bind(data binding.String) {
 		val, err := data.Get()
 		if err != nil {
 			convertErr = err
-			e.SetValidationError(e.Validate())
+			e.Validate()
 			return
 		}
 		e.Text = val
@@ -146,7 +151,7 @@ func (e *Entry) Bind(data binding.String) {
 
 	e.OnChanged = func(s string) {
 		convertErr = data.Set(s)
-		e.SetValidationError(e.Validate())
+		e.Validate()
 	}
 }
 
@@ -293,8 +298,12 @@ func (e *Entry) ExtendBaseWidget(wid fyne.Widget) {
 // Implements: fyne.Focusable
 func (e *Entry) FocusGained() {
 	e.setFieldsAndRefresh(func() {
+		e.dirty = true
 		e.focused = true
 	})
+	if e.onFocusChanged != nil {
+		e.onFocusChanged(true)
+	}
 }
 
 // FocusLost is called when the Entry has had focus removed.
@@ -305,6 +314,9 @@ func (e *Entry) FocusLost() {
 		e.focused = false
 		e.selectKeyDown = false
 	})
+	if e.onFocusChanged != nil {
+		e.onFocusChanged(false)
+	}
 }
 
 // Hide hides the entry.
@@ -482,21 +494,20 @@ func (e *Entry) TappedSecondary(pe *fyne.PointEvent) {
 		return // no popup options for a disabled concealed field
 	}
 
+	clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
+	super := e.super()
+
 	cutItem := fyne.NewMenuItem("Cut", func() {
-		clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
-		e.cutToClipboard(clipboard)
+		super.(fyne.Shortcutable).TypedShortcut(&fyne.ShortcutCut{Clipboard: clipboard})
 	})
 	copyItem := fyne.NewMenuItem("Copy", func() {
-		clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
-		e.copyToClipboard(clipboard)
+		super.(fyne.Shortcutable).TypedShortcut(&fyne.ShortcutCopy{Clipboard: clipboard})
 	})
 	pasteItem := fyne.NewMenuItem("Paste", func() {
-		clipboard := fyne.CurrentApp().Driver().AllWindows()[0].Clipboard()
-		e.pasteFromClipboard(clipboard)
+		super.(fyne.Shortcutable).TypedShortcut(&fyne.ShortcutPaste{Clipboard: clipboard})
 	})
 	selectAllItem := fyne.NewMenuItem("Select all", e.selectAll)
 
-	super := e.super()
 	entryPos := fyne.CurrentApp().Driver().AbsolutePositionForObject(super)
 	popUpPos := entryPos.Add(fyne.NewPos(pe.Position.X, pe.Position.Y))
 	c := fyne.CurrentApp().Driver().CanvasForObject(super)
@@ -1026,6 +1037,10 @@ func (e *Entry) textProvider() *textProvider {
 		return e.text
 	}
 
+	if e.Text != "" {
+		e.dirty = true
+	}
+
 	text := newTextProvider(e.Text, e)
 	text.ExtendBaseWidget(text)
 	text.extraPad = fyne.NewSize(theme.Padding(), theme.InputBorderSize())
@@ -1073,14 +1088,16 @@ func (e *Entry) updateText(text string) {
 		changed := e.Text != text
 		e.Text = text
 
+		if e.Text != "" {
+			e.dirty = true
+		}
+
 		if changed {
 			callback = e.OnChanged
 		}
 	})
 
-	if validate := e.Validator; validate != nil {
-		e.SetValidationError(validate(text))
-	}
+	e.Validate()
 
 	if callback != nil {
 		callback(text)
@@ -1252,7 +1269,7 @@ func (r *entryRenderer) Refresh() {
 	}
 
 	if r.entry.Validator != nil {
-		if !r.entry.focused && !r.entry.Disabled() && r.entry.Text != "" && r.entry.validationError != nil {
+		if !r.entry.focused && !r.entry.Disabled() && r.entry.dirty && r.entry.validationError != nil {
 			r.line.FillColor = theme.ErrorColor()
 		}
 		r.ensureValidationSetup()
@@ -1271,9 +1288,8 @@ func (r *entryRenderer) ensureValidationSetup() {
 		r.objects = append(r.objects, r.entry.validationStatus)
 		r.Layout(r.entry.size)
 
-		if r.entry.Text != "" {
-			r.entry.Validate()
-		}
+		r.entry.Validate()
+
 		r.Refresh()
 	}
 }
@@ -1546,6 +1562,10 @@ func (r *entryContentRenderer) moveCursor() {
 }
 
 func (r *entryContentRenderer) updateScrollDirections() {
+	if r.content.scroll == nil { // not scrolling
+		return
+	}
+
 	switch r.content.entry.Wrapping {
 	case fyne.TextWrapOff:
 		r.content.scroll.Direction = widget.ScrollNone

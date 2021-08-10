@@ -175,7 +175,6 @@ func (conn *Conn) handleCall(msg *Message) {
 	if msg.Flags&FlagNoReplyExpected == 0 {
 		reply := new(Message)
 		reply.Type = TypeMethodReply
-		reply.serial = conn.getSerial()
 		reply.Headers = make(map[HeaderField]Variant)
 		if hasSender {
 			reply.Headers[FieldDestination] = msg.Headers[FieldSender]
@@ -211,7 +210,6 @@ func (conn *Conn) Emit(path ObjectPath, name string, values ...interface{}) erro
 	}
 	msg := new(Message)
 	msg.Type = TypeSignal
-	msg.serial = conn.getSerial()
 	msg.Headers = make(map[HeaderField]Variant)
 	msg.Headers[FieldInterface] = MakeVariant(iface)
 	msg.Headers[FieldMember] = MakeVariant(member)
@@ -327,19 +325,22 @@ func (conn *Conn) ExportSubtreeMethodTable(methods map[string]interface{}, path 
 }
 
 func (conn *Conn) exportMethodTable(methods map[string]interface{}, path ObjectPath, iface string, includeSubtree bool) error {
-	out := make(map[string]reflect.Value)
-	for name, method := range methods {
-		rval := reflect.ValueOf(method)
-		if rval.Kind() != reflect.Func {
-			continue
+	var out map[string]reflect.Value
+	if methods != nil {
+		out = make(map[string]reflect.Value)
+		for name, method := range methods {
+			rval := reflect.ValueOf(method)
+			if rval.Kind() != reflect.Func {
+				continue
+			}
+			t := rval.Type()
+			// only track valid methods must return *Error as last arg
+			if t.NumOut() == 0 ||
+				t.Out(t.NumOut()-1) != reflect.TypeOf(&ErrMsgInvalidArg) {
+				continue
+			}
+			out[name] = rval
 		}
-		t := rval.Type()
-		// only track valid methods must return *Error as last arg
-		if t.NumOut() == 0 ||
-			t.Out(t.NumOut()-1) != reflect.TypeOf(&ErrMsgInvalidArg) {
-			continue
-		}
-		out[name] = rval
 	}
 	return conn.export(out, path, iface, includeSubtree)
 }
@@ -355,12 +356,12 @@ func (conn *Conn) unexport(h *defaultHandler, path ObjectPath, iface string) err
 	return nil
 }
 
-// exportWithMap is the worker function for all exports/registrations.
+// export is the worker function for all exports/registrations.
 func (conn *Conn) export(methods map[string]reflect.Value, path ObjectPath, iface string, includeSubtree bool) error {
 	h, ok := conn.handler.(*defaultHandler)
 	if !ok {
 		return fmt.Errorf(
-			`dbus: export only allowed on the default hander handler have %T"`,
+			`dbus: export only allowed on the default handler. Received: %T"`,
 			conn.handler)
 	}
 
