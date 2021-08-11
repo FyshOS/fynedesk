@@ -110,7 +110,6 @@ func (o *Object) createCall(ctx context.Context, method string, flags Flags, ch 
 	method = method[i+1:]
 	msg := new(Message)
 	msg.Type = TypeMethodCall
-	msg.serial = o.conn.getSerial()
 	msg.Flags = flags & (FlagNoAutoStart | FlagNoReplyExpected)
 	msg.Headers = make(map[HeaderField]Variant)
 	msg.Headers[FieldPath] = MakeVariant(o.path)
@@ -123,47 +122,7 @@ func (o *Object) createCall(ctx context.Context, method string, flags Flags, ch 
 	if len(args) > 0 {
 		msg.Headers[FieldSignature] = MakeVariant(SignatureOf(args...))
 	}
-	if msg.Flags&FlagNoReplyExpected == 0 {
-		if ch == nil {
-			ch = make(chan *Call, 1)
-		} else if cap(ch) == 0 {
-			panic("dbus: unbuffered channel passed to (*Object).Go")
-		}
-		ctx, cancel := context.WithCancel(ctx)
-		call := &Call{
-			Destination: o.dest,
-			Path:        o.path,
-			Method:      method,
-			Args:        args,
-			Done:        ch,
-			ctxCanceler: cancel,
-			ctx:         ctx,
-		}
-		o.conn.calls.track(msg.serial, call)
-		o.conn.sendMessageAndIfClosed(msg, func() {
-			o.conn.calls.handleSendError(msg, ErrClosed)
-			cancel()
-		})
-		go func() {
-			<-ctx.Done()
-			o.conn.calls.handleSendError(msg, ctx.Err())
-		}()
-
-		return call
-	}
-	done := make(chan *Call, 1)
-	call := &Call{
-		Err:  nil,
-		Done: done,
-	}
-	defer func() {
-		call.Done <- call
-		close(done)
-	}()
-	o.conn.sendMessageAndIfClosed(msg, func() {
-		call.Err = ErrClosed
-	})
-	return call
+	return o.conn.SendWithContext(ctx, msg, ch)
 }
 
 // GetProperty calls org.freedesktop.DBus.Properties.Get on the given

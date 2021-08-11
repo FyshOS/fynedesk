@@ -60,7 +60,8 @@ type Conn struct {
 func SessionBus() (conn *Conn, err error) {
 	sessionBusLck.Lock()
 	defer sessionBusLck.Unlock()
-	if sessionBus != nil {
+	if sessionBus != nil &&
+		sessionBus.Connected() {
 		return sessionBus, nil
 	}
 	defer func() {
@@ -105,7 +106,8 @@ func SessionBusPrivateHandler(handler Handler, signalHandler SignalHandler) (*Co
 func SystemBus() (conn *Conn, err error) {
 	systemBusLck.Lock()
 	defer systemBusLck.Unlock()
-	if systemBus != nil {
+	if systemBus != nil &&
+		systemBus.Connected() {
 		return systemBus, nil
 	}
 	defer func() {
@@ -328,6 +330,11 @@ func (conn *Conn) Context() context.Context {
 	return conn.ctx
 }
 
+// Connected returns whether conn is connected
+func (conn *Conn) Connected() bool {
+	return conn.ctx.Err() == nil
+}
+
 // Eavesdrop causes conn to send all incoming messages to the given channel
 // without further processing. Method replies, errors and signals will not be
 // sent to the appropriate channels and method calls will not be handled. If nil
@@ -361,7 +368,7 @@ func (conn *Conn) Hello() error {
 }
 
 // inWorker runs in an own goroutine, reading incoming messages from the
-// transport and dispatching them appropiately.
+// transport and dispatching them appropriately.
 func (conn *Conn) inWorker() {
 	sequenceGen := newSequenceGenerator()
 	for {
@@ -464,6 +471,9 @@ func (conn *Conn) Object(dest string, path ObjectPath) BusObject {
 }
 
 func (conn *Conn) sendMessageAndIfClosed(msg *Message, ifClosed func()) {
+	if msg.serial == 0 {
+		msg.serial = conn.getSerial()
+	}
 	if conn.outInt != nil {
 		conn.outInt(msg)
 	}
@@ -495,16 +505,16 @@ func (conn *Conn) send(ctx context.Context, msg *Message, ch chan *Call) *Call {
 	if ctx == nil {
 		panic("nil context")
 	}
+	if ch == nil {
+		ch = make(chan *Call, 1)
+	} else if cap(ch) == 0 {
+		panic("dbus: unbuffered channel passed to (*Conn).Send")
+	}
 
 	var call *Call
 	ctx, canceler := context.WithCancel(ctx)
 	msg.serial = conn.getSerial()
 	if msg.Type == TypeMethodCall && msg.Flags&FlagNoReplyExpected == 0 {
-		if ch == nil {
-			ch = make(chan *Call, 5)
-		} else if cap(ch) == 0 {
-			panic("dbus: unbuffered channel passed to (*Conn).Send")
-		}
 		call = new(Call)
 		call.Destination, _ = msg.Headers[FieldDestination].value.(string)
 		call.Path, _ = msg.Headers[FieldPath].value.(ObjectPath)
@@ -526,7 +536,8 @@ func (conn *Conn) send(ctx context.Context, msg *Message, ch chan *Call) *Call {
 		})
 	} else {
 		canceler()
-		call = &Call{Err: nil}
+		call = &Call{Err: nil, Done: ch}
+		ch <- call
 		conn.sendMessageAndIfClosed(msg, func() {
 			call = &Call{Err: ErrClosed}
 		})
@@ -551,7 +562,6 @@ func (conn *Conn) sendError(err error, dest string, serial uint32) {
 	}
 	msg := new(Message)
 	msg.Type = TypeError
-	msg.serial = conn.getSerial()
 	msg.Headers = make(map[HeaderField]Variant)
 	if dest != "" {
 		msg.Headers[FieldDestination] = MakeVariant(dest)
@@ -570,7 +580,6 @@ func (conn *Conn) sendError(err error, dest string, serial uint32) {
 func (conn *Conn) sendReply(dest string, serial uint32, values ...interface{}) {
 	msg := new(Message)
 	msg.Type = TypeMethodReply
-	msg.serial = conn.getSerial()
 	msg.Headers = make(map[HeaderField]Variant)
 	if dest != "" {
 		msg.Headers[FieldDestination] = MakeVariant(dest)
@@ -586,8 +595,14 @@ func (conn *Conn) sendReply(dest string, serial uint32, values ...interface{}) {
 // AddMatchSignal registers the given match rule to receive broadcast
 // signals based on their contents.
 func (conn *Conn) AddMatchSignal(options ...MatchOption) error {
+	return conn.AddMatchSignalContext(context.Background(), options...)
+}
+
+// AddMatchSignalContext acts like AddMatchSignal but takes a context.
+func (conn *Conn) AddMatchSignalContext(ctx context.Context, options ...MatchOption) error {
 	options = append([]MatchOption{withMatchType("signal")}, options...)
-	return conn.busObj.Call(
+	return conn.busObj.CallWithContext(
+		ctx,
 		"org.freedesktop.DBus.AddMatch", 0,
 		formatMatchOptions(options),
 	).Store()
@@ -595,8 +610,14 @@ func (conn *Conn) AddMatchSignal(options ...MatchOption) error {
 
 // RemoveMatchSignal removes the first rule that matches previously registered with AddMatchSignal.
 func (conn *Conn) RemoveMatchSignal(options ...MatchOption) error {
+	return conn.RemoveMatchSignalContext(context.Background(), options...)
+}
+
+// RemoveMatchSignalContext acts like RemoveMatchSignal but takes a context.
+func (conn *Conn) RemoveMatchSignalContext(ctx context.Context, options ...MatchOption) error {
 	options = append([]MatchOption{withMatchType("signal")}, options...)
-	return conn.busObj.Call(
+	return conn.busObj.CallWithContext(
+		ctx,
 		"org.freedesktop.DBus.RemoveMatch", 0,
 		formatMatchOptions(options),
 	).Store()

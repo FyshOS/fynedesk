@@ -1,7 +1,6 @@
 package dbus
 
 import (
-	"container/list"
 	"sync"
 )
 
@@ -51,11 +50,7 @@ func (sh *sequentialSignalHandler) AddSignal(ch chan<- *Signal) {
 	if sh.closed {
 		return
 	}
-	sh.signals = append(sh.signals, &sequentialSignalChannelData{
-		queue: list.New(),
-		ch:    ch,
-		done:  make(chan struct{}),
-	})
+	sh.signals = append(sh.signals, newSequentialSignalChannelData(ch))
 }
 
 func (sh *sequentialSignalHandler) RemoveSignal(ch chan<- *Signal) {
@@ -75,46 +70,56 @@ func (sh *sequentialSignalHandler) RemoveSignal(ch chan<- *Signal) {
 }
 
 type sequentialSignalChannelData struct {
-	stateLock sync.Mutex
-	writeLock sync.Mutex
-	queue     *list.List
-	wg        sync.WaitGroup
-	ch        chan<- *Signal
-	done      chan struct{}
+	ch   chan<- *Signal
+	in   chan *Signal
+	done chan struct{}
 }
 
-func (scd *sequentialSignalChannelData) deliver(signal *Signal) {
-	// Avoid blocking the main DBus message processing routine;
-	// queue signal to be dispatched later.
-	scd.stateLock.Lock()
-	scd.queue.PushBack(signal)
-	scd.stateLock.Unlock()
-
-	scd.wg.Add(1)
-	go scd.deferredDeliver()
+func newSequentialSignalChannelData(ch chan<- *Signal) *sequentialSignalChannelData {
+	scd := &sequentialSignalChannelData{
+		ch:   ch,
+		in:   make(chan *Signal),
+		done: make(chan struct{}),
+	}
+	go scd.bufferSignals()
+	return scd
 }
 
-func (scd *sequentialSignalChannelData) deferredDeliver() {
-	defer scd.wg.Done()
+func (scd *sequentialSignalChannelData) bufferSignals() {
+	defer close(scd.done)
 
-	// Ensure only one goroutine is in this section at once, to
-	// make sure signals are sent over ch in the order they
-	// are in the queue.
-	scd.writeLock.Lock()
-	defer scd.writeLock.Unlock()
-
-	scd.stateLock.Lock()
-	elem := scd.queue.Front()
-	scd.queue.Remove(elem)
-	scd.stateLock.Unlock()
-
-	select {
-	case scd.ch <- elem.Value.(*Signal):
-	case <-scd.done:
+	// Ensure that signals are delivered to scd.ch in the same
+	// order they are received from scd.in.
+	var queue []*Signal
+	for {
+		if len(queue) == 0 {
+			signal, ok := <- scd.in
+			if !ok {
+				return
+			}
+			queue = append(queue, signal)
+		}
+		select {
+		case scd.ch <- queue[0]:
+			copy(queue, queue[1:])
+			queue[len(queue)-1] = nil
+			queue = queue[:len(queue)-1]
+		case signal, ok := <-scd.in:
+			if !ok {
+				return
+			}
+			queue = append(queue, signal)
+		}
 	}
 }
 
+func (scd *sequentialSignalChannelData) deliver(signal *Signal) {
+	scd.in <- signal
+}
+
 func (scd *sequentialSignalChannelData) close() {
-	close(scd.done)
-	scd.wg.Wait() // wait until all spawned goroutines return
+	close(scd.in)
+	// Ensure that bufferSignals() has exited and won't attempt
+	// any future sends on scd.ch
+	<-scd.done
 }
