@@ -355,6 +355,9 @@ func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
 	}
 
 	userScale := fyne.CurrentApp().Settings().Scale()
+	if userScale == 0.0 {
+		userScale = 1.0
+	}
 	content := container.NewVBox(widget.NewLabel("User scale: " + strconv.FormatFloat(float64(userScale), 'f', 2, 32)))
 	screens := widget.NewCard("Screens", "", container.NewVBox(displays, content, loadScreensTable()))
 	return screens
