@@ -3,6 +3,24 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
+## 0.3 - In progress
+
+### Added
+
+* Basic compositor support using `compton` backend
+* Support brightnessctl support to brightness module
+
+### Changed
+
+* Default terminal is now fyneterm (if installed) :)
+* Update Fyne to 2.0.4
+* Improved switcher UI
+
+### Fixed
+
+* Show 1.0 as default scale in Advanced settings page if none set
+
+
 ## 0.2 - 22 March 2021
 
 ### Added
