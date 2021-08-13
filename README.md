@@ -20,8 +20,10 @@ any contributions or feedback for the project.
 
 For a full desktop experience you will also need the following external tools installed:
 
-- xbacklight
-- arandr
+- `arandr`
+- `xbacklight` or `brightnessctl` for laptop brightness
+
+Compositor support currently requires `compton` to be installed.
 
 # Getting Started
 

@@ -213,7 +213,7 @@ func (d *deskSettings) load() {
 		d.launcherZoomScale = 2.0
 	}
 
-	moduleNames := fyne.CurrentApp().Preferences().StringWithFallback("modulenames", "Battery|Brightness|Sound|Launcher: Calculate|Launcher: Open URLs")
+	moduleNames := fyne.CurrentApp().Preferences().StringWithFallback("modulenames", "Battery|Brightness|Compositor|Sound|Launcher: Calculate|Launcher: Open URLs")
 	if moduleNames != "" {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
