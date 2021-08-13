@@ -2,6 +2,7 @@ package ui
 
 import (
 	"net/url"
+	"runtime/debug"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -25,7 +26,7 @@ func newURLButton(label, link string) *widget.Button {
 func showAbout() {
 	w := fyne.CurrentApp().NewWindow("About FyneDesk")
 
-	title := widget.NewLabelWithStyle("Fyne Desk (develop)", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	title := widget.NewLabelWithStyle("Fyne Desk "+version(), fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	authors := widget.NewLabel("\nAuthors:\n\n    Andy Williams\n    Stephen Houston\n    Jacob Alzén\n")
 	buttons := container.NewGridWithColumns(3,
 		newURLButton("Home Page", "https://fyne.io"),
@@ -40,4 +41,12 @@ func showAbout() {
 
 	w.CenterOnScreen()
 	w.Show()
+}
+
+func version() string {
+	if info, ok := debug.ReadBuildInfo(); ok {
+		return info.Main.Version
+	}
+
+	return "(devel)"
 }
