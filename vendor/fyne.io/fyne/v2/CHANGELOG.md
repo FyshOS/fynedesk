@@ -3,6 +3,17 @@
 This file lists the main changes with each version of the Fyne toolkit.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/fyne/releases). 
 
+## 2.1 - Ongoing
+
+### Added
+
+### Changed
+
+* Focusable widgets are no longer focused on tap, add canvas.Focus(obj) in Tapped handler if required
+
+### Fixed
+
+
 ## 2.0.4 - 6 August 2021
 
 ### Changed

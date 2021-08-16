@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/driver/desktop"
+	col "fyne.io/fyne/v2/internal/color"
 	"fyne.io/fyne/v2/internal/widget"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -50,6 +51,8 @@ const (
 	LowImportance
 )
 
+var _ fyne.Focusable = (*Button)(nil)
+
 // Button widget has a text label and triggers an event func when clicked
 type Button struct {
 	DisableableWidget
@@ -64,8 +67,8 @@ type Button struct {
 
 	OnTapped func() `json:"-"`
 
-	hovered bool
-	tapAnim *fyne.Animation
+	hovered, focused bool
+	tapAnim          *fyne.Animation
 }
 
 // NewButton creates a new button widget with the set label and tap handler
@@ -128,6 +131,18 @@ func (b *Button) Cursor() desktop.Cursor {
 	return desktop.DefaultCursor
 }
 
+// FocusGained is a hook called by the focus handling logic after this object gained the focus.
+func (b *Button) FocusGained() {
+	b.focused = true
+	b.Refresh()
+}
+
+// FocusLost is a hook called by the focus handling logic after this object lost the focus.
+func (b *Button) FocusLost() {
+	b.focused = false
+	b.Refresh()
+}
+
 // MinSize returns the size that this widget should not shrink below
 func (b *Button) MinSize() fyne.Size {
 	b.ExtendBaseWidget(b)
@@ -175,6 +190,17 @@ func (b *Button) Tapped(*fyne.PointEvent) {
 
 	if b.OnTapped != nil {
 		b.OnTapped()
+	}
+}
+
+// TypedRune is a hook called by the input handling logic on text input events if this object is focused.
+func (b *Button) TypedRune(rune) {
+}
+
+// TypedKey is a hook called by the input handling logic on key events if this object is focused.
+func (b *Button) TypedKey(ev *fyne.KeyEvent) {
+	if ev.Name == fyne.KeySpace {
+		b.Tapped(nil)
 	}
 }
 
@@ -302,29 +328,22 @@ func (r *buttonRenderer) applyTheme() {
 			}
 		}
 	}
+	r.ShadowingRenderer.RefreshShadow()
 }
 
 func (r *buttonRenderer) buttonColor() color.Color {
 	switch {
 	case r.button.Disabled():
 		return theme.DisabledButtonColor()
+	case r.button.focused:
+		return blendColor(theme.ButtonColor(), theme.FocusColor())
 	case r.button.hovered:
 		bg := theme.ButtonColor()
 		if r.button.Importance == HighImportance {
 			bg = theme.PrimaryColor()
 		}
 
-		dstR, dstG, dstB, dstA := bg.RGBA()
-		srcR, srcG, srcB, srcA := theme.HoverColor().RGBA()
-		srcAlpha := float32(srcA) / 0xFFFF
-		dstAlpha := float32(dstA) / 0xFFFF
-		targetAlpha := 1 - srcAlpha*dstAlpha
-
-		outAlpha := srcAlpha + targetAlpha
-		outR := (srcAlpha*float32(srcR) + targetAlpha*float32(dstR)) / outAlpha
-		outG := (srcAlpha*float32(srcG) + targetAlpha*float32(dstG)) / outAlpha
-		outB := (srcAlpha*float32(srcB) + targetAlpha*float32(dstB)) / outAlpha
-		return color.RGBA{R: uint8(uint32(outR) >> 8), G: uint8(uint32(outG) >> 8), B: uint8(uint32(outB) >> 8), A: uint8(outAlpha * 0xFF)}
+		return blendColor(bg, theme.HoverColor())
 	case r.button.Importance == HighImportance:
 		return theme.PrimaryColor()
 	default:
@@ -333,9 +352,6 @@ func (r *buttonRenderer) buttonColor() color.Color {
 }
 
 func (r *buttonRenderer) padding() fyne.Size {
-	if r.button.Importance == LowImportance {
-		return fyne.NewSize(theme.Padding()*2, theme.Padding()*2)
-	}
 	if r.button.Text == "" {
 		return fyne.NewSize(theme.Padding()*4, theme.Padding()*4)
 	}
@@ -364,6 +380,7 @@ func (r *buttonRenderer) updateIconAndText() {
 	} else {
 		r.label.Show()
 	}
+	r.label.Refresh()
 }
 
 func alignedPosition(align ButtonAlign, padding, objectSize, layoutSize fyne.Size) (pos fyne.Position) {
@@ -379,6 +396,23 @@ func alignedPosition(align ButtonAlign, padding, objectSize, layoutSize fyne.Siz
 	return
 }
 
+func blendColor(under, over color.Color) color.Color {
+	// This alpha blends with the over operator, and accounts for RGBA() returning alpha-premultiplied values
+	dstR, dstG, dstB, dstA := under.RGBA()
+	srcR, srcG, srcB, srcA := over.RGBA()
+
+	srcAlpha := float32(srcA) / 0xFFFF
+	dstAlpha := float32(dstA) / 0xFFFF
+
+	outAlpha := srcAlpha + dstAlpha*(1-srcAlpha)
+	outR := srcR + uint32(float32(dstR)*(1-srcAlpha))
+	outG := srcG + uint32(float32(dstG)*(1-srcAlpha))
+	outB := srcB + uint32(float32(dstB)*(1-srcAlpha))
+	// We create an RGBA64 here because the color components are already alpha-premultiplied 16-bit values (they're just stored in uint32s).
+	return color.RGBA64{R: uint16(outR), G: uint16(outG), B: uint16(outB), A: uint16(outAlpha * 0xFFFF)}
+
+}
+
 func newButtonTapAnimation(bg *canvas.Rectangle, w fyne.Widget) *fyne.Animation {
 	return fyne.NewAnimation(canvas.DurationStandard, func(done float32) {
 		mid := (w.Size().Width - theme.Padding()) / 2
@@ -386,7 +420,7 @@ func newButtonTapAnimation(bg *canvas.Rectangle, w fyne.Widget) *fyne.Animation 
 		bg.Resize(fyne.NewSize(size*2, w.Size().Height-theme.Padding()))
 		bg.Move(fyne.NewPos(mid-size, theme.Padding()/2))
 
-		r, g, bb, a := theme.PressedColor().RGBA()
+		r, g, bb, a := col.ToNRGBA(theme.PressedColor())
 		aa := uint8(a)
 		fade := aa - uint8(float32(aa)*done)
 		bg.FillColor = &color.NRGBA{R: uint8(r), G: uint8(g), B: uint8(bb), A: fade}

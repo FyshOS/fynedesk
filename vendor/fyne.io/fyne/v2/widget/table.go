@@ -63,7 +63,7 @@ func (t *Table) CreateRenderer() fyne.WidgetRenderer {
 	colHover := canvas.NewRectangle(theme.HoverColor())
 	rowHover := canvas.NewRectangle(theme.HoverColor())
 
-	cellSize := t.templateSize().Add(fyne.NewSize(theme.Padding()*2, theme.Padding()*2))
+	cellSize := t.templateSize()
 	t.cells = newTableCells(t, cellSize)
 	t.scroll = widget.NewScroll(t.cells)
 
@@ -92,10 +92,7 @@ func (t *Table) Select(id TableCellID) {
 	}
 	t.selectedCell = &id
 
-	t.scrollTo(id)
-	if t.moveCallback != nil {
-		t.moveCallback()
-	}
+	t.ScrollTo(id)
 
 	if f := t.OnSelected; f != nil {
 		f(id)
@@ -104,20 +101,20 @@ func (t *Table) Select(id TableCellID) {
 
 // SetColumnWidth supports changing the width of the specified column. Columns normally take the width of the template
 // cell returned from the CreateCell callback. The width parameter uses the same units as a fyne.Size type and refers
-// to the internal content width not including any standard padding or divider size.
+// to the internal content width not including the divider size.
 //
 // Since: 1.4.1
 func (t *Table) SetColumnWidth(id int, width float32) {
 	if t.columnWidths == nil {
 		t.columnWidths = make(map[int]float32)
 	}
-	t.columnWidths[id] = width + 2*theme.Padding() // The API uses content size so it's consistent with templates
+	t.columnWidths[id] = width
 	t.Refresh()
 }
 
 // Unselect will mark the cell provided by id as unselected.
 func (t *Table) Unselect(id TableCellID) {
-	if t.selectedCell == nil {
+	if t.selectedCell == nil || id != *t.selectedCell {
 		return
 	}
 	t.selectedCell = nil
@@ -131,42 +128,154 @@ func (t *Table) Unselect(id TableCellID) {
 	}
 }
 
-func (t *Table) scrollTo(id TableCellID) {
+// UnselectAll will mark all cells as unselected.
+//
+// Since: 2.1
+func (t *Table) UnselectAll() {
+	if t.selectedCell == nil {
+		return
+	}
+
+	selected := *t.selectedCell
+	t.selectedCell = nil
+
+	if t.moveCallback != nil {
+		t.moveCallback()
+	}
+
+	if f := t.OnUnselected; f != nil {
+		f(selected)
+	}
+}
+
+// ScrollTo will scroll to the given cell without changing the selection.
+// Attempting to scroll beyond the limits of the table will scroll to
+// the edge of the table instead.
+//
+// Since: 2.1
+func (t *Table) ScrollTo(id TableCellID) {
+	if t.Length == nil {
+		return
+	}
+
 	if t.scroll == nil {
 		return
 	}
-	scrollPos := t.offset
 
-	minSize := t.templateSize()
-	cellPadded := minSize.Add(fyne.NewSize(theme.Padding()*2, theme.Padding()*2))
-	cellX := float32(0)
-	cellWidth := float32(0)
-	for i := 0; i <= id.Col; i++ {
-		if cellWidth > 0 {
-			cellX += cellWidth + theme.SeparatorThicknessSize()
-		}
-
-		width := cellPadded.Width
-		if w, ok := t.columnWidths[i]; ok {
-			width = w
-		}
-		cellWidth = width
+	rows, cols := t.Length()
+	if id.Row >= rows {
+		id.Row = rows - 1
 	}
 
+	if id.Col >= cols {
+		id.Col = cols - 1
+	}
+
+	scrollPos := t.offset
+
+	cellX, cellWidth := t.findX(id.Col)
 	if cellX < scrollPos.X {
 		scrollPos.X = cellX
 	} else if cellX+cellWidth > scrollPos.X+t.scroll.Size().Width {
 		scrollPos.X = cellX + cellWidth - t.scroll.Size().Width
 	}
 
-	cellY := float32(id.Row) * (cellPadded.Height + theme.SeparatorThicknessSize())
+	cellY, cellHeight := t.findY(id.Row)
 	if cellY < scrollPos.Y {
 		scrollPos.Y = cellY
-	} else if cellY+cellPadded.Height > scrollPos.Y+t.scroll.Size().Height {
-		scrollPos.Y = cellY + cellPadded.Height - t.scroll.Size().Height
+	} else if cellY+cellHeight > scrollPos.Y+t.scroll.Size().Height {
+		scrollPos.Y = cellY + cellHeight - t.scroll.Size().Height
 	}
+
 	t.scroll.Offset = scrollPos
 	t.offset = scrollPos
+	t.finishScroll()
+}
+
+// ScrollToBottom scrolls to the last row in the table
+//
+// Since: 2.1
+func (t *Table) ScrollToBottom() {
+	if t.Length == nil || t.scroll == nil {
+		return
+	}
+
+	rows, _ := t.Length()
+	cellY, cellHeight := t.findY(rows - 1)
+	y := cellY + cellHeight - t.scroll.Size().Height
+
+	t.scroll.Offset.Y = y
+	t.offset.Y = y
+	t.finishScroll()
+}
+
+// ScrollToLeading scrolls horizontally to the leading edge of the table
+//
+// Since: 2.1
+func (t *Table) ScrollToLeading() {
+	if t.scroll == nil {
+		return
+	}
+
+	t.scroll.Offset.X = 0
+	t.offset.X = 0
+	t.finishScroll()
+}
+
+// ScrollToTop scrolls to the first row in the table
+//
+// Since: 2.1
+func (t *Table) ScrollToTop() {
+	if t.scroll == nil {
+		return
+	}
+
+	t.scroll.Offset.Y = 0
+	t.offset.Y = 0
+	t.finishScroll()
+}
+
+// ScrollToTrailing scrolls horizontally to the trailing edge of the table
+//
+// Since: 2.1
+func (t *Table) ScrollToTrailing() {
+	if t.scroll == nil || t.Length == nil {
+		return
+	}
+
+	_, cols := t.Length()
+	cellX, cellWidth := t.findX(cols - 1)
+	scrollX := cellX + cellWidth - t.scroll.Size().Width
+
+	t.scroll.Offset.X = scrollX
+	t.offset.X = scrollX
+	t.finishScroll()
+}
+
+func (t *Table) findX(col int) (cellX float32, cellWidth float32) {
+	cellSize := t.templateSize()
+	for i := 0; i <= col; i++ {
+		if cellWidth > 0 {
+			cellX += cellWidth + theme.SeparatorThicknessSize()
+		}
+
+		width := cellSize.Width
+		if w, ok := t.columnWidths[i]; ok {
+			width = w
+		}
+		cellWidth = width
+	}
+	return
+}
+
+func (t *Table) findY(row int) (cellY float32, cellHeight float32) {
+	cellSize := t.templateSize()
+	cellHeight = cellSize.Height
+	cellY = float32(row) * (cellHeight + theme.SeparatorThicknessSize())
+	return
+}
+
+func (t *Table) finishScroll() {
 	if t.moveCallback != nil {
 		t.moveCallback()
 	}
@@ -248,7 +357,7 @@ func (t *tableRenderer) MinSize() fyne.Size {
 }
 
 func (t *tableRenderer) Refresh() {
-	t.cellSize = t.t.templateSize().Add(fyne.NewSize(theme.Padding()*2, theme.Padding()*2))
+	t.cellSize = t.t.templateSize()
 	t.moveIndicators()
 
 	t.colMarker.FillColor = theme.PrimaryColor()
@@ -528,7 +637,7 @@ func (r *tableCellsRenderer) Refresh() {
 	r.cells.propertyLock.Lock()
 	defer r.cells.propertyLock.Unlock()
 	oldSize := r.cells.cellSize
-	r.cells.cellSize = r.cells.t.templateSize().Add(fyne.NewSize(theme.Padding()*2, theme.Padding()*2))
+	r.cells.cellSize = r.cells.t.templateSize()
 	if oldSize != r.cells.cellSize { // theme changed probably
 		r.returnAllToPool()
 	}
@@ -571,9 +680,9 @@ func (r *tableCellsRenderer) Refresh() {
 				}
 			}
 
-			c.Move(fyne.NewPos(theme.Padding()+cellOffset,
-				theme.Padding()+float32(row)*(r.cells.cellSize.Height+separatorThickness)))
-			c.Resize(fyne.NewSize(colWidth-theme.Padding()*2, r.cells.cellSize.Height-theme.Padding()*2))
+			c.Move(fyne.NewPos(cellOffset,
+				float32(row)*(r.cells.cellSize.Height+separatorThickness)))
+			c.Resize(fyne.NewSize(colWidth, r.cells.cellSize.Height))
 
 			if updateCell != nil {
 				updateCell(TableCellID{row, col}, c)
