@@ -19,6 +19,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 ### Fixed
 
 * Show 1.0 as default scale in Advanced settings page if none set
+* Closing windows could leak resources to invisible windows
 
 
 ## 0.2 - 22 March 2021

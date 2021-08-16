@@ -130,6 +130,7 @@ func newFrame(c *client) *frame {
 		framed.childHeight = h - borderWidth - titleHeight
 	}
 
+	_ = ewmh.WmNameSet(c.wm.X(), f.Id, "FyneDesk Border")
 	var offsetX, offsetY int16 = 0, 0
 	if !full && decorated {
 		offsetX = int16(borderWidth)

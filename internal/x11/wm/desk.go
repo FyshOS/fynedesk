@@ -484,7 +484,7 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
 	c := x.clientForWin(win)
-	if c == nil {
+	if c == nil || win == c.FrameID() {
 		return
 	}
 	transient := x11.WindowTransientForGet(x.x, win)
@@ -496,6 +496,8 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 	x.RemoveWindow(c)
 	windowClientListUpdate(x)
 	windowClientListStackingUpdate(x)
+
+	xproto.DestroyWindow(x.x.Conn(), c.FrameID())
 }
 
 func (x *x11WM) exposeWindow(win xproto.Window) {
@@ -540,7 +542,7 @@ func (x *x11WM) RootID() xproto.Window {
 
 func (x *x11WM) hideWindow(win xproto.Window) {
 	c := x.clientForWin(win)
-	if c == nil {
+	if c == nil || win == c.FrameID() {
 		return
 	}
 	xproto.UnmapWindow(x.x.Conn(), c.FrameID())
