@@ -609,16 +609,17 @@ func (x *x11WM) setupBindings() {
 }
 
 func (x *x11WM) setupWindow(win xproto.Window) {
-	if x11.WindowName(x.x, win) == "" {
-		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
-		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
-	}
 	c := x.clientForWin(win)
 	if c != nil {
 		return
 	}
-	c = xwin.NewClient(win, x)
+
 	x.bindShortcuts(win)
+	if x11.WindowName(x.x, win) == "" {
+		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
+		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
+	}
+	c = xwin.NewClient(win, x)
 	x.AddWindow(c)
 	c.RaiseToTop()
 	c.Focus()
@@ -669,6 +670,7 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(mx), uint32(my),
 			uint32(w), uint32(h)})
 
+		x.bindShortcuts(win)
 		xproto.MapWindow(x.Conn(), win)
 		return
 	}

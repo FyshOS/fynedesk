@@ -20,6 +20,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 
 * Show 1.0 as default scale in Advanced settings page if none set
 * Closing windows could leak resources to invisible windows
+* Global shortcuts did not work in some windows and menus
 
 
 ## 0.2 - 22 March 2021
