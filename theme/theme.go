@@ -13,7 +13,7 @@ var (
 	PointerDefault = resourcePointerPng
 
 	// Background is the default background image
-	Background = resourceSwedishPineJpg
+	Background = resourceBackgroundJpg
 	// FyneAboutBackground is the image used as a background to the about screen
 	FyneAboutBackground = resourceFyneaboutbgPng
 
