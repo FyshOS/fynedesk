@@ -169,7 +169,7 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 	b.bar = widget.NewProgressBar()
 	brightnessIcon := widget.NewIcon(wmtheme.BrightnessIcon)
 	prop := canvas.NewRectangle(color.Transparent)
-	prop.SetMinSize(brightnessIcon.MinSize().Add(fyne.NewSize(theme.Padding()*2, 0)))
+	prop.SetMinSize(brightnessIcon.MinSize().Add(fyne.NewSize(theme.Padding()*4, 0)))
 	icon := container.NewCenter(prop, brightnessIcon)
 
 	less := &widget.Button{Icon: theme.ContentRemoveIcon(), Importance: widget.LowImportance, OnTapped: func() {

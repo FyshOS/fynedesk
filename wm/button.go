@@ -28,7 +28,7 @@ func (c *closeButton) Cursor() desktop.Cursor {
 }
 
 func (c *closeButton) MouseIn(*desktop.MouseEvent) {
-	c.bg.FillColor = theme.FocusColor()
+	c.bg.FillColor = theme.ErrorColor()
 	c.bg.Refresh()
 }
 

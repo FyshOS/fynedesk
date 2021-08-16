@@ -66,7 +66,7 @@ func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 	b.bar = widget.NewProgressBar()
 	b.icon = widget.NewIcon(wmtheme.BatteryIcon)
 	prop := canvas.NewRectangle(color.Transparent)
-	prop.SetMinSize(b.icon.MinSize().Add(fyne.NewSize(theme.Padding()*2, 0)))
+	prop.SetMinSize(b.icon.MinSize().Add(fyne.NewSize(theme.Padding()*4, 0)))
 	icon := container.NewCenter(prop, b.icon)
 
 	go b.batteryTick()
