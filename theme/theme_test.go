@@ -1,6 +1,7 @@
 package theme
 
 import (
+	"image/color"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -18,9 +19,28 @@ func TestIconResources(t *testing.T) {
 }
 
 func TestIconTheme(t *testing.T) {
-	fyne.CurrentApp().Settings().SetTheme(theme.DarkTheme())
+	th := &testTheme{fg: color.White}
+	fyne.CurrentApp().Settings().SetTheme(th)
 	battDark := BatteryIcon.Content()
 
-	fyne.CurrentApp().Settings().SetTheme(theme.LightTheme())
+	th.fg = color.Black
 	assert.NotEqual(t, battDark, BatteryIcon.Content())
+}
+
+func TestIconTheme_BrokenImage(t *testing.T) {
+	assert.NotNil(t, BrokenImageIcon) // must not be nil as we fall back
+}
+
+type testTheme struct {
+	fyne.Theme
+
+	fg color.Color
+}
+
+func (t *testTheme) Color(n fyne.ThemeColorName, v fyne.ThemeVariant) color.Color {
+	if n == theme.ColorNameForeground {
+		return t.fg
+	}
+
+	return t.Theme.Color(n, v)
 }
