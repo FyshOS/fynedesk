@@ -17,6 +17,8 @@ const (
 	KeyBrightnessDown fyne.KeyName = "BrightnessDown"
 	// KeyBrightnessUp is the virtual keyboard key for increasing brightness
 	KeyBrightnessUp fyne.KeyName = "BrightnessUp"
+	// KeyCalculator is available on some multimedia keyboards to open a calculator
+	KeyCalculator fyne.KeyName = "Calculator"
 
 	// KeyVolumeMute is the virtual keyboard key for muting sound
 	KeyVolumeMute fyne.KeyName = "VolumeMute"
