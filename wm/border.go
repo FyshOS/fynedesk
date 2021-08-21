@@ -79,8 +79,10 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 	titleBar.max = max
 
 	if icon != nil {
-		appIcon := canvas.NewImageFromResource(icon)
-		appIcon.SetMinSize(fyne.NewSize(wmTheme.TitleHeight, wmTheme.TitleHeight))
+		appIcon := &widget.Button{Icon: icon, Importance: widget.LowImportance}
+		appIcon.OnTapped = func() {
+			titleBar.showMenu(appIcon)
+		}
 
 		if buttonPos == "Right" {
 			titleBar.prepend(appIcon)
@@ -121,6 +123,31 @@ func (c *Border) prepend(obj fyne.CanvasObject) {
 func (c *Border) append(obj fyne.CanvasObject) {
 	c.content.Add(obj)
 	c.Refresh()
+}
+
+func (c *Border) showMenu(from fyne.CanvasObject) {
+	max := fyne.NewMenuItem("Maximize", func() {
+		if c.win.Maximized() {
+			c.win.Unmaximize()
+		} else {
+			c.win.Maximize()
+		}
+	})
+	if c.win.Maximized() {
+		max.Checked = true
+	}
+	menu := fyne.NewMenu("",
+		fyne.NewMenuItem("Iconify", func() {
+			c.win.Iconify()
+		}),
+		max,
+		fyne.NewMenuItemSeparator(),
+		fyne.NewMenuItem("Close", func() {
+			c.win.Close()
+		}))
+
+	pos := c.win.Position()
+	fynedesk.Instance().ShowMenuAt(menu, pos.Add(from.Position()))
 }
 
 // CreateRenderer creates a new renderer for this border

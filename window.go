@@ -28,6 +28,7 @@ type Window interface {
 	Unmaximize()          // Request to restore this window to its size before being maximized
 
 	Properties() WindowProperties // Request the properties set on this window
+	Position() fyne.Position
 }
 
 // WindowProperties encapsulates the metadata that a window can provide.
