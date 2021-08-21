@@ -137,7 +137,7 @@ func (c *Border) showMenu(from fyne.CanvasObject) {
 		max.Checked = true
 	}
 	menu := fyne.NewMenu("",
-		fyne.NewMenuItem("Iconify", func() {
+		fyne.NewMenuItem("Minimize", func() {
 			c.win.Iconify()
 		}),
 		max,
