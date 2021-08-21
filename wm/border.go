@@ -137,6 +137,7 @@ func (c *Border) SetFocused(focus bool) {
 	c.Refresh()
 }
 
+// SetIcon tells the border to change the icon that should be used
 func (c *Border) SetIcon(icon fyne.Resource) {
 	c.appIcon.Resource = icon
 	c.appIcon.Refresh()
