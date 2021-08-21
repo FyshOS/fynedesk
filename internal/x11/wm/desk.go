@@ -643,6 +643,7 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 			fyne.LogError("Show Window Error", err)
 		}
 		xproto.ConfigureWindow(x.x.Conn(), win, xproto.ConfigWindowStackMode, []uint32{xproto.StackModeBelow})
+		_ = ewmh.WmWindowTypeSet(x.x, win, []string{windowTypeDesktop})
 		x.bindShortcuts(win)
 		if !x.framedExisting {
 			x.framedExisting = true
