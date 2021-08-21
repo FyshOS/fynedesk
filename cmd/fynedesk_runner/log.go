@@ -48,3 +48,17 @@ func openLogWriter() *os.File {
 
 	return f
 }
+
+func openRunnerLogWriter() *os.File {
+	f, err := os.Create(runnerLogPath())
+	if err != nil {
+		fyne.LogError("Unable to open log file", err)
+		return os.Stderr
+	}
+
+	return f
+}
+
+func runnerLogPath() string {
+	return filepath.Join(logDir(systemLogDir()), "fynedesk_runner.log")
+}

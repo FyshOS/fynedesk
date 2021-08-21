@@ -11,6 +11,8 @@ const runCmd = "fynedesk"
 
 func main() {
 	_ = os.Remove(logPath()) // remove old logs
+	_ = os.Remove(runnerLogPath())
+	log.SetOutput(openRunnerLogWriter())
 
 	for {
 		logFile := logPath()
