@@ -353,8 +353,12 @@ func (f *frame) decorate(force bool) {
 		xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 	}
 
+	rect = xproto.Rectangle{X: 0, Y: 0, Width: f.borderTopWidth, Height: x11.TitleHeight(x11.XWin(f.client))}
+	xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
+	minWidth := f.canvas.Content().MinSize().Width
+	widthPix := uint16(minWidth*f.canvas.Scale()) - rightWidthPix
 	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), drawTop,
-		0, 0, 0, 0, f.borderTopWidth, heightPix)
+		0, 0, 0, 0, widthPix, heightPix)
 	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), drawTopRight,
 		0, 0, int16(f.width-rightWidthPix), 0, rightWidthPix, heightPix)
 }
@@ -386,17 +390,16 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	rightWidthPix := f.topRightPixelWidth()
-	widthPix := f.borderTopWidth + rightWidthPix
-	f.canvas.Resize(fyne.NewSize((float32(widthPix)/scale)+1, wmTheme.TitleHeight))
+	minWidth := f.canvas.Content().MinSize().Width
+	f.canvas.Resize(fyne.NewSize(minWidth, wmTheme.TitleHeight))
+	widthPix := uint16(minWidth*f.canvas.Scale()) - rightWidthPix
 	img := f.canvas.Capture()
 
-	// TODO just copy the label minSize - smallest possible but maybe bigger than window width
 	// Draw in pixel rows so we don't overflow count usable by PutImageChecked
 	for i := uint16(0); i < heightPix; i++ {
-		f.copyDecorationPixels(uint32(f.borderTopWidth), 1, 0, uint32(i), img, pidTop, drawTop, depth)
+		f.copyDecorationPixels(uint32(widthPix), 1, 0, uint32(i), img, pidTop, drawTop, depth)
 	}
-
-	f.copyDecorationPixels(uint32(rightWidthPix), uint32(heightPix), uint32(f.borderTopWidth), 0, img, pidTopRight, drawTopRight, depth)
+	f.copyDecorationPixels(uint32(rightWidthPix), uint32(heightPix), uint32(widthPix), 0, img, pidTopRight, drawTopRight, depth)
 }
 
 func (f *frame) freePixmaps() {
