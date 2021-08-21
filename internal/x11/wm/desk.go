@@ -56,6 +56,8 @@ type x11WM struct {
 
 	died           bool
 	rootID, menuID xproto.Window
+	menuSize       fyne.Size
+	menuPos        fyne.Position
 	menuWin        fyne.Window
 	transientMap   map[xproto.Window][]xproto.Window
 	oldRoot        *xgraphics.Image
@@ -207,8 +209,22 @@ func (x *x11WM) Run() {
 	go x.runLoop()
 }
 
-func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, _ fyne.Position) {
-	// TODO add support for menu position, not needed yet
+func (x *x11WM) ShowOverlay(w fyne.Window, s fyne.Size, p fyne.Position) {
+	w.SetTitle(windowNameMenu)
+	w.SetFixedSize(true)
+	w.Resize(s)
+
+	w.SetOnClosed(func() {
+		x.menuID = 0
+		x.menuWin = nil
+	})
+	w.Show()
+	x.menuSize = s
+	x.menuPos = p
+	x.menuWin = w
+}
+
+func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, p fyne.Position) {
 	win := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
 	for _, item := range m.Items {
 		action := item.Action
@@ -218,19 +234,11 @@ func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, _ fyne.Position) {
 		}
 	}
 
-	p := widget.NewPopUpMenu(m, win.Canvas())
-	win.SetTitle(windowNameMenu)
-	win.SetFixedSize(true)
-	win.Resize(s)
-	p.Show()
-	p.Resize(s)
-
-	win.SetOnClosed(func() {
-		x.menuID = 0
-		x.menuWin = nil
-	})
-	win.Show()
-	x.menuWin = win
+	pop := widget.NewPopUpMenu(m, win.Canvas())
+	pop.OnDismiss = win.Close
+	pop.Show()
+	pop.Resize(s)
+	x.ShowOverlay(win, s, p)
 }
 
 func (x *x11WM) X() *xgbutil.XUtil {
@@ -658,15 +666,8 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 		xproto.ChangeWindowAttributes(x.Conn(), win, xproto.CwEventMask, []uint32{xproto.EventMaskLeaveWindow})
 
 		screen := fynedesk.Instance().Screens().Primary()
-		// attrs, _ := xproto.GetGeometry(x.Conn(), xproto.Drawable(win)).Reply()
-		var height float32 = 136
-		if usingRunner() {
-			height = 169
-		}
-		w, h := 200*screen.CanvasScale(), height*screen.CanvasScale() // TODO figure out why this lookup does not work for BSD: int(attrs.Width), int(attrs.Height)
-
-		mx := screen.X + screen.Width - int(w)
-		my := screen.Y + screen.Height - int(h)
+		w, h := x.menuSize.Width*screen.CanvasScale(), x.menuSize.Height*screen.CanvasScale()
+		mx, my := screen.X + int(x.menuPos.X*screen.CanvasScale()), screen.Y + int(x.menuPos.Y*screen.CanvasScale())
 		xproto.ConfigureWindowChecked(x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(mx), uint32(my),
 			uint32(w), uint32(h)})
