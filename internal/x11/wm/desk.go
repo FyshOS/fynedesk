@@ -667,7 +667,7 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 
 		screen := fynedesk.Instance().Screens().Primary()
 		w, h := x.menuSize.Width*screen.CanvasScale(), x.menuSize.Height*screen.CanvasScale()
-		mx, my := screen.X + int(x.menuPos.X*screen.CanvasScale()), screen.Y + int(x.menuPos.Y*screen.CanvasScale())
+		mx, my := screen.X+int(x.menuPos.X*screen.CanvasScale()), screen.Y+int(x.menuPos.Y*screen.CanvasScale())
 		xproto.ConfigureWindowChecked(x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(mx), uint32(my),
 			uint32(w), uint32(h)})
