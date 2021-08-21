@@ -840,7 +840,3 @@ func min(a, b int) int {
 
 	return b
 }
-
-func usingRunner() bool {
-	return len(os.Getenv("FYNE_DESK_RUNNER")) > 0
-}
