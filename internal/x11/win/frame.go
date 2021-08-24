@@ -37,7 +37,7 @@ type frame struct {
 	resizeStartX, resizeStartY          int16
 	resizeBottom, resizeTop             bool
 	resizeLeft, resizeRight             bool
-	moveOnly                            bool
+	moveOnly, ignoreDrag                bool
 
 	borderTop, borderTopRight xproto.Pixmap
 	borderTopWidth            uint16
@@ -491,7 +491,7 @@ func (f *frame) maximizeApply() {
 }
 
 func (f *frame) mouseDrag(x, y int16) {
-	if f.client.Fullscreened() {
+	if f.client.Fullscreened() || f.ignoreDrag {
 		return
 	}
 	moveDeltaX := x - f.mouseX
@@ -656,6 +656,19 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 		return
 	}
 
+	relX := x - f.x
+	relY := y - f.y
+	obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
+		func(obj fyne.CanvasObject) bool {
+			_, ok := obj.(fyne.Tappable)
+			return ok
+		},
+	)
+	if obj != nil {
+		f.ignoreDrag = true
+		return
+	}
+
 	buttonWidth := x11.ButtonWidth(x11.XWin(f.client))
 	borderWidth := x11.BorderWidth(x11.XWin(f.client))
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
@@ -663,9 +676,6 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 	f.mouseY = y
 	f.resizeStartX = x
 	f.resizeStartY = y
-
-	relX := x - f.x
-	relY := y - f.y
 	f.moveX = f.x
 	f.moveY = f.y
 	f.resizeStartWidth = f.width
@@ -703,6 +713,7 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 }
 
 func (f *frame) mouseRelease(x, y int16, b xproto.Button) {
+	f.ignoreDrag = false
 	if b != xproto.ButtonIndex1 {
 		return
 	}
