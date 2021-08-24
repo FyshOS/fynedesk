@@ -110,7 +110,7 @@ func newFrame(c *client) *frame {
 		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
 		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange |
-		xproto.EventMaskPropertyChange}
+		xproto.EventMaskPropertyChange | xproto.EventMaskLeaveWindow}
 	err = xproto.CreateWindowChecked(c.wm.Conn(), c.wm.X().Screen().RootDepth, f.Id, c.wm.X().RootWin(),
 		x, y, w, h, 0, xproto.WindowClassInputOutput, c.wm.X().Screen().RootVisual,
 		xproto.CwEventMask, values).Check()

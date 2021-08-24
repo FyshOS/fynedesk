@@ -235,6 +235,15 @@ func (x *x11WM) handleMouseLeave(ev xproto.LeaveNotifyEvent) {
 		x.menuWin = nil
 	}
 
+	for _, c := range x.clients {
+		if c.(x11.XWin).FrameID() == ev.Event {
+			if ev.State&xproto.ButtonMask1 == 0 {
+				c.(x11.XWin).NotifyMouseMotion(-1, -1)
+			}
+			break
+		}
+	}
+
 	if mouseNotify, ok := fynedesk.Instance().(notify.MouseNotify); ok {
 		screen := fynedesk.Instance().Screens().ScreenForGeometry(int(ev.RootX), int(ev.RootY), 0, 0)
 		mouseNotify.MouseInNotify(fyne.NewPos(float32(ev.RootX)/screen.CanvasScale(),
