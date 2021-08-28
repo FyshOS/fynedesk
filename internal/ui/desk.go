@@ -2,6 +2,7 @@ package ui
 
 import (
 	"math"
+	"os/exec"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -238,6 +239,8 @@ func (l *desktop) registerShortcuts() {
 		l.screenshotWindow)
 	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Screen", KeyName: deskDriver.KeyPrintScreen},
 		l.screenshot)
+	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Calculator", KeyName: fynedesk.KeyCalculator},
+		l.calculator)
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
@@ -282,4 +285,11 @@ func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 
 	desk.registerShortcuts()
 	return desk
+}
+
+func (l *desktop) calculator() {
+	err := exec.Command("calculator").Start()
+	if err != nil {
+		fyne.LogError("Failed to open calculator", err)
+	}
 }

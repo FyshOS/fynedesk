@@ -83,15 +83,16 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 		appIcon.OnTapped = func() {
 			titleBar.showMenu(appIcon)
 		}
-
-		if buttonPos == "Right" {
-			titleBar.prepend(appIcon)
-			titleBar.prepend(makeFiller(1))
-		} else {
-			titleBar.append(appIcon)
-			titleBar.append(makeFiller(1))
-		}
 	}
+
+  if buttonPos == "Right" {
+		titleBar.prepend(appIcon)
+		titleBar.prepend(makeFiller(1))
+	} else {
+		titleBar.append(appIcon)
+		titleBar.append(makeFiller(1))
+	}
+	titleBar.appIcon = appIcon
 
 	return titleBar
 }
@@ -101,6 +102,7 @@ type Border struct {
 	widget.BaseWidget
 	content *fyne.Container
 	focused bool
+	appIcon *canvas.Image
 	title   *canvas.Text
 	max     *widget.Button
 	win     fynedesk.Window
@@ -162,6 +164,12 @@ func (c *Border) CreateRenderer() fyne.WidgetRenderer {
 func (c *Border) SetFocused(focus bool) {
 	c.focused = focus
 	c.Refresh()
+}
+
+// SetIcon tells the border to change the icon that should be used
+func (c *Border) SetIcon(icon fyne.Resource) {
+	c.appIcon.Resource = icon
+	c.appIcon.Refresh()
 }
 
 // SetMaximized updates the state of the border maximize indicators and refreshes

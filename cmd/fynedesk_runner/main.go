@@ -11,6 +11,8 @@ const runCmd = "fynedesk"
 
 func main() {
 	_ = os.Remove(logPath()) // remove old logs
+	_ = os.Remove(runnerLogPath())
+	log.SetOutput(openRunnerLogWriter())
 
 	for {
 		logFile := logPath()
@@ -47,8 +49,7 @@ func main() {
 				log.Println("X server went away")
 				return
 			} else if status == 2 {
-				log.Println("Failed to reconnect to X")
-				return
+				log.Println("Failed to connect to X, retrying")
 			} else {
 				log.Println("Restart from status", status)
 			}

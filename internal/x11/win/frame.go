@@ -37,7 +37,7 @@ type frame struct {
 	resizeStartX, resizeStartY          int16
 	resizeBottom, resizeTop             bool
 	resizeLeft, resizeRight             bool
-	moveOnly                            bool
+	moveOnly, ignoreDrag                bool
 
 	borderTop, borderTopRight xproto.Pixmap
 	borderTopWidth            uint16
@@ -110,7 +110,7 @@ func newFrame(c *client) *frame {
 		xproto.EventMaskSubstructureRedirect | xproto.EventMaskExposure |
 		xproto.EventMaskButtonPress | xproto.EventMaskButtonRelease | xproto.EventMaskButtonMotion |
 		xproto.EventMaskKeyPress | xproto.EventMaskPointerMotion | xproto.EventMaskFocusChange |
-		xproto.EventMaskPropertyChange}
+		xproto.EventMaskPropertyChange | xproto.EventMaskLeaveWindow}
 	err = xproto.CreateWindowChecked(c.wm.Conn(), c.wm.X().Screen().RootDepth, f.Id, c.wm.X().RootWin(),
 		x, y, w, h, 0, xproto.WindowClassInputOutput, c.wm.X().Screen().RootVisual,
 		xproto.CwEventMask, values).Check()
@@ -353,8 +353,12 @@ func (f *frame) decorate(force bool) {
 		xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 	}
 
+	rect = xproto.Rectangle{X: 0, Y: 0, Width: f.borderTopWidth, Height: x11.TitleHeight(x11.XWin(f.client))}
+	xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
+	minWidth := f.canvas.Content().MinSize().Width
+	widthPix := uint16(minWidth*f.canvas.Scale()) - rightWidthPix
 	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), drawTop,
-		0, 0, 0, 0, f.borderTopWidth, heightPix)
+		0, 0, 0, 0, widthPix, heightPix)
 	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), drawTopRight,
 		0, 0, int16(f.width-rightWidthPix), 0, rightWidthPix, heightPix)
 }
@@ -380,23 +384,22 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 		b.SetFocused(f.client.Focused())
 		b.SetTitle(f.client.props.Title())
 		b.SetMaximized(f.client.maximized)
-		// TODO maybe update icon?
+		b.SetIcon(f.client.Properties().Icon())
 	}
 	f.canvas.SetScale(scale)
 
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	rightWidthPix := f.topRightPixelWidth()
-	widthPix := f.borderTopWidth + rightWidthPix
-	f.canvas.Resize(fyne.NewSize((float32(widthPix)/scale)+1, wmTheme.TitleHeight))
+	minWidth := f.canvas.Content().MinSize().Width
+	f.canvas.Resize(fyne.NewSize(minWidth, wmTheme.TitleHeight))
+	widthPix := uint16(minWidth*f.canvas.Scale()) - rightWidthPix
 	img := f.canvas.Capture()
 
-	// TODO just copy the label minSize - smallest possible but maybe bigger than window width
 	// Draw in pixel rows so we don't overflow count usable by PutImageChecked
 	for i := uint16(0); i < heightPix; i++ {
-		f.copyDecorationPixels(uint32(f.borderTopWidth), 1, 0, uint32(i), img, pidTop, drawTop, depth)
+		f.copyDecorationPixels(uint32(widthPix), 1, 0, uint32(i), img, pidTop, drawTop, depth)
 	}
-
-	f.copyDecorationPixels(uint32(rightWidthPix), uint32(heightPix), uint32(f.borderTopWidth), 0, img, pidTopRight, drawTopRight, depth)
+	f.copyDecorationPixels(uint32(rightWidthPix), uint32(heightPix), uint32(widthPix), 0, img, pidTopRight, drawTopRight, depth)
 }
 
 func (f *frame) freePixmaps() {
@@ -488,7 +491,7 @@ func (f *frame) maximizeApply() {
 }
 
 func (f *frame) mouseDrag(x, y int16) {
-	if f.client.Fullscreened() {
+	if f.client.Fullscreened() || f.ignoreDrag {
 		return
 	}
 	moveDeltaX := x - f.mouseX
@@ -653,6 +656,19 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 		return
 	}
 
+	relX := x - f.x
+	relY := y - f.y
+	obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
+		func(obj fyne.CanvasObject) bool {
+			_, ok := obj.(fyne.Tappable)
+			return ok
+		},
+	)
+	if obj != nil {
+		f.ignoreDrag = true
+		return
+	}
+
 	buttonWidth := x11.ButtonWidth(x11.XWin(f.client))
 	borderWidth := x11.BorderWidth(x11.XWin(f.client))
 	titleHeight := x11.TitleHeight(x11.XWin(f.client))
@@ -660,9 +676,6 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 	f.mouseY = y
 	f.resizeStartX = x
 	f.resizeStartY = y
-
-	relX := x - f.x
-	relY := y - f.y
 	f.moveX = f.x
 	f.moveY = f.y
 	f.resizeStartWidth = f.width
@@ -700,6 +713,7 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 }
 
 func (f *frame) mouseRelease(x, y int16, b xproto.Button) {
+	f.ignoreDrag = false
 	if b != xproto.ButtonIndex1 {
 		return
 	}

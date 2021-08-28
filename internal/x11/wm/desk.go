@@ -84,8 +84,9 @@ const (
 	keyCodeReturn      = 36
 	keyCodeAlt         = 64
 	keyCodeSpace       = 65
-	keyCodeSuper       = 133
 	keyCodePrintScreen = 107
+	keyCodeSuper       = 133
+	keyCodeCalculator  = 148
 
 	keyCodeEnter = 108
 	keyCodeLeft  = 113
@@ -288,6 +289,8 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 		return keyCodeBrightLess
 	case fynedesk.KeyBrightnessUp:
 		return keyCodeBrightMore
+	case fynedesk.KeyCalculator:
+		return keyCodeCalculator
 	case fynedesk.KeyVolumeMute:
 		return keyCodeVolumeMute
 	case fynedesk.KeyVolumeDown:
