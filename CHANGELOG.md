@@ -9,11 +9,12 @@ More detailed release notes can be found on the [releases page](https://github.c
 
 * Basic compositor support using `compton` backend
 * Support brightnessctl support to brightness module
+* Add a helper menu to each window
 
 ### Changed
 
 * Default terminal is now fyneterm (if installed) :)
-* Update Fyne to 2.0.4
+* Update Fyne to 2.1, refresh UI to match
 * Improved switcher UI
 * Add helper menu for each window
 
