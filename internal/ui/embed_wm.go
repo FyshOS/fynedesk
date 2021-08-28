@@ -34,6 +34,11 @@ func (e *embededWM) RemoveWindow(win fynedesk.Window) {
 func (e *embededWM) Run() {
 }
 
+func (e *embededWM) ShowOverlay(w fyne.Window, s fyne.Size, p fyne.Position) {
+	w.Resize(s)
+	w.Show()
+}
+
 func (e *embededWM) ShowMenuOverlay(*fyne.Menu, fyne.Size, fyne.Position) {
 	// no-op, handled by desktop in embed mode
 }
