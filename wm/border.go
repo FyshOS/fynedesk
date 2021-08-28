@@ -168,6 +168,10 @@ func (c *Border) SetFocused(focus bool) {
 
 // SetIcon tells the border to change the icon that should be used
 func (c *Border) SetIcon(icon fyne.Resource) {
+	if icon == nil {
+		return
+	}
+
 	c.appIcon.SetIcon(icon)
 }
 

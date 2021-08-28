@@ -391,7 +391,8 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	rightWidthPix := f.topRightPixelWidth()
 	minWidth := f.canvas.Content().MinSize().Width
-	f.canvas.Resize(fyne.NewSize(minWidth, wmTheme.TitleHeight))
+	winPixWidth := f.borderTopWidth + rightWidthPix
+	f.canvas.Resize(fyne.NewSize(float32(winPixWidth)/scale, wmTheme.TitleHeight))
 	widthPix := uint16(minWidth*f.canvas.Scale()) - rightWidthPix
 	img := f.canvas.Capture()
 
@@ -399,7 +400,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	for i := uint16(0); i < heightPix; i++ {
 		f.copyDecorationPixels(uint32(widthPix), 1, 0, uint32(i), img, pidTop, drawTop, depth)
 	}
-	f.copyDecorationPixels(uint32(rightWidthPix), uint32(heightPix), uint32(widthPix), 0, img, pidTopRight, drawTopRight, depth)
+	f.copyDecorationPixels(uint32(rightWidthPix), uint32(heightPix), uint32(winPixWidth-rightWidthPix), 0, img, pidTopRight, drawTopRight, depth)
 }
 
 func (f *frame) freePixmaps() {
@@ -820,8 +821,11 @@ func (f *frame) show() {
 }
 
 func (f *frame) topRightPixelWidth() uint16 {
+	screen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
+	scale := screen.CanvasScale()
+
 	iconPix := x11.TitleHeight(x11.XWin(f.client))
-	iconAndBorderPix := iconPix + x11.BorderWidth(x11.XWin(f.client))*2
+	iconAndBorderPix := iconPix + x11.BorderWidth(x11.XWin(f.client))*2 + uint16((theme.Padding()*2)*scale)
 	if fynedesk.Instance().Settings().BorderButtonPosition() == "Right" {
 		iconAndBorderPix += iconAndBorderPix * 2
 	}
