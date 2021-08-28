@@ -3,6 +3,7 @@ package ui
 import (
 	"os"
 	"path"
+	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -141,8 +142,14 @@ func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
 		w.desk.WindowManager().Close()
 	}))
 
+	var height float32 = 136
+	if strings.Contains(w.desk.(*desktop).root.Title(), "Embedded") {
+		height = 102
+	} else if usingRunner() {
+		height = 169
+	}
 	winSize := w.desk.(*desktop).root.Canvas().Size()
-	pos := fyne.NewPos(winSize.Width, winSize.Height)
+	pos := fyne.NewPos(winSize.Width-200, winSize.Height-height)
 	w.desk.ShowMenuAt(fyne.NewMenu("Account", items...), pos)
 }
 
@@ -212,4 +219,8 @@ func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 	w.createClock()
 
 	return w
+}
+
+func usingRunner() bool {
+	return len(os.Getenv("FYNE_DESK_RUNNER")) > 0
 }

@@ -15,6 +15,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Default terminal is now fyneterm (if installed) :)
 * Update Fyne to 2.0.4
 * Improved switcher UI
+* Add helper menu for each window
 
 ### Fixed
 

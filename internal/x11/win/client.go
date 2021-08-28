@@ -252,6 +252,14 @@ func (c *client) NotifyUnMaximize() {
 	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 }
 
+func (c *client) Position() fyne.Position {
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
+
+	return fyne.NewPos(
+		float32(c.frame.x)/screen.CanvasScale(),
+		float32(c.frame.y)/screen.CanvasScale())
+}
+
 func (c *client) QueueMoveResizeGeometry(x int, y int, width uint, height uint) {
 	c.frame.queueGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
 }

@@ -3,6 +3,7 @@ package test
 import (
 	"image"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fynedesk"
 )
 
@@ -68,6 +69,11 @@ func (w *Window) Maximize() {
 // Maximized returns true if this window has been made maximized
 func (w *Window) Maximized() bool {
 	return false
+}
+
+// Position returns 0, 0 for test windows
+func (w *Window) Position() fyne.Position {
+	return fyne.NewPos(0, 0)
 }
 
 // Properties obtains the window properties currently set
