@@ -39,14 +39,14 @@ func setTestEnv(t *testing.T) {
 //applications/app1.desktop and icons/default_theme/apps/32x32/app1.png
 func TestFdoLookupDefaultTheme(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app1")
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app1")
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/com.fyne.app.desktop and icons/default_theme/apps/scalable/app2.svg
 func TestFdoFileNameMisMatchAndScalable(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app2")
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app2")
 	assert.Equal(t, true, exists(data))
 }
 
@@ -60,49 +60,49 @@ func TestFdoIconNameIsPath(t *testing.T) {
 		fyne.LogError("Could not create desktop for Icon Name path example", err)
 		t.FailNow()
 	}
-	data := fdoLookupApplication("app3")
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app3")
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app4.desktop and pixmaps/app4.png
 func TestFdoIconInPixmaps(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app4")
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app4")
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app5.desktop and icons/hicolor/32x32/apps/app5.png
 func TestFdoIconHicolorFallback(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app5")
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app5")
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app6.desktop and icons/hicolor/scalable/apps/app6.svg
 func TestFdoIconHicolorFallbackScalable(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app6")
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app6")
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app7.desktop and icons/default_theme/apps/16x16/app7.png
 func TestFdoLookupDefaultThemeDifferentSize(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app7")
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app7")
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/app8.desktop and icons/third_theme/apps/32/app8.png
 func TestFdoLookupAnyThemeFallback(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("app8")
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app8")
 	assert.Equal(t, true, exists(data))
 }
 
 //applications/xterm.desktop and icons/third_theme/emblems/16x16/app9.png
 func TestFdoLookupIconNotInApps(t *testing.T) {
 	setTestEnv(t)
-	data := fdoLookupApplication("xterm")
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("xterm")
 	assert.Equal(t, true, exists(data))
 }
 
@@ -142,7 +142,7 @@ func TestFdoLookupIconByWinInfo(t *testing.T) {
 
 func TestFdoLookupPartialMatches(t *testing.T) {
 	setTestEnv(t)
-	dataMatches := fdoLookupApplicationsMatching("app")
+	dataMatches := NewFDOIconProvider().FindAppsMatching("app")
 	assert.Equal(t, true, len(dataMatches) > 1)
 	for _, data := range dataMatches {
 		assert.Equal(t, true, exists(data))
