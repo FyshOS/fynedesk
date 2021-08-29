@@ -181,7 +181,3 @@ func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 
 	return w
 }
-
-func usingRunner() bool {
-	return len(os.Getenv("FYNE_DESK_RUNNER")) > 0
-}
