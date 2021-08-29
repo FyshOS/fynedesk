@@ -34,6 +34,7 @@ type fdoApplicationData struct {
 	exec     string // Command to execute application
 
 	categories []string
+	hide       bool
 	iconCache  fyne.Resource
 }
 
@@ -45,6 +46,10 @@ func (data *fdoApplicationData) Name() string {
 //Categories returns a list of the categories this icon has configured
 func (data *fdoApplicationData) Categories() []string {
 	return data.categories
+}
+
+func (data *fdoApplicationData) Hidden() bool {
+	return data.hide
 }
 
 //IconName returns the name of the icon that an fdo app wishes to use
@@ -169,7 +174,7 @@ func fdoForEachApplicationFile(f func(data fynedesk.AppData) bool) {
 			continue
 		}
 		for _, file := range files {
-			if strings.HasPrefix(file.Name(), ".") || file.IsDir() {
+			if strings.HasPrefix(file.Name(), ".") || file.IsDir() || !strings.HasSuffix(file.Name(), ".desktop") {
 				continue
 			}
 
@@ -484,6 +489,11 @@ func newFdoIconData(desktopPath string) fynedesk.AppData {
 		} else if strings.HasPrefix(line, "Categories=") {
 			cats := strings.SplitAfter(line, "=")
 			fdoApp.categories = strings.Split(cats[1], ";")
+		} else if strings.HasPrefix(line, "NoDisplay=") {
+			val := strings.Split(line, "=")
+			if strings.TrimSpace(val[1]) == "true" {
+				fdoApp.hide = true
+			}
 		}
 	}
 	if err := scanner.Err(); err != nil {

@@ -40,6 +40,10 @@ func (m *macOSAppBundle) Categories() []string {
 	return m.categories
 }
 
+func (m *macOSAppBundle) Hidden() bool {
+	return false
+}
+
 func (m *macOSAppBundle) Icon(_ string, _ int) fyne.Resource {
 	if m.iconCache != nil {
 		return m.iconCache

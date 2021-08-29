@@ -75,6 +75,13 @@ func TestFdoIconNameIsPath(t *testing.T) {
 	assert.Equal(t, true, exists(data))
 }
 
+//check NoDisplay from app4
+func TestFdoIconHide(t *testing.T) {
+	setTestEnv(t)
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app4")
+	assert.Equal(t, true, data.Hidden())
+}
+
 //applications/app4.desktop and pixmaps/app4.png
 func TestFdoIconInPixmaps(t *testing.T) {
 	setTestEnv(t)

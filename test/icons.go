@@ -31,6 +31,10 @@ func (tad *testAppData) Categories() []string {
 	return tad.categories
 }
 
+func (tad *testAppData) Hidden() bool {
+	return false
+}
+
 func (tad *testAppData) Icon(theme string, size int) fyne.Resource {
 	if theme == "" {
 		return nil

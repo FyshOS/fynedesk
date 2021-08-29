@@ -64,6 +64,9 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 	for cat, list := range w.desk.IconProvider().CategorizedApps() {
 		var items []fyne.CanvasObject
 		for _, app := range list {
+			if app.Hidden() {
+				continue
+			}
 			items = append(items, w.newAppButton(app, w2))
 		}
 		acc.Append(widget.NewAccordionItem(cat,

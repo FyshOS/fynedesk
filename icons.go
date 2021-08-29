@@ -8,6 +8,7 @@ type AppData interface {
 	Run([]string) error // Run is the command to run the app, passing any environment variables to be set
 
 	Categories() []string                      // Categories is a list of categories that the app fits in (platform specific)
+	Hidden() bool                              // Hidden specifies whether instances of this app should be hidden
 	Icon(theme string, size int) fyne.Resource // Icon returns an icon for the app in the requested theme and size
 }
 
