@@ -9,6 +9,8 @@ import (
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
+	"fyne.io/fynedesk"
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
@@ -53,16 +55,20 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 
 	acc := widget.NewAccordion(widget.NewAccordionItem("Recent",
 		container.NewVBox(
-			w.newAppButton("fyneterm", w2),
-			w.newAppButton("Brave Web Browser", w2),
-			w.newAppButton("LXTerminal", w2),
+			w.newAppButton(w.desk.IconProvider().FindAppFromName("fyneterm"), w2),
+			w.newAppButton(w.desk.IconProvider().FindAppFromName("Brave Web Browser"), w2),
+			w.newAppButton(w.desk.IconProvider().FindAppFromName("LXTerminal"), w2),
 		)),
-		widget.NewAccordionItem("Development", widget.NewLabel("")),
-		widget.NewAccordionItem("Games", widget.NewLabel("")),
-		widget.NewAccordionItem("Office", widget.NewLabel("")),
-		widget.NewAccordionItem("System", widget.NewLabel("")),
-		widget.NewAccordionItem("Utilities", widget.NewLabel("")),
 	)
+
+	for cat, list := range w.desk.IconProvider().CategorizedApps() {
+		var items []fyne.CanvasObject
+		for _, app := range list {
+			items = append(items, w.newAppButton(app, w2))
+		}
+		acc.Append(widget.NewAccordionItem(cat,
+			container.NewVBox(items...)))
+	}
 	acc.MultiOpen = true
 	acc.Open(0)
 	w2.SetContent(container.NewBorder(
@@ -74,12 +80,7 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 	w.desk.WindowManager().ShowOverlay(w2, fyne.NewSize(300, 360), pos)
 }
 
-func (w *widgetPanel) newAppButton(name string, w2 fyne.Window) fyne.CanvasObject {
-	app := w.desk.IconProvider().FindAppFromName(name)
-	if app == nil {
-		return nil
-	}
-
+func (w *widgetPanel) newAppButton(app fynedesk.AppData, w2 fyne.Window) fyne.CanvasObject {
 	iconRes := app.Icon(w.desk.Settings().IconTheme(), int(64*w.desk.Screens().Primary().CanvasScale()))
 
 	return widget.NewButtonWithIcon(app.Name(), iconRes, func() {
