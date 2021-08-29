@@ -18,7 +18,13 @@ import (
 	wmTheme "fyne.io/fynedesk/theme"
 )
 
-var iconExtensions = []string{".png", ".svg", ".xpm"}
+var (
+	iconExtensions      = []string{".png", ".svg", ".xpm"}
+	fallbackCategory    = "Other"
+	supportedCategories = []string{
+		"AudioVideo", "Development", "Education", "Game", "Graphics", "Network",
+		"Office", "Science", "Settings", "System", "Utility"}
+)
 
 //fdoApplicationData is a structure that contains information about .desktop files
 type fdoApplicationData struct {
@@ -27,12 +33,18 @@ type fdoApplicationData struct {
 	iconPath string // Icon path
 	exec     string // Command to execute application
 
-	iconCache fyne.Resource
+	categories []string
+	iconCache  fyne.Resource
 }
 
 //Name returns the name associated with an fdo app
 func (data *fdoApplicationData) Name() string {
 	return data.name
+}
+
+//Categories returns a list of the categories this icon has configured
+func (data *fdoApplicationData) Categories() []string {
+	return data.categories
 }
 
 //IconName returns the name of the icon that an fdo app wishes to use
@@ -55,7 +67,8 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 	}
 
 	data.iconCache = loadIcon(path)
-	return data.iconCache}
+	return data.iconCache
+}
 
 //extractArgs sanitises argument parameters from an Exec configuration
 func extractArgs(args []string) []string {
@@ -88,6 +101,23 @@ func (data *fdoApplicationData) Run(env []string) error {
 
 	cmd.Env = vars
 	return cmd.Start()
+}
+
+func (data fdoApplicationData) mainCategory() string {
+	if len(data.Categories()) == 0 {
+		return fallbackCategory
+	}
+
+	// check that one of the app categories is supported
+	for _, cat := range data.Categories() {
+		for _, each := range supportedCategories {
+			if each == cat {
+				return cat
+			}
+		}
+	}
+
+	return fallbackCategory
 }
 
 func loadIcon(path string) fyne.Resource {
@@ -451,6 +481,9 @@ func newFdoIconData(desktopPath string) fynedesk.AppData {
 		} else if strings.HasPrefix(line, "Exec=") {
 			exec := strings.SplitAfter(line, "=")
 			fdoApp.exec = exec[1]
+		} else if strings.HasPrefix(line, "Categories=") {
+			cats := strings.SplitAfter(line, "=")
+			fdoApp.categories = strings.Split(cats[1], ";")
 		}
 	}
 	if err := scanner.Err(); err != nil {
@@ -550,6 +583,26 @@ func (f *fdoIconProvider) DefaultApps() []fynedesk.AppData {
 	apps = appendAppIfExists(apps, f.FindAppFromName("gimp"))
 
 	return apps
+}
+
+func (f *fdoIconProvider) CategorizedApps() map[string][]fynedesk.AppData {
+	cats := map[string][]fynedesk.AppData{}
+
+	f.cache.forEachCachedApplication(func(_ string, app fynedesk.AppData) bool {
+		if len(app.Categories()) == 0 {
+			return false
+		}
+
+		cat := app.(*fdoApplicationData).mainCategory()
+		var list []fynedesk.AppData
+		if c, ok := cats[cat]; ok {
+			list = c
+		}
+		list = append(list, app)
+		cats[cat] = list
+		return false
+	})
+	return cats
 }
 
 // NewFDOIconProvider returns a new icon provider following the FreeDesktop.org specifications

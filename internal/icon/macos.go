@@ -23,6 +23,8 @@ type macOSAppBundle struct {
 	DisplayName string `plist:"CFBundleDisplayName"`
 	// TODO alternateNames []string
 	Executable string `plist:"CFBundleExecutable"`
+
+	categories []string
 	runPath    string
 	IconFile   string `plist:"CFBundleIconFile"`
 	iconPath   string
@@ -32,6 +34,10 @@ type macOSAppBundle struct {
 
 func (m *macOSAppBundle) Name() string {
 	return m.DisplayName
+}
+
+func (m *macOSAppBundle) Categories() []string {
+	return m.categories
 }
 
 func (m *macOSAppBundle) Icon(_ string, _ int) fyne.Resource {
@@ -68,15 +74,14 @@ func (m *macOSAppBundle) Run([]string) error {
 	return exec.Command("open", "-a", m.runPath).Start()
 }
 
-func loadAppBundle(name, path string) fynedesk.AppData {
+func loadAppBundle(name, path, category string) fynedesk.AppData {
 	buf, err := os.Open(filepath.Join(path, "Contents", "Info.plist"))
 	if err != nil {
 		fyne.LogError("Unable to read application plist", err)
 		return nil
 	}
 
-	var data macOSAppBundle
-	data.DisplayName = name
+	data := macOSAppBundle{DisplayName: name, categories: []string{category}}
 	decoder := plist.NewDecoder(buf)
 	err = decoder.Decode(&data)
 	if err != nil {
@@ -98,8 +103,9 @@ type macOSAppProvider struct {
 	cache    *appCache
 }
 
-func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
+func (m *macOSAppProvider) forEachApplication(f func(name, path, category string) bool) {
 	for _, root := range m.rootDirs {
+		category := filepath.Base(root)
 		files, err := ioutil.ReadDir(root)
 		if err != nil {
 			fyne.LogError("Could not read applications directory "+root, err)
@@ -110,7 +116,7 @@ func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
 				continue // skip non-app bundles
 			}
 			appDir := filepath.Join(root, file.Name())
-			if f(file.Name()[0:len(file.Name())-4], appDir) {
+			if f(file.Name()[0:len(file.Name())-4], appDir, category) {
 				break
 			}
 		}
@@ -119,8 +125,8 @@ func (m *macOSAppProvider) forEachApplication(f func(string, string) bool) {
 
 func (m *macOSAppProvider) AvailableApps() []fynedesk.AppData {
 	var icons []fynedesk.AppData
-	m.forEachApplication(func(name, path string) bool {
-		app := loadAppBundle(name, path)
+	m.forEachApplication(func(name, path, category string) bool {
+		app := loadAppBundle(name, path, category)
 		if app != nil {
 			icons = append(icons, app)
 		}
@@ -176,6 +182,23 @@ func (m *macOSAppProvider) FindAppsMatching(pattern string) []fynedesk.AppData {
 	})
 
 	return icons
+}
+
+func (m *macOSAppProvider) CategorizedApps() map[string][]fynedesk.AppData {
+	var allApps, allUtils []fynedesk.AppData
+	m.cache.forEachCachedApplication(func(_ string, app fynedesk.AppData) bool {
+		if app.Categories()[0] == "Applications" {
+			allApps = append(allApps, app)
+		} else {
+			allUtils = append(allUtils, app)
+		}
+		return false
+	})
+
+	return map[string][]fynedesk.AppData{
+		"Applications": allApps,
+		"Utilities":    allUtils,
+	}
 }
 
 // NewMacOSAppProvider creates an instance of an ApplicationProvider that can find and decode macOS apps

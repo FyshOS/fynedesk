@@ -7,6 +7,7 @@ type AppData interface {
 	Name() string       // Name is the name of the app usually
 	Run([]string) error // Run is the command to run the app, passing any environment variables to be set
 
+	Categories() []string                      // Categories is a list of categories that the app fits in (platform specific)
 	Icon(theme string, size int) fyne.Resource // Icon returns an icon for the app in the requested theme and size
 }
 
@@ -18,4 +19,5 @@ type ApplicationProvider interface {
 	FindAppFromWinInfo(win Window) AppData
 	FindAppsMatching(pattern string) []AppData
 	DefaultApps() []AppData
+	CategorizedApps() map[string][]AppData
 }

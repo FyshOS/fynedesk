@@ -10,7 +10,8 @@ import (
 )
 
 type testAppData struct {
-	name string
+	categories []string
+	name       string
 }
 
 // NewAppData returns a new test app icon with the specified name
@@ -24,6 +25,10 @@ func (tad *testAppData) Name() string {
 
 func (tad *testAppData) Run([]string) error {
 	return nil
+}
+
+func (tad *testAppData) Categories() []string {
+	return tad.categories
 }
 
 func (tad *testAppData) Icon(theme string, size int) fyne.Resource {
@@ -80,5 +85,9 @@ func (tap *testAppProvider) FindAppsMatching(pattern string) []fynedesk.AppData 
 }
 
 func (tap *testAppProvider) DefaultApps() []fynedesk.AppData {
+	return nil
+}
+
+func (tap *testAppProvider) CategorizedApps() map[string][]fynedesk.AppData {
 	return nil
 }
