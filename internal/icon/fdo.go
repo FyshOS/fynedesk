@@ -589,10 +589,6 @@ func (f *fdoIconProvider) CategorizedApps() map[string][]fynedesk.AppData {
 	cats := map[string][]fynedesk.AppData{}
 
 	f.cache.forEachCachedApplication(func(_ string, app fynedesk.AppData) bool {
-		if len(app.Categories()) == 0 {
-			return false
-		}
-
 		cat := app.(*fdoApplicationData).mainCategory()
 		var list []fynedesk.AppData
 		if c, ok := cats[cat]; ok {

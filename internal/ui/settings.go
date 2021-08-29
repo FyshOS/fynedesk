@@ -222,6 +222,35 @@ func (d *deskSettings) load() {
 	d.borderButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
 
 	d.clockFormatting = fyne.CurrentApp().Preferences().StringWithFallback("clockformatting", "12h")
+	d.loadRecents()
+}
+
+func (d *deskSettings) loadRecents() {
+	str := fyne.CurrentApp().Preferences().String("recentapps")
+	desk := fynedesk.Instance().(*desktop)
+
+	var apps []fynedesk.AppData
+	list := strings.Split(str, ",")
+
+	for _, s := range list {
+		app := desk.icons.FindAppFromName(s)
+		if app == nil {
+			continue
+		}
+		apps = append(apps, app)
+	}
+
+	desk.recent = apps
+}
+
+func (d *deskSettings) saveRecents() {
+	var list []string
+
+	for _, a := range fynedesk.Instance().(*desktop).recent {
+		list = append(list, a.Name())
+	}
+
+	fyne.CurrentApp().Preferences().SetString("recentapps", strings.Join(list, ","))
 }
 
 // newDeskSettings loads the user's preferences from environment or config

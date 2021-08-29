@@ -53,13 +53,13 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 			w2.Close()
 		}})
 
+	var recent []fyne.CanvasObject
+	for _, app := range w.desk.RecentApps() {
+		recent = append(recent, w.newAppButton(app, w2))
+	}
+
 	acc := widget.NewAccordion(widget.NewAccordionItem("Recent",
-		container.NewVBox(
-			w.newAppButton(w.desk.IconProvider().FindAppFromName("fyneterm"), w2),
-			w.newAppButton(w.desk.IconProvider().FindAppFromName("Brave Web Browser"), w2),
-			w.newAppButton(w.desk.IconProvider().FindAppFromName("LXTerminal"), w2),
-		)),
-	)
+		container.NewVBox(recent...)))
 
 	for cat, list := range w.desk.IconProvider().CategorizedApps() {
 		var items []fyne.CanvasObject

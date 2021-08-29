@@ -25,6 +25,7 @@ type desktop struct {
 	app      fyne.App
 	wm       fynedesk.WindowManager
 	icons    fynedesk.ApplicationProvider
+	recent   []fynedesk.AppData
 	screens  fynedesk.ScreenList
 	settings fynedesk.DeskSettings
 
@@ -91,6 +92,10 @@ func (l *desktop) setupRoot() {
 	l.root.Resize(fyne.NewSize(float32(l.screens.Primary().Width)/scale, float32(l.screens.Primary().Height)/scale))
 }
 
+func (l *desktop) RecentApps() []fynedesk.AppData {
+	return l.recent
+}
+
 func (l *desktop) Run() {
 	go l.wm.Run()
 	l.run() // use the configured run method
@@ -98,7 +103,16 @@ func (l *desktop) Run() {
 
 func (l *desktop) RunApp(app fynedesk.AppData) error {
 	vars := l.scaleVars(l.Screens().Active().CanvasScale())
-	return app.Run(vars)
+	err := app.Run(vars)
+
+	if err == nil {
+		l.recent = append([]fynedesk.AppData{app}, l.recent...)
+		if len(l.recent) > 5 {
+			l.recent = l.recent[:5]
+		}
+		l.settings.(*deskSettings).saveRecents()
+	}
+	return err
 }
 
 func (l *desktop) Settings() fynedesk.DeskSettings {
