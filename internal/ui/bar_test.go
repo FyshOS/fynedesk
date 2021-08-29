@@ -18,8 +18,16 @@ type dummyIcon struct {
 	name string
 }
 
+func (d *dummyIcon) Categories() []string {
+	return []string{}
+}
+
 func (d *dummyIcon) Name() string {
 	return d.name
+}
+
+func (d *dummyIcon) Hidden() bool {
+	return false
 }
 
 func (d *dummyIcon) Icon(theme string, size int) fyne.Resource {
