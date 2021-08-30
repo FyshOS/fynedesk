@@ -14,6 +14,20 @@ import (
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
+func (w *widgetPanel) appendAppCategories(acc *widget.Accordion, win fyne.Window) {
+	for cat, list := range w.desk.IconProvider().CategorizedApps() {
+		var items []fyne.CanvasObject
+		for _, app := range list {
+			if app.Hidden() {
+				continue
+			}
+			items = append(items, w.newAppButton(app, win))
+		}
+		acc.Append(widget.NewAccordionItem(cat,
+			container.NewVBox(items...)))
+	}
+}
+
 func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 	w2 := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
 	w2.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
@@ -60,24 +74,13 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 
 	acc := widget.NewAccordion(widget.NewAccordionItem("Recent",
 		container.NewVBox(recent...)))
-
-	for cat, list := range w.desk.IconProvider().CategorizedApps() {
-		var items []fyne.CanvasObject
-		for _, app := range list {
-			if app.Hidden() {
-				continue
-			}
-			items = append(items, w.newAppButton(app, w2))
-		}
-		acc.Append(widget.NewAccordionItem(cat,
-			container.NewVBox(items...)))
-	}
 	acc.MultiOpen = true
 	acc.Open(0)
+	go w.appendAppCategories(acc, w2)
+
 	w2.SetContent(container.NewBorder(
 		items, nil, nil, nil,
 		container.NewScroll(acc)))
-
 	winSize := w.desk.(*desktop).root.Canvas().Size()
 	pos := fyne.NewPos(winSize.Width-300, winSize.Height-360)
 	w.desk.WindowManager().ShowOverlay(w2, fyne.NewSize(300, 360), pos)
