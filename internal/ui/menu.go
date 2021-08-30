@@ -15,6 +15,7 @@ import (
 )
 
 func (w *widgetPanel) appendAppCategories(acc *widget.Accordion, win fyne.Window) {
+	accList := acc.Items
 	for cat, list := range w.desk.IconProvider().CategorizedApps() {
 		var items []fyne.CanvasObject
 		for _, app := range list {
@@ -23,9 +24,11 @@ func (w *widgetPanel) appendAppCategories(acc *widget.Accordion, win fyne.Window
 			}
 			items = append(items, w.newAppButton(app, win))
 		}
-		acc.Append(widget.NewAccordionItem(cat,
+		accList = append(accList, widget.NewAccordionItem(cat,
 			container.NewVBox(items...)))
 	}
+	acc.Items = accList
+	acc.Refresh()
 }
 
 func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
