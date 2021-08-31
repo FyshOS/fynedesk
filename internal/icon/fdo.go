@@ -55,7 +55,8 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 	}
 
 	data.iconCache = loadIcon(path)
-	return data.iconCache}
+	return data.iconCache
+}
 
 //extractArgs sanitises argument parameters from an Exec configuration
 func extractArgs(args []string) []string {

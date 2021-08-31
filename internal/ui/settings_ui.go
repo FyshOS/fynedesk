@@ -379,7 +379,7 @@ func (w *widgetPanel) showSettings() {
 
 	deskSettings := w.desk.Settings().(*deskSettings)
 	ui := &settingsUI{
-		settings: deskSettings,
+		settings:      deskSettings,
 		launcherIcons: deskSettings.LauncherIcons(),
 	}
 
