@@ -23,8 +23,20 @@ func newURLButton(label, link string) *widget.Button {
 	})
 }
 
-func showAbout() {
-	w := fyne.CurrentApp().NewWindow("About FyneDesk")
+func (w *widgetPanel) showAbout() {
+	if w.about != nil {
+		w.about.CenterOnScreen()
+		w.about.Show()
+
+		for _, win := range w.desk.WindowManager().Windows() {
+			if win.Properties().Title() == w.about.Title() {
+				w.desk.WindowManager().RaiseToTop(win)
+				break
+			}
+		}
+		return
+	}
+	win := fyne.CurrentApp().NewWindow("About FyneDesk")
 
 	title := widget.NewLabelWithStyle("Fyne Desk "+version(), fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	authors := widget.NewLabel("\nAuthors:\n\n    Andy Williams\n    Stephen Houston\n    Jacob Alzén\n")
@@ -37,10 +49,14 @@ func showAbout() {
 	bg := canvas.NewImageFromResource(wmTheme.FyneAboutBackground)
 	bg.FillMode = canvas.ImageFillContain
 	bg.Translucency = 0.67
-	w.SetContent(container.NewMax(bg, container.NewBorder(title, buttons, nil, nil, authors)))
+	win.SetContent(container.NewMax(bg, container.NewBorder(title, buttons, nil, nil, authors)))
+	win.SetCloseIntercept(func() {
+		win.Hide()
+	})
 
-	w.CenterOnScreen()
-	w.Show()
+	w.about = win
+	win.CenterOnScreen()
+	win.Show()
 }
 
 func version() string {

@@ -363,16 +363,33 @@ func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
 	return screens
 }
 
-func showSettings(deskSettings *deskSettings) {
-	ui := &settingsUI{settings: deskSettings, launcherIcons: deskSettings.LauncherIcons()}
+func (w *widgetPanel) showSettings() {
+	if w.settings != nil {
+		w.settings.CenterOnScreen()
+		w.settings.Show()
 
-	w := fyne.CurrentApp().NewWindow("FyneDesk Settings")
-	ui.win = w
+		for _, win := range w.desk.WindowManager().Windows() {
+			if win.Properties().Title() == w.settings.Title() {
+				w.desk.WindowManager().RaiseToTop(win)
+				break
+			}
+		}
+		return
+	}
+
+	deskSettings := w.desk.Settings().(*deskSettings)
+	ui := &settingsUI{
+		settings: deskSettings,
+		launcherIcons: deskSettings.LauncherIcons(),
+	}
+
+	win := fyne.CurrentApp().NewWindow("FyneDesk Settings")
+	ui.win = win
 	fyneSettings := settings.NewSettings()
 
 	tabs := container.NewAppTabs(
 		&container.TabItem{Text: "Fyne Settings", Icon: theme.FyneLogo(),
-			Content: fyneSettings.LoadAppearanceScreen(w)},
+			Content: fyneSettings.LoadAppearanceScreen(win)},
 		&container.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
 			Content: ui.loadAppearanceScreen()},
 		&container.TabItem{Text: "App Bar", Icon: wmtheme.IconifyIcon, Content: ui.loadBarScreen()},
@@ -381,10 +398,14 @@ func showSettings(deskSettings *deskSettings) {
 			Content: ui.loadAdvancedScreen()},
 	)
 	tabs.SetTabLocation(container.TabLocationLeading)
-	w.SetContent(tabs)
+	win.SetContent(tabs)
+	win.Resize(fyne.NewSize(480, 320))
 
-	w.Resize(fyne.NewSize(480, 320))
-	w.Show()
+	win.SetCloseIntercept(func() {
+		win.Hide()
+	})
+	w.settings = win
+	win.Show()
 }
 
 func modifierToString(mods deskDriver.Modifier, userMod deskDriver.Modifier) string {
