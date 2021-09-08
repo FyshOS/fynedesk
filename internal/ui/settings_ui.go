@@ -252,7 +252,7 @@ func (d *settingsUI) loadAdvancedScreen() fyne.CanvasObject {
 		check.SetChecked(enabled)
 		modules = append(modules, check)
 	}
-	content := container.NewGridWithColumns(2, d.loadScreensGroup(),
+	content := container.NewHBox(d.loadScreensGroup(),
 		widget.NewCard("Modules", "", container.NewVBox(modules...)))
 
 	applyButton := container.NewHBox(layout.NewSpacer(),
@@ -321,27 +321,27 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 }
 
 func loadScreensTable() fyne.CanvasObject {
-	names := container.NewVBox()
 	labels1 := container.NewVBox()
 	values1 := container.NewVBox()
 	labels2 := container.NewVBox()
 	values2 := container.NewVBox()
 
+	all := container.NewVBox()
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
-		names.Add(widget.NewLabelWithStyle(screen.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
+		all.Add(widget.NewLabelWithStyle(screen.Name, fyne.TextAlignLeading, fyne.TextStyle{Bold: true}))
 		labels1.Add(widget.NewLabel("Width"))
 		values1.Add(widget.NewLabel(strconv.Itoa(screen.Width) + "px"))
 		labels2.Add(widget.NewLabel("Height"))
 		values2.Add(widget.NewLabel(strconv.Itoa(screen.Height) + "px"))
 
-		names.Add(widget.NewLabel(""))
 		labels1.Add(widget.NewLabel("Scale"))
 		values1.Add(widget.NewLabel(strconv.FormatFloat(float64(screen.Scale), 'f', 1, 32)))
 		labels2.Add(widget.NewLabel("Applied"))
 		values2.Add(widget.NewLabel(strconv.FormatFloat(float64(screen.CanvasScale()), 'f', 1, 32)))
+		all.Add(container.NewHBox(labels1, values1, labels2, values2))
 	}
 
-	return container.NewHBox(names, labels1, values1, labels2, values2)
+	return all
 }
 
 func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
