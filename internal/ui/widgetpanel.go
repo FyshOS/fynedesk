@@ -58,8 +58,8 @@ func (w *widgetRenderer) Destroy() {
 type widgetPanel struct {
 	widget.BaseWidget
 
-	desk       fynedesk.Desktop
-	appExecWin fyne.Window
+	desk            fynedesk.Desktop
+	about, settings fyne.Window
 
 	clock         *canvas.Text
 	date          *widget.Label
@@ -171,10 +171,7 @@ func (w *widgetPanel) loadModules(mods []fynedesk.Module) {
 }
 
 func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
-	w := &widgetPanel{
-		desk:       rootDesk,
-		appExecWin: nil,
-	}
+	w := &widgetPanel{desk: rootDesk}
 	w.ExtendBaseWidget(w)
 	w.notifications = startNotifications()
 	w.createClock()

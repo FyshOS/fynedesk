@@ -57,11 +57,11 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 
 	items2 := []fyne.CanvasObject{
 		&widget.Button{Icon: theme.QuestionIcon(), Importance: widget.LowImportance, OnTapped: func() {
-			showAbout()
+			w.showAbout()
 			w2.Close()
 		}},
 		&widget.Button{Icon: theme.SettingsIcon(), Importance: widget.LowImportance, OnTapped: func() {
-			showSettings(w.desk.Settings().(*deskSettings))
+			w.showSettings()
 			w2.Close()
 		}}}
 	items := container.NewBorder(nil, nil, container.NewHBox(items1...), container.NewHBox(items2...),

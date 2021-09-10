@@ -128,6 +128,12 @@ func (c *Border) append(obj fyne.CanvasObject) {
 }
 
 func (c *Border) showMenu(from fyne.CanvasObject) {
+	name := c.title.Text
+	if len(name) > 25 {
+		name = name[:25] + "..."
+	}
+	title := fyne.NewMenuItem(name, func() {})
+	title.Disabled = true
 	max := fyne.NewMenuItem("Maximize", func() {
 		if c.win.Maximized() {
 			c.win.Unmaximize()
@@ -139,6 +145,8 @@ func (c *Border) showMenu(from fyne.CanvasObject) {
 		max.Checked = true
 	}
 	menu := fyne.NewMenu("",
+		title,
+		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Minimize", func() {
 			c.win.Iconify()
 		}),
