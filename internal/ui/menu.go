@@ -22,7 +22,9 @@ func (w *widgetPanel) appendAppCategories(acc *widget.Accordion, win fyne.Window
 			if app.Hidden() {
 				continue
 			}
-			items = append(items, w.newAppButton(app, win))
+			btn := w.newAppButton(app, win)
+			items = append(items, btn)
+			defer w.loadIcon(app, btn)
 		}
 		accList = append(accList, widget.NewAccordionItem(cat,
 			container.NewVBox(items...)))
@@ -72,7 +74,9 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 
 	var recent []fyne.CanvasObject
 	for _, app := range w.desk.RecentApps() {
-		recent = append(recent, w.newAppButton(app, w2))
+		btn := w.newAppButton(app, w2)
+		recent = append(recent, btn)
+		defer w.loadIcon(app, btn)
 	}
 
 	acc := widget.NewAccordion(widget.NewAccordionItem("Recent",
@@ -89,11 +93,15 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 	w.desk.WindowManager().ShowOverlay(w2, fyne.NewSize(300, 360), pos)
 }
 
-func (w *widgetPanel) newAppButton(app fynedesk.AppData, w2 fyne.Window) fyne.CanvasObject {
-	iconRes := app.Icon(w.desk.Settings().IconTheme(), int(64*w.desk.Screens().Primary().CanvasScale()))
-
-	return widget.NewButtonWithIcon(app.Name(), iconRes, func() {
+func (w *widgetPanel) newAppButton(app fynedesk.AppData, w2 fyne.Window) *widget.Button {
+	return widget.NewButtonWithIcon(app.Name(), wmtheme.BrokenImageIcon, func() {
 		w2.Close()
 		_ = w.desk.RunApp(app)
 	})
+}
+
+func (w *widgetPanel) loadIcon(app fynedesk.AppData, btn *widget.Button) {
+	iconRes := app.Icon(w.desk.Settings().IconTheme(), int(64*w.desk.Screens().Primary().CanvasScale()))
+
+	btn.SetIcon(iconRes)
 }
