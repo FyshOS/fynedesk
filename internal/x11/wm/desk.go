@@ -504,7 +504,12 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 	} else if transient > 0 && transient == win {
 		x.transientLeaderRemove(transient)
 	}
+	x.RemoveWindow(c)
+	windowClientListUpdate(x)
+	windowClientListStackingUpdate(x)
+
 	xproto.DestroyWindow(x.x.Conn(), c.FrameID())
+	xproto.DestroyWindow(x.x.Conn(), c.ChildID())
 }
 
 func (x *x11WM) exposeWindow(win xproto.Window) {
@@ -552,11 +557,6 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 	if c == nil || win == c.FrameID() {
 		return
 	}
-
-	x.RemoveWindow(c)
-	windowClientListUpdate(x)
-	windowClientListStackingUpdate(x)
-
 	xproto.UnmapWindow(x.x.Conn(), c.FrameID())
 }
 
