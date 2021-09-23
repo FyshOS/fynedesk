@@ -171,7 +171,6 @@ func (c *Border) CreateRenderer() fyne.WidgetRenderer {
 // SetFocused specifies whether this window is focused, and updates visuals accordingly.
 func (c *Border) SetFocused(focus bool) {
 	c.focused = focus
-	c.Refresh()
 }
 
 // SetIcon tells the border to change the icon that should be used
@@ -180,7 +179,7 @@ func (c *Border) SetIcon(icon fyne.Resource) {
 		return
 	}
 
-	c.appIcon.SetIcon(icon)
+	c.appIcon.Icon = icon
 }
 
 // SetMaximized updates the state of the border maximize indicators and refreshes
@@ -190,13 +189,11 @@ func (c *Border) SetMaximized(isMax bool) {
 	} else {
 		c.max.Icon = wmTheme.MaximizeIcon
 	}
-	c.max.Refresh()
 }
 
 // SetTitle updates the title portion of this border and refreshes.
 func (c *Border) SetTitle(title string) {
 	c.title.Text = title
-	c.title.Refresh()
 }
 
 func newColoredHBox(focused bool, win fynedesk.Window, objs ...fyne.CanvasObject) *Border {
@@ -238,4 +235,5 @@ func (r *coloredBoxRenderer) Refresh() {
 		r.bg.FillColor = theme.DisabledButtonColor()
 	}
 	r.bg.Refresh()
+	r.b.content.Refresh()
 }

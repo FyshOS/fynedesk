@@ -385,6 +385,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 		b.SetTitle(f.client.props.Title())
 		b.SetMaximized(f.client.maximized)
 		b.SetIcon(f.client.Properties().Icon())
+		b.Refresh()
 	}
 	f.canvas.SetScale(scale)
 
