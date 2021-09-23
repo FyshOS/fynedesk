@@ -40,6 +40,8 @@ var (
 	IconifyIcon = theme.NewThemedResource(resourceMinimizeSvg)
 	// KeyboardIcon is the material design icon for the keyboard settings
 	KeyboardIcon = theme.NewThemedResource(resourceKeyboardSvg)
+	// LockIcon is the material design icon for the screen lock icon
+	LockIcon = theme.NewThemedResource(resourceLockSvg)
 	// SoundIcon is the material design icon for sound in light and dark theme
 	SoundIcon = theme.NewThemedResource(resourceSoundSvg)
 	// MuteIcon is the material design icon for mute in light and dark theme

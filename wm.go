@@ -15,6 +15,7 @@ type WindowManager interface {
 	Capture() image.Image // Capture the contents of the whole desktop to an image
 	Close()
 	Run()
+	ShowOverlay(fyne.Window, fyne.Size, fyne.Position)
 	ShowMenuOverlay(*fyne.Menu, fyne.Size, fyne.Position)
 }
 

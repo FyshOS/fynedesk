@@ -50,6 +50,17 @@ func TestFdoFileNameMisMatchAndScalable(t *testing.T) {
 	assert.Equal(t, true, exists(data))
 }
 
+//check the category from app1
+func TestFdoIconCategory(t *testing.T) {
+	setTestEnv(t)
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app1")
+	assert.Equal(t, 2, len(data.Categories()))
+	assert.Equal(t, "App1", data.Categories()[0])
+
+	// also check the first supported one
+	assert.Equal(t, "Utility", data.(*fdoApplicationData).mainCategory())
+}
+
 //applications/app3.desktop and applications/app3.png
 func TestFdoIconNameIsPath(t *testing.T) {
 	setTestEnv(t)
@@ -62,6 +73,13 @@ func TestFdoIconNameIsPath(t *testing.T) {
 	}
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app3")
 	assert.Equal(t, true, exists(data))
+}
+
+//check NoDisplay from app4
+func TestFdoIconHide(t *testing.T) {
+	setTestEnv(t)
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app4")
+	assert.Equal(t, true, data.Hidden())
 }
 
 //applications/app4.desktop and pixmaps/app4.png

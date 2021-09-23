@@ -10,7 +10,7 @@ import (
 
 func TestLoadAppBundle(t *testing.T) {
 	path := "testdata/Test.app"
-	app := loadAppBundle("Test", path)
+	app := loadAppBundle("Test", path, "Applications")
 
 	assert.NotNil(t, app)
 	assert.Equal(t, "Test", app.Name())

@@ -3,7 +3,6 @@ package ui
 import (
 	"os"
 	"path"
-	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -114,45 +113,6 @@ func (w *widgetPanel) createClock() {
 	go w.clockTick()
 }
 
-func (w *widgetPanel) showAccountMenu(from fyne.CanvasObject) {
-	isEmbed := w.desk.(*desktop).root.Title() != RootWindowName
-	items := []*fyne.MenuItem{
-		fyne.NewMenuItem("About", func() {
-			w.showAbout()
-		}),
-		fyne.NewMenuItem("Settings", func() {
-			w.showSettings()
-		}),
-	}
-	if !isEmbed {
-		items = append(items, fyne.NewMenuItem("Blank Screen", w.desk.WindowManager().Blank))
-		if os.Getenv("FYNE_DESK_RUNNER") != "" {
-			items = append(items, fyne.NewMenuItem("Reload", func() {
-				os.Exit(5)
-			}))
-		}
-	}
-
-	closeLabel := "Log Out"
-	if isEmbed {
-		closeLabel = "Quit"
-	}
-
-	items = append(items, fyne.NewMenuItem(closeLabel, func() {
-		w.desk.WindowManager().Close()
-	}))
-
-	var height float32 = 136
-	if strings.Contains(w.desk.(*desktop).root.Title(), "Embedded") {
-		height = 102
-	} else if usingRunner() {
-		height = 169
-	}
-	winSize := w.desk.(*desktop).root.Canvas().Size()
-	pos := fyne.NewPos(winSize.Width-200, winSize.Height-height)
-	w.desk.ShowMenuAt(fyne.NewMenu("Account", items...), pos)
-}
-
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	accountLabel := "Account"
 	homedir, err := os.UserHomeDir()
@@ -165,7 +125,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	account = widget.NewButtonWithIcon(accountLabel, wmtheme.UserIcon, func() {
 		w.showAccountMenu(account)
 	})
-	appExecButton := widget.NewButtonWithIcon("Applications", theme.SearchIcon(), ShowAppLauncher)
+	appExecButton := widget.NewButtonWithIcon("", theme.SearchIcon(), ShowAppLauncher)
 
 	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackgroundDark)
 	objects := []fyne.CanvasObject{
@@ -175,7 +135,8 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		w.notifications}
 
 	w.modules = container.NewVBox()
-	objects = append(objects, layout.NewSpacer(), w.modules, appExecButton, account)
+	objects = append(objects, layout.NewSpacer(), w.modules,
+		container.NewBorder(nil, nil, appExecButton, nil, account))
 	w.loadModules(w.desk.Modules())
 
 	return &widgetRenderer{
@@ -216,8 +177,4 @@ func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 	w.createClock()
 
 	return w
-}
-
-func usingRunner() bool {
-	return len(os.Getenv("FYNE_DESK_RUNNER")) > 0
 }

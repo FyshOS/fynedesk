@@ -6,6 +6,7 @@ import "fyne.io/fyne/v2"
 type Desktop interface {
 	Run()
 	RunApp(AppData) error
+	RecentApps() []AppData
 	Settings() DeskSettings
 	ContentSizePixels(screen *Screen) (uint32, uint32)
 	Screens() ScreenList

@@ -57,6 +57,11 @@ func (td *Desktop) SetIconProvider(icons fynedesk.ApplicationProvider) {
 	td.icons = icons
 }
 
+// RecentApps returns applications that have recently been run. This test instance returns nil.
+func (td *Desktop) RecentApps() []fynedesk.AppData {
+	return nil
+}
+
 // Modules returns the list of modules currently loaded (by default no modules for this implementation)
 func (*Desktop) Modules() []fynedesk.Module {
 	return nil
