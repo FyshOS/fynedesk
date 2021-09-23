@@ -94,10 +94,12 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 }
 
 func (w *widgetPanel) newAppButton(app fynedesk.AppData, w2 fyne.Window) *widget.Button {
-	return widget.NewButtonWithIcon(app.Name(), wmtheme.BrokenImageIcon, func() {
+	b := widget.NewButtonWithIcon(app.Name(), wmtheme.BrokenImageIcon, func() {
 		w2.Close()
 		_ = w.desk.RunApp(app)
 	})
+	b.Alignment = widget.ButtonAlignLeading
+	return b
 }
 
 func (w *widgetPanel) loadIcon(app fynedesk.AppData, btn *widget.Button) {

@@ -84,6 +84,7 @@ func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 			l.callback(appData)
 			l.win.Close()
 		})
+		app.Alignment = widget.ButtonAlignLeading
 
 		appList = append(appList, app)
 	}
