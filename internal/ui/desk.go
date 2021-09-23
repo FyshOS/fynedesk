@@ -107,6 +107,18 @@ func (l *desktop) RunApp(app fynedesk.AppData) error {
 
 	if err == nil {
 		l.recent = append([]fynedesk.AppData{app}, l.recent...)
+		// remove if it was already on the list
+		for i := 1; i < len(l.recent); i++ {
+			if l.recent[i] == app {
+				if i == len(l.recent)-1 {
+					l.recent = l.recent[:i]
+				} else {
+					l.recent = append(l.recent[:i], l.recent[i+1:]...)
+				}
+				break
+			}
+		}
+		// limit to 5 items
 		if len(l.recent) > 5 {
 			l.recent = l.recent[:5]
 		}
