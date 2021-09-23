@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"sort"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -16,7 +17,23 @@ import (
 
 func (w *widgetPanel) appendAppCategories(acc *widget.Accordion, win fyne.Window) {
 	accList := acc.Items
-	for cat, list := range w.desk.IconProvider().CategorizedApps() {
+	cats := w.desk.IconProvider().CategorizedApps()
+	var catNames []string
+	hasOther := false
+	for cat, _ := range cats {
+		if cat == "Other" {
+			hasOther = true
+			continue
+		}
+		catNames = append(catNames, cat)
+	}
+	sort.Strings(catNames)
+	if hasOther {
+		catNames = append(catNames, "Other")
+	}
+
+	for _, cat := range catNames {
+		list := cats[cat]
 		var items []fyne.CanvasObject
 		for _, app := range list {
 			if app.Hidden() {
