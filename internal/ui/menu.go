@@ -20,7 +20,7 @@ func (w *widgetPanel) appendAppCategories(acc *widget.Accordion, win fyne.Window
 	cats := w.desk.IconProvider().CategorizedApps()
 	var catNames []string
 	hasOther := false
-	for cat, _ := range cats {
+	for cat := range cats {
 		if cat == "Other" {
 			hasOther = true
 			continue
