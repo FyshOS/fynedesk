@@ -38,8 +38,9 @@ func (w *widgetPanel) showAbout() {
 	}
 	win := fyne.CurrentApp().NewWindow("About FyneDesk")
 
-	title := widget.NewLabelWithStyle("Fyne Desk "+version(), fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
-	authors := widget.NewLabel("\nAuthors:\n\n    Andy Williams\n    Stephen Houston\n    Jacob Alzén\n")
+	title := widget.NewRichTextFromMarkdown("**Version:** " + version())
+	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
+	authors := widget.NewRichTextFromMarkdown("\n**Authors:**\n\n * Andy Williams\n * Stephen Houston\n * Jacob Alzén\n")
 	buttons := container.NewGridWithColumns(3,
 		newURLButton("Home Page", "https://fyne.io"),
 		newURLButton("Report Issue", "https://github.com/fyne-io/desktop/issues/new"),
