@@ -101,7 +101,6 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 type Border struct {
 	widget.BaseWidget
 	content *fyne.Container
-	focused bool
 	appIcon *widget.Button
 	title   *canvas.Text
 	max     *widget.Button
@@ -168,11 +167,6 @@ func (c *Border) CreateRenderer() fyne.WidgetRenderer {
 	return render
 }
 
-// SetFocused specifies whether this window is focused, and updates visuals accordingly.
-func (c *Border) SetFocused(focus bool) {
-	c.focused = focus
-}
-
 // SetIcon tells the border to change the icon that should be used
 func (c *Border) SetIcon(icon fyne.Resource) {
 	if icon == nil {
@@ -197,7 +191,7 @@ func (c *Border) SetTitle(title string) {
 }
 
 func newColoredHBox(focused bool, win fynedesk.Window, objs ...fyne.CanvasObject) *Border {
-	ret := &Border{focused: focused, win: win}
+	ret := &Border{win: win}
 	ret.content = container.NewHBox(objs...)
 	ret.ExtendBaseWidget(ret)
 
@@ -226,14 +220,14 @@ func (r *coloredBoxRenderer) Objects() []fyne.CanvasObject {
 }
 
 func (r *coloredBoxRenderer) Refresh() {
-	r.b.title.Color = theme.ForegroundColor()
-	r.b.title.Refresh()
-
-	if r.b.focused {
+	r.bg.Resize(r.b.Size()) // Not sure why this resize is needed, but it is...
+	if r.b.win.Focused() {
 		r.bg.FillColor = theme.BackgroundColor()
 	} else {
 		r.bg.FillColor = theme.DisabledButtonColor()
 	}
 	r.bg.Refresh()
+
+	r.b.title.Color = theme.ForegroundColor()
 	r.b.content.Refresh()
 }

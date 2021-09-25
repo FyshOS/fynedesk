@@ -329,7 +329,7 @@ func (f *frame) decorate(force bool) {
 	if f.client.Focused() {
 		backR, backG, backB, _ = theme.BackgroundColor().RGBA()
 	}
-	bgColor := backR<<16 | backG<<8 | backB
+	bgColor := uint32(uint8(backR))<<16 | uint32(uint8(backG))<<8 | uint32(uint8(backB))
 
 	drawTop, _ := xproto.NewGcontextId(f.client.wm.Conn())
 	xproto.CreateGC(f.client.wm.Conn(), drawTop, xproto.Drawable(f.borderTop), xproto.GcForeground, []uint32{bgColor})
@@ -343,16 +343,10 @@ func (f *frame) decorate(force bool) {
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	draw, _ := xproto.NewGcontextId(f.client.wm.Conn())
 	xproto.CreateGC(f.client.wm.Conn(), draw, xproto.Drawable(f.client.id), xproto.GcForeground, []uint32{bgColor})
-	rect := xproto.Rectangle{X: 0, Y: int16(heightPix), Width: f.width, Height: f.height - heightPix}
+	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
 	xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 
 	rightWidthPix := f.topRightPixelWidth()
-	if f.borderTopWidth+rightWidthPix < f.width {
-		rect := xproto.Rectangle{X: int16(f.borderTopWidth), Y: 0,
-			Width: f.width - f.borderTopWidth - rightWidthPix, Height: heightPix}
-		xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
-	}
-
 	rect = xproto.Rectangle{X: 0, Y: 0, Width: f.borderTopWidth, Height: x11.TitleHeight(x11.XWin(f.client))}
 	xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 	minWidth := f.canvas.Content().MinSize().Width
@@ -381,7 +375,6 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 		f.canvas = canvas
 	} else {
 		b := f.canvas.Content().(*wm.Border)
-		b.SetFocused(f.client.Focused())
 		b.SetTitle(f.client.props.Title())
 		b.SetMaximized(f.client.maximized)
 		b.SetIcon(f.client.Properties().Icon())
