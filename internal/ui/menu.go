@@ -59,6 +59,7 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 	})
 	items1 := []fyne.CanvasObject{container.NewMax(canvas.NewRectangle(theme.ErrorColor()),
 		&widget.Button{Icon: theme.LogoutIcon(), Importance: widget.LowImportance, OnTapped: func() {
+			w2.Close()
 			w.desk.WindowManager().Close()
 		}})}
 	isEmbed := w.desk.(*desktop).root.Title() != RootWindowName
