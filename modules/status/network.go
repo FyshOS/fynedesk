@@ -33,22 +33,47 @@ func (n *network) Destroy() {
 }
 
 func (n *network) wirelessName() (string, error) {
-	out, err := exec.Command("bash", []string{"-c", "iw dev `iw dev | grep Interface | cut -d \" \" -f2` info | grep ssid | cut -d \" \" -f 2"}...).Output()
-	if err != nil {
-		log.Println("Error running iw", err)
-		return "", err
-	}
+	net := ""
+	if iw, _ := exec.LookPath("iw"); iw != "" {
+		out, err := exec.Command("bash", []string{"-c", "iw dev `iw dev | grep Interface | cut -d \" \" -f2` info | grep ssid | cut -d \" \" -f 2"}...).Output()
+		if err != nil {
+			log.Println("Error running iw", err)
+			return "", err
+		}
+		net = string(out)
+	} else {
+		out, err := exec.Command("bash", []string{"-c", "/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I  | awk -F' SSID: '  '/ SSID: / {print $2}'"}...).Output()
+		if err != nil {
+			log.Println("Error getting network info from airport utility", err)
+			return "", err
+		}
 
-	return strings.TrimSpace(string(out)), nil
+		net = string(out)
+	}
+	return strings.TrimSpace(net), nil
 }
 
 func (n *network) isEthernetConnected() (bool, error) {
-	out, err := exec.Command("bash", []string{"-c", "ip link | grep \",UP,\" | grep -v LOOPBACK | grep -v \": wl\""}...).Output()
-	if err != nil {
-		log.Println("Error running iw", err)
-		return false, err
+	if ip, _ := exec.LookPath("ip"); ip != "" {
+		out, err := exec.Command("bash", []string{"-c", "ip link | grep \",UP,\" | grep -v LOOPBACK | grep -v \": wl\""}...).Output()
+		if err != nil {
+			log.Println("Error running ip tool", err)
+			return false, err
+		}
+		if strings.TrimSpace(string(out)) == "" {
+			return false, nil
+		}
+	} else {
+		out, err := exec.Command("bash", []string{"-c", "ifconfig | pcregrep -M -o '^[^\\t:]+:([^\\n]|\\n\\t)*status: active'"}...).Output()
+		if err != nil {
+			log.Println("Error running ifconfig tool", err)
+			return false, err
+		}
+		if !strings.Contains(string(out), "broadcast") {
+			return false, nil
+		}
 	}
-	return strings.TrimSpace(string(out)) != "", nil
+	return true, nil
 }
 
 func (n *network) networkName() string {
