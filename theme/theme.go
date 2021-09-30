@@ -27,6 +27,12 @@ var (
 	DisplayIcon = theme.NewThemedResource(resourceDisplaySvg)
 	// InternetIcon is the material design icon for the internet in light and dark theme
 	InternetIcon = theme.NewThemedResource(resourceInternetSvg)
+	// EthernetIcon is the material design icon for a network connection
+	EthernetIcon = theme.NewThemedResource(resourceEthernetSvg)
+	// WifiIcon is the material design icon for a wireless network connection
+	WifiIcon = theme.NewThemedResource(resourceWifiSvg)
+	//WifiOffIcon is the material design icon for a wireless device without a connection
+	WifiOffIcon = theme.NewThemedResource(resourceWifioffSvg)
 	// PowerIcon is the material design icon for a power connection in light and dark theme
 	PowerIcon = theme.NewThemedResource(resourcePowerSvg)
 	// UserIcon is the material design icon for a user in light and dark theme
