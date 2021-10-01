@@ -35,7 +35,17 @@ func (n *network) Destroy() {
 func (n *network) wirelessName() (string, error) {
 	net := ""
 	if iw, _ := exec.LookPath("iw"); iw != "" {
-		out, err := exec.Command("bash", []string{"-c", "iw dev `iw dev | grep Interface | cut -d \" \" -f2` info | grep ssid | cut -d \" \" -f 2"}...).Output()
+		out, err := exec.Command("bash", []string{"-c", "iw dev | grep Interface | cut -d \" \" -f2"}...).Output()
+		if err != nil {
+			log.Println("Error running iw", err)
+			return "", err
+		}
+		dev := strings.TrimSpace(string(out))
+		if dev == "" {
+			return "", nil
+		}
+
+		out, err = exec.Command("bash", []string{"-c", "iw dev "+dev+" info | grep ssid | cut -d \" \" -f 2"}...).Output()
 		if err != nil {
 			log.Println("Error running iw", err)
 			return "", err
