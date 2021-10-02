@@ -45,7 +45,7 @@ func (n *network) wirelessName() (string, error) {
 			return "", nil
 		}
 
-		out, err = exec.Command("bash", []string{"-c", "iw dev "+dev+" info | grep ssid | cut -d \" \" -f 2"}...).Output()
+		out, err = exec.Command("bash", []string{"-c", "iw dev " + dev + " info | grep ssid | cut -d \" \" -f 2"}...).Output()
 		if err != nil {
 			log.Println("Error running iw", err)
 			return "", err
