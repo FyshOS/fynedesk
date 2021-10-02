@@ -504,7 +504,6 @@ func (x *x11WM) destroyWindow(win xproto.Window) {
 	} else if transient > 0 && transient == win {
 		x.transientLeaderRemove(transient)
 	}
-	x.RemoveWindow(c)
 	windowClientListUpdate(x)
 	windowClientListStackingUpdate(x)
 
@@ -558,6 +557,7 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 		return
 	}
 	xproto.UnmapWindow(x.x.Conn(), c.FrameID())
+	x.RemoveWindow(c)
 }
 
 func (x *x11WM) isRootTitle(title string) bool {
