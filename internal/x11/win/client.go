@@ -59,7 +59,10 @@ func NewClient(win xproto.Window, wm x11.XWM) x11.XWin {
 		xproto.UnmapWindow(wm.Conn(), win)
 	} else {
 		c.positionNewWindow()
-		c.newFrame()
+		c.newFrame() // could have returned nil, set on c.frame
+		if c.frame == nil {
+			return nil
+		}
 	}
 
 	return c

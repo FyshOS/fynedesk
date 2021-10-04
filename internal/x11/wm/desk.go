@@ -625,13 +625,16 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 	if c != nil {
 		return
 	}
+	c = xwin.NewClient(win, x)
+	if c == nil {
+		return // a previous reported problem occurred framing the window
+	}
 
 	x.bindShortcuts(win)
 	if x11.WindowName(x.x, win) == "" {
 		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
 		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
 	}
-	c = xwin.NewClient(win, x)
 	x.AddWindow(c)
 	c.RaiseToTop()
 	c.Focus()
