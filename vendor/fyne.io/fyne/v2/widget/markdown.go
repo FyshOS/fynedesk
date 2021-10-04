@@ -89,6 +89,9 @@ func (m *markdownRenderer) Render(_ io.Writer, source []byte, n ast.Node) error 
 				line := lines.At(i)
 				data = append(data, line.Value(source)...)
 			}
+			if len(data) == 0 {
+				return ast.WalkContinue, nil
+			}
 			if data[len(data)-1] == '\n' {
 				data = data[:len(data)-1]
 			}
@@ -151,8 +154,10 @@ func (m *markdownRenderer) handleExitNode(n ast.Node) error {
 		m.parentStack = m.parentStack[:len(m.parentStack)-1]
 		m.segs = append(m.segs, &ParagraphSegment{Texts: itemSegs})
 	} else if !m.blockquote {
-		if text, ok := m.segs[len(m.segs)-1].(*TextSegment); ok && n.Kind().String() == "Paragraph" {
-			text.Style = RichTextStyleParagraph
+		if len(m.segs) > 0 {
+			if text, ok := m.segs[len(m.segs)-1].(*TextSegment); ok && n.Kind().String() == "Paragraph" {
+				text.Style = RichTextStyleParagraph
+			}
 		}
 		m.nextSeg = &TextSegment{
 			Style: RichTextStyleInline,
