@@ -297,6 +297,8 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 		return keyCodeVolumeLess
 	case fynedesk.KeyVolumeUp:
 		return keyCodeVolumeMore
+	case fyne.KeyL:
+		return keyL
 	}
 
 	return 0
