@@ -77,14 +77,17 @@ func (b *brightness) value() (float64, error) {
 
 func (b *brightness) offsetValue(diff int) {
 	floatVal, _ := b.value()
+	if floatVal <= 0.01 { // don't start doing 6, 11 etc just because we were on 1 (min)
+		floatVal = 0
+	}
 	value := int(floatVal*100) + diff
 
 	b.setValue(value)
 }
 
 func (b *brightness) setValue(value int) {
-	if value < 5 {
-		value = 5
+	if value < 1 {
+		value = 1
 	} else if value > 100 {
 		value = 100
 	}
