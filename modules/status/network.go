@@ -128,7 +128,7 @@ func (n *network) StatusAreaWidget() fyne.CanvasObject {
 	}
 
 	n.name = widget.NewLabel("")
-	n.icon = widget.NewIcon(wmtheme.WifiIcon)
+	n.icon = widget.NewIcon(wmtheme.WifiOffIcon)
 	prop := canvas.NewRectangle(color.Transparent)
 	prop.SetMinSize(n.icon.MinSize().Add(fyne.NewSize(theme.Padding()*4, 0)))
 	icon := container.NewCenter(prop, n.icon)
