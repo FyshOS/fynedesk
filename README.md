@@ -40,7 +40,7 @@ To use this as your main destktop you can run the following commands to set up
 fynedesk as a selectable desktop option in your login manager (such as LightDM for example).
 
 ```
-go get https://github.com/fyne-io/fynedesk
+git clone https://github.com/fyne-io/fynedesk
 cd fynedesk
 make
 sudo make install
