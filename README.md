@@ -36,7 +36,7 @@ Doing so is not running a window manager, to do so requires another few steps.
 
 ## Setting up as a desktop environment
 
-To use this as your main destktop you can run the following commands to set up
+To use this as your main desktop you can run the following commands to set up
 fynedesk as a selectable desktop option in your login manager (such as LightDM for example).
 
 ```
