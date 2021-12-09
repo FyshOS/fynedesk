@@ -30,13 +30,29 @@ Using standard go tools you can install FyneDesk using:
 go get fyne.io/fynedesk/cmd/fynedesk
 ```
 
-Once installed you can run the following commands from the root of the installed fynedesk folder (usually $GOPATH/src/fyne.io/fynedesk/) to set up fynedesk as a selectable desktop option in your login manager (such as LightDM for example).
+This will add `fynedesk` to your $GOPATH (usually ~/go/bin).
+You can now run the app in "preview" mode like any other Fyne app.
+Doing so is not running a window manager, to do so requires another few steps.
+
+## Setting up as a desktop environment
+
+To use this as your main destktop you can run the following commands to set up
+fynedesk as a selectable desktop option in your login manager (such as LightDM for example).
+
 ```
+go get https://github.com/fyne-io/fynedesk
+cd fynedesk
 make
 sudo make install
 ```
 
-You can also run it in an embedded X window for testing using:
+You can now log out and see that it is in your desktop selection list at login.
+
+## Debugging a window manager
+
+You can also run the window manager components in an embedded X window for testing.
+You will need the `Xephyr` tool installed for your platform (often installed as part of Xorg).
+Once it is present you can use the following command from the same directory as above:
 
     make embed
 
