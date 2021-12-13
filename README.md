@@ -12,7 +12,7 @@
 # About
 
 FyneDesk is an easy to use Linux/Unix desktop environment following material design.
-It is build using the [Fyne](https://fyne.io) toolkit and is designed to be
+It is built using the [Fyne](https://fyne.io) toolkit and is designed to be
 easy to use as well as easy to develop. We use the Go language and welcome
 any contributions or feedback for the project.
 
@@ -27,18 +27,34 @@ Compositor support currently requires `compton` to be installed.
 
 # Getting Started
 
-Using standard go tools you can install FyneDesk using:
+Using standard Go tools you can install FyneDesk using:
 ```
 go get fyne.io/fynedesk/cmd/fynedesk
 ```
 
-Once installed you can run the following commands from the root of the installed fynedesk folder (usually $GOPATH/src/fyne.io/fynedesk/) to set up fynedesk as a selectable desktop option in your login manager (such as LightDM for example).
+This will add `fynedesk` to your $GOPATH (usually ~/go/bin).
+You can now run the app in "preview" mode like any other Fyne app.
+Doing so is not running a window manager, to do so requires another few steps:
+
+## Setting up as a desktop environment
+
+To use this as your main desktop you can run the following commands to set up
+fynedesk as a selectable desktop option in your login manager (such as LightDM for example):
+
 ```
+git clone https://github.com/fyne-io/fynedesk
+cd fynedesk
 make
 sudo make install
 ```
 
-You can also run it in an embedded X window for testing using:
+You can now log out and see that it is in your desktop selection list at login.
+
+## Debugging a window manager
+
+You can also run the window manager components in an embedded X window for testing.
+You will need the `Xephyr` tool installed for your platform (often installed as part of Xorg).
+Once it is present you can use the following command from the same directory as above:
 
     make embed
 
@@ -56,14 +72,14 @@ controlling of windows - they will load on your main desktop.
 
 # Runner
 
-A desktop needs to be rock solid and, whilst we are working hard to get there,
-any alpha or beta software can run in to unexpected issues. 
-For that reason we have included a `fynedesk_runner` utility that can help
-manage unexpected events. If you start the desktop using the runner then
-if a crash occurs it will normally recover where it left off with no loss
+A desktop needs to be rock solid, and whilst we are working hard to get there,
+any alpha or beta software can run into unexpected issues. 
+For that reason, we have included a `fynedesk_runner` utility that can help
+manage unexpected events. If you start the desktop using the runner, then
+if a crash occurs, it will normally recover where it left off with no loss
 of data in your applications.
 
-Using standard go tools you can install the runner using:
+Using standard Go tools you can install the runner using:
 
     go get fyne.io/fynedesk/cmd/fynedesk_runner
 
