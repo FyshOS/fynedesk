@@ -1,6 +1,6 @@
 <p align="center">
   <a href="https://godoc.org/fyne.io/fynedesk" title="GoDoc Reference" rel="nofollow"><img src="https://img.shields.io/badge/go-documentation-blue.svg?style=flat" alt="GoDoc Reference"></a>
-  <a href="https://github.com/fyne-io/fynedesk/releases/tag/v0.2.0" title="0.2.0 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.2.0-blue.svg?style=flat" alt="0.2.0 release"></a>
+  <a href="https://github.com/fyne-io/fynedesk/releases/tag/v0.3.0" title="0.3.0 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.3.0-blue.svg?style=flat" alt="0.3.0 release"></a>
   <a href='http://gophers.slack.com/messages/fyne'><img src='https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=blue' alt='Join us on Slack' /></a>
 
   <br />
@@ -22,6 +22,7 @@ For a full desktop experience you will also need the following external tools in
 
 - `arandr`
 - `xbacklight` or `brightnessctl` for laptop brightness
+- `connman-gtk` is currently used for configuring Wi-Fi network settings
 
 Compositor support currently requires `compton` to be installed.
 
@@ -84,7 +85,7 @@ Using standard Go tools you can install the runner using:
     go get fyne.io/fynedesk/cmd/fynedesk_runner
 
 From then on execute that instead of the `fynedesk` command for a more 
-resillient desktop when testing out pre-release builds.
+resilient desktop when testing out pre-release builds.
 
 # Shipping FyneDesk
 
