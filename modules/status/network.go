@@ -63,12 +63,12 @@ func (n *network) wirelessName() (string, error) {
 
 func (n *network) isEthernetConnected() (bool, error) {
 	if ip, _ := exec.LookPath("ip"); ip != "" {
-		out, err := exec.Command("bash", []string{"-c", "ip link | grep \",UP,\" | grep -v LOOPBACK | grep -v \": wl\""}...).Output()
+		out, err := exec.Command("bash", []string{"-c", "ip link | grep \",UP,\" | grep -v LOOPBACK | grep -v \": wl\" | wc -l"}...).Output()
 		if err != nil {
 			log.Println("Error running ip tool", err)
 			return false, err
 		}
-		if strings.TrimSpace(string(out)) == "" {
+		if strings.TrimSpace(string(out)) == "0" {
 			return false, nil
 		}
 	} else {
