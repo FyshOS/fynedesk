@@ -76,9 +76,13 @@ func (l *picker) updateAppListMatching(input string) {
 
 func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 	var appList []fyne.CanvasObject
+	var iconList = []fynedesk.AppData{}
 
 	dataRange := l.desk.IconProvider().FindAppsMatching(input)
 	for _, data := range dataRange {
+		if data == nil || data.Hidden() {
+			continue
+		}
 		appData := data // capture for goroutine below
 		app := widget.NewButtonWithIcon(appData.Name(), wmTheme.BrokenImageIcon, func() {
 			l.callback(appData)
@@ -87,8 +91,9 @@ func (l *picker) appButtonListMatching(input string) []fyne.CanvasObject {
 		app.Alignment = widget.ButtonAlignLeading
 
 		appList = append(appList, app)
+		iconList = append(iconList, data)
 	}
-	go l.loadIcons(dataRange, appList)
+	go l.loadIcons(iconList, appList)
 
 	appList = append(appList, l.loadSuggestionsMatching(input)...)
 	if len(appList) > 0 {
