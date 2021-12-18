@@ -11,11 +11,12 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Support brightnessctl support to brightness module
 * Add a helper menu to each window
 * Add network status module that uses connman-gtk to configure
+* Add support for starting the Fyne Calculator (if installed) using the "calc" button on supported keyboards
 
 ### Changed
 
 * Default terminal is now fyneterm (if installed) :)
-* Update Fyne to 2.1, refresh UI to match
+* Update Fyne to 2.1 and refresh UI to match
 * Improved switcher UI
 * Re-designed the main menu to include links to standard apps
 
@@ -26,6 +27,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Don't drag the window if tap starts on a button
 * Global shortcuts did not work in some windows and menus
 * Improved stability when switching apps or showing many windows
+* Compilation on FreeBSD 13 failed due to dbus issue
 
 
 ## 0.2 - 22 March 2021
