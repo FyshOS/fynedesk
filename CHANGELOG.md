@@ -28,6 +28,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Global shortcuts did not work in some windows and menus
 * Improved stability when switching apps or showing many windows
 * Compilation on FreeBSD 13 failed due to dbus issue
+* Removed FreeBSD requirement on installed glfw library dependency
 
 
 ## 0.2 - 22 March 2021
