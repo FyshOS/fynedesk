@@ -460,7 +460,11 @@ func (f *frame) hide() {
 			stack[i].Focus()
 		}
 	}
-	xproto.ReparentWindow(f.client.wm.Conn(), f.client.win, f.client.wm.X().RootWin(), f.x, f.y)
+
+	borderWidth := x11.BorderWidth(x11.XWin(f.client))
+	titleHeight := x11.TitleHeight(x11.XWin(f.client))
+	x, y := f.x + int16(borderWidth), f.y + int16(titleHeight)
+	xproto.ReparentWindow(f.client.wm.Conn(), f.client.win, f.client.wm.X().RootWin(), x, y)
 	xproto.UnmapWindow(f.client.wm.Conn(), f.client.win)
 }
 
