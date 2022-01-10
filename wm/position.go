@@ -11,10 +11,10 @@ func PositionForNewWindow(x, y int, w, h uint, decorated bool,
 	screens fynedesk.ScreenList) (int, int, uint, uint) {
 
 	target := screens.Active()
-	offX, offY := 0, 0
+	offX, offY := (target.Width-int(w))/2, (target.Height-int(h))/2
 	if decorated {
-		offX = ScaleToPixels(theme.BorderWidth, target)
-		offY = ScaleToPixels(theme.TitleHeight, target)
+		offX -= ScaleToPixels(theme.BorderWidth, target)
+		offY -= ScaleToPixels(theme.TitleHeight, target)
 	}
 
 	return target.X + offX, target.Y + offY, w, h
