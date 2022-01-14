@@ -255,6 +255,20 @@ func (c *client) NotifyUnMaximize() {
 	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 }
 
+func (c *client) Parent() fynedesk.Window {
+	id := x11.WindowTransientForGet(c.wm.X(), c.win)
+	if id == 0 {
+		return nil
+	}
+
+	for _, win := range c.wm.Windows() {
+		if win.(x11.XWin).ChildID() == id {
+			return win
+		}
+	}
+	return nil
+}
+
 func (c *client) Position() fyne.Position {
 	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
 
@@ -378,7 +392,7 @@ func (c *client) positionNewWindow() {
 		y = primary.Height - int(h)
 	} else if (!requestPosition && !hasPosition) || !c.positionIsValid(x, y) {
 		decorated := !windowBorderless(c.wm.X(), c.win)
-		x, y, w, h = wm.PositionForNewWindow(int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
+		x, y, w, h = wm.PositionForNewWindow(c, int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
 			decorated, fynedesk.Instance().Screens())
 	}
 
