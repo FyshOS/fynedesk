@@ -71,6 +71,10 @@ func (w *Window) Maximized() bool {
 	return false
 }
 
+func (w *Window) Parent() fynedesk.Window {
+	return nil
+}
+
 // Position returns 0, 0 for test windows
 func (w *Window) Position() fyne.Position {
 	return fyne.NewPos(0, 0)

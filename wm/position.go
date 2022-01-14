@@ -24,7 +24,7 @@ func PositionForNewWindow(win fynedesk.Window, x, y int, w, h uint, decorated bo
 		offY -= ScaleToPixels(theme.TitleHeight, target)
 	}
 
-	return target.X + offX, target.Y + offY, w, h
+	return offX, offY, w, h
 }
 
 func positionInRect(ww, hh uint, x, y int, w, h uint) (int, int) {
