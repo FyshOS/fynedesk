@@ -21,7 +21,7 @@ func (w *Window) FrameID() xproto.Window {
 
 // Geometry returns the x, y position and width, height size of this window's outer bounds
 func (w *Window) Geometry() (int, int, uint, uint) {
-	return 0, 0, 10, 10
+	return w.x, w.y, w.width, w.height
 }
 
 // NotifyBorderChange is called when the border should be shown or hidden
