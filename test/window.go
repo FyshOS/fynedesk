@@ -71,6 +71,7 @@ func (w *Window) Maximized() bool {
 	return false
 }
 
+// Parent returns a window that this should be positioned within, if set.
 func (w *Window) Parent() fynedesk.Window {
 	return nil
 }
