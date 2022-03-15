@@ -100,6 +100,8 @@ github.com/go-gl/glfw/v3.3/glfw/glfw/src
 # github.com/godbus/dbus/v5 v5.0.4
 ## explicit
 github.com/godbus/dbus/v5
+github.com/godbus/dbus/v5/introspect
+github.com/godbus/dbus/v5/prop
 # github.com/goki/freetype v0.0.0-20181231101311-fa8a33aabaff
 github.com/goki/freetype
 github.com/goki/freetype/raster
