@@ -6,8 +6,6 @@ import (
 	"sync"
 
 	"fyne.io/fyne/v2"
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
-
 	"fyne.io/fynedesk"
 )
 
@@ -22,7 +20,7 @@ type deskSettings struct {
 	borderButtonPosition   string
 	clockFormatting        string
 
-	modifier    deskDriver.Modifier
+	modifier    fyne.KeyModifier
 	moduleNames []string
 	narrowPanel bool
 
@@ -58,7 +56,7 @@ func (d *deskSettings) LauncherZoomScale() float32 {
 	return d.launcherZoomScale
 }
 
-func (d *deskSettings) KeyboardModifier() deskDriver.Modifier {
+func (d *deskSettings) KeyboardModifier() fyne.KeyModifier {
 	return d.modifier
 }
 
@@ -151,7 +149,7 @@ func (d *deskSettings) setLauncherZoomScale(scale float32) {
 	d.apply()
 }
 
-func (d *deskSettings) setKeyboardModifier(mod deskDriver.Modifier) {
+func (d *deskSettings) setKeyboardModifier(mod fyne.KeyModifier) {
 	d.modifier = mod
 	fyne.CurrentApp().Preferences().SetInt("keyboardmodifier", int(d.modifier))
 	d.apply()
@@ -228,7 +226,7 @@ func (d *deskSettings) load() {
 	if moduleNames != "" {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
-	d.modifier = deskDriver.Modifier(fyne.CurrentApp().Preferences().IntWithFallback("keyboardmodifier", int(deskDriver.SuperModifier)))
+	d.modifier = fyne.KeyModifier(fyne.CurrentApp().Preferences().IntWithFallback("keyboardmodifier", int(fyne.KeyModifierSuper)))
 	d.narrowPanel = fyne.CurrentApp().Preferences().Bool("narrowpanel")
 
 	d.borderButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")

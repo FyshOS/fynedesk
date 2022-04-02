@@ -261,12 +261,12 @@ func (l *desktop) registerShortcuts() {
 		func() {
 			// dummy - the wm handles app switcher
 		})
-	l.AddShortcut(fynedesk.NewShortcut("Switch App Previous", fyne.KeyTab, fynedesk.UserModifier|deskDriver.ShiftModifier),
+	l.AddShortcut(fynedesk.NewShortcut("Switch App Previous", fyne.KeyTab, fynedesk.UserModifier|fyne.KeyModifierShift),
 		func() {
 			// dummy - the wm handles app switcher
 		})
 	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Window", KeyName: deskDriver.KeyPrintScreen,
-		Modifier: deskDriver.ShiftModifier},
+		Modifier: fyne.KeyModifierShift},
 		l.screenshotWindow)
 	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Screen", KeyName: deskDriver.KeyPrintScreen},
 		l.screenshot)
