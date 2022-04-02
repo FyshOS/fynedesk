@@ -70,10 +70,28 @@ func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 	icon := container.NewCenter(prop, b.icon)
 
 	go b.batteryTick()
-	return container.NewBorder(nil, nil, icon, nil, b.bar)
+	return container.New(&handleNarrow{}, icon, b.bar)
 }
 
 // newBattery creates a new module that will show battery level in the status area
 func newBattery() fynedesk.Module {
 	return &battery{}
+}
+
+type handleNarrow struct{}
+
+func (h *handleNarrow) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	objects[0].Resize(fyne.NewSize(size.Height, size.Height))
+	objects[1].Resize(fyne.NewSize(size.Width-size.Height-theme.Padding(), size.Height))
+	objects[1].Move(fyne.NewPos(size.Height+theme.Padding(), 0))
+
+	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
+		objects[1].Hide()
+	} else {
+		objects[1].Show()
+	}
+}
+
+func (h *handleNarrow) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	return fyne.NewSize(36, 36)
 }

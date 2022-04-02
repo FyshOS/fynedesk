@@ -30,7 +30,7 @@ func (p *progressRenderer) MinSize() fyne.Size {
 		tsize = fyne.MeasureText("100%", p.label.TextSize, p.label.TextStyle)
 	}
 
-	return fyne.NewSize(tsize.Width+theme.Padding()*4, tsize.Height+theme.Padding()*2)
+	return fyne.NewSize(tsize.Width+theme.Padding()*4, tsize.Height+theme.Padding()*4)
 }
 
 func (p *progressRenderer) updateBar() {
@@ -87,7 +87,7 @@ type ProgressBar struct {
 	// If set, it overrides the percentage readout and runs each time the value updates.
 	//
 	// Since: 1.4
-	TextFormatter func() string
+	TextFormatter func() string `json:"-"`
 
 	binder basicBinder
 }

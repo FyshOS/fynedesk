@@ -24,6 +24,7 @@ type deskSettings struct {
 
 	modifier    deskDriver.Modifier
 	moduleNames []string
+	narrowPanel bool
 
 	listenerLock    sync.Mutex
 	changeListeners []chan fynedesk.DeskSettings
@@ -63,6 +64,10 @@ func (d *deskSettings) KeyboardModifier() deskDriver.Modifier {
 
 func (d *deskSettings) ModuleNames() []string {
 	return d.moduleNames
+}
+
+func (d *deskSettings) NarrowWidgetPanel() bool {
+	return d.narrowPanel
 }
 
 func (d *deskSettings) BorderButtonPosition() string {
@@ -159,6 +164,12 @@ func (d *deskSettings) setModuleNames(names []string) {
 	d.apply()
 }
 
+func (d *deskSettings) setNarrowWidgetPanel(narrow bool) {
+	d.narrowPanel = narrow
+	fyne.CurrentApp().Preferences().SetBool("narrowpanel", narrow)
+	d.apply()
+}
+
 func (d *deskSettings) setBorderButtonPosition(pos string) {
 	d.borderButtonPosition = pos
 	fyne.CurrentApp().Preferences().SetString("borderbuttonposition", d.borderButtonPosition)
@@ -218,6 +229,7 @@ func (d *deskSettings) load() {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
 	d.modifier = deskDriver.Modifier(fyne.CurrentApp().Preferences().IntWithFallback("keyboardmodifier", int(deskDriver.SuperModifier)))
+	d.narrowPanel = fyne.CurrentApp().Preferences().Bool("narrowpanel")
 
 	d.borderButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
 

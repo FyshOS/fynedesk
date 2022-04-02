@@ -8,6 +8,7 @@ type DeskSettings interface {
 	IconTheme() string
 	BorderButtonPosition() string
 	ClockFormatting() string
+	NarrowWidgetPanel() bool
 
 	LauncherIcons() []string
 	LauncherIconSize() float32

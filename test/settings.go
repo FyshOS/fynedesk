@@ -19,6 +19,7 @@ type Settings struct {
 	clockFormatting        string
 
 	moduleNames []string
+	narrowPanel bool
 }
 
 // NewSettings returns an in-memory settings instance
@@ -119,6 +120,14 @@ func (s *Settings) ModuleNames() []string {
 // SetModuleNames supports configuring the modules that should be loaded
 func (s *Settings) SetModuleNames(mods []string) {
 	s.moduleNames = mods
+}
+
+func (s *Settings) NarrowWidgetPanel() bool {
+	return s.narrowPanel
+}
+
+func (s *Settings) SetNarrowWidgetPanel(narrow bool) {
+	s.narrowPanel = narrow
 }
 
 // BorderButtonPosition returns the position of the toolbar buttons.

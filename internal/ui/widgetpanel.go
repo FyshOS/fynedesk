@@ -5,9 +5,12 @@ import (
 	"path"
 	"time"
 
+	"github.com/disintegration/imaging"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/software"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
@@ -16,7 +19,10 @@ import (
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
-const widgetPanelWidth = float32(200)
+const (
+	widgetPanelNarrow = float32(36)
+	widgetPanelWidth  = float32(200)
+)
 
 type widgetRenderer struct {
 	panel *widgetPanel
@@ -44,7 +50,18 @@ func (w *widgetRenderer) Refresh() {
 	}
 	w.bg.Refresh()
 
+	w.panel.account.SetText(w.panel.accountLabel())
+	if w.panel.desk.Settings().NarrowWidgetPanel() {
+		w.panel.search.Hide()
+		w.panel.clocks.Objects[0].Hide()
+		w.panel.clocks.Objects[1].Show()
+	} else {
+		w.panel.search.Show()
+		w.panel.clocks.Objects[0].Show()
+		w.panel.clocks.Objects[1].Hide()
+	}
 	w.panel.clock.Color = theme.ForegroundColor()
+	w.panel.vClock.Color = theme.ForegroundColor()
 	canvas.Refresh(w.panel.clock)
 }
 
@@ -61,10 +78,12 @@ type widgetPanel struct {
 	desk            fynedesk.Desktop
 	about, settings fyne.Window
 
-	clock         *canvas.Text
-	date          *widget.Label
-	modules       *fyne.Container
-	notifications fyne.CanvasObject
+	account, search *widget.Button
+	clock, vClock   *canvas.Text
+	date            *widget.Label
+	rotated         *canvas.Image
+	modules, clocks *fyne.Container
+	notifications   fyne.CanvasObject
 }
 
 func (w *widgetPanel) clockTick() {
@@ -73,9 +92,13 @@ func (w *widgetPanel) clockTick() {
 		for {
 			<-tick.C
 			w.clock.Text = w.formattedTime()
+			w.vClock.Text = w.formattedTime()
 			canvas.Refresh(w.clock)
+			if w.desk.Settings().NarrowWidgetPanel() {
+				w.rotate(w.vClock)
+			}
 
-			w.date.SetText(formattedDate())
+			w.date.SetText(w.formattedDate())
 			canvas.Refresh(w.date)
 		}
 	}()
@@ -89,8 +112,12 @@ func (w *widgetPanel) formattedTime() string {
 	return time.Now().Format("15:04")
 }
 
-func formattedDate() string {
-	return time.Now().Format("2 January")
+func (w *widgetPanel) formattedDate() string {
+	format := "2 Jan"
+	if w.desk.Settings().NarrowWidgetPanel() {
+		format = "2\nJan"
+	}
+	return time.Now().Format(format)
 }
 
 func (w *widgetPanel) createClock() {
@@ -104,8 +131,15 @@ func (w *widgetPanel) createClock() {
 		TextStyle: style,
 		TextSize:  3 * theme.TextSize(),
 	}
+	w.vClock = &canvas.Text{
+		Color:     theme.ForegroundColor(),
+		Text:      w.formattedTime(),
+		Alignment: fyne.TextAlignCenter,
+		TextStyle: style,
+		TextSize:  widgetPanelNarrow * 1.5,
+	}
 	w.date = &widget.Label{
-		Text:      formattedDate(),
+		Text:      w.formattedDate(),
 		Alignment: fyne.TextAlignCenter,
 		TextStyle: style,
 	}
@@ -113,30 +147,46 @@ func (w *widgetPanel) createClock() {
 	go w.clockTick()
 }
 
+func (w *widgetPanel) rotate(time *canvas.Text) {
+	c := software.NewTransparentCanvas()
+	c.SetPadded(false)
+	c.SetContent(time)
+
+	img := c.Capture()
+	out := imaging.Rotate270(img)
+
+	w.rotated.Image = out
+	w.rotated.Refresh()
+}
+
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
-	accountLabel := "Account"
-	homedir, err := os.UserHomeDir()
-	if err == nil {
-		accountLabel = path.Base(homedir)
-	} else {
-		fyne.LogError("Unable to look up user", err)
-	}
+	narrow := w.desk.Settings().NarrowWidgetPanel()
+	accountLabel := w.accountLabel()
 	var account *widget.Button
-	account = widget.NewButtonWithIcon(accountLabel, wmtheme.UserIcon, func() {
+	w.account = widget.NewButtonWithIcon(accountLabel, wmtheme.UserIcon, func() {
 		w.showAccountMenu(account)
 	})
-	appExecButton := widget.NewButtonWithIcon("", theme.SearchIcon(), ShowAppLauncher)
+
+	w.rotated = &canvas.Image{}
+	w.rotated.FillMode = canvas.ImageFillOriginal
+	w.clocks = container.NewMax(w.clock, container.New(&unpad{}, w.rotated))
+	if narrow {
+		w.clock.Hide()
+	} else {
+		w.clocks.Objects[1].Hide()
+	}
+	w.search = widget.NewButtonWithIcon("", theme.SearchIcon(), ShowAppLauncher)
+	bottom := container.NewBorder(nil, nil, w.search, nil, w.account)
 
 	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackgroundDark)
 	objects := []fyne.CanvasObject{
 		bg,
-		w.clock,
+		w.clocks,
 		w.date,
 		w.notifications}
 
 	w.modules = container.NewVBox()
-	objects = append(objects, layout.NewSpacer(), w.modules,
-		container.NewBorder(nil, nil, appExecButton, nil, account))
+	objects = append(objects, layout.NewSpacer(), w.modules, bottom)
 	w.loadModules(w.desk.Modules())
 
 	return &widgetRenderer{
@@ -148,7 +198,24 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *widgetPanel) MinSize() fyne.Size {
+	if w.desk.Settings().NarrowWidgetPanel() {
+		return fyne.NewSize(widgetPanelNarrow, 200)
+	}
 	return fyne.NewSize(widgetPanelWidth, 200)
+}
+
+func (w *widgetPanel) accountLabel() string {
+	if w.desk.Settings().NarrowWidgetPanel() {
+		return ""
+	}
+
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		fyne.LogError("Unable to look up user", err)
+		return "Account"
+	}
+
+	return path.Base(homedir)
 }
 
 func (w *widgetPanel) reloadModules(mods []fynedesk.Module) {
@@ -177,4 +244,16 @@ func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 	w.createClock()
 
 	return w
+}
+
+type unpad struct {
+}
+
+func (u *unpad) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	objects[0].Resize(objects[0].MinSize())
+	objects[0].Move(fyne.NewPos(4, 2))
+}
+
+func (u *unpad) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	return objects[0].MinSize().Add(fyne.NewSize(0, -6))
 }

@@ -1,4 +1,6 @@
+//go:build (android || ios || mobile) && (!js || !wasm || !test_web_driver)
 // +build android ios mobile
+// +build !js !wasm !test_web_driver
 
 package gl
 
@@ -22,12 +24,6 @@ type Buffer gl.Buffer
 
 // Program represents a compiled GL program
 type Program gl.Program
-
-// Texture represents an uploaded GL texture
-type Texture gl.Texture
-
-// NoTexture is the zero value for a Texture
-var NoTexture = Texture(gl.Texture{0})
 
 var textureFilterToGL = []int{gl.Linear, gl.Nearest}
 
@@ -77,7 +73,7 @@ func (p *glPainter) imgToTexture(img image.Image, textureFilter canvas.ImageScal
 		return texture
 	case *image.RGBA:
 		if len(i.Pix) == 0 { // image is empty
-			return NoTexture
+			return noTexture
 		}
 
 		texture := p.newTexture(textureFilter)
@@ -126,63 +122,10 @@ func (p *glPainter) compileShader(source string, shaderType gl.Enum) (gl.Shader,
 	return shader, nil
 }
 
-const (
-	vertexShaderSource = `
-    #version 100
-    attribute vec3 vert;
-    attribute vec2 vertTexCoord;
-    varying highp vec2 fragTexCoord;
-
-    void main() {
-        fragTexCoord = vertTexCoord;
-
-        gl_Position = vec4(vert, 1);
-    }`
-
-	fragmentShaderSource = `
-    #version 100
-    uniform sampler2D tex;
-
-    varying highp vec2 fragTexCoord;
-
-    void main() {
-        gl_FragColor = texture2D(tex, fragTexCoord);
-    }`
-
-	vertexLineShaderSource = `
-    #version 100
-    attribute vec2 vert;
-    attribute vec2 normal;
-    
-    uniform float lineWidth;
-
-    varying highp vec2 delta;
-
-    void main() {
-        delta = normal * lineWidth;
-
-        gl_Position = vec4(vert + delta, 0, 1);
-    }`
-
-	fragmentLineShaderSource = `
-    #version 100
-    uniform highp vec4 color;
-    uniform highp float lineWidth;
-    uniform highp float feather;
-
-    varying highp vec2 delta;
-
-    void main() {
-        highp float alpha = color.a;
-        highp float distance = length(delta);
-
-        if (feather == 0.0 || distance <= lineWidth - feather) {
-           gl_FragColor = color;
-        } else {
-           gl_FragColor = vec4(color.r, color.g, color.b, mix(color.a, 0.0, (distance - (lineWidth - feather)) / feather));
-        }
-    }`
-)
+var vertexShaderSource = string(shaderSimpleesVert.StaticContent)
+var fragmentShaderSource = string(shaderSimpleesFrag.StaticContent)
+var vertexLineShaderSource = string(shaderLineesVert.StaticContent)
+var fragmentLineShaderSource = string(shaderLineesFrag.StaticContent)
 
 func (p *glPainter) Init() {
 	p.glctx().Disable(gl.DepthTest)

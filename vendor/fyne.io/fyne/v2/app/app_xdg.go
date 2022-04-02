@@ -1,5 +1,8 @@
+//go:build !ci && !js && !wasm && !test_web_driver && (linux || openbsd || freebsd || netbsd) && !android
 // +build !ci
-
+// +build !js
+// +build !wasm
+// +build !test_web_driver
 // +build linux openbsd freebsd netbsd
 // +build !android
 
@@ -43,6 +46,18 @@ func (a *fyneApp) SendNotification(n *fyne.Notification) {
 	if call.Err != nil {
 		fyne.LogError("Failed to send message to bus", call.Err)
 	}
+}
+
+// SetSystemTrayMenu creates a system tray item and attaches the specified menu.
+// By default this will use the application icon.
+func (a *fyneApp) SetSystemTrayMenu(menu *fyne.Menu) {
+	a.Driver().(systrayDriver).SetSystemTrayMenu(menu)
+}
+
+// SetSystemTrayIcon sets a custom image for the system tray icon.
+// You should have previously called `SetSystemTrayMenu` to initialise the menu icon.
+func (a *fyneApp) SetSystemTrayIcon(icon fyne.Resource) {
+	a.Driver().(systrayDriver).SetSystemTrayIcon(icon)
 }
 
 func rootConfigDir() string {

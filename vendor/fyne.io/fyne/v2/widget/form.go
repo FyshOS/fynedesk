@@ -43,8 +43,8 @@ type Form struct {
 	BaseWidget
 
 	Items      []*FormItem
-	OnSubmit   func()
-	OnCancel   func()
+	OnSubmit   func() `json:"-"`
+	OnCancel   func() `json:"-"`
 	SubmitText string
 	CancelText string
 
@@ -271,6 +271,8 @@ func (f *Form) updateLabels() {
 			} else {
 				l.Color = theme.ForegroundColor()
 			}
+		} else {
+			l.Color = theme.ForegroundColor()
 		}
 
 		l.Text = item.Text
