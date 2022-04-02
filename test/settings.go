@@ -1,8 +1,7 @@
 package test
 
 import (
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
-
+	"fyne.io/fyne/v2"
 	"fyne.io/fynedesk"
 )
 
@@ -108,8 +107,8 @@ func (s *Settings) SetLauncherZoomScale(scale float32) {
 }
 
 // KeyboardModifier returns the preferred keyboard modifier for shortcuts.
-func (s *Settings) KeyboardModifier() deskDriver.Modifier {
-	return deskDriver.SuperModifier
+func (s *Settings) KeyboardModifier() fyne.KeyModifier {
+	return fyne.KeyModifierSuper
 }
 
 // ModuleNames returns the names of modules that should be enabled
