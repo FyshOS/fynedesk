@@ -292,9 +292,9 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	userMod := d.settings.modifier
 	modType := widget.NewRadioGroup([]string{"Super", "Alt"}, func(mod string) {
 		if mod == "Alt" {
-			userMod = deskDriver.AltModifier
+			userMod = fyne.KeyModifierAlt
 		} else {
-			userMod = deskDriver.SuperModifier
+			userMod = fyne.KeyModifierSuper
 		}
 
 		var mods []fyne.CanvasObject
@@ -305,7 +305,7 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 		modVBox.Refresh()
 	})
 	modType.Horizontal = true
-	if d.settings.modifier == deskDriver.AltModifier {
+	if d.settings.modifier == fyne.KeyModifierAlt {
 		modType.Selected = "Alt"
 	} else {
 		modType.Selected = "Super"
