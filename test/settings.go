@@ -122,10 +122,12 @@ func (s *Settings) SetModuleNames(mods []string) {
 	s.moduleNames = mods
 }
 
+// NarrowWidgetPanel returns true when the user requested a narrow widget panel.
 func (s *Settings) NarrowWidgetPanel() bool {
 	return s.narrowPanel
 }
 
+// SetNarrowWidgetPanel allows tests to specify the value for a narrow widget panel.
 func (s *Settings) SetNarrowWidgetPanel(narrow bool) {
 	s.narrowPanel = narrow
 }
