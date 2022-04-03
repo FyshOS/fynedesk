@@ -253,7 +253,12 @@ func (b *bar) appendLauncherIcons() {
 
 // CreateRenderer creates the renderer that will be responsible for painting the widget
 func (b *bar) CreateRenderer() fyne.WidgetRenderer {
-	bg := canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	var bg fyne.CanvasObject
+	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
+		bg = canvas.NewRectangle(wmTheme.WidgetPanelBackgroundDark)
+	} else {
+		bg = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	}
 	return &barRenderer{objects: b.children, background: bg, layout: newBarLayout(b), appBar: b}
 }
 
@@ -278,7 +283,7 @@ type barRenderer struct {
 	layout barLayout
 
 	appBar     *bar
-	background *canvas.LinearGradient
+	background fyne.CanvasObject
 	objects    []fyne.CanvasObject
 }
 
@@ -306,7 +311,11 @@ func (b *barRenderer) Objects() []fyne.CanvasObject {
 
 // Refresh will recalculate the widget and repaint it
 func (b *barRenderer) Refresh() {
-	b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
+		b.background = canvas.NewRectangle(wmTheme.WidgetPanelBackgroundDark)
+	} else {
+		b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	}
 	if b.appBar.separator != nil {
 		b.appBar.separator.FillColor = theme.ForegroundColor()
 	}

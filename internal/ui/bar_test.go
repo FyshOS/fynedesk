@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 
@@ -82,10 +83,15 @@ func TestAppBarBackground(t *testing.T) {
 	testBar := testBar(icons)
 	testBar.disableTaskbar = true
 
-	grad := test.WidgetRenderer(testBar).(*barRenderer).background
-	assert.Equal(t, color.Transparent, grad.EndColor)
-	assert.Equal(t, theme.BackgroundColor(), grad.StartColor)
-	assert.Equal(t, testBar.iconSize+theme.Padding()*2, grad.Size().Width)
+	bg := test.WidgetRenderer(testBar).(*barRenderer).background
+	if testBar.desk.Settings().NarrowLeftLauncher() {
+		assert.Equal(t, wmTheme.WidgetPanelBackgroundDark, bg.(*canvas.Rectangle).FillColor)
+		assert.Equal(t, widgetPanelNarrow, bg.Size().Width)
+	} else {
+		assert.Equal(t, color.Transparent, bg.(*canvas.LinearGradient).EndColor)
+		assert.Equal(t, theme.BackgroundColor(), bg.(*canvas.LinearGradient).StartColor)
+		assert.Equal(t, testBar.iconSize+theme.Padding()*2, bg.Size().Width)
+	}
 }
 
 func TestIconsAndIconThemeChange(t *testing.T) {

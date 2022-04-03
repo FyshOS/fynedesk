@@ -18,7 +18,8 @@ type Settings struct {
 	clockFormatting        string
 
 	moduleNames []string
-	narrowPanel bool
+
+	narrowPanel, narrowLeftLauncher bool
 }
 
 // NewSettings returns an in-memory settings instance
@@ -119,6 +120,16 @@ func (s *Settings) ModuleNames() []string {
 // SetModuleNames supports configuring the modules that should be loaded
 func (s *Settings) SetModuleNames(mods []string) {
 	s.moduleNames = mods
+}
+
+// NarrowLeftLauncher returns true when the user requested a narrow launcher bar on the left.
+func (s *Settings) NarrowLeftLauncher() bool {
+	return s.narrowLeftLauncher
+}
+
+// SetNarrowLeftLauncher allows tests to specify the value for a narrow left hand launcher.
+func (s *Settings) SetNarrowLeftLauncher(narrow bool) {
+	s.narrowLeftLauncher = narrow
 }
 
 // NarrowWidgetPanel returns true when the user requested a narrow widget panel.

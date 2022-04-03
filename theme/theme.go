@@ -61,7 +61,7 @@ var (
 	TitleHeight = float32(28)
 
 	// WidgetPanelBackgroundDark is the semi-transparent background matching the dark theme
-	WidgetPanelBackgroundDark = color.RGBA{0x42, 0x42, 0x42, 0xcc}
+	WidgetPanelBackgroundDark = color.NRGBA{0x42, 0x42, 0x42, 0xcc}
 	// WidgetPanelBackgroundLight is the semi-transparent background matching the light theme
-	WidgetPanelBackgroundLight = color.RGBA{0xaa, 0xaa, 0xaa, 0xaa}
+	WidgetPanelBackgroundLight = color.NRGBA{0xaa, 0xaa, 0xaa, 0xaa}
 )
