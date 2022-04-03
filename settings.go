@@ -1,6 +1,6 @@
 package fynedesk
 
-import deskDriver "fyne.io/fyne/v2/driver/desktop"
+import "fyne.io/fyne/v2"
 
 // DeskSettings describes the configuration options available for Fyne desktop
 type DeskSettings interface {
@@ -17,7 +17,7 @@ type DeskSettings interface {
 	LauncherDisableZoom() bool
 	LauncherZoomScale() float32
 
-	KeyboardModifier() deskDriver.Modifier
+	KeyboardModifier() fyne.KeyModifier
 	ModuleNames() []string
 
 	AddChangeListener(listener chan DeskSettings)
