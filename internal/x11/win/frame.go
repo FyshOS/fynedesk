@@ -86,7 +86,9 @@ func newFrame(c *client) *frame {
 			w = uint16(activeHead.Width)
 			h = uint16(activeHead.Height)
 		} else {
-			maxWidth, maxHeight := fynedesk.Instance().ContentSizePixels(activeHead)
+			maxX, maxY, maxWidth, maxHeight := fynedesk.Instance().ContentBoundsPixels(activeHead)
+			x += int16(maxX)
+			y += int16(maxY)
 			w = uint16(maxWidth)
 			h = uint16(maxHeight)
 		}
@@ -480,12 +482,13 @@ func (f *frame) maximizeApply() {
 	f.client.restoreY = f.y
 
 	head := fynedesk.Instance().Screens().ScreenForWindow(f.client)
-	maxWidth, maxHeight := fynedesk.Instance().ContentSizePixels(head)
+	maxX, maxY, maxWidth, maxHeight := fynedesk.Instance().ContentBoundsPixels(head)
 	if f.client.Fullscreened() {
+		maxX, maxY = 0, 0
 		maxWidth = uint32(head.Width)
 		maxHeight = uint32(head.Height)
 	}
-	f.updateGeometry(int16(head.X), int16(head.Y), uint16(maxWidth), uint16(maxHeight), true)
+	f.updateGeometry(int16(head.X+int(maxX)), int16(head.Y+int(maxY)), uint16(maxWidth), uint16(maxHeight), true)
 	f.notifyInnerGeometry()
 	f.applyTheme(true)
 }
