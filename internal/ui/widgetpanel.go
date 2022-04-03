@@ -156,6 +156,9 @@ func (w *widgetPanel) rotate(time *canvas.Text) {
 	out := imaging.Rotate270(img)
 
 	w.rotated.Image = out
+	ratio := time.MinSize().Width / time.MinSize().Height
+	space := widgetPanelNarrow - theme.Padding()*2
+	w.rotated.SetMinSize(fyne.NewSize(space, space*ratio))
 	w.rotated.Refresh()
 }
 
@@ -168,7 +171,6 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	})
 
 	w.rotated = &canvas.Image{}
-	w.rotated.FillMode = canvas.ImageFillOriginal
 	w.clocks = container.NewMax(w.clock, container.New(&unpad{}, w.rotated))
 	if narrow {
 		w.clock.Hide()
