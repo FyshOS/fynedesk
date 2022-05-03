@@ -13,12 +13,14 @@ import (
 	"github.com/go-gl/glfw/v3.3/glfw"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/internal"
 	"fyne.io/fyne/v2/internal/app"
 	"fyne.io/fyne/v2/internal/cache"
 	"fyne.io/fyne/v2/internal/driver"
 	"fyne.io/fyne/v2/internal/driver/common"
+	"fyne.io/fyne/v2/internal/painter"
 	"fyne.io/fyne/v2/internal/painter/gl"
 )
 
@@ -27,6 +29,8 @@ const (
 	scrollAccelerateCutoff = float64(5)
 	scrollSpeed            = float32(10)
 	doubleClickDelay       = 300 // ms (maximum interval between clicks for double click detection)
+	dragMoveThreshold      = 2   // how far can we move before it is a drag
+	windowIconSize         = 256
 )
 
 var (
@@ -132,6 +136,9 @@ func (w *window) SetFullScreen(full bool) {
 		if full {
 			w.viewport.SetMonitor(monitor, 0, 0, mode.Width, mode.Height, mode.RefreshRate)
 		} else {
+			if w.width == 0 && w.height == 0 { // if we were fullscreen on creation...
+				w.width, w.height = w.screenSize(w.canvas.Size())
+			}
 			w.viewport.SetMonitor(nil, w.xpos, w.ypos, w.width, w.height, 0)
 		}
 	})
@@ -147,6 +154,12 @@ func (w *window) CenterOnScreen() {
 
 func (w *window) doCenterOnScreen() {
 	viewWidth, viewHeight := w.screenSize(w.canvas.size)
+	if w.width > viewWidth { // in case our window has not called back to canvas size yet
+		viewWidth = w.width
+	}
+	if w.height > viewHeight {
+		viewHeight = w.height
+	}
 
 	// get window dimensions in pixels
 	monitor := w.getMonitorForWindow()
@@ -207,7 +220,7 @@ func (w *window) SetFixedSize(fixed bool) {
 	w.fixedSize = fixed
 
 	if w.view() != nil {
-		w.fitContent()
+		w.runOnMainWhenCreated(w.fitContent)
 	}
 }
 
@@ -239,24 +252,25 @@ func (w *window) SetIcon(icon fyne.Resource) {
 		return
 	}
 
-	if string(icon.Content()[:4]) == "<svg" {
-		fyne.LogError("Window icon does not support vector images", nil)
-		return
-	}
-
 	w.runOnMainWhenCreated(func() {
 		if w.icon == nil {
 			w.viewport.SetIcon(nil)
 			return
 		}
 
-		pix, _, err := image.Decode(bytes.NewReader(w.icon.Content()))
-		if err != nil {
-			fyne.LogError("Failed to decode image for window icon", err)
-			return
+		var img image.Image
+		if painter.IsResourceSVG(w.icon) {
+			img = painter.PaintImage(&canvas.Image{Resource: w.icon}, nil, windowIconSize, windowIconSize)
+		} else {
+			pix, _, err := image.Decode(bytes.NewReader(w.icon.Content()))
+			if err != nil {
+				fyne.LogError("Failed to decode image for window icon", err)
+				return
+			}
+			img = pix
 		}
 
-		w.viewport.SetIcon([]image.Image{pix})
+		w.viewport.SetIcon([]image.Image{img})
 	})
 }
 
@@ -605,6 +619,7 @@ func (w *window) mouseMoved(viewport *glfw.Window, xpos float64, ypos float64) {
 	w.mousePos = fyne.NewPos(internal.UnscaleInt(w.canvas, int(xpos)), internal.UnscaleInt(w.canvas, int(ypos)))
 	mousePos := w.mousePos
 	mouseButton := w.mouseButton
+	mouseDragPos := w.mouseDragPos
 	mouseOver := w.mouseOver
 	w.mouseLock.Unlock()
 
@@ -645,9 +660,12 @@ func (w *window) mouseMoved(viewport *glfw.Window, xpos float64, ypos float64) {
 			return ok
 		})
 
-		if wid, ok := obj.(fyne.Draggable); ok {
+		deltaX := mousePos.X - mouseDragPos.X
+		deltaY := mousePos.Y - mouseDragPos.Y
+		overThreshold := math.Abs(float64(deltaX)) >= dragMoveThreshold || math.Abs(float64(deltaY)) >= dragMoveThreshold
+
+		if wid, ok := obj.(fyne.Draggable); ok && overThreshold {
 			w.mouseLock.Lock()
-			w.mouseDragPos = previousPos
 			w.mouseDragged = wid
 			w.mouseDraggedOffset = previousPos.Subtract(pos)
 			w.mouseDraggedObjStart = obj.Position()
@@ -696,7 +714,7 @@ func (w *window) mouseMoved(viewport *glfw.Window, xpos float64, ypos float64) {
 	mouseDragged := w.mouseDragged
 	mouseDraggedObjStart := w.mouseDraggedObjStart
 	mouseDraggedOffset := w.mouseDraggedOffset
-	mouseDragPos := w.mouseDragPos
+	mouseDragPos = w.mouseDragPos
 	w.mouseLock.RUnlock()
 	if mouseDragged != nil && mouseButton != desktop.MouseButtonSecondary {
 		if w.mouseButton > 0 {
@@ -751,6 +769,7 @@ func (w *window) mouseOut() {
 
 func (w *window) mouseClicked(_ *glfw.Window, btn glfw.MouseButton, action glfw.Action, mods glfw.ModifierKey) {
 	w.mouseLock.RLock()
+	w.mouseDragPos = w.mousePos
 	mousePos := w.mousePos
 	mouseDragStarted := w.mouseDragStarted
 	w.mouseLock.RUnlock()
@@ -921,7 +940,7 @@ func (w *window) mouseScrolled(viewport *glfw.Window, xoff float64, yoff float64
 	w.mouseLock.RLock()
 	mousePos := w.mousePos
 	w.mouseLock.RUnlock()
-	co, pos, _ := w.findObjectAtPositionMatching(w.canvas, w.mousePos, func(object fyne.CanvasObject) bool {
+	co, pos, _ := w.findObjectAtPositionMatching(w.canvas, mousePos, func(object fyne.CanvasObject) bool {
 		_, ok := object.(fyne.Scrollable)
 		return ok
 	})
@@ -1141,7 +1160,7 @@ func (w *window) keyPressed(_ *glfw.Window, key glfw.Key, scancode int, action g
 	w.menuDeactivationPending = desktop.KeyNone
 	switch action {
 	case glfw.Release:
-		if action == glfw.Release {
+		if action == glfw.Release && keyName != "" {
 			switch keyName {
 			case pendingMenuToggle:
 				w.canvas.ToggleMenu()
@@ -1163,7 +1182,8 @@ func (w *window) keyPressed(_ *glfw.Window, key glfw.Key, scancode int, action g
 	case glfw.Press:
 		switch keyName {
 		case desktop.KeyAltLeft, desktop.KeyAltRight:
-			if (keyName == desktop.KeyAltLeft || keyName == desktop.KeyAltRight) && keyDesktopModifier == desktop.AltModifier {
+			// compensate for GLFW modifiers bug https://github.com/glfw/glfw/issues/1630
+			if (runtime.GOOS == "linux" && keyDesktopModifier == 0) || (runtime.GOOS != "linux" && keyDesktopModifier == desktop.AltModifier) {
 				w.menuTogglePending = keyName
 			}
 		case fyne.KeyEscape:

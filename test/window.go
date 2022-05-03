@@ -12,11 +12,15 @@ type Window struct {
 	props dummyProperties
 
 	iconic, focused, fullscreen, maximized, raised bool
+
+	parent        fynedesk.Window
+	x, y          int
+	width, height uint
 }
 
 // NewWindow creates a virtual window with the given title ("" is acceptable)
 func NewWindow(title string) *Window {
-	win := &Window{}
+	win := &Window{width: 10, height: 10}
 	win.props.name = title
 	return win
 }
@@ -71,6 +75,11 @@ func (w *Window) Maximized() bool {
 	return false
 }
 
+// Parent returns a window that this should be positioned within, if set.
+func (w *Window) Parent() fynedesk.Window {
+	return w.parent
+}
+
 // Position returns 0, 0 for test windows
 func (w *Window) Position() fyne.Position {
 	return fyne.NewPos(0, 0)
@@ -104,6 +113,17 @@ func (w *Window) SetCommand(cmd string) {
 // SetIconName is a test utility to set the icon-name property of this window
 func (w *Window) SetIconName(name string) {
 	w.props.iconName = name
+}
+
+// SetGeometry is a test utility to set the position and size of this window
+func (w *Window) SetGeometry(x, y int, width, height uint) {
+	w.x, w.y = x, y
+	w.width, w.height = width, height
+}
+
+// SetParent is a test utility to set a parent of this window
+func (w *Window) SetParent(p fynedesk.Window) {
+	w.parent = p
 }
 
 // TopWindow returns true if this window has been raised above all others

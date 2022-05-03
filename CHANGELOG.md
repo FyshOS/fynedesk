@@ -3,26 +3,32 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
-## 0.3 - In progress
+## 0.3 - 17 December 2021
 
 ### Added
 
 * Basic compositor support using `compton` backend
 * Support brightnessctl support to brightness module
 * Add a helper menu to each window
+* Add network status module that uses connman-gtk to configure
+* Add support for starting the Fyne Calculator (if installed) using the "calc" button on supported keyboards
 
 ### Changed
 
 * Default terminal is now fyneterm (if installed) :)
-* Update Fyne to 2.1, refresh UI to match
+* Update Fyne to 2.1 and refresh UI to match
 * Improved switcher UI
-* Add helper menu for each window
+* Re-designed the main menu to include links to standard apps
 
 ### Fixed
 
 * Show 1.0 as default scale in Advanced settings page if none set
 * Closing windows could leak resources to invisible windows
+* Don't drag the window if tap starts on a button
 * Global shortcuts did not work in some windows and menus
+* Improved stability when switching apps or showing many windows
+* Compilation on FreeBSD 13 failed due to dbus issue
+* Removed FreeBSD requirement on installed glfw library dependency
 
 
 ## 0.2 - 22 March 2021

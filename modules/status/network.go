@@ -1,16 +1,14 @@
 package status
 
 import (
-	"image/color"
 	"log"
+	"os"
 	"os/exec"
 	"strings"
 	"time"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
@@ -26,7 +24,7 @@ const networkNameEthernet = "Ethernet"
 
 type network struct {
 	name *widget.Label
-	icon *widget.Icon
+	icon *widget.Button
 }
 
 func (n *network) Destroy() {
@@ -34,8 +32,12 @@ func (n *network) Destroy() {
 
 func (n *network) wirelessName() (string, error) {
 	net := ""
-	if iw, _ := exec.LookPath("iw"); iw != "" {
-		out, err := exec.Command("bash", []string{"-c", "iw dev | grep Interface | cut -d \" \" -f2"}...).Output()
+	iw, _ := exec.LookPath("iw")
+	if iw == "" {
+		iw, _ = exec.LookPath("/usr/sbin/iw")
+	}
+	if iw != "" {
+		out, err := exec.Command("bash", []string{"-c", iw + " dev | grep Interface | cut -d \" \" -f2"}...).Output()
 		if err != nil {
 			log.Println("Error running iw", err)
 			return "", err
@@ -45,7 +47,7 @@ func (n *network) wirelessName() (string, error) {
 			return "", nil
 		}
 
-		out, err = exec.Command("bash", []string{"-c", "iw dev " + dev + " info | grep ssid | cut -d \" \" -f 2"}...).Output()
+		out, err = exec.Command("bash", []string{"-c", iw + " dev " + dev + " info | grep ssid | sed 's\\ssid\\\\g'"}...).Output()
 		if err != nil {
 			log.Println("Error running iw", err)
 			return "", err
@@ -65,12 +67,12 @@ func (n *network) wirelessName() (string, error) {
 
 func (n *network) isEthernetConnected() (bool, error) {
 	if ip, _ := exec.LookPath("ip"); ip != "" {
-		out, err := exec.Command("bash", []string{"-c", "ip link | grep \",UP,\" | grep -v LOOPBACK | grep -v \": wl\""}...).Output()
+		out, err := exec.Command("bash", []string{"-c", "ip link | grep \",UP,\" | grep -v LOOPBACK | grep -v \": wl\" | wc -l"}...).Output()
 		if err != nil {
 			log.Println("Error running ip tool", err)
 			return false, err
 		}
-		if strings.TrimSpace(string(out)) == "" {
+		if strings.TrimSpace(string(out)) == "0" {
 			return false, nil
 		}
 	} else {
@@ -108,11 +110,11 @@ func (n *network) tick() {
 				n.name.SetText(val)
 
 				if val == "" {
-					n.icon.SetResource(wmtheme.WifiOffIcon)
+					n.icon.SetIcon(wmtheme.WifiOffIcon)
 				} else if val == networkNameEthernet {
-					n.icon.SetResource(wmtheme.EthernetIcon)
+					n.icon.SetIcon(wmtheme.EthernetIcon)
 				} else {
-					n.icon.SetResource(wmtheme.WifiIcon)
+					n.icon.SetIcon(wmtheme.WifiIcon)
 				}
 			}
 			<-tick.C
@@ -128,20 +130,54 @@ func (n *network) StatusAreaWidget() fyne.CanvasObject {
 	}
 
 	n.name = widget.NewLabel("")
-	n.icon = widget.NewIcon(wmtheme.WifiIcon)
-	prop := canvas.NewRectangle(color.Transparent)
-	prop.SetMinSize(n.icon.MinSize().Add(fyne.NewSize(theme.Padding()*4, 0)))
-	icon := container.NewCenter(prop, n.icon)
+	n.icon = &widget.Button{Icon: wmtheme.WifiOffIcon, Importance: widget.LowImportance, OnTapped: n.showSettings}
 	n.tick()
 
-	return container.NewBorder(nil, nil, icon, nil, n.name)
+	return container.NewBorder(nil, nil, n.icon, nil, n.name)
 }
 
 func (n *network) Metadata() fynedesk.ModuleMetadata {
 	return networkMeta
 }
 
+func (n *network) showSettings() {
+	gui := &networkApp{}
+
+	if err := fynedesk.Instance().RunApp(gui); err != nil {
+		fyne.LogError("Failed to find WiFi settings tool connman-gtk", err)
+		return
+	}
+}
+
 // NewNetwork creates a new module that will show network information in the status area
 func NewNetwork() fynedesk.Module {
 	return &network{}
+}
+
+type networkApp struct {
+}
+
+func (n *networkApp) Name() string {
+	return "Network Settings"
+}
+
+func (n *networkApp) Run(env []string) error {
+	vars := os.Environ()
+	vars = append(vars, env...)
+
+	cmd := exec.Command("connman-gtk")
+	cmd.Env = vars
+	return cmd.Start()
+}
+
+func (n *networkApp) Categories() []string {
+	return []string{"Settings"}
+}
+
+func (n *networkApp) Hidden() bool {
+	return true
+}
+
+func (n *networkApp) Icon(theme string, size int) fyne.Resource {
+	return wmtheme.WifiIcon
 }

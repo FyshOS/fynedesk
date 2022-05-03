@@ -1,11 +1,12 @@
+//go:build openbsd || freebsd || netbsd
 // +build openbsd freebsd netbsd
 
 package status
 
 import (
+	"bytes"
 	"os/exec"
 	"strconv"
-	"strings"
 
 	"fyne.io/fyne/v2"
 
@@ -32,7 +33,7 @@ func (b *sound) muted() bool {
 func (b *sound) value() (int, error) {
 	cmd := exec.Command("mixer", "-s", "vol")
 	out, err := cmd.Output()
-	colonPos := strings.Index(string(out), ":")
+	colonPos := bytes.IndexByte(out, ':')
 	if err != nil || colonPos <= 0 {
 		return 0, err
 	}
@@ -53,7 +54,7 @@ func (b *sound) setup() error {
 
 func (b *sound) setValue(vol int) {
 	volStr := strconv.Itoa(vol)
-	level := vol + ":" + vol
+	level := volStr + ":" + volStr
 	cmd := exec.Command("mixer", "vol", level)
 	if err := cmd.Run(); err != nil {
 		fyne.LogError("Failed to set volume", err)

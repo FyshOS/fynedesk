@@ -1,3 +1,4 @@
+//go:build linux || openbsd || freebsd || netbsd
 // +build linux openbsd freebsd netbsd
 
 package wm // import "fyne.io/fynedesk/internal/x11/wm"
@@ -562,7 +563,9 @@ func (x *x11WM) hideWindow(win xproto.Window) {
 		return
 	}
 	xproto.UnmapWindow(x.x.Conn(), c.FrameID())
-	x.RemoveWindow(c)
+	if !c.Iconic() {
+		x.RemoveWindow(c)
+	}
 }
 
 func (x *x11WM) isRootTitle(title string) bool {
