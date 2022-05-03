@@ -272,10 +272,6 @@ func (l *desktop) registerShortcuts() {
 		l.LockScreen)
 }
 
-func (l *desktop) runStartupApps() {
-	go l.startXscreensaver()
-}
-
 func (l *desktop) startXscreensaver() {
 	_, err := exec.LookPath("xscreensaver")
 	if err != nil {
@@ -329,7 +325,7 @@ func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 	desk.addSettingsChangeListener()
 
 	desk.registerShortcuts()
-	desk.runStartupApps()
+	go desk.startXscreensaver()
 	return desk
 }
 
