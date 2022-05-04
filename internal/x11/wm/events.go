@@ -194,13 +194,12 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 			return
 		}
 	}
-
 	if desk, ok := fynedesk.Instance().(wm.ShortcutManager); ok {
 		for _, shortcut := range desk.Shortcuts() {
 			mask := x.modifierToKeyMask(shortcut.Modifier)
 			code := x.keyNameToCode(shortcut.KeyName)
 
-			if code == ev.Detail && (mask == ev.State || mask == xproto.ModMaskAny) {
+			if code == ev.Detail && mask == ev.State {
 				go desk.TypedShortcut(shortcut)
 				return
 			}
