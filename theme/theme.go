@@ -5,8 +5,11 @@ package theme // import "fyne.io/fynedesk/theme"
 import (
 	"image/color"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 )
+
+const ColorNamePanelBackground fyne.ThemeColorName = "fynedeskPanelBackground"
 
 var (
 	// PointerDefault is the standard pointer resource
@@ -59,9 +62,20 @@ var (
 	ButtonWidth = float32(28)
 	// TitleHeight is the height of a frame titleBar
 	TitleHeight = float32(28)
-
-	// WidgetPanelBackgroundDark is the semi-transparent background matching the dark theme
-	WidgetPanelBackgroundDark = color.RGBA{0x42, 0x42, 0x42, 0xcc}
-	// WidgetPanelBackgroundLight is the semi-transparent background matching the light theme
-	WidgetPanelBackgroundLight = color.RGBA{0xaa, 0xaa, 0xaa, 0xaa}
 )
+
+// WidgetPanelBackground returns the semi-transparent background matching the users current theme theme
+func WidgetPanelBackground() color.Color {
+	variant := fyne.CurrentApp().Settings().ThemeVariant()
+	if th := fyne.CurrentApp().Settings().Theme(); th != nil {
+		col := th.Color(ColorNamePanelBackground, variant)
+		if col != color.Transparent {
+			return col
+		}
+	}
+
+	if variant == theme.VariantLight {
+		return color.RGBA{0xaa, 0xaa, 0xaa, 0xaa}
+	}
+	return color.RGBA{0x42, 0x42, 0x42, 0xcc}
+}

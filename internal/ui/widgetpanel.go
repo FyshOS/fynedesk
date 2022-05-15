@@ -36,12 +36,7 @@ func (w *widgetRenderer) Layout(size fyne.Size) {
 }
 
 func (w *widgetRenderer) Refresh() {
-	r, _, _, _ := theme.BackgroundColor().RGBA()
-	if uint8(r) > 0x99 {
-		w.bg.FillColor = wmtheme.WidgetPanelBackgroundLight
-	} else {
-		w.bg.FillColor = wmtheme.WidgetPanelBackgroundDark
-	}
+	w.bg.FillColor = wmtheme.WidgetPanelBackground()
 	w.bg.Refresh()
 
 	w.panel.clock.Color = theme.ForegroundColor()
@@ -127,7 +122,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	})
 	appExecButton := widget.NewButtonWithIcon("", theme.SearchIcon(), ShowAppLauncher)
 
-	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackgroundDark)
+	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackground())
 	objects := []fyne.CanvasObject{
 		bg,
 		w.clock,
