@@ -1,3 +1,4 @@
+//go:build ios
 // +build ios
 
 package mobile
@@ -95,7 +96,7 @@ func (s *secureWriteCloser) Close() error {
 
 func existsURI(u fyne.URI) (bool, error) {
 	if u.Scheme() != "file" {
-		return true, errors.New("cannot check existance of " + u.Scheme() + " on iOS")
+		return true, errors.New("cannot check existence of " + u.Scheme() + " on iOS")
 	}
 
 	cStr := C.CString(u.Path())
