@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 )
 
+// ColorNamePanelBackground is used in themes to look up the background color
 const ColorNamePanelBackground fyne.ThemeColorName = "fynedeskPanelBackground"
 
 var (
