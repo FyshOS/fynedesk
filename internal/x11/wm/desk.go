@@ -20,6 +20,7 @@ import (
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/keybind"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
@@ -298,31 +299,35 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 		return keyCodeVolumeLess
 	case fynedesk.KeyVolumeUp:
 		return keyCodeVolumeMore
+	case fyne.KeyL:
+		keybind.Initialize(x.x)
+		codes := keybind.StrToKeycodes(x.x, "L")
+		return codes[0]
 	}
 
 	return 0
 }
 
-func (x *x11WM) modifierToKeyMask(m deskDriver.Modifier) uint16 {
+func (x *x11WM) modifierToKeyMask(m fyne.KeyModifier) uint16 {
 	mask := uint16(0)
 	if m&fynedesk.UserModifier != 0 {
-		if fynedesk.Instance().Settings().KeyboardModifier() == deskDriver.AltModifier {
-			m |= deskDriver.AltModifier
+		if fynedesk.Instance().Settings().KeyboardModifier() == fyne.KeyModifierAlt {
+			m |= fyne.KeyModifierAlt
 		} else {
-			m |= deskDriver.SuperModifier
+			m |= fyne.KeyModifierSuper
 		}
 	}
 
-	if m&deskDriver.AltModifier != 0 {
+	if m&fyne.KeyModifierAlt != 0 {
 		mask |= xproto.ModMask1
 	}
-	if m&deskDriver.ControlModifier != 0 {
+	if m&fyne.KeyModifierControl != 0 {
 		mask |= xproto.ModMaskControl
 	}
-	if m&deskDriver.ShiftModifier != 0 {
+	if m&fyne.KeyModifierShift != 0 {
 		mask |= xproto.ModMaskShift
 	}
-	if m&deskDriver.SuperModifier != 0 {
+	if m&fyne.KeyModifierSuper != 0 {
 		mask |= xproto.ModMask4
 	}
 

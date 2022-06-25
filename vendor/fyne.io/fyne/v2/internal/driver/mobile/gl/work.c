@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build darwin || linux || openbsd || freebsd
 // +build darwin linux openbsd freebsd
 
 #include <stdlib.h>
@@ -99,6 +100,12 @@ uintptr_t processFn(struct fnargs* args, char* parg) {
 		break;
 	case glfnGetError:
 		ret = glGetError();
+		break;
+	case glfnGetProgramiv:
+		glGetProgramiv((GLint)args->a0, (GLenum)args->a1, (GLint*)&ret);
+		break;
+	case glfnGetProgramInfoLog:
+		glGetProgramInfoLog((GLuint)args->a0, (GLsizei)args->a1, 0, (GLchar*)parg);
 		break;
 	case glfnGetShaderiv:
 		glGetShaderiv((GLint)args->a0, (GLenum)args->a1, (GLint*)&ret);

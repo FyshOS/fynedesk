@@ -200,22 +200,22 @@ func createPropSpec() map[string]map[string]*prop.Prop {
 	return map[string]map[string]*prop.Prop{
 		"org.kde.StatusNotifierWatcher": {
 			"RegisteredStatusNotifierItems": {
-				[]string{},
-				false,
-				prop.EmitTrue,
-				nil,
+				Value:    []string{},
+				Writable: false,
+				Emit:     prop.EmitTrue,
+				Callback: nil,
 			},
 			"IsStatusNotifierHostRegistered": {
-				true,
-				false,
-				prop.EmitTrue,
-				nil,
+				Value:    true,
+				Writable: false,
+				Emit:     prop.EmitTrue,
+				Callback: nil,
 			},
 			"ProtocolVersion": {
-				int32(25),
-				false,
-				prop.EmitTrue,
-				nil,
+				Value:    int32(25),
+				Writable: false,
+				Emit:     prop.EmitTrue,
+				Callback: nil,
 			},
 		},
 	}

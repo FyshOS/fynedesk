@@ -42,6 +42,8 @@ func (b *battery) batteryTick() {
 			b.bar.SetValue(val)
 			if on, err := b.powered(); on || err != nil {
 				b.icon.SetResource(wmtheme.PowerIcon)
+			} else if val < 0.1 {
+				b.icon.SetResource(theme.NewErrorThemedResource(wmtheme.BatteryIcon))
 			} else {
 				b.icon.SetResource(wmtheme.BatteryIcon)
 			}

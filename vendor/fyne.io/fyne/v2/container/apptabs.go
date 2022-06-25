@@ -176,7 +176,7 @@ func (t *AppTabs) SelectedIndex() int {
 	return t.current
 }
 
-// SetItems sets the container’s items and refreshes.
+// SetItems sets the containers items and refreshes.
 func (t *AppTabs) SetItems(items []*TabItem) {
 	setItems(t, items)
 	t.Refresh()
@@ -341,9 +341,8 @@ func (r *appTabsRenderer) buildTabButtons(count int) *fyne.Container {
 		item := r.appTabs.Items[i]
 		button, ok := r.buttonCache[item]
 		if !ok {
-			index := i // capture
 			button = &tabButton{
-				onTapped: func() { r.appTabs.SelectIndex(index) },
+				onTapped: func() { r.appTabs.Select(item) },
 			}
 			r.buttonCache[item] = button
 		}

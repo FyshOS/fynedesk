@@ -3,7 +3,108 @@
 This file lists the main changes with each version of the Fyne toolkit.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/fyne/releases). 
 
-## 2.1.2 - Ongoing
+## 2.2.2 - 28 June 2022
+
+### Fixed
+
+* Windows missing version metadata when packaged (#3046)
+* Fyne package would not build apps using old Fyne versions
+* System tray icon may not be removed on app exit in Windows
+* Emphasis in Markdown gives erroneous output in RichText (#2974)
+* When last visible window is closed, hidden window is set visi le (#3059)
+* Do not close app when last window is closed but systrayMenu exists (#3092)
+
+
+## 2.2.1 - 12 June 2022
+
+### Fixed
+
+* Fix various race conditions and compatibility issues with System tray menus
+* Resolve issue where macOS systray menu may not appear
+* Updated yaml dependency to fix CVE-2022-28948
+* Tab buttons stop working after removing a tab (#3050)
+* os.SetEnv("FYNE_FONT") doesn't work in v2.2.0 (#3056)
+
+
+## 2.2.0 - 7 June 2022
+
+### Added
+
+* Add SetIcon method on ToolbarAction (#2475)
+* Access compiled app metadata using new `App.Metadata()` method
+* Add support for System tray icon and menu (#283)
+* Support for Android Application Bundle (.aab) (#2663)
+* Initial support for OpenBSD and NetBSD
+* Add keyboard shortcuts to menu (#682)
+* Add technical preview of web driver and `fyne serve` command
+* Added `iossimulator` build target (#1917)
+* Allow dynamic themes via JSON templates (#211)
+* Custom hyperlink callback (#2979)
+* Add support for `.ico` file when compiling for windows (#2412)
+* Add binding.NewStringWithFormat (#2890)
+* Add Entry.SetMinRowsVisible
+* Add Menu.Refresh() and MainMenu.Refresh() (#2853)
+* Packages for Linux and BSD now support installing into the home directory
+* Add `.RemoveAll()` to containers
+* Add an AllString validator for chaining together string validators
+
+### Changed
+
+* Toolbar item constructors now return concrete types instead of ToolbarItem
+* Low importance buttons no longer draw button color as a background
+* ProgressBar widget height is now consistent with other widgets
+* Include check in DocTabs menu to show current tab
+* Don't call OnScrolled if offset did not change (#2646)
+* Prefer ANDROID_NDK_HOME over the ANDROID_HOME ndk-bundle location (#2920)
+* Support serialisation / deserialisation of the widget tree (#5)
+* Better error reporting / handling when OpenGL is not available (#2689)
+* Memory is now better reclaimed on Android when the OS requests it
+* Notifications on Linux and BSD now show the application icon
+* Change listeners for preferences no longer run when setting the same value
+* The file dialog now shows extensions in the list view for better readability
+* Many optimisations and widget performance enhancements
+* Updated various dependencies to their latest versions
+
+### Fixed
+
+* SendNotification does not show app name on Windows (#1940)
+* Copy-paste via keyboard don't work translated keyboard mappings on Windows (#1220)
+* OnScrolled triggered when offset hasn't changed (#1868)
+* Carriage Return (\r) is rendered as space (#2456)
+* storage.List() returns list with nil elements for empty directories (#2858)
+* Entry widget, position of cursor when clicking empty space (#2877)
+* SelectEntry cause UI hang (#2925)
+* Font cutoff with bold italics (#3001)
+* Fyne error: Preferences load error (#2936, 3015)
+* Scrolled List bad redraw when window is maximized (#3013)
+* Linux and BSD packages not being installable if the name contained spaces
+
+
+## 2.1.4 - 17 March 2022
+
+### Fixed
+
+* SetTheme() is not fully effective for widget.Form (#2810)
+* FolderOpenDialog SetDismissText is ineffective (#2830)
+* window.Resize() does not work if SetFixedSize(true) is set after (#2819)
+* Container.Remove() race causes crash (#2826, #2775, #2481)
+* FixedSize Window improperly sized if contains image with ImageFillOriginal (#2800)
+
+
+## 2.1.3 - 24 February 2022
+
+### Fixed
+
+* The text on button can't be show correctly when use imported font (#2512)
+* Fix issues with DocTabs scrolling (#2709)
+* Fix possible crash for tapping extended Radio or Check item
+* Resolve lookup of relative icons in FyneApp.toml
+* Window not shown when SetFixedSize is used without Resize (#2784)
+* Text and links in markdown can be rendered on top of each other (#2695)
+* Incorrect cursor movement in a multiline entry with wrapping (#2698)
+
+
+## 2.1.2 - 6 December 2021
 
 ### Fixed
 
@@ -216,7 +317,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Correct initial state of entry validation
 * fix entry widget mouse drag selection when scrolled
 * List widget panic when refreshing after changing content length (#1864)
-* Fix image caching that was too agressive on resize
+* Fix image caching that was too aggressive on resize
 * Pointer and cursor misalignment in widget.Entry (#1937)
 * SIGSEGV Sometimes When Closing a Program by Clicking a Button (#1604)
 * Advanced Color Picker shows Black for custom primary color as RGBA (#1970)

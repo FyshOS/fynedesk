@@ -4,13 +4,12 @@
 package wm
 
 import (
-	"fyne.io/fyne/v2"
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/notify"
 	"fyne.io/fynedesk/internal/x11"
@@ -168,7 +167,7 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 
 func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 	userMod := ev.State&xproto.ModMask4 != 0
-	if fynedesk.Instance().Settings().KeyboardModifier() == deskDriver.AltModifier {
+	if fynedesk.Instance().Settings().KeyboardModifier() == fyne.KeyModifierAlt {
 		userMod = ev.State&xproto.ModMask1 != 0
 	}
 	ctrl := ev.State&xproto.ModMaskControl != 0
@@ -194,13 +193,12 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 			return
 		}
 	}
-
+	numlock := ev.State & xproto.ModMask2
 	if desk, ok := fynedesk.Instance().(wm.ShortcutManager); ok {
 		for _, shortcut := range desk.Shortcuts() {
 			mask := x.modifierToKeyMask(shortcut.Modifier)
 			code := x.keyNameToCode(shortcut.KeyName)
-
-			if code == ev.Detail && (mask == ev.State || mask == xproto.ModMaskAny) {
+			if code == ev.Detail && (mask == ev.State-numlock || mask == xproto.ModMaskAny) {
 				go desk.TypedShortcut(shortcut)
 				return
 			}
@@ -210,7 +208,7 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 
 func (x *x11WM) handleKeyRelease(ev xproto.KeyReleaseEvent) {
 	userMod := keyCodeSuper
-	if fynedesk.Instance().Settings().KeyboardModifier() == deskDriver.AltModifier {
+	if fynedesk.Instance().Settings().KeyboardModifier() == fyne.KeyModifierAlt {
 		userMod = keyCodeAlt
 	}
 	if ev.Detail == xproto.Keycode(userMod) {

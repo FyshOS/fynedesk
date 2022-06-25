@@ -27,11 +27,11 @@ var _ fyne.Widget = (*List)(nil)
 type List struct {
 	BaseWidget
 
-	Length       func() int
-	CreateItem   func() fyne.CanvasObject
-	UpdateItem   func(id ListItemID, item fyne.CanvasObject)
-	OnSelected   func(id ListItemID)
-	OnUnselected func(id ListItemID)
+	Length       func() int                                  `json:"-"`
+	CreateItem   func() fyne.CanvasObject                    `json:"-"`
+	UpdateItem   func(id ListItemID, item fyne.CanvasObject) `json:"-"`
+	OnSelected   func(id ListItemID)                         `json:"-"`
+	OnUnselected func(id ListItemID)                         `json:"-"`
 
 	scroller      *widget.Scroll
 	selected      []ListItemID
@@ -111,6 +111,7 @@ func (l *List) scrollTo(id ListItemID) {
 // Resize is called when this list should change size. We refresh to ensure invisible items are drawn.
 func (l *List) Resize(s fyne.Size) {
 	l.BaseWidget.Resize(s)
+	l.offsetUpdated(l.scroller.Offset)
 	l.scroller.Content.(*fyne.Container).Layout.(*listLayout).updateList(true)
 }
 

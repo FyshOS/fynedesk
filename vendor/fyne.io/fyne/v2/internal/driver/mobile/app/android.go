@@ -2,6 +2,7 @@
 // Use of this source code is governed by a BSD-style
 // license that can be found in the LICENSE file.
 
+//go:build android
 // +build android
 
 /*
@@ -56,6 +57,8 @@ import (
 	"log"
 	"mime"
 	"os"
+	"runtime"
+	"runtime/debug"
 	"strings"
 	"time"
 	"unsafe"
@@ -267,6 +270,8 @@ func onConfigurationChanged(activity *C.ANativeActivity) {
 
 //export onLowMemory
 func onLowMemory(activity *C.ANativeActivity) {
+	runtime.GC()
+	debug.FreeOSMemory()
 }
 
 var (

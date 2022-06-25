@@ -94,8 +94,8 @@ func (l *Label) Refresh() {
 		return
 	}
 	l.syncSegments()
-	l.BaseWidget.Refresh()
 	l.provider.Refresh()
+	l.BaseWidget.Refresh()
 }
 
 // Resize sets a new size for the label.
@@ -125,14 +125,12 @@ func (l *Label) Unbind() {
 
 func (l *Label) syncSegments() {
 	l.provider.Wrapping = l.Wrapping
-	l.provider.Segments = []RichTextSegment{&TextSegment{
-		Style: RichTextStyle{
-			Alignment: l.Alignment,
-			Inline:    true,
-			TextStyle: l.TextStyle,
-		},
-		Text: l.Text,
-	}}
+	l.provider.Segments[0].(*TextSegment).Style = RichTextStyle{
+		Alignment: l.Alignment,
+		Inline:    true,
+		TextStyle: l.TextStyle,
+	}
+	l.provider.Segments[0].(*TextSegment).Text = l.Text
 }
 
 func (l *Label) updateFromData(data binding.DataItem) {

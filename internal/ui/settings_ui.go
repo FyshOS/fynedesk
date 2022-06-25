@@ -13,7 +13,6 @@ import (
 	"fyne.io/fyne/v2/cmd/fyne_settings/settings"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
@@ -292,9 +291,9 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	userMod := d.settings.modifier
 	modType := widget.NewRadioGroup([]string{"Super", "Alt"}, func(mod string) {
 		if mod == "Alt" {
-			userMod = deskDriver.AltModifier
+			userMod = fyne.KeyModifierAlt
 		} else {
-			userMod = deskDriver.SuperModifier
+			userMod = fyne.KeyModifierSuper
 		}
 
 		var mods []fyne.CanvasObject
@@ -305,7 +304,7 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 		modVBox.Refresh()
 	})
 	modType.Horizontal = true
-	if d.settings.modifier == deskDriver.AltModifier {
+	if d.settings.modifier == fyne.KeyModifierAlt {
 		modType.Selected = "Alt"
 	} else {
 		modType.Selected = "Super"
@@ -408,22 +407,22 @@ func (w *widgetPanel) showSettings() {
 	win.Show()
 }
 
-func modifierToString(mods deskDriver.Modifier, userMod deskDriver.Modifier) string {
+func modifierToString(mods fyne.KeyModifier, userMod fyne.KeyModifier) string {
 	var s []string
 	if (mods & fynedesk.UserModifier) != 0 {
 		mods |= userMod
 	}
 
-	if (mods & deskDriver.ShiftModifier) != 0 {
+	if (mods & fyne.KeyModifierShift) != 0 {
 		s = append(s, "Shift")
 	}
-	if (mods & deskDriver.ControlModifier) != 0 {
+	if (mods & fyne.KeyModifierControl) != 0 {
 		s = append(s, "Control")
 	}
-	if (mods & deskDriver.AltModifier) != 0 {
+	if (mods & fyne.KeyModifierAlt) != 0 {
 		s = append(s, "Alt")
 	}
-	if (mods & deskDriver.SuperModifier) != 0 {
+	if (mods & fyne.KeyModifierSuper) != 0 {
 		if runtime.GOOS == "darwin" {
 			s = append(s, "Command")
 		} else {

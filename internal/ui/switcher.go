@@ -177,20 +177,21 @@ func (s *Switcher) raise(icon *switchIcon) {
 	icon.win.RaiseToTop()
 }
 
-func (s *Switcher) loadUI(title string) fyne.Window {
-	var win fyne.Window
-	if d, ok := fyne.CurrentApp().Driver().(deskDriver.Driver); ok {
-		win = d.CreateSplashWindow()
-		win.SetPadded(true)
-	} else {
-		win = fyne.CurrentApp().NewWindow(title)
+func (s *Switcher) loadUI(title string) {
+	win := s.win
+	if win == nil {
+		if d, ok := fyne.CurrentApp().Driver().(deskDriver.Driver); ok {
+			win = d.CreateSplashWindow()
+			win.SetPadded(true)
+		} else {
+			win = fyne.CurrentApp().NewWindow(title)
+		}
+		s.win = win
 	}
 
 	win.SetContent(container.NewHBox(s.icons...))
 	win.CenterOnScreen()
 	win.SetTitle(title)
-
-	return win
 }
 
 func (s *Switcher) loadIcons(list []fynedesk.Window) []fyne.CanvasObject {
@@ -214,7 +215,7 @@ func (s *Switcher) HideApply() {
 func (s *Switcher) HideCancel() {
 	go func() {
 		time.Sleep(time.Millisecond * 100)
-		s.win.Close()
+		s.win.Hide()
 	}()
 }
 
@@ -225,7 +226,7 @@ func showAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.Applicatio
 
 	s := &Switcher{provider: prov}
 	s.icons = s.loadIcons(wins)
-	s.win = s.loadUI("Window switcher " + SkipTaskbarHint)
+	s.loadUI("Window switcher " + SkipTaskbarHint)
 	if off < 0 {
 		off = len(s.icons) + off // plus a negative is minus
 	}

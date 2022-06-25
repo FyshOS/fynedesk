@@ -137,16 +137,17 @@ func (c *glCanvas) Scale() float32 {
 }
 
 func (c *glCanvas) SetContent(content fyne.CanvasObject) {
-	c.Lock()
-	c.setContent(content)
+	content.Resize(content.MinSize()) // give it the space it wants then calculate the real min
 
-	c.content.Resize(c.content.MinSize()) // give it the space it wants then calculate the real min
+	c.Lock()
 	// the pass above makes some layouts wide enough to wrap, so we ask again what the true min is.
-	newSize := c.size.Max(c.canvasSize(c.content.MinSize()))
+	newSize := c.size.Max(c.canvasSize(content.MinSize()))
+
+	c.setContent(content)
 	c.Unlock()
 
 	c.Resize(newSize)
-	c.SetDirty(true)
+	c.SetDirty()
 }
 
 func (c *glCanvas) SetOnKeyDown(typed func(*fyne.KeyEvent)) {
@@ -187,7 +188,7 @@ func (c *glCanvas) reloadScale() {
 	c.Lock()
 	c.scale = c.context.(*window).calculatedScale()
 	c.Unlock()
-	c.SetDirty(true)
+	c.SetDirty()
 
 	c.context.RescaleContext()
 }
@@ -259,7 +260,7 @@ func (c *glCanvas) menuHeight() float32 {
 }
 
 func (c *glCanvas) overlayChanged() {
-	c.SetDirty(true)
+	c.SetDirty()
 }
 
 func (c *glCanvas) paint(size fyne.Size) {
@@ -267,7 +268,6 @@ func (c *glCanvas) paint(size fyne.Size) {
 	if c.Content() == nil {
 		return
 	}
-	c.SetDirty(false)
 	c.Painter().Clear()
 
 	paint := func(node *common.RenderCacheNode, pos fyne.Position) {
@@ -285,11 +285,9 @@ func (c *glCanvas) paint(size fyne.Size) {
 				c.Painter().StartClipping(top.Rect())
 			} else {
 				c.Painter().StopClipping()
-
 			}
 		}
 	}
-
 	c.WalkTrees(paint, afterPaint)
 }
 

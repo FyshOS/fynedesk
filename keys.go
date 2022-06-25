@@ -8,10 +8,10 @@ import (
 
 const (
 	// AnyModifier is the shortcut modifier to use if the shortcut should always trigger - use sparingly
-	AnyModifier deskDriver.Modifier = 0
+	AnyModifier fyne.KeyModifier = 0
 	// UserModifier is the shortcut modifier to use if the shortcut should respect user preference.
 	// This will be offered as a choice of Alt or Super (Command)
-	UserModifier deskDriver.Modifier = deskDriver.SuperModifier << 1
+	UserModifier fyne.KeyModifier = fyne.KeyModifierSuper << 1
 
 	// KeyBrightnessDown is the virtual keyboard key for reducing brightness
 	KeyBrightnessDown fyne.KeyName = "BrightnessDown"
@@ -44,7 +44,7 @@ func (s *Shortcut) ShortcutName() string {
 }
 
 // NewShortcut creates a keyboard shortcut that can be configured by the user
-func NewShortcut(name string, key fyne.KeyName, mods deskDriver.Modifier) *Shortcut {
+func NewShortcut(name string, key fyne.KeyName, mods fyne.KeyModifier) *Shortcut {
 	s := &Shortcut{Name: name}
 	s.KeyName = key
 	s.Modifier = mods

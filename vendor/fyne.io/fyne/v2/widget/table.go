@@ -27,11 +27,11 @@ type TableCellID struct {
 type Table struct {
 	BaseWidget
 
-	Length       func() (int, int)
-	CreateCell   func() fyne.CanvasObject
-	UpdateCell   func(id TableCellID, template fyne.CanvasObject)
-	OnSelected   func(id TableCellID)
-	OnUnselected func(id TableCellID)
+	Length       func() (int, int)                                `json:"-"`
+	CreateCell   func() fyne.CanvasObject                         `json:"-"`
+	UpdateCell   func(id TableCellID, template fyne.CanvasObject) `json:"-"`
+	OnSelected   func(id TableCellID)                             `json:"-"`
+	OnUnselected func(id TableCellID)                             `json:"-"`
 
 	selectedCell, hoveredCell *TableCellID
 	cells                     *tableCells
@@ -116,6 +116,7 @@ func (t *Table) SetColumnWidth(id int, width float32) {
 	}
 	t.columnWidths[id] = width
 	t.Refresh()
+	t.scroll.Refresh()
 }
 
 // Unselect will mark the cell provided by id as unselected.

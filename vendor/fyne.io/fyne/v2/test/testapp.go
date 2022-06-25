@@ -1,4 +1,4 @@
-// Package test provides utility drivers for running UI tests without rendering
+// Package test provides utility drivers for running UI tests without rendering to a screen.
 package test // import "fyne.io/fyne/v2/test"
 
 import (
@@ -84,6 +84,10 @@ func (a *testApp) Storage() fyne.Storage {
 
 func (a *testApp) Lifecycle() fyne.Lifecycle {
 	return a.lifecycle
+}
+
+func (a *testApp) Metadata() fyne.AppMetadata {
+	return fyne.AppMetadata{} // just dummy data
 }
 
 func (a *testApp) lastAppliedTheme() fyne.Theme {
