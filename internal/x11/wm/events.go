@@ -198,7 +198,7 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 		for _, shortcut := range desk.Shortcuts() {
 			mask := x.modifierToKeyMask(shortcut.Modifier)
 			code := x.keyNameToCode(shortcut.KeyName)
-			if code == ev.Detail && mask == ev.State-numlock {
+			if code == ev.Detail && (mask == ev.State-numlock || mask == xproto.ModMaskAny) {
 				go desk.TypedShortcut(shortcut)
 				return
 			}
