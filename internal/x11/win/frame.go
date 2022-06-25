@@ -337,7 +337,7 @@ func (f *frame) decorate(force bool) {
 	drawTopRight, _ := xproto.NewGcontextId(f.client.wm.Conn())
 	xproto.CreateGC(f.client.wm.Conn(), drawTopRight, xproto.Drawable(f.borderTopRight), xproto.GcForeground, []uint32{bgColor})
 
-	if refresh {
+	if refresh || f.canvas == nil {
 		f.drawDecoration(f.borderTop, drawTop, f.borderTopRight, drawTopRight, depth)
 	}
 
