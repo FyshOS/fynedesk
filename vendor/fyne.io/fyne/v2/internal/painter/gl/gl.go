@@ -1,4 +1,4 @@
-//go:generate fyne bundle -o shaders.go --prefix shader --package gl shaders/
+//go:generate go run ../../../cmd/fyne bundle -o shaders.go --prefix shader --package gl shaders/
 
 package gl
 
@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2"
 )
 
+const floatSize = 4
 const max16bit = float32(255 * 255)
 
 func logGLError(err uint32) {

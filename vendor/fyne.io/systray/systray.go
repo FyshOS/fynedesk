@@ -80,7 +80,10 @@ func Run(onReady, onExit func()) {
 func RunWithExternalLoop(onReady, onExit func()) (start, end func()) {
 	Register(onReady, onExit)
 
-	return nativeStart, nativeEnd
+	return nativeStart, func() {
+		nativeEnd()
+		Quit()
+	}
 }
 
 // Register initializes GUI and registers the callbacks but relies on the
@@ -109,6 +112,11 @@ func Register(onReady func(), onExit func()) {
 	}
 	systrayExit = onExit
 	registerSystray()
+}
+
+// ResetMenu will remove all menu items
+func ResetMenu() {
+	resetMenu()
 }
 
 // Quit the systray
@@ -225,7 +233,7 @@ func (item *MenuItem) update() {
 	addOrUpdateMenuItem(item)
 }
 
-func systrayMenuItemSelected(id uint32) { //nolint:deadcode,unused // TODO: Function is not being used.
+func systrayMenuItemSelected(id uint32) {
 	menuItemsLock.RLock()
 	item, ok := menuItems[id]
 	menuItemsLock.RUnlock()
