@@ -20,6 +20,7 @@ import (
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
+	"github.com/BurntSushi/xgbutil/keybind"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
@@ -298,6 +299,10 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 		return keyCodeVolumeLess
 	case fynedesk.KeyVolumeUp:
 		return keyCodeVolumeMore
+	case fyne.KeyL:
+		keybind.Initialize(x.x)
+		codes := keybind.StrToKeycodes(x.x, "L")
+		return codes[0]
 	}
 
 	return 0

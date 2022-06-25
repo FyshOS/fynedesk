@@ -1,4 +1,4 @@
-# fyne.io/fyne/v2 v2.1.4-0.20220401172244-2d1c546ccca1
+# fyne.io/fyne/v2 v2.2.2-rc2
 ## explicit
 fyne.io/fyne/v2
 fyne.io/fyne/v2/app
@@ -33,6 +33,7 @@ fyne.io/fyne/v2/internal/painter
 fyne.io/fyne/v2/internal/painter/gl
 fyne.io/fyne/v2/internal/painter/software
 fyne.io/fyne/v2/internal/repository
+fyne.io/fyne/v2/internal/svg
 fyne.io/fyne/v2/internal/test
 fyne.io/fyne/v2/internal/widget
 fyne.io/fyne/v2/layout
@@ -42,7 +43,7 @@ fyne.io/fyne/v2/test
 fyne.io/fyne/v2/theme
 fyne.io/fyne/v2/tools/playground
 fyne.io/fyne/v2/widget
-# fyne.io/systray v1.9.1-0.20220331100914-9177bf851614
+# fyne.io/systray v1.10.1-0.20220621085403-9a2652634e93
 fyne.io/systray
 fyne.io/systray/internal/generated/menu
 fyne.io/systray/internal/generated/notifier
@@ -81,8 +82,6 @@ github.com/BurntSushi/xgbutil/xwindow
 # github.com/Knetic/govaluate v3.0.0+incompatible
 ## explicit
 github.com/Knetic/govaluate
-# github.com/Kodeworks/golang-image-ico v0.0.0-20141118225523-73f0f4cfade9
-github.com/Kodeworks/golang-image-ico
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
 # github.com/disintegration/imaging v1.6.2
@@ -90,12 +89,14 @@ github.com/davecgh/go-spew/spew
 github.com/disintegration/imaging
 # github.com/fredbi/uri v0.0.0-20181227131451-3dcfdacbaaf3
 github.com/fredbi/uri
-# github.com/fsnotify/fsnotify v1.5.1
+# github.com/fsnotify/fsnotify v1.5.4
 github.com/fsnotify/fsnotify
 # github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe
 github.com/fyne-io/gl-js
 # github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504
 github.com/fyne-io/glfw-js
+# github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2
+github.com/fyne-io/image/ico
 # github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
 github.com/go-gl/gl/v2.1/gl
 github.com/go-gl/gl/v2.1/gl/KHR
@@ -120,11 +121,13 @@ github.com/godbus/dbus/v5/prop
 github.com/goki/freetype
 github.com/goki/freetype/raster
 github.com/goki/freetype/truetype
-# github.com/gopherjs/gopherjs v0.0.0-20211219123610-ec9572f70e60
+# github.com/gopherjs/gopherjs v1.17.2
 github.com/gopherjs/gopherjs/js
 # github.com/jackmordaunt/icns v1.0.1-0.20200413110149-9e181b441ab2
 ## explicit
 github.com/jackmordaunt/icns
+# github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e
+github.com/jsummers/gobmp
 # github.com/mafik/pulseaudio v0.0.0-20200511091429-8449222912dd
 ## explicit
 github.com/mafik/pulseaudio
@@ -140,10 +143,12 @@ github.com/pmezard/go-difflib/difflib
 github.com/srwiley/oksvg
 # github.com/srwiley/rasterx v0.0.0-20200120212402-85cb7272f5e9
 github.com/srwiley/rasterx
-# github.com/stretchr/testify v1.7.0
+# github.com/stretchr/testify v1.7.2
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
+# github.com/tevino/abool v1.2.0
+github.com/tevino/abool
 # github.com/yuin/goldmark v1.4.0
 github.com/yuin/goldmark
 github.com/yuin/goldmark/ast
@@ -152,8 +157,7 @@ github.com/yuin/goldmark/renderer
 github.com/yuin/goldmark/renderer/html
 github.com/yuin/goldmark/text
 github.com/yuin/goldmark/util
-# golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d
-## explicit
+# golang.org/x/image v0.0.0-20220601225756-64ec528b34cd
 golang.org/x/image/bmp
 golang.org/x/image/ccitt
 golang.org/x/image/colornames
@@ -171,14 +175,13 @@ golang.org/x/mobile/exp/f32
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.0.0-20210809222454-d867a43fc93e
+# golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
 # golang.org/x/text v0.3.7
-## explicit
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -196,7 +199,7 @@ golang.org/x/text/internal/utf8internal
 golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/transform
-# gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b
+# gopkg.in/yaml.v3 v3.0.1
 gopkg.in/yaml.v3
 # honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2
 honnef.co/go/js/dom

@@ -255,7 +255,7 @@ func (b *bar) appendLauncherIcons() {
 func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 	var bg fyne.CanvasObject
 	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
-		bg = canvas.NewRectangle(wmTheme.WidgetPanelBackgroundDark)
+		bg = canvas.NewRectangle(wmTheme.WidgetPanelBackground())
 	} else {
 		bg = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
 	}
@@ -312,7 +312,7 @@ func (b *barRenderer) Objects() []fyne.CanvasObject {
 // Refresh will recalculate the widget and repaint it
 func (b *barRenderer) Refresh() {
 	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
-		b.background = canvas.NewRectangle(wmTheme.WidgetPanelBackgroundDark)
+		b.background = canvas.NewRectangle(wmTheme.WidgetPanelBackground())
 	} else {
 		b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
 	}

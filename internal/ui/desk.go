@@ -280,6 +280,21 @@ func (l *desktop) registerShortcuts() {
 		l.screenshot)
 	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Calculator", KeyName: fynedesk.KeyCalculator},
 		l.calculator)
+	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Lock screen", KeyName: fyne.KeyL,
+		Modifier: fynedesk.UserModifier},
+		l.LockScreen)
+}
+
+func (l *desktop) startXscreensaver() {
+	_, err := exec.LookPath("xscreensaver")
+	if err != nil {
+		fyne.LogError("xscreensaver command not found", err)
+		return
+	}
+	err = exec.Command("xscreensaver", "-no-splash").Start()
+	if err != nil {
+		fyne.LogError("Failed to lock screen", err)
+	}
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
@@ -323,6 +338,7 @@ func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 	desk.addSettingsChangeListener()
 
 	desk.registerShortcuts()
+	go desk.startXscreensaver()
 	return desk
 }
 
@@ -330,5 +346,19 @@ func (l *desktop) calculator() {
 	err := exec.Command("calculator").Start()
 	if err != nil {
 		fyne.LogError("Failed to open calculator", err)
+	}
+}
+
+func (l *desktop) LockScreen() {
+	_, err := exec.LookPath("xscreensaver-command")
+	if err != nil {
+		fyne.LogError("xscreensaver-command not found", err)
+		l.WindowManager().Blank()
+		return
+	}
+	err = exec.Command("xscreensaver-command", "-lock").Start()
+	if err != nil {
+		fyne.LogError("Failed to lock screen", err)
+		l.WindowManager().Blank()
 	}
 }

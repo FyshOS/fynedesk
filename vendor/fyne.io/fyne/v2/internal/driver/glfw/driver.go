@@ -7,11 +7,9 @@ import (
 	"image"
 	"os"
 	"runtime"
-	"strconv"
-	"strings"
 	"sync"
 
-	ico "github.com/Kodeworks/golang-image-ico"
+	"github.com/fyne-io/image/ico"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/internal/animation"
@@ -23,7 +21,11 @@ import (
 	"fyne.io/fyne/v2/storage/repository"
 )
 
-const mainGoroutineID = 1
+// mainGoroutineID stores the main goroutine ID.
+// This ID must be initialized in main.init because
+// a main goroutine may not equal to 1 due to the
+// influence of a garbage collector.
+var mainGoroutineID uint64
 
 var (
 	curWindow *window
@@ -42,8 +44,9 @@ type gLDriver struct {
 
 	animation *animation.Runner
 
-	drawOnMainThread    bool   // A workaround on Apple M1, just use 1 thread until fixed upstream
-	trayStart, trayStop func() // shut down the system tray, if used
+	drawOnMainThread    bool       // A workaround on Apple M1, just use 1 thread until fixed upstream
+	trayStart, trayStop func()     // shut down the system tray, if used
+	systrayMenu         *fyne.Menu // cache the menu set so we know when to refresh
 }
 
 func toOSIcon(icon fyne.Resource) ([]byte, error) {
@@ -120,6 +123,9 @@ func (d *gLDriver) focusPreviousWindow() {
 
 	var chosen fyne.Window
 	for _, w := range wins {
+		if !w.(*window).visible {
+			continue
+		}
 		chosen = w
 		if w.(*window).master {
 			break
@@ -139,7 +145,7 @@ func (d *gLDriver) windowList() []fyne.Window {
 }
 
 func (d *gLDriver) initFailed(msg string, err error) {
-	fyne.LogError(msg, err)
+	logError(msg, err)
 
 	run.Lock()
 	if !run.flag {
@@ -151,14 +157,11 @@ func (d *gLDriver) initFailed(msg string, err error) {
 	}
 }
 
-func goroutineID() int {
-	b := make([]byte, 64)
-	b = b[:runtime.Stack(b, false)]
-	// string format expects "goroutine X [running..."
-	id := strings.Split(strings.TrimSpace(string(b)), " ")[1]
-
-	num, _ := strconv.Atoi(id)
-	return num
+func (d *gLDriver) Run() {
+	if goroutineID() != mainGoroutineID {
+		panic("Run() or ShowAndRun() must be called from main goroutine")
+	}
+	d.runGL()
 }
 
 // NewGLDriver sets up a new Driver instance implemented using the GLFW Go library and OpenGL bindings.

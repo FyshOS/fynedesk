@@ -3,7 +3,7 @@ module fyne.io/fynedesk
 go 1.14
 
 require (
-	fyne.io/fyne/v2 v2.1.4-0.20220401172244-2d1c546ccca1
+	fyne.io/fyne/v2 v2.2.2-rc2
 	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 	github.com/BurntSushi/xgb v0.0.0-20201008132610-5f9e7b3c49cd
@@ -15,10 +15,8 @@ require (
 	github.com/mafik/pulseaudio v0.0.0-20200511091429-8449222912dd
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/srwiley/oksvg v0.0.0-20210519022825-9fc0c575d5fe // indirect
-	github.com/stretchr/testify v1.7.0
-	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
+	github.com/stretchr/testify v1.7.2
 	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect
-	golang.org/x/text v0.3.7 // indirect
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb
 )
 

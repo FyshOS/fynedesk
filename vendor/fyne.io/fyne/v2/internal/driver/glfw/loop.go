@@ -47,6 +47,7 @@ func newRun() *runFlag {
 // Arrange that main.main runs on main thread.
 func init() {
 	runtime.LockOSThread()
+	mainGoroutineID = goroutineID()
 
 	run = newRun()
 }
@@ -180,7 +181,7 @@ func (d *gLDriver) runGL() {
 				d.windows = newWindows
 				d.windowLock.Unlock()
 
-				if len(newWindows) == 0 {
+				if d.systrayMenu == nil && len(newWindows) == 0 {
 					d.Quit()
 				}
 			}

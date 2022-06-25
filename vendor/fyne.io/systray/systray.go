@@ -3,6 +3,7 @@ package systray
 
 import (
 	"fmt"
+	"log"
 	"runtime"
 	"sync"
 	"sync/atomic"
@@ -79,7 +80,10 @@ func Run(onReady, onExit func()) {
 func RunWithExternalLoop(onReady, onExit func()) (start, end func()) {
 	Register(onReady, onExit)
 
-	return nativeStart, nativeEnd
+	return nativeStart, func() {
+		nativeEnd()
+		Quit()
+	}
 }
 
 // Register initializes GUI and registers the callbacks but relies on the
@@ -108,6 +112,11 @@ func Register(onReady func(), onExit func()) {
 	}
 	systrayExit = onExit
 	registerSystray()
+}
+
+// ResetMenu will remove all menu items
+func ResetMenu() {
+	resetMenu()
 }
 
 // Quit the systray
@@ -229,7 +238,7 @@ func systrayMenuItemSelected(id uint32) {
 	item, ok := menuItems[id]
 	menuItemsLock.RUnlock()
 	if !ok {
-		fmt.Printf("No menu item with ID %v", id)
+		log.Printf("systray error: no menu item with ID %d\n", id)
 		return
 	}
 	select {
