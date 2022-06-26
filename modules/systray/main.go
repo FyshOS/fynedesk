@@ -7,6 +7,7 @@ package status
 
 import (
 	"bytes"
+	"fmt"
 	"image"
 	"image/color"
 	"image/png"
@@ -14,6 +15,7 @@ import (
 	"log"
 	"path/filepath"
 	"strconv"
+	"time"
 
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
@@ -21,10 +23,12 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/icon"
+	"fyne.io/fynedesk/modules/systray/generated/menu"
 	"fyne.io/fynedesk/modules/systray/generated/notifier"
 	"fyne.io/fynedesk/modules/systray/generated/watcher"
 )
@@ -144,7 +148,19 @@ func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (e
 	ico, ok := t.nodes[sender]
 	if !ok {
 		ico = widget.NewButton("", func() {
-			ni.Activate(t.conn.Context(), 5, 5)
+			if is, err := ni.GetItemIsMenu(t.conn.Context()); err == nil && is {
+				m, err := ni.GetMenu(t.conn.Context())
+				if err == nil {
+					t.showMenu(string(sender), m, ico)
+					return
+				}
+
+				fyne.LogError("Failed to get menu information", err)
+			}
+			err := ni.Activate(t.conn.Context(), 5, 5)
+			if err != nil {
+				fyne.LogError("Error sending tap event", err)
+			}
 		})
 		t.nodes[sender] = ico
 		t.box.Add(ico)
@@ -194,6 +210,70 @@ func (t *tray) Metadata() fynedesk.ModuleMetadata {
 
 func (t *tray) StatusAreaWidget() fyne.CanvasObject {
 	return t.box
+}
+
+func (t *tray) parseMenu(obj *menu.Dbusmenu, service string, closer func()) fyne.CanvasObject {
+	var items []*fyne.MenuItem
+	// TODO support submenus
+	_, l, _ := obj.GetLayout(t.conn.Context(), 0, 1, nil)
+	for _, item := range l.V2 {
+		data := item.Value().([]interface{})
+		items = append(items, t.parseMenuItem(data[0].(int32), obj, data[1], closer))
+	}
+	m := fyne.NewMenu("", items...)
+	return widget.NewMenu(m)
+}
+
+func (t *tray) parseMenuItem(id int32, menu *menu.Dbusmenu, in interface{}, closer func()) *fyne.MenuItem {
+	data := in.(map[string]dbus.Variant)
+	ret := &fyne.MenuItem{}
+	if ty, ok := data["type"]; ok {
+		if ty.String() == "\"separator\"" {
+			ret.IsSeparator = true
+		}
+	} else {
+		ret.Label = fmt.Sprintf("%s", data["label"].Value())
+		ret.Action = func() {
+			err := menu.Event(t.conn.Context(), int32(id), "clicked", dbus.MakeVariant(id), uint32(time.Now().Unix()))
+			if err != nil {
+				fyne.LogError("Failed to message menu tap", err)
+			}
+			closer()
+		}
+	}
+
+	if i, ok := data["icon-data"]; ok {
+		ret.Icon = fyne.NewStaticResource(fmt.Sprintf("systray-icon-%d", id), i.Value().([]byte))
+	}
+	if e, ok := data["enabled"]; ok && e.Value() == false {
+		ret.Disabled = true
+	}
+
+	if t, ok := data["toggle-type"]; ok && t.String() == "\"checkmark\"" {
+		if s, ok := data["toggle-state"]; ok && s.Value() == true {
+			ret.Checked = true
+		}
+	}
+
+	if t, ok := data["children-display"]; ok && t.String() == "\"submenu\"" {
+		ret.ChildMenu = fyne.NewMenu("") // TODO support this
+	}
+	return ret
+}
+
+func (t *tray) showMenu(sender string, name dbus.ObjectPath, from fyne.CanvasObject) {
+	w := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
+	m := menu.NewDbusmenu(t.conn.Object(sender, name))
+	w.SetContent(t.parseMenu(m, sender, func() {
+		w.Close()
+	}))
+
+	size := w.Content().MinSize()
+	w.Resize(size)
+
+	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
+	pos = pos.SubtractXY(size.Width, 0)
+	fynedesk.Instance().WindowManager().ShowOverlay(w, size, pos)
 }
 
 func createPropSpec() map[string]map[string]*prop.Prop {
