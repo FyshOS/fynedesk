@@ -11,6 +11,9 @@ func TestBattery_Render(t *testing.T) {
 	test.NewApp().Settings().SetTheme(theme.DarkTheme())
 	b := newBattery().(*battery)
 	wid := b.StatusAreaWidget()
+	if wid == nil { // we don't have a test stub value
+		return
+	}
 	w := test.NewWindow(wid)
 
 	b.setValue(1)
@@ -27,6 +30,9 @@ func TestBattery_Render_LowWarning(t *testing.T) {
 	test.NewApp().Settings().SetTheme(theme.DarkTheme())
 	b := newBattery().(*battery)
 	wid := b.StatusAreaWidget()
+	if wid == nil { // we don't have a test stub value
+		return
+	}
 	w := test.NewWindow(wid)
 
 	b.setValue(0.09)
