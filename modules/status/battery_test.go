@@ -4,11 +4,9 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2/test"
-	"fyne.io/fyne/v2/theme"
 )
 
 func TestBattery_Render(t *testing.T) {
-	test.NewApp().Settings().SetTheme(theme.DarkTheme())
 	b := newBattery().(*battery)
 	wid := b.StatusAreaWidget()
 	if wid == nil { // we don't have a test stub value
@@ -27,7 +25,6 @@ func TestBattery_Render(t *testing.T) {
 }
 
 func TestBattery_Render_LowWarning(t *testing.T) {
-	test.NewApp().Settings().SetTheme(theme.DarkTheme())
 	b := newBattery().(*battery)
 	wid := b.StatusAreaWidget()
 	if wid == nil { // we don't have a test stub value
