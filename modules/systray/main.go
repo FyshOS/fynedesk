@@ -152,18 +152,14 @@ func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (e
 	ico, ok := t.nodes[sender]
 	if !ok {
 		ico = widget.NewButton("", func() {
-			if is, err := ni.GetItemIsMenu(t.conn.Context()); err == nil && is {
-				m, err := ni.GetMenu(t.conn.Context())
-				if err == nil {
-					t.showMenu(string(sender), m, ico)
-					return
-				}
-
-				fyne.LogError("Failed to get menu information", err)
+			if m, err := ni.GetMenu(t.conn.Context()); err == nil {
+				t.showMenu(string(sender), m, ico)
+				return
 			}
+
 			err := ni.Activate(t.conn.Context(), 5, 5)
-			if err != nil {
-				fyne.LogError("Error sending tap event", err)
+			if err != nil { // try secondary if primary not known
+				_ = ni.SecondaryActivate(t.conn.Context(), 5, 5)
 			}
 		})
 		ico.Importance = widget.LowImportance
