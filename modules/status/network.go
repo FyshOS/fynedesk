@@ -133,7 +133,7 @@ func (n *network) StatusAreaWidget() fyne.CanvasObject {
 	n.icon = &widget.Button{Icon: wmtheme.WifiOffIcon, Importance: widget.LowImportance, OnTapped: n.showSettings}
 	n.tick()
 
-	return container.NewBorder(nil, nil, n.icon, nil, n.name)
+	return container.New(&handleNarrow{}, n.icon, n.name)
 }
 
 func (n *network) Metadata() fynedesk.ModuleMetadata {

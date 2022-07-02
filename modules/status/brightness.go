@@ -186,7 +186,7 @@ func (b *brightness) StatusAreaWidget() fyne.CanvasObject {
 	bright := container.NewBorder(nil, nil, less, more, b.bar)
 
 	go b.offsetValue(0)
-	return container.NewBorder(nil, nil, icon, nil, bright)
+	return container.New(&handleNarrow{}, icon, bright)
 }
 
 // newBrightness creates a new module that will show screen brightness in the status area

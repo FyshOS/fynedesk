@@ -84,6 +84,9 @@ github.com/BurntSushi/xgbutil/xwindow
 github.com/Knetic/govaluate
 # github.com/davecgh/go-spew v1.1.1
 github.com/davecgh/go-spew/spew
+# github.com/disintegration/imaging v1.6.2
+## explicit
+github.com/disintegration/imaging
 # github.com/fredbi/uri v0.0.0-20181227131451-3dcfdacbaaf3
 github.com/fredbi/uri
 # github.com/fsnotify/fsnotify v1.5.4
@@ -155,11 +158,15 @@ github.com/yuin/goldmark/renderer/html
 github.com/yuin/goldmark/text
 github.com/yuin/goldmark/util
 # golang.org/x/image v0.0.0-20220601225756-64ec528b34cd
+golang.org/x/image/bmp
+golang.org/x/image/ccitt
 golang.org/x/image/colornames
 golang.org/x/image/draw
 golang.org/x/image/font
 golang.org/x/image/math/f64
 golang.org/x/image/math/fixed
+golang.org/x/image/tiff
+golang.org/x/image/tiff/lzw
 golang.org/x/image/vector
 # golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee
 golang.org/x/mobile/exp/f32

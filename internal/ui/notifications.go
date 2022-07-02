@@ -5,8 +5,10 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/widget"
 
+	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/wm"
 )
 
@@ -14,6 +16,7 @@ type notification struct {
 	message *wm.Notification
 
 	renderer fyne.CanvasObject
+	popup    fyne.Window
 }
 
 func (n *notification) show(list *fyne.Container) {
@@ -24,8 +27,18 @@ func (n *notification) show(list *fyne.Container) {
 	text.Wrapping = fyne.TextWrapWord
 	n.renderer = container.NewVBox(title, text)
 
-	list.Objects = append(list.Objects, n.renderer)
-	list.Refresh()
+	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
+		// TODO move away from window when we have overlay proper as this takes focus...
+		n.popup = fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
+		n.popup.SetContent(n.renderer)
+
+		winSize := fynedesk.Instance().(*desktop).root.Canvas().Size()
+		pos := fyne.NewPos(winSize.Width-280-widgetPanelNarrow, 10)
+		fynedesk.Instance().WindowManager().ShowOverlay(n.popup, fyne.NewSize(270, 120), pos)
+	} else {
+		list.Objects = append(list.Objects, n.renderer)
+		list.Refresh()
+	}
 
 	go func() {
 		time.Sleep(time.Second * 10)
@@ -35,6 +48,11 @@ func (n *notification) show(list *fyne.Container) {
 }
 
 func (n *notification) hide(list *fyne.Container) {
+	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
+		n.popup.Hide()
+		return
+	}
+
 	var items []fyne.CanvasObject
 	for _, item := range list.Objects {
 		if item == n.renderer {
