@@ -57,8 +57,12 @@ type tray struct {
 
 // NewTray creates a new module that will show a system tray in the status area
 func NewTray() fynedesk.Module {
-	t := &tray{box: container.NewHBox(layout.NewSpacer()),
-		nodes: make(map[dbus.Sender]*widget.Button)}
+	grid := container.NewGridWithColumns(5)
+	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
+		grid.Layout = layout.NewGridLayoutWithColumns(1)
+	}
+
+	t := &tray{box: grid, nodes: make(map[dbus.Sender]*widget.Button)}
 
 	conn, _ := dbus.ConnectSessionBus()
 	t.conn = conn
@@ -162,6 +166,7 @@ func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (e
 				fyne.LogError("Error sending tap event", err)
 			}
 		})
+		ico.Importance = widget.LowImportance
 		t.nodes[sender] = ico
 		t.box.Add(ico)
 	}
