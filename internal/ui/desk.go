@@ -42,10 +42,14 @@ type desktop struct {
 func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0].(*background)
 	bg.Resize(size)
-
-	barHeight := l.bar.MinSize().Height
-	l.bar.Resize(fyne.NewSize(size.Width, barHeight+1)) // add 1 so rounding cannot trigger mouse out on bottom edge
-	l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
+	if l.Settings().NarrowLeftLauncher() {
+		l.bar.Resize(size)
+		l.bar.Move(fyne.NewPos(0, 0))
+	} else {
+		barHeight := l.bar.MinSize().Height
+		l.bar.Resize(fyne.NewSize(size.Width, barHeight+1)) // add 1 so rounding cannot trigger mouse out on bottom edge
+		l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
+	}
 	l.bar.Refresh()
 
 	widgetsWidth := l.widgets.MinSize().Width
@@ -131,13 +135,22 @@ func (l *desktop) Settings() fynedesk.DeskSettings {
 	return l.settings
 }
 
-func (l *desktop) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32) {
+func (l *desktop) ContentBoundsPixels(screen *fynedesk.Screen) (x, y, w, h uint32) {
 	screenW := uint32(screen.Width)
 	screenH := uint32(screen.Height)
-	if l.screens.Primary() == screen {
-		return screenW - uint32(widgetPanelWidth*screen.CanvasScale()), screenH
+	pad := widgetPanelWidth
+	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
+		pad = widgetPanelNarrow
 	}
-	return screenW, screenH
+	if l.screens.Primary() == screen {
+		bar := uint32(0)
+		if l.Settings().NarrowLeftLauncher() {
+			bar = uint32(widgetPanelNarrow * screen.CanvasScale())
+		}
+		wid := uint32(pad * screen.CanvasScale())
+		return bar, 0, screenW - bar - wid, screenH
+	}
+	return 0, 0, screenW, screenH
 }
 
 func (l *desktop) IconProvider() fynedesk.ApplicationProvider {

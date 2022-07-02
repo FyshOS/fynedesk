@@ -23,6 +23,8 @@ type deskSettings struct {
 	modifier    fyne.KeyModifier
 	moduleNames []string
 
+	narrowPanel, narrowLeftLauncher bool
+
 	listenerLock    sync.Mutex
 	changeListeners []chan fynedesk.DeskSettings
 }
@@ -61,6 +63,14 @@ func (d *deskSettings) KeyboardModifier() fyne.KeyModifier {
 
 func (d *deskSettings) ModuleNames() []string {
 	return d.moduleNames
+}
+
+func (d *deskSettings) NarrowWidgetPanel() bool {
+	return d.narrowPanel
+}
+
+func (d *deskSettings) NarrowLeftLauncher() bool {
+	return d.narrowLeftLauncher
 }
 
 func (d *deskSettings) BorderButtonPosition() string {
@@ -157,6 +167,18 @@ func (d *deskSettings) setModuleNames(names []string) {
 	d.apply()
 }
 
+func (d *deskSettings) setNarrowLeftLauncher(narrow bool) {
+	d.narrowLeftLauncher = narrow
+	fyne.CurrentApp().Preferences().SetBool("launchernarrowleft", narrow)
+	d.apply()
+}
+
+func (d *deskSettings) setNarrowWidgetPanel(narrow bool) {
+	d.narrowPanel = narrow
+	fyne.CurrentApp().Preferences().SetBool("narrowpanel", narrow)
+	d.apply()
+}
+
 func (d *deskSettings) setBorderButtonPosition(pos string) {
 	d.borderButtonPosition = pos
 	fyne.CurrentApp().Preferences().SetString("borderbuttonposition", d.borderButtonPosition)
@@ -216,6 +238,8 @@ func (d *deskSettings) load() {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
 	d.modifier = fyne.KeyModifier(fyne.CurrentApp().Preferences().IntWithFallback("keyboardmodifier", int(fyne.KeyModifierSuper)))
+	d.narrowLeftLauncher = fyne.CurrentApp().Preferences().Bool("launchernarrowleft")
+	d.narrowPanel = fyne.CurrentApp().Preferences().Bool("narrowpanel")
 
 	d.borderButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
 

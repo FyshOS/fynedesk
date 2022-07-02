@@ -90,6 +90,12 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 	clockFormat := &widget.RadioGroup{Options: []string{"12h", "24h"}, Required: true, Horizontal: true}
 	clockFormat.SetSelected(d.settings.ClockFormatting())
 
+	layoutLabel := widget.NewLabelWithStyle("Layout", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	narrowBar := widget.NewCheck("Narrow Side App Bar", nil)
+	narrowBar.Checked = d.settings.NarrowLeftLauncher()
+	narrowWidget := widget.NewCheck("Narrow Widget Bar", nil)
+	narrowWidget.Checked = d.settings.NarrowWidgetPanel()
+
 	borderButtonLabel := widget.NewLabelWithStyle("Border Button Position", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	borderButton := &widget.Select{Options: []string{"Left", "Right"}}
 	borderButton.SetSelected(d.settings.BorderButtonPosition())
@@ -109,8 +115,10 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 	bg := container.NewBorder(nil, nil, bgLabel, bgButtons, bgPath)
 	time := container.NewBorder(nil, nil, clockLabel, clockFormat)
+	lay := container.NewBorder(nil, nil, layoutLabel,
+		container.NewGridWithColumns(2, narrowBar, narrowWidget))
 	border := container.NewBorder(nil, nil, borderButtonLabel, borderButton)
-	top := container.NewVBox(bg, time, border)
+	top := container.NewVBox(bg, time, lay, border)
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	themeCurrent := container.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
@@ -122,6 +130,8 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 			d.settings.setIconTheme(themeLabel.Text)
 			d.settings.setClockFormatting(clockFormat.Selected)
 			d.settings.setBorderButtonPosition(borderButton.Selected)
+			d.settings.setNarrowLeftLauncher(narrowBar.Checked)
+			d.settings.setNarrowWidgetPanel(narrowWidget.Checked)
 		}})
 
 	return container.NewBorder(top, applyButton, nil, nil, bottom)
