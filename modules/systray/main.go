@@ -25,6 +25,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/fynedesk"
 	"fyne.io/fynedesk/internal/icon"
@@ -50,7 +51,9 @@ var trayMeta = fynedesk.ModuleMetadata{
 }
 
 type tray struct {
-	conn  *dbus.Conn
+	conn *dbus.Conn
+	menu *menu.Dbusmenu
+
 	box   *fyne.Container
 	nodes map[dbus.Sender]*widget.Button
 }
@@ -213,19 +216,21 @@ func (t *tray) StatusAreaWidget() fyne.CanvasObject {
 	return t.box
 }
 
-func (t *tray) parseMenu(obj *menu.Dbusmenu, service string, closer func()) fyne.CanvasObject {
+func (t *tray) parseMenu(parent int32, pos *fyne.Position, closer func()) fyne.CanvasObject {
+	Y := pos.Y
 	var items []*fyne.MenuItem
-	// TODO support submenus
-	_, l, _ := obj.GetLayout(t.conn.Context(), 0, 1, nil)
-	for _, item := range l.V2 {
+	_, l, _ := t.menu.GetLayout(t.conn.Context(), parent, 1, nil)
+	for i, item := range l.V2 {
 		data := item.Value().([]interface{})
-		items = append(items, t.parseMenuItem(data[0].(int32), obj, data[1], closer))
+		items = append(items, t.parseMenuItem(data[0].(int32), t.menu, data[1], pos, i, closer))
+
+		Y += theme.TextSize() + theme.Padding()*2
 	}
 	m := fyne.NewMenu("", items...)
 	return widget.NewMenu(m)
 }
 
-func (t *tray) parseMenuItem(id int32, menu *menu.Dbusmenu, in interface{}, closer func()) *fyne.MenuItem {
+func (t *tray) parseMenuItem(id int32, menu *menu.Dbusmenu, in interface{}, pos *fyne.Position, off int, closer func()) *fyne.MenuItem {
 	data := in.(map[string]dbus.Variant)
 	ret := &fyne.MenuItem{}
 	if ty, ok := data["type"]; ok {
@@ -256,24 +261,50 @@ func (t *tray) parseMenuItem(id int32, menu *menu.Dbusmenu, in interface{}, clos
 		}
 	}
 
-	if t, ok := data["children-display"]; ok && t.String() == "\"submenu\"" {
-		ret.ChildMenu = fyne.NewMenu("") // TODO support this
+	if s, ok := data["children-display"]; ok && s.String() == "\"submenu\"" {
+		ret.Action = func() {
+			w := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
+			w.SetOnClosed(closer)
+			childPos := &fyne.Position{}
+
+			w.SetContent(t.parseMenu(id, childPos, func() {
+				w.Close()
+				closer()
+			}))
+
+			size := w.Content().MinSize()
+			w.Resize(size)
+			sub := (*pos).AddXY(-size.Width, float32(off)*(18+theme.Padding()*4))
+			screen := fynedesk.Instance().Screens().Primary()
+			if sub.Y+size.Height > float32(screen.Height)/screen.CanvasScale() {
+				sub.Y = float32(screen.Height)/screen.CanvasScale() - size.Height
+			}
+			childPos.X, childPos.Y = sub.X, sub.Y
+
+			fynedesk.Instance().WindowManager().ShowOverlay(w, size, *childPos)
+		}
+
+		ret.ChildMenu = fyne.NewMenu("")
 	}
 	return ret
 }
 
 func (t *tray) showMenu(sender string, name dbus.ObjectPath, from fyne.CanvasObject) {
+	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
 	w := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
-	m := menu.NewDbusmenu(t.conn.Object(sender, name))
-	w.SetContent(t.parseMenu(m, sender, func() {
+	t.menu = menu.NewDbusmenu(t.conn.Object(sender, name))
+	w.SetContent(t.parseMenu(0, &pos, func() {
 		w.Close()
 	}))
 
 	size := w.Content().MinSize()
 	w.Resize(size)
 
-	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(from)
-	pos = pos.SubtractXY(size.Width, 0)
+	pos.X -= size.Width
+	screen := fynedesk.Instance().Screens().Primary()
+	if pos.Y+size.Height > float32(screen.Height)/screen.CanvasScale() {
+		pos.Y = float32(screen.Height)/screen.CanvasScale() - size.Height
+	}
 	fynedesk.Instance().WindowManager().ShowOverlay(w, size, pos)
 }
 
