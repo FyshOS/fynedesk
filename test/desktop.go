@@ -29,6 +29,7 @@ func NewDesktop() *Desktop {
 func NewDesktopWithWM(wm fynedesk.WindowManager) *Desktop {
 	desk := NewDesktop()
 	desk.wm = wm
+	fynedesk.SetInstance(desk)
 	return desk
 }
 
@@ -42,9 +43,9 @@ func (*Desktop) Capture() image.Image {
 	return nil // could be implemented if required for testing
 }
 
-// ContentSizePixels returns a default value for how much space maximised apps should use
-func (*Desktop) ContentSizePixels(_ *fynedesk.Screen) (uint32, uint32) {
-	return uint32(320), uint32(240)
+// ContentBoundsPixels returns a default value for how much space maximised apps should use
+func (*Desktop) ContentBoundsPixels(_ *fynedesk.Screen) (x, y, w, h uint32) {
+	return 0, 0, uint32(320), uint32(240)
 }
 
 // IconProvider returns the icon provider, by default it uses a simple in-memory implementation

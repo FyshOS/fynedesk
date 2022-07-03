@@ -8,7 +8,7 @@ type Desktop interface {
 	RunApp(AppData) error
 	RecentApps() []AppData
 	Settings() DeskSettings
-	ContentSizePixels(screen *Screen) (uint32, uint32)
+	ContentBoundsPixels(*Screen) (x, y, w, h uint32)
 	Screens() ScreenList
 
 	IconProvider() ApplicationProvider

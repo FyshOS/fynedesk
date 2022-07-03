@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
+	"fyne.io/fynedesk"
 )
 
 // Declare conformity with Layout interface
@@ -36,17 +37,90 @@ func (bl *barLayout) setPointerPosition(position fyne.Position) {
 
 // Layout is called to pack all icons into a specified size.  It also handles the zooming effect of the icons.
 func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+	narrow := fynedesk.Instance().Settings().NarrowLeftLauncher()
+	zoom := false
 	bg := objects[0]
 	objects = objects[1:]
+	x := theme.Padding()
+	if narrow {
+		bl.layoutNarrowBar(objects)
+	} else {
+		x, zoom = bl.layoutFullBar(size, objects)
+	}
 
-	offset := float32(0.0)
+	zoomLeft := x
+	tallHeight := bl.bar.iconSize * bl.bar.iconScale
+	for _, child := range objects {
+		width := child.Size().Width
+		height := child.Size().Height
+
+		if narrow {
+			child.Move(fyne.NewPos(theme.Padding(), x))
+			x += height + theme.Padding()
+		} else {
+			if zoom {
+				if _, ok := child.(*canvas.Rectangle); ok {
+					child.Move(fyne.NewPos(x, bl.bar.iconSize))
+				} else {
+					child.Move(fyne.NewPos(x, tallHeight-height))
+				}
+			} else {
+				child.Move(fyne.NewPos(x, 0))
+			}
+			x += width + theme.Padding()
+		}
+	}
+	if narrow {
+		bg.Move(fyne.NewPos(0, 0))
+		bg.Resize(fyne.NewSize(widgetPanelNarrow, size.Height))
+	} else {
+		bg.Resize(fyne.NewSize(x-zoomLeft+theme.Padding(), bl.bar.iconSize))
+		if zoom {
+			bg.Move(fyne.NewPos(zoomLeft-theme.Padding(), bl.bar.iconSize))
+		} else {
+			bg.Move(fyne.NewPos(zoomLeft-theme.Padding(), 0))
+		}
+	}
+}
+
+// MinSize finds the smallest size that satisfies all the child objects.
+// For a barLayout this is the width of the widest item and the height is
+// the sum of of all children combined with padding between each.
+func (bl *barLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	barWidth := bl.calculateBarWidth(objects)
+
+	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
+		return fyne.NewSize(widgetPanelNarrow, barWidth)
+	}
+
+	barLeft := (bl.bar.Size().Width - barWidth) / 2
+	mouseX := bl.mousePosition.X
+	if !bl.bar.disableZoom && bl.mouseInside && mouseX >= barLeft && mouseX < barLeft+barWidth {
+		return fyne.NewSize(barWidth, bl.bar.iconSize*bl.bar.iconScale)
+	}
+
+	return fyne.NewSize(barWidth, bl.bar.iconSize)
+}
+
+func (bl *barLayout) calculateBarWidth(objects []fyne.CanvasObject) float32 {
+	iconCount := float32(len(objects))
+	if !bl.bar.disableTaskbar {
+		iconCount--
+		return (iconCount * (bl.bar.iconSize + theme.Padding())) + separatorWidth
+	}
+
+	return iconCount * (bl.bar.iconSize + theme.Padding())
+}
+
+func (bl *barLayout) layoutFullBar(size fyne.Size, icons []fyne.CanvasObject) (x float32, zoom bool) {
+	offset := float32(0.0)
+	barWidth := bl.calculateBarWidth(icons)
 	barLeft := (size.Width - barWidth) / 2
 	iconLeft := barLeft
 
 	mouseX := bl.mousePosition.X
-	zoom := !bl.bar.disableZoom && bl.mouseInside && mouseX >= barLeft && mouseX < barLeft+barWidth
-	for _, child := range objects {
+	zoom = !bl.bar.disableZoom && bl.mouseInside && mouseX >= barLeft && mouseX < barLeft+barWidth
+	for _, child := range icons {
 		if zoom {
 			if _, ok := child.(*canvas.Rectangle); ok {
 				child.Resize(fyne.NewSize(separatorWidth, bl.bar.iconSize))
@@ -88,55 +162,27 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 		iconLeft += theme.Padding()
 	}
 
-	x := barLeft - offset
-	zoomLeft := x
-	tallHeight := bl.bar.iconSize * bl.bar.iconScale
-	for _, child := range objects {
-		width := child.Size().Width
-		height := child.Size().Height
+	return barLeft - offset, zoom
+}
 
-		if zoom {
-			if _, ok := child.(*canvas.Rectangle); ok {
-				child.Move(fyne.NewPos(x, bl.bar.iconSize))
-			} else {
-				child.Move(fyne.NewPos(x, tallHeight-height))
-			}
+func (bl *barLayout) layoutNarrowBar(icons []fyne.CanvasObject) {
+	iconSize := widgetPanelNarrow - theme.Padding()*2
+	iconLeft := theme.Padding()
+
+	for _, child := range icons {
+		if _, ok := child.(*canvas.Rectangle); ok {
+			child.Resize(fyne.NewSize(iconSize, separatorWidth))
 		} else {
-			child.Move(fyne.NewPos(x, 0))
+			child.Resize(fyne.NewSize(iconSize, iconSize))
 		}
-		x += width + theme.Padding()
+
+		if _, ok := child.(*canvas.Rectangle); ok {
+			iconLeft += separatorWidth
+		} else {
+			iconLeft += iconSize
+		}
+		iconLeft += theme.Padding()
 	}
-	if zoom {
-		bg.Move(fyne.NewPos(zoomLeft-theme.Padding(), bl.bar.iconSize))
-	} else {
-		bg.Move(fyne.NewPos(zoomLeft-theme.Padding(), 0))
-	}
-	bg.Resize(fyne.NewSize(x-zoomLeft+theme.Padding(), bl.bar.iconSize))
-}
-
-// MinSize finds the smallest size that satisfies all the child objects.
-// For a barLayout this is the width of the widest item and the height is
-// the sum of of all children combined with padding between each.
-func (bl *barLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	barWidth := bl.calculateBarWidth(objects)
-
-	barLeft := (bl.bar.Size().Width - barWidth) / 2
-	mouseX := bl.mousePosition.X
-	if !bl.bar.disableZoom && bl.mouseInside && mouseX >= barLeft && mouseX < barLeft+barWidth {
-		return fyne.NewSize(barWidth, bl.bar.iconSize*bl.bar.iconScale)
-	}
-
-	return fyne.NewSize(barWidth, bl.bar.iconSize)
-}
-
-func (bl *barLayout) calculateBarWidth(objects []fyne.CanvasObject) float32 {
-	iconCount := float32(len(objects))
-	if !bl.bar.disableTaskbar {
-		iconCount--
-		return (iconCount * (bl.bar.iconSize + theme.Padding())) + separatorWidth
-	}
-
-	return iconCount * (bl.bar.iconSize + theme.Padding())
 }
 
 // newBarLayout returns a horizontal icon bar
