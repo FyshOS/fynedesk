@@ -10,6 +10,7 @@ import (
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 
 	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 	"fyne.io/fynedesk/wm"
 )
 
@@ -138,14 +139,14 @@ func (l *desktop) Settings() fynedesk.DeskSettings {
 func (l *desktop) ContentBoundsPixels(screen *fynedesk.Screen) (x, y, w, h uint32) {
 	screenW := uint32(screen.Width)
 	screenH := uint32(screen.Height)
-	pad := widgetPanelWidth
+	pad := wmtheme.WidgetPanelWidth
 	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
-		pad = widgetPanelNarrow
+		pad = wmtheme.NarrowBarWidth
 	}
 	if l.screens.Primary() == screen {
 		bar := uint32(0)
 		if l.Settings().NarrowLeftLauncher() {
-			bar = uint32(widgetPanelNarrow * screen.CanvasScale())
+			bar = uint32(wmtheme.NarrowBarWidth * screen.CanvasScale())
 		}
 		wid := uint32(pad * screen.CanvasScale())
 		return bar, 0, screenW - bar - wid, screenH

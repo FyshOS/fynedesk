@@ -7,6 +7,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 // Declare conformity with Layout interface
@@ -72,7 +73,7 @@ func (bl *barLayout) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	}
 	if narrow {
 		bg.Move(fyne.NewPos(0, 0))
-		bg.Resize(fyne.NewSize(widgetPanelNarrow, size.Height))
+		bg.Resize(fyne.NewSize(wmtheme.NarrowBarWidth, size.Height))
 	} else {
 		bg.Resize(fyne.NewSize(x-zoomLeft+theme.Padding(), bl.bar.iconSize))
 		if zoom {
@@ -90,7 +91,7 @@ func (bl *barLayout) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	barWidth := bl.calculateBarWidth(objects)
 
 	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
-		return fyne.NewSize(widgetPanelNarrow, barWidth)
+		return fyne.NewSize(wmtheme.NarrowBarWidth, barWidth)
 	}
 
 	barLeft := (bl.bar.Size().Width - barWidth) / 2
@@ -166,7 +167,7 @@ func (bl *barLayout) layoutFullBar(size fyne.Size, icons []fyne.CanvasObject) (x
 }
 
 func (bl *barLayout) layoutNarrowBar(icons []fyne.CanvasObject) {
-	iconSize := widgetPanelNarrow - theme.Padding()*2
+	iconSize := wmtheme.NarrowBarWidth - theme.Padding()*2
 	iconLeft := theme.Padding()
 
 	for _, child := range icons {

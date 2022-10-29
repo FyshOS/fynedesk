@@ -61,8 +61,12 @@ var (
 	BorderWidth = float32(4)
 	// ButtonWidth is the width of window buttons
 	ButtonWidth = float32(28)
+	// NarrowBarWidth is the size for the bars in narrow layout
+	NarrowBarWidth = float32(36)
 	// TitleHeight is the height of a frame titleBar
 	TitleHeight = float32(28)
+	// WidgetPanelWidth defines how wide the large widget panel should be
+	WidgetPanelWidth = float32(196)
 )
 
 // WidgetPanelBackground returns the semi-transparent background matching the users current theme theme

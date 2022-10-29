@@ -31,7 +31,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 	assert.Equal(t, deskSize.Width, l.widgets.Position().X+l.widgets.Size().Width)
 	assert.Equal(t, deskSize.Height, l.widgets.Size().Height)
 	if l.Settings().NarrowLeftLauncher() {
-		assert.Equal(t, deskSize.Width, widgetPanelNarrow)
+		assert.Equal(t, deskSize.Width, wmTheme.NarrowBarWidth)
 		assert.Equal(t, deskSize.Height, l.bar.Size().Height)
 	} else {
 		assert.Equal(t, deskSize.Width, l.bar.Size().Width)

@@ -19,11 +19,6 @@ import (
 	wmtheme "fyne.io/fynedesk/theme"
 )
 
-const (
-	widgetPanelNarrow = float32(36)
-	widgetPanelWidth  = float32(196)
-)
-
 type widgetRenderer struct {
 	panel *widgetPanel
 	bg    *canvas.Rectangle
@@ -131,7 +126,7 @@ func (w *widgetPanel) createClock() {
 		Text:      w.formattedTime(),
 		Alignment: fyne.TextAlignCenter,
 		TextStyle: style,
-		TextSize:  widgetPanelNarrow * 1.5,
+		TextSize:  wmtheme.NarrowBarWidth * 1.5,
 	}
 	w.date = &widget.Label{
 		Text:      w.formattedDate(),
@@ -152,7 +147,7 @@ func (w *widgetPanel) rotate(time *canvas.Text) {
 
 	w.rotated.Image = out
 	ratio := time.MinSize().Width / time.MinSize().Height
-	space := widgetPanelNarrow - theme.Padding()*2
+	space := wmtheme.NarrowBarWidth - theme.Padding()*2
 	w.rotated.SetMinSize(fyne.NewSize(space, space*ratio))
 	w.rotated.Refresh()
 }
@@ -196,9 +191,9 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 
 func (w *widgetPanel) MinSize() fyne.Size {
 	if w.desk.Settings().NarrowWidgetPanel() {
-		return fyne.NewSize(widgetPanelNarrow, 200)
+		return fyne.NewSize(wmtheme.NarrowBarWidth, 200)
 	}
-	return fyne.NewSize(widgetPanelWidth, 200)
+	return fyne.NewSize(wmtheme.WidgetPanelWidth, 200)
 }
 
 func (w *widgetPanel) accountLabel() string {

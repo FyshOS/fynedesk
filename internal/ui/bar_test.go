@@ -86,7 +86,7 @@ func TestAppBarBackground(t *testing.T) {
 	bg := test.WidgetRenderer(testBar).(*barRenderer).background
 	if testBar.desk.Settings().NarrowLeftLauncher() {
 		assert.Equal(t, wmTheme.WidgetPanelBackground(), bg.(*canvas.Rectangle).FillColor)
-		assert.Equal(t, widgetPanelNarrow, bg.Size().Width)
+		assert.Equal(t, wmTheme.NarrowBarWidth, bg.Size().Width)
 	} else {
 		assert.Equal(t, color.Transparent, bg.(*canvas.LinearGradient).EndColor)
 		assert.Equal(t, theme.BackgroundColor(), bg.(*canvas.LinearGradient).StartColor)

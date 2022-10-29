@@ -5,6 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/widget"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 func (l *desktop) newDesktopWindowFull() fyne.Window {
@@ -34,6 +35,6 @@ func (l *desktop) runFull() {
 
 func (l *desktop) showMenuFull(menu *fyne.Menu, pos fyne.Position) {
 	height := widget.NewMenu(menu).MinSize().Height
-	size := fyne.NewSize(widgetPanelWidth, height)
+	size := fyne.NewSize(wmtheme.WidgetPanelWidth, height)
 	l.wm.ShowMenuOverlay(menu, size, pos)
 }

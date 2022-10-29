@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
+	wmtheme "fyne.io/fynedesk/theme"
 	"fyne.io/fynedesk/wm"
 )
 
@@ -33,7 +34,7 @@ func (n *notification) show(list *fyne.Container) {
 		n.popup.SetContent(n.renderer)
 
 		winSize := fynedesk.Instance().(*desktop).root.Canvas().Size()
-		pos := fyne.NewPos(winSize.Width-280-widgetPanelNarrow, 10)
+		pos := fyne.NewPos(winSize.Width-280-wmtheme.NarrowBarWidth, 10)
 		fynedesk.Instance().WindowManager().ShowOverlay(n.popup, fyne.NewSize(270, 120), pos)
 	} else {
 		list.Objects = append(list.Objects, n.renderer)
