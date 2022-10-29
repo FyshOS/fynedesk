@@ -65,7 +65,7 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 
 	path := data.iconPath
 	if path == "" {
-		path = fdoLookupIconPath(theme, size, data.iconName)
+		path = FdoLookupIconPath(theme, size, data.iconName)
 		if path == "" {
 			return wmTheme.BrokenImageIcon
 		}
@@ -400,8 +400,8 @@ func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconNa
 	return ""
 }
 
-//fdoLookupIconPath will take the name of an icon and find a matching image file
-func fdoLookupIconPath(theme string, size int, iconName string) string {
+//FdoLookupIconPath will take the name of an icon and find a matching image file
+func FdoLookupIconPath(theme string, size int, iconName string) string {
 	locationLookup := fdoLookupXdgDataDirs()
 	iconTheme := theme
 	iconSize := strconv.Itoa(size)

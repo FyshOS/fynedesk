@@ -7,6 +7,7 @@ import (
 	_ "fyne.io/fynedesk/modules/composit"
 	_ "fyne.io/fynedesk/modules/launcher"
 	_ "fyne.io/fynedesk/modules/status"
+	_ "fyne.io/fynedesk/modules/systray"
 )
 
 func main() {

@@ -21,7 +21,7 @@ import (
 
 const (
 	widgetPanelNarrow = float32(36)
-	widgetPanelWidth  = float32(200)
+	widgetPanelWidth  = float32(196)
 )
 
 type widgetRenderer struct {

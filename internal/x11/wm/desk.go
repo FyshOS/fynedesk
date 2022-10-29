@@ -217,10 +217,6 @@ func (x *x11WM) ShowOverlay(w fyne.Window, s fyne.Size, p fyne.Position) {
 	w.SetFixedSize(true)
 	w.Resize(s)
 
-	w.SetOnClosed(func() {
-		x.menuID = 0
-		x.menuWin = nil
-	})
 	w.Show()
 	x.menuSize = s
 	x.menuPos = p
