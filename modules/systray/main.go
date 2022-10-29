@@ -3,7 +3,7 @@
 //go:generate dbus-codegen-go -prefix org.kde -package watcher -output generated/watcher/status_notifier_watcher.go StatusNotifierWatcher.xml
 //go:generate dbus-codegen-go -prefix com.canonical -package menu -output generated/menu/dbus_menu.go DbusMenu.xml
 
-package status
+package systray
 
 import (
 	"bytes"
@@ -24,7 +24,6 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"fyne.io/fynedesk"
@@ -32,6 +31,7 @@ import (
 	"fyne.io/fynedesk/modules/systray/generated/menu"
 	"fyne.io/fynedesk/modules/systray/generated/notifier"
 	"fyne.io/fynedesk/modules/systray/generated/watcher"
+	wmtheme "fyne.io/fynedesk/theme"
 )
 
 const (
@@ -60,11 +60,8 @@ type tray struct {
 
 // NewTray creates a new module that will show a system tray in the status area
 func NewTray() fynedesk.Module {
-	grid := container.NewGridWithColumns(5)
-	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
-		grid.Layout = layout.NewGridLayoutWithColumns(1)
-	}
-
+	iconSize := wmtheme.NarrowBarWidth
+	grid := container.NewGridWrap(fyne.NewSize(iconSize, iconSize))
 	t := &tray{box: grid, nodes: make(map[dbus.Sender]*widget.Button)}
 
 	conn, _ := dbus.ConnectSessionBus()
