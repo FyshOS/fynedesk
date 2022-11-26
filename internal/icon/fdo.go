@@ -2,8 +2,6 @@ package icon // import "fyne.io/fynedesk/internal/icon"
 
 import (
 	"bufio"
-	"bytes"
-	"image/png"
 	"io/ioutil"
 	"math"
 	"os"
@@ -16,6 +14,8 @@ import (
 
 	"fyne.io/fynedesk"
 	wmTheme "fyne.io/fynedesk/theme"
+
+	_ "github.com/fyne-io/image/xpm"
 )
 
 var (
@@ -130,19 +130,6 @@ func loadIcon(path string) fyne.Resource {
 	if err != nil {
 		fyne.LogError("Failed to load image", err)
 		return nil
-	}
-
-	if path[len(path)-4:] == ".xpm" {
-		var w bytes.Buffer
-		img := parseXPM(data)
-		err := png.Encode(&w, img)
-		data = w.Bytes()
-
-		if err != nil {
-			fyne.LogError("Failed to re-encode XPM image", err)
-			return nil
-		}
-		path = path[:len(path)-4] + ".png"
 	}
 
 	return fyne.NewStaticResource(filepath.Base(path), data)

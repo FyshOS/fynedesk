@@ -1,38 +1,43 @@
-package icon
+package xpm
 
 import (
+	"bufio"
 	"fmt"
 	"image"
 	"image/color"
+	"io"
 	"strconv"
 	"strings"
 )
 
-func parseXPM(data []byte) image.Image {
+func parseXPM(data io.Reader) (image.Image, error) {
 	var colCount, charSize int
 	colors := make(map[string]color.Color)
 	var img *image.NRGBA
 
-	rowStart := 0
 	rowNum := 0
-	for i, b := range data {
-		if b != '\n' {
-			continue
-		}
-		row := string(data[rowStart:i])
-		rowStart = i + 1
+	scan := bufio.NewScanner(data)
+	for scan.Scan() {
+		row := scan.Text()
 		if row == "" || row[0] != '"' {
 			continue
 		}
 		row = stripQuotes(row)
 
 		if rowNum == 0 {
-			w, h, cols, size := parseDimensions(row)
+			w, h, cols, size, err := parseDimensions(row)
+			if err != nil {
+				return nil, err
+			}
 			img = image.NewNRGBA(image.Rectangle{image.Point{}, image.Point{w, h}})
 			colCount = cols
 			charSize = size
 		} else if rowNum <= colCount {
-			id, c := parseColor(row, charSize)
+			id, c, err := parseColor(row, charSize)
+			if err != nil {
+				return nil, err
+			}
+
 			if id != "" {
 				colors[id] = c
 			}
@@ -41,15 +46,10 @@ func parseXPM(data []byte) image.Image {
 		}
 		rowNum++
 	}
-
-	row := string(data[rowStart:])
-	if row != "" && row[0] == '"' { // last row has pixels
-		parsePixels(stripQuotes(row), charSize, rowNum-colCount-1, colors, img)
-	}
-	return img
+	return img, scan.Err()
 }
 
-func parseColor(data string, charSize int) (id string, c color.Color) {
+func parseColor(data string, charSize int) (id string, c color.Color, err error) {
 	if len(data) == 0 {
 		return
 	}
@@ -62,10 +62,11 @@ func parseColor(data string, charSize int) (id string, c color.Color) {
 		return
 	}
 
-	return data[:charSize], stringToColor(parts[2])
+	color, err := stringToColor(parts[2])
+	return data[:charSize], color, err
 }
 
-func parseDimensions(data string) (w, h, i, j int) {
+func parseDimensions(data string) (w, h, i, j int, err error) {
 	if len(data) == 0 {
 		return
 	}
@@ -74,10 +75,19 @@ func parseDimensions(data string) (w, h, i, j int) {
 		return
 	}
 
-	w, _ = strconv.Atoi(parts[0])
-	h, _ = strconv.Atoi(parts[1])
-	i, _ = strconv.Atoi(parts[2])
-	j, _ = strconv.Atoi(parts[3])
+	w, err = strconv.Atoi(parts[0])
+	if err != nil {
+		return
+	}
+	h, err = strconv.Atoi(parts[1])
+	if err != nil {
+		return
+	}
+	i, err = strconv.Atoi(parts[2])
+	if err != nil {
+		return
+	}
+	j, err = strconv.Atoi(parts[3])
 	return
 }
 
@@ -101,18 +111,18 @@ func parsePixels(row string, charSize int, pixRow int, colors map[string]color.C
 	}
 }
 
-func stringToColor(data string) color.Color {
+func stringToColor(data string) (color.Color, error) {
 	if strings.EqualFold("none", data) {
-		return color.Transparent
+		return color.Transparent, nil
 	}
 
 	if data[0] != '#' {
-		return color.Transparent // unsupported string like colour name
+		return color.Transparent, nil // unsupported string like colour name
 	}
 
 	c := &color.NRGBA{A: 0xff}
-	_, _ = fmt.Sscanf(data, "#%02x%02x%02x", &c.R, &c.G, &c.B)
-	return c
+	_, err := fmt.Sscanf(data, "#%02x%02x%02x", &c.R, &c.G, &c.B)
+	return c, err
 }
 
 func stripQuotes(data string) string {

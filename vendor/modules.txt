@@ -1,4 +1,4 @@
-# fyne.io/fyne/v2 v2.2.2-rc2
+# fyne.io/fyne/v2 v2.2.4
 ## explicit
 fyne.io/fyne/v2
 fyne.io/fyne/v2/app
@@ -87,7 +87,8 @@ github.com/davecgh/go-spew/spew
 # github.com/disintegration/imaging v1.6.2
 ## explicit
 github.com/disintegration/imaging
-# github.com/fredbi/uri v0.0.0-20181227131451-3dcfdacbaaf3
+# github.com/fredbi/uri v0.0.0-20221002085739-62643c0df0c8
+## explicit
 github.com/fredbi/uri
 # github.com/fsnotify/fsnotify v1.5.4
 github.com/fsnotify/fsnotify
@@ -95,8 +96,10 @@ github.com/fsnotify/fsnotify
 github.com/fyne-io/gl-js
 # github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504
 github.com/fyne-io/glfw-js
-# github.com/fyne-io/image v0.0.0-20220602074514-4956b0afb3d2
+# github.com/fyne-io/image v0.0.0-20221020213044-f609c6a24345
+## explicit
 github.com/fyne-io/image/ico
+github.com/fyne-io/image/xpm
 # github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
 github.com/go-gl/gl/v2.1/gl
 github.com/go-gl/gl/v2.1/gl/KHR
@@ -104,7 +107,8 @@ github.com/go-gl/gl/v3.1/gles2
 github.com/go-gl/gl/v3.1/gles2/KHR
 github.com/go-gl/gl/v3.2-core/gl
 github.com/go-gl/gl/v3.2-core/gl/KHR
-# github.com/go-gl/glfw/v3.3/glfw v0.0.0-20211213063430-748e38ca8aec
+# github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b
+## explicit
 github.com/go-gl/glfw/v3.3/glfw
 github.com/go-gl/glfw/v3.3/glfw/glfw/deps
 github.com/go-gl/glfw/v3.3/glfw/glfw/deps/glad
@@ -138,12 +142,12 @@ github.com/nfnt/resize
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
-# github.com/srwiley/oksvg v0.0.0-20210519022825-9fc0c575d5fe
+# github.com/srwiley/oksvg v0.0.0-20220731023508-a61f04f16b76
 ## explicit
 github.com/srwiley/oksvg
-# github.com/srwiley/rasterx v0.0.0-20200120212402-85cb7272f5e9
+# github.com/srwiley/rasterx v0.0.0-20210519020934-456a8d69b780
 github.com/srwiley/rasterx
-# github.com/stretchr/testify v1.7.2
+# github.com/stretchr/testify v1.8.0
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
@@ -170,8 +174,7 @@ golang.org/x/image/tiff/lzw
 golang.org/x/image/vector
 # golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee
 golang.org/x/mobile/exp/f32
-# golang.org/x/net v0.0.0-20210917221730-978cfadd31cf
-## explicit
+# golang.org/x/net v0.0.0-20211118161319-6a13c67c3ce4
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
