@@ -15,7 +15,7 @@ import (
 	"fyne.io/fynedesk"
 	wmTheme "fyne.io/fynedesk/theme"
 
-	_ "github.com/fyne-io/image/xpm"
+	_ "github.com/fyne-io/image/xpm" // load XPM icons to supported image format
 )
 
 var (
