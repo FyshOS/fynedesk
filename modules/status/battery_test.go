@@ -3,6 +3,7 @@ package status
 import (
 	"testing"
 
+	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 )
 
@@ -13,6 +14,7 @@ func TestBattery_Render(t *testing.T) {
 		return
 	}
 	w := test.NewWindow(wid)
+	w.Resize(fyne.NewSize(103, 44))
 
 	b.setValue(1)
 	test.AssertImageMatches(t, "battery_full.png", w.Canvas().Capture())
@@ -31,6 +33,7 @@ func TestBattery_Render_LowWarning(t *testing.T) {
 		return
 	}
 	w := test.NewWindow(wid)
+	w.Resize(fyne.NewSize(103, 44))
 
 	b.setValue(0.09)
 	test.AssertImageMatches(t, "battery_low.png", w.Canvas().Capture())

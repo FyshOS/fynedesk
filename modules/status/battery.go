@@ -111,7 +111,7 @@ func (h *handleNarrow) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	objects[1].Resize(fyne.NewSize(size.Width-size.Height-theme.Padding(), size.Height))
 	objects[1].Move(fyne.NewPos(size.Height+theme.Padding(), 0))
 
-	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
+	if fynedesk.Instance() != nil && fynedesk.Instance().Settings().NarrowWidgetPanel() {
 		objects[1].Hide()
 	} else {
 		objects[1].Show()
