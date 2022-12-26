@@ -61,7 +61,7 @@ type tray struct {
 // NewTray creates a new module that will show a system tray in the status area
 func NewTray() fynedesk.Module {
 	iconSize := wmtheme.NarrowBarWidth
-	grid := container.NewGridWrap(fyne.NewSize(iconSize, iconSize))
+	grid := container.New(collapsingGridWrap(fyne.NewSize(iconSize, iconSize)))
 	t := &tray{box: grid, nodes: make(map[dbus.Sender]*widget.Button)}
 
 	conn, _ := dbus.ConnectSessionBus()
