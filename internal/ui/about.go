@@ -42,8 +42,8 @@ func (w *widgetPanel) showAbout() {
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 	authors := widget.NewRichTextFromMarkdown("\n**Authors:**\n\n * Andy Williams\n * Stephen Houston\n * Jacob Alzén\n")
 	buttons := container.NewGridWithColumns(3,
-		newURLButton("Home Page", "https://fyne.io"),
-		newURLButton("Report Issue", "https://github.com/fyne-io/desktop/issues/new"),
+		newURLButton("Home Page", "https://fyne.io/fynedesk"),
+		newURLButton("Report Issue", "https://github.com/fyne-io/fynedesk/issues/new"),
 		newURLButton("Sponsor", "https://github.com/sponsors/fyne-io"),
 	)
 
