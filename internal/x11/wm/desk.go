@@ -28,6 +28,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"fyne.io/fynedesk"
@@ -147,6 +148,7 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	go func() {
 		for {
 			<-listener
+			mgr.updateBackgrounds()
 			mgr.refreshBorders()
 			mgr.configureRoots()
 		}
@@ -789,7 +791,14 @@ func (x *x11WM) updatedBackgroundImage() image.Image {
 		return img
 	}
 
-	img, _, err := image.Decode(bytes.NewReader(wmTheme.Background.StaticContent))
+	var res *fyne.StaticResource
+	if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantLight {
+		res = wmTheme.BackgroundLight
+	} else {
+		res = wmTheme.BackgroundDark
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(res.StaticContent))
 	if err != nil {
 		fyne.LogError("Failed to read background resource", err)
 	}

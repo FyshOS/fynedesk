@@ -16,8 +16,10 @@ var (
 	// PointerDefault is the standard pointer resource
 	PointerDefault = resourcePointerPng
 
-	// Background is the default background image
-	Background = resourceBackgroundJpg
+	// BackgroundLight is the default background image for the light variant
+	BackgroundLight = resourceBackgroundLightPng
+	// BackgroundDark is the default background image for the dark variant
+	BackgroundDark = resourceBackgroundDarkPng
 	// FyneAboutBackground is the image used as a background to the about screen
 	FyneAboutBackground = resourceFyneaboutbgPng
 

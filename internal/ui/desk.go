@@ -257,10 +257,23 @@ func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSetting
 	}
 }
 
+func (l *desktop) startFyneSettingsChangeListener(settings chan fyne.Settings) {
+	go func() {
+		for {
+			<-settings
+			l.updateBackgrounds(l.Settings().Background())
+		}
+	}()
+}
+
 func (l *desktop) addSettingsChangeListener() {
 	listener := make(chan fynedesk.DeskSettings)
 	l.Settings().AddChangeListener(listener)
 	go l.startSettingsChangeListener(listener)
+
+	fyneListener := make(chan fyne.Settings)
+	l.app.Settings().AddChangeListener(fyneListener)
+	go l.startFyneSettingsChangeListener(fyneListener)
 }
 
 func (l *desktop) registerShortcuts() {

@@ -74,7 +74,7 @@ func TestBackgroundChange(t *testing.T) {
 		fyne.LogError("Could not get current working directory", err)
 		t.FailNow()
 	}
-	assert.Equal(t, wmTheme.Background, bg.wallpaper.Resource)
+	assert.Equal(t, wmTheme.BackgroundDark, bg.wallpaper.Resource)
 
 	l.settings.(*wmTest.Settings).SetBackground(filepath.Join(workingDir, "testdata", "fyne.png"))
 	l.updateBackgrounds(l.Settings().Background())
