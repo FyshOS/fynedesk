@@ -9,7 +9,7 @@
   <a href='https://coveralls.io/github/fyne-io/fynedesk?branch=develop'><img src='https://coveralls.io/repos/github/fyne-io/fynedesk/badge.svg?branch=develop' alt='Coverage Status' /></a>
 </p>
 
-# Fyne Desk
+# About FyneDesk
 
 FyneDesk is an easy to use Linux/Unix desktop environment following material design.
 It is built using the [Fyne](https://fyne.io) toolkit and is designed to be
