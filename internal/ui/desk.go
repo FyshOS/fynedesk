@@ -322,6 +322,7 @@ func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 	desk.screens = screenProvider
 
 	desk.setupRoot()
+	go desk.startXscreensaver()
 	return desk
 }
 
@@ -348,7 +349,6 @@ func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 	desk.addSettingsChangeListener()
 
 	desk.registerShortcuts()
-	go desk.startXscreensaver()
 	return desk
 }
 
