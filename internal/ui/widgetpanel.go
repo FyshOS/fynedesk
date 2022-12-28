@@ -243,9 +243,9 @@ type unpad struct {
 
 func (u *unpad) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	objects[0].Resize(objects[0].MinSize())
-	objects[0].Move(fyne.NewPos(4, 2))
+	objects[0].Move(fyne.NewPos(5, theme.Padding()))
 }
 
 func (u *unpad) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	return objects[0].MinSize().Add(fyne.NewSize(0, -6))
+	return objects[0].MinSize().Add(fyne.NewSize(0, -2))
 }
