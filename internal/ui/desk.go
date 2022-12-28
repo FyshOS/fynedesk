@@ -242,8 +242,7 @@ func (l *desktop) MouseOutNotify() {
 }
 
 func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSettings) {
-	for {
-		s := <-settings
+	for s := range settings {
 		l.clearModuleCache()
 		l.updateBackgrounds(s.Background())
 		l.widgets.reloadModules(l.Modules())
@@ -258,12 +257,9 @@ func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSetting
 }
 
 func (l *desktop) startFyneSettingsChangeListener(settings chan fyne.Settings) {
-	go func() {
-		for {
-			<-settings
-			l.updateBackgrounds(l.Settings().Background())
-		}
-	}()
+	for range settings {
+		l.updateBackgrounds(l.Settings().Background())
+	}
 }
 
 func (l *desktop) addSettingsChangeListener() {
