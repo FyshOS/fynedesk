@@ -179,18 +179,23 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 		if ev.Detail == keyCodeTab {
 			x.showOrSelectAppSwitcher(shift)
 			return
-		} else if ev.Detail == keyCodeEscape {
-			x.cancelAppSwitcher()
-			return
-		} else if ev.Detail == keyCodeReturn || ev.Detail == keyCodeEnter {
-			x.applyAppSwitcher()
-			return
-		} else if ev.Detail == keyCodeLeft {
-			x.previousAppSwitcher()
-			return
-		} else if ev.Detail == keyCodeRight {
-			x.nextAppSwitcher()
-			return
+		}
+
+		if switcherInstance != nil {
+			switch ev.Detail {
+			case keyCodeEscape:
+				x.cancelAppSwitcher()
+				return
+			case keyCodeReturn, keyCodeEnter:
+				x.applyAppSwitcher()
+				return
+			case keyCodeLeft:
+				x.previousAppSwitcher()
+				return
+			case keyCodeRight:
+				x.nextAppSwitcher()
+				return
+			}
 		}
 	}
 	numlock := ev.State & xproto.ModMask2
