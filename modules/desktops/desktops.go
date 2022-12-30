@@ -1,7 +1,6 @@
 package desktops
 
 import (
-	"log"
 	"strconv"
 
 	"fyne.io/fyne/v2"
@@ -58,7 +57,7 @@ func (d *desktops) StatusAreaWidget() fyne.CanvasObject {
 
 func (d *desktops) setDesktop(id int) {
 	d.current = id
-	log.Println("Set desktop to ", id+1)
+	fynedesk.Instance().SetDesktop(id)
 }
 
 // newDesktops creates a new module that will manage virtual desktops and display a pager widget.

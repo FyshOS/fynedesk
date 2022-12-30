@@ -48,6 +48,15 @@ func (*Desktop) ContentBoundsPixels(_ *fynedesk.Screen) (x, y, w, h uint32) {
 	return 0, 0, uint32(320), uint32(240)
 }
 
+// Desktop returns the index of the current desktop (in test this is always 0)
+func (*Desktop) Desktop() int {
+	return 0
+}
+
+// SetDesktop sets the desired desktop index, a no-op in test code
+func (*Desktop) SetDesktop(int) {
+}
+
 // IconProvider returns the icon provider, by default it uses a simple in-memory implementation
 func (td *Desktop) IconProvider() fynedesk.ApplicationProvider {
 	return td.icons

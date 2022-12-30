@@ -198,6 +198,9 @@ func (s *Switcher) loadIcons(list []fynedesk.Window) []fyne.CanvasObject {
 	var ret []fyne.CanvasObject
 
 	for _, item := range list {
+		if item.Desktop() != fynedesk.Instance().Desktop() {
+			continue
+		}
 		ret = append(ret, newSwitchIcon(s, item))
 	}
 
@@ -220,12 +223,12 @@ func (s *Switcher) HideCancel() {
 }
 
 func showAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
-	if len(wins) <= 1 { // don't actually show
+	s := &Switcher{provider: prov}
+	s.icons = s.loadIcons(wins)
+	if len(s.icons) <= 1 { // don't actually show if only 1 is visible
 		return nil
 	}
 
-	s := &Switcher{provider: prov}
-	s.icons = s.loadIcons(wins)
 	s.loadUI("Window switcher " + SkipTaskbarHint)
 	if off < 0 {
 		off = len(s.icons) + off // plus a negative is minus

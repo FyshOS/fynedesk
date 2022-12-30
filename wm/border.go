@@ -3,7 +3,6 @@ package wm
 import (
 	"fmt"
 	"image/color"
-	"log"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -166,8 +165,9 @@ func (c *Border) showMenu(from fyne.CanvasObject) {
 func (c *Border) makeDesktopMenu() *fyne.MenuItem {
 	desks := make([]*fyne.MenuItem, 4)
 	for i := 0; i < 4; i++ {
+		deskID := i
 		desks[i] = fyne.NewMenuItem(fmt.Sprintf("Desktop %d", i+1), func() {
-			log.Println("Move", c.title.Text, "to", i)
+			c.win.SetDesktop(deskID)
 		})
 	}
 	ret := fyne.NewMenuItem("Move to Desktop", nil)

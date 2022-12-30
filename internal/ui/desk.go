@@ -38,6 +38,23 @@ type desktop struct {
 	widgets *widgetPanel
 	mouse   fyne.CanvasObject
 	root    fyne.Window
+	desk    int
+}
+
+func (l *desktop) Desktop() int {
+	return l.desk
+}
+
+func (l *desktop) SetDesktop(id int) {
+	l.desk = id
+
+	for _, item := range l.wm.Windows() {
+		if item.Desktop() == id {
+			item.Uniconify()
+		} else {
+			item.Iconify()
+		}
+	}
 }
 
 func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {

@@ -30,6 +30,9 @@ type Window interface {
 	Parent() Window
 	Properties() WindowProperties // Request the properties set on this window
 	Position() fyne.Position
+
+	Desktop() int
+	SetDesktop(int)
 }
 
 // WindowProperties encapsulates the metadata that a window can provide.

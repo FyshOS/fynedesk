@@ -17,6 +17,9 @@ type Desktop interface {
 
 	AddShortcut(shortcut *Shortcut, handler func())
 	ShowMenuAt(menu *fyne.Menu, pos fyne.Position)
+
+	Desktop() int
+	SetDesktop(int)
 }
 
 var instance Desktop

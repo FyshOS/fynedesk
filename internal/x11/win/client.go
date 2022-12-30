@@ -32,11 +32,12 @@ type client struct {
 
 	frame *frame
 	wm    x11.XWM
+	desk  int
 }
 
 // NewClient creates a new X11 client for the specified window ID and X window manager
 func NewClient(win xproto.Window, wm x11.XWM) x11.XWin {
-	c := &client{win: win, wm: wm}
+	c := &client{win: win, wm: wm, desk: fynedesk.Instance().Desktop()}
 	err := xproto.ChangeWindowAttributesChecked(wm.Conn(), win, xproto.CwEventMask,
 		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow |
 			xproto.EventMaskVisibilityChange}).Check()
@@ -123,6 +124,24 @@ func (c *client) Close() {
 	}
 }
 
+func (c *client) Desktop() int {
+	return c.desk
+}
+
+func (c *client) SetDesktop(id int) {
+	if c.desk == id {
+		return
+	}
+
+	d := fynedesk.Instance()
+	c.desk = id
+	if id == d.Desktop() {
+		c.Uniconify()
+	} else {
+		c.Iconify()
+	}
+}
+
 func (c *client) Expose() {
 	if c.frame == nil {
 		return
@@ -156,6 +175,10 @@ func (c *client) Fullscreened() bool {
 }
 
 func (c *client) Iconify() {
+	if c.iconic {
+		return
+	}
+
 	c.stateMessage(icccm.StateIconic)
 	windowStateSet(c.wm.X(), c.win, icccm.StateIconic)
 }
@@ -338,6 +361,10 @@ func (c *client) Unfullscreen() {
 }
 
 func (c *client) Uniconify() {
+	if !c.iconic {
+		return
+	}
+
 	c.stateMessage(icccm.StateNormal)
 	windowStateSet(c.wm.X(), c.win, icccm.StateNormal)
 }
