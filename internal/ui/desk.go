@@ -242,8 +242,7 @@ func (l *desktop) MouseOutNotify() {
 }
 
 func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSettings) {
-	for {
-		s := <-settings
+	for s := range settings {
 		l.clearModuleCache()
 		l.updateBackgrounds(s.Background())
 		l.widgets.reloadModules(l.Modules())
@@ -257,10 +256,20 @@ func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSetting
 	}
 }
 
+func (l *desktop) startFyneSettingsChangeListener(settings chan fyne.Settings) {
+	for range settings {
+		l.updateBackgrounds(l.Settings().Background())
+	}
+}
+
 func (l *desktop) addSettingsChangeListener() {
 	listener := make(chan fynedesk.DeskSettings)
 	l.Settings().AddChangeListener(listener)
 	go l.startSettingsChangeListener(listener)
+
+	fyneListener := make(chan fyne.Settings)
+	l.app.Settings().AddChangeListener(fyneListener)
+	go l.startFyneSettingsChangeListener(fyneListener)
 }
 
 func (l *desktop) registerShortcuts() {
@@ -313,6 +322,7 @@ func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 	desk.screens = screenProvider
 
 	desk.setupRoot()
+	go desk.startXscreensaver()
 	return desk
 }
 
@@ -339,7 +349,6 @@ func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.Applicat
 	desk.addSettingsChangeListener()
 
 	desk.registerShortcuts()
-	go desk.startXscreensaver()
 	return desk
 }
 

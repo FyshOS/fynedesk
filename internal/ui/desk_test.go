@@ -60,10 +60,9 @@ func TestScaleVars_Down(t *testing.T) {
 }
 
 func TestBackgroundChange(t *testing.T) {
-	l := &desktop{screens: wmTest.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
-		Width: 2000, Height: 1000, Scale: 1.0})}
-	fynedesk.SetInstance(l)
-	l.app = test.NewApp()
+	l := NewEmbeddedDesktop(test.NewApp(), wmTest.NewAppProvider()).(*desktop)
+	l.screens = wmTest.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
+		Width: 2000, Height: 1000, Scale: 1.0})
 	l.settings = wmTest.NewSettings()
 	l.setupRoot()
 
@@ -74,7 +73,7 @@ func TestBackgroundChange(t *testing.T) {
 		fyne.LogError("Could not get current working directory", err)
 		t.FailNow()
 	}
-	assert.Equal(t, wmTheme.Background, bg.wallpaper.Resource)
+	assert.Equal(t, wmTheme.BackgroundDark, bg.wallpaper.Resource)
 
 	l.settings.(*wmTest.Settings).SetBackground(filepath.Join(workingDir, "testdata", "fyne.png"))
 	l.updateBackgrounds(l.Settings().Background())

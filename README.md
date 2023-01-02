@@ -9,14 +9,14 @@
   <a href='https://coveralls.io/github/fyne-io/fynedesk?branch=develop'><img src='https://coveralls.io/repos/github/fyne-io/fynedesk/badge.svg?branch=develop' alt='Coverage Status' /></a>
 </p>
 
-# About
+# About FyneDesk
 
 FyneDesk is an easy to use Linux/Unix desktop environment following material design.
 It is built using the [Fyne](https://fyne.io) toolkit and is designed to be
 easy to use as well as easy to develop. We use the Go language and welcome
 any contributions or feedback for the project.
 
-# Dependencies
+## Dependencies
 
 For a full desktop experience you will also need the following external tools installed:
 
@@ -26,7 +26,7 @@ For a full desktop experience you will also need the following external tools in
 
 Compositor support currently requires `compton` to be installed.
 
-# Getting Started
+## Getting Started
 
 Using standard Go tools you can install FyneDesk using:
 ```
@@ -37,7 +37,7 @@ This will add `fynedesk` to your $GOPATH (usually ~/go/bin).
 You can now run the app in "preview" mode like any other Fyne app.
 Doing so is not running a window manager, to do so requires another few steps:
 
-## Setting up as a desktop environment
+### Setting up as a desktop environment
 
 To use this as your main desktop you can run the following commands to set up
 fynedesk as a selectable desktop option in your login manager (such as LightDM for example):
@@ -51,7 +51,7 @@ sudo make install
 
 You can now log out and see that it is in your desktop selection list at login.
 
-## Debugging a window manager
+### Debugging a window manager
 
 You can also run the window manager components in an embedded X window for testing.
 You will need the `Xephyr` tool installed for your platform (often installed as part of Xorg).
@@ -71,7 +71,7 @@ macOS) then the app will start in UI test mode.
 When loaded in this way you can run all of the features except the
 controlling of windows - they will load on your main desktop.
 
-# Runner
+## Runner
 
 A desktop needs to be rock solid, and whilst we are working hard to get there,
 any alpha or beta software can run into unexpected issues. 
@@ -87,7 +87,11 @@ Using standard Go tools you can install the runner using:
 From then on execute that instead of the `fynedesk` command for a more 
 resilient desktop when testing out pre-release builds.
 
-# Shipping FyneDesk
+## Design
+
+Design concepts, and the abstract wallpapers have been contributed by [Jost Grant](https://github.com/jostgrant).
+
+## Shipping FyneDesk
 
 If you are installing FyneDesk by default on a distribution, or making it available as a standard option, you should consider the following points.
 You do not need to ship the library or any dependencies, but it is recommended to add the following apps as well:
