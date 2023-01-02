@@ -18,13 +18,20 @@ any contributions or feedback for the project.
 
 ## Dependencies
 
+### Compiling
+
+Compiling requires the same dependencies as Fyne. See the [Getting Started](https://developer.fyne.io/started/) documentation for installation steps.
+
+### Running
+
 For a full desktop experience you will also need the following external tools installed:
 
-- `arandr`
+- `arandr` for modifying display settings
 - `xbacklight` or `brightnessctl` for laptop brightness
 - `connman-gtk` is currently used for configuring Wi-Fi network settings
+- `compton` for compositor support
 
-Compositor support currently requires `compton` to be installed.
+The desktop does work without the runtime dependencies but the experience will be degraded.
 
 ## Getting Started
 
