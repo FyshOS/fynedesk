@@ -146,8 +146,7 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	a.Settings().AddChangeListener(listener)
 	a.Preferences().AddChangeListener(mgr.refreshBorders)
 	go func() {
-		for {
-			<-listener
+		for range listener {
 			mgr.updateBackgrounds()
 			mgr.refreshBorders()
 			mgr.configureRoots()
@@ -606,8 +605,7 @@ func (x *x11WM) setupBindings() {
 	deskListener := make(chan fynedesk.DeskSettings)
 	fynedesk.Instance().Settings().AddChangeListener(deskListener)
 	go func() {
-		for {
-			<-deskListener
+		for range deskListener {
 			// this uses the state from the previous bind call
 			x.unbindShortcuts(x.rootID)
 			for _, c := range x.clients {
