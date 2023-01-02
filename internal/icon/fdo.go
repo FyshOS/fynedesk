@@ -300,8 +300,9 @@ func lookupAnyIconSizeInThemeDir(dir string, joiner string, iconName string, ico
 	return closestMatch
 }
 
-// lookupIconPathInTheme searches icon locations to find a match using a provided theme directory
-func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconName string) string {
+// FdoLookupIconPathInTheme searches icon locations to find a match using a provided theme directory.
+// The dir path is the root of the theme, parentDir is used to look up inherited themes
+func FdoLookupIconPathInTheme(iconSize string, dir string, parentDir string, iconName string) string {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return ""
 	}
@@ -362,7 +363,7 @@ func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconNa
 			if len(inheritedThemes) > 0 {
 				for _, theme := range inheritedThemes {
 					dir = filepath.Join(parentDir, "icons", theme)
-					iconPath := lookupIconPathInTheme(iconSize, dir, parentDir, iconName)
+					iconPath := FdoLookupIconPathInTheme(iconSize, dir, parentDir, iconName)
 					if iconPath != "" {
 						return iconPath
 					}
@@ -395,7 +396,7 @@ func FdoLookupIconPath(theme string, size int, iconName string) string {
 	for _, dataDir := range locationLookup {
 		//Example is /usr/share/icons/icon_theme
 		dir := filepath.Join(dataDir, "icons", iconTheme)
-		iconPath := lookupIconPathInTheme(iconSize, dir, dataDir, iconName)
+		iconPath := FdoLookupIconPathInTheme(iconSize, dir, dataDir, iconName)
 		if iconPath != "" {
 			return iconPath
 		}
@@ -403,7 +404,7 @@ func FdoLookupIconPath(theme string, size int, iconName string) string {
 	for _, dataDir := range locationLookup {
 		//Hicolor is the default fallback theme - Example /usr/share/icons/icon_theme/hicolor
 		dir := filepath.Join(dataDir, "icons", "hicolor")
-		iconPath := lookupIconPathInTheme(iconSize, dir, dataDir, iconName)
+		iconPath := FdoLookupIconPathInTheme(iconSize, dir, dataDir, iconName)
 		if iconPath != "" {
 			return iconPath
 		}

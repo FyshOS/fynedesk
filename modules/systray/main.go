@@ -61,7 +61,7 @@ type tray struct {
 // NewTray creates a new module that will show a system tray in the status area
 func NewTray() fynedesk.Module {
 	iconSize := wmtheme.NarrowBarWidth
-	grid := container.NewGridWrap(fyne.NewSize(iconSize, iconSize))
+	grid := container.New(collapsingGridWrap(fyne.NewSize(iconSize, iconSize)))
 	t := &tray{box: grid, nodes: make(map[dbus.Sender]*widget.Button)}
 
 	conn, _ := dbus.ConnectSessionBus()
@@ -180,13 +180,17 @@ func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (e
 		path, _ := ni.GetIconThemePath(t.conn.Context())
 		fullPath := ""
 		if path != "" {
-			fullPath = filepath.Join(path, name+".png")
+			fullPath = icon.FdoLookupIconPathInTheme("64", filepath.Join(path, "hicolor"), "", name)
 		} else {
 			fullPath = icon.FdoLookupIconPath("", 64, name)
 		}
-		// TODO handle errors
-		img, _ := ioutil.ReadFile(fullPath)
-		ico.SetIcon(fyne.NewStaticResource(name, img))
+		img, err := ioutil.ReadFile(fullPath)
+		if err != nil {
+			fyne.LogError("Failed to load status icon", err)
+			ico.SetIcon(wmtheme.BrokenImageIcon)
+		} else {
+			ico.SetIcon(fyne.NewStaticResource(name, img))
+		}
 	}
 
 	ico.Refresh()
