@@ -1,4 +1,4 @@
-package icon // import "fyne.io/fynedesk/internal/icon"
+package icon // import "fyshos.com/fynedesk/internal/icon"
 
 import (
 	"bufio"
