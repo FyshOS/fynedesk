@@ -1,12 +1,12 @@
 <p align="center">
-  <a href="https://godoc.org/fyne.io/fynedesk" title="GoDoc Reference" rel="nofollow"><img src="https://img.shields.io/badge/go-documentation-blue.svg?style=flat" alt="GoDoc Reference"></a>
-  <a href="https://github.com/fyne-io/fynedesk/releases/tag/v0.3.0" title="0.3.0 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.3.0-blue.svg?style=flat" alt="0.3.0 release"></a>
+  <a href="https://godoc.org/fyshos.com/fynedesk" title="GoDoc Reference" rel="nofollow"><img src="https://img.shields.io/badge/go-documentation-blue.svg?style=flat" alt="GoDoc Reference"></a>
+  <a href="https://github.com/fyshos/fynedesk/releases/tag/v0.3.0" title="0.3.0 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.3.0-blue.svg?style=flat" alt="0.3.0 release"></a>
   <a href='http://gophers.slack.com/messages/fyne'><img src='https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=blue' alt='Join us on Slack' /></a>
 
   <br />
-  <a href="https://goreportcard.com/report/fyne.io/fynedesk"><img src="https://goreportcard.com/badge/fyne.io/fynedesk" alt="Code Status" /></a>
-  <a href="https://github.com/fyne-io/fynedesk/actions"><img src="https://github.com/fyne-io/fynedesk/workflows/Platform%20Tests/badge.svg" alt="Build Status" /></a>
-  <a href='https://coveralls.io/github/fyne-io/fynedesk?branch=develop'><img src='https://coveralls.io/repos/github/fyne-io/fynedesk/badge.svg?branch=develop' alt='Coverage Status' /></a>
+  <a href="https://goreportcard.com/report/fyshos.com/fynedesk"><img src="https://goreportcard.com/badge/fyshos.com/fynedesk" alt="Code Status" /></a>
+  <a href="https://github.com/fyshos/fynedesk/actions"><img src="https://github.com/fyshos/fynedesk/workflows/Platform%20Tests/badge.svg" alt="Build Status" /></a>
+  <a href='https://coveralls.io/github/fyshos/fynedesk?branch=develop'><img src='https://coveralls.io/repos/github/fyshos/fynedesk/badge.svg?branch=develop' alt='Coverage Status' /></a>
 </p>
 
 # About FyneDesk
@@ -37,7 +37,7 @@ The desktop does work without the runtime dependencies but the experience will b
 
 Using standard Go tools you can install FyneDesk using:
 ```
-go get fyne.io/fynedesk/cmd/fynedesk
+go get fyshos.com/fynedesk/cmd/fynedesk
 ```
 
 This will add `fynedesk` to your $GOPATH (usually ~/go/bin).
@@ -50,7 +50,7 @@ To use this as your main desktop you can run the following commands to set up
 fynedesk as a selectable desktop option in your login manager (such as LightDM for example):
 
 ```
-git clone https://github.com/fyne-io/fynedesk
+git clone https://github.com/fyshos/fynedesk
 cd fynedesk
 make
 sudo make install
@@ -89,7 +89,7 @@ of data in your applications.
 
 Using standard Go tools you can install the runner using:
 
-    go get fyne.io/fynedesk/cmd/fynedesk_runner
+    go get fyshos.com/fynedesk/cmd/fynedesk_runner
 
 From then on execute that instead of the `fynedesk` command for a more 
 resilient desktop when testing out pre-release builds.
@@ -105,6 +105,6 @@ You do not need to ship the library or any dependencies, but it is recommended t
 
 | app | go get | description |
 | --- | ------ | ----------- |
-| fin | `github.com/fyne-io/fin` | A display manager app that matches the look and feel of FyneDesk |
+| fin | `github.com/fyshos/fin` | A display manager app that matches the look and feel of FyneDesk |
 
 Please do let us know if you package FyneDesk for your system, so we can include a link from here :).
