@@ -28,7 +28,6 @@ import (
 	"fyne.io/fyne/v2/widget"
 	"fyshos.com/fynedesk"
 	"fyshos.com/fynedesk/internal/icon"
-	"fyshos.com/fynedesk/modules/systray/generated/desktop"
 	"fyshos.com/fynedesk/modules/systray/generated/menu"
 	"fyshos.com/fynedesk/modules/systray/generated/notifier"
 	"fyshos.com/fynedesk/modules/systray/generated/watcher"
