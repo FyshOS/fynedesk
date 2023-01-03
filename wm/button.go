@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 const (

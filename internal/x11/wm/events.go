@@ -10,10 +10,10 @@ import (
 	"github.com/BurntSushi/xgbutil/xprop"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/notify"
-	"fyne.io/fynedesk/internal/x11"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/notify"
+	"fyshos.com/fynedesk/internal/x11"
+	"fyshos.com/fynedesk/wm"
 )
 
 func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {

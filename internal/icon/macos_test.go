@@ -3,7 +3,7 @@ package icon
 import (
 	"testing"
 
-	"fyne.io/fynedesk/test"
+	"fyshos.com/fynedesk/test"
 
 	"github.com/stretchr/testify/assert"
 )

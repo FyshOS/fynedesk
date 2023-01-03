@@ -8,7 +8,7 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 // XWM describes the additional elements that an X11 window manager exposes

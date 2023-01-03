@@ -4,7 +4,7 @@ import (
 	"image"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 // Window is an in-memory virtual window for test purposes

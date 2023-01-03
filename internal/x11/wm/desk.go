@@ -31,12 +31,12 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/ui"
-	"fyne.io/fynedesk/internal/x11"
-	xwin "fyne.io/fynedesk/internal/x11/win"
-	wmTheme "fyne.io/fynedesk/theme"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/ui"
+	"fyshos.com/fynedesk/internal/x11"
+	xwin "fyshos.com/fynedesk/internal/x11/win"
+	wmTheme "fyshos.com/fynedesk/theme"
+	"fyshos.com/fynedesk/wm"
 )
 
 type x11WM struct {

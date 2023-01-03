@@ -4,7 +4,7 @@ import (
 	"os/exec"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 var compizMeta = fynedesk.ModuleMetadata{

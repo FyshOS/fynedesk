@@ -1,6 +1,6 @@
 package status
 
-import "fyne.io/fynedesk"
+import "fyshos.com/fynedesk"
 
 func init() {
 	// system area (bottom of widget panel) - order is top to bottom

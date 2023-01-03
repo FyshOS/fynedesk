@@ -10,8 +10,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 type background struct {

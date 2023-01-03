@@ -26,12 +26,13 @@ import (
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/icon"
-	"fyne.io/fynedesk/modules/systray/generated/menu"
-	"fyne.io/fynedesk/modules/systray/generated/notifier"
-	"fyne.io/fynedesk/modules/systray/generated/watcher"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/icon"
+	"fyshos.com/fynedesk/modules/systray/generated/desktop"
+	"fyshos.com/fynedesk/modules/systray/generated/menu"
+	"fyshos.com/fynedesk/modules/systray/generated/notifier"
+	"fyshos.com/fynedesk/modules/systray/generated/watcher"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 const (

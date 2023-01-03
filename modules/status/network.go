@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 var networkMeta = fynedesk.ModuleMetadata{

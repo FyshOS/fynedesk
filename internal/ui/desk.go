@@ -9,9 +9,9 @@ import (
 	"fyne.io/fyne/v2/container"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
+	"fyshos.com/fynedesk/wm"
 )
 
 const (

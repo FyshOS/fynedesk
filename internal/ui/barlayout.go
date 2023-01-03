@@ -6,8 +6,8 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/theme"
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 // Declare conformity with Layout interface

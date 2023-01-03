@@ -1,8 +1,8 @@
 package wm
 
 import (
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/theme"
 )
 
 // PositionForNewWindow returns the suggested position for a new window of the given geometry.

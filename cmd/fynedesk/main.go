@@ -4,10 +4,10 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/theme"
 
-	_ "fyne.io/fynedesk/modules/composit"
-	_ "fyne.io/fynedesk/modules/launcher"
-	_ "fyne.io/fynedesk/modules/status"
-	_ "fyne.io/fynedesk/modules/systray"
+	_ "fyshos.com/fynedesk/modules/composit"
+	_ "fyshos.com/fynedesk/modules/launcher"
+	_ "fyshos.com/fynedesk/modules/status"
+	_ "fyshos.com/fynedesk/modules/systray"
 )
 
 func main() {

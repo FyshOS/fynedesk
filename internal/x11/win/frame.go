@@ -20,10 +20,10 @@ import (
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xwindow"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/x11"
-	wmTheme "fyne.io/fynedesk/theme"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/x11"
+	wmTheme "fyshos.com/fynedesk/theme"
+	"fyshos.com/fynedesk/wm"
 )
 
 const unmaximizeThreshold = 84

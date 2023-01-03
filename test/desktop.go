@@ -7,7 +7,7 @@ import (
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 // Desktop is an in-memory implementation for test purposes

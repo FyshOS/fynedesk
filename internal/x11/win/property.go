@@ -16,8 +16,8 @@ import (
 	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/x11"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/x11"
 )
 
 func windowActiveReq(x *xgbutil.XUtil, win xproto.Window) {

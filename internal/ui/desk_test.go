@@ -12,9 +12,9 @@ import (
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 
-	"fyne.io/fynedesk"
-	wmTest "fyne.io/fynedesk/test"
-	wmTheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmTest "fyshos.com/fynedesk/test"
+	wmTheme "fyshos.com/fynedesk/theme"
 )
 
 func TestDeskLayout_Layout(t *testing.T) {

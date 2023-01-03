@@ -11,8 +11,8 @@ import (
 
 	"github.com/mafik/pulseaudio"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 var soundMeta = fynedesk.ModuleMetadata{

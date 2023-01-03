@@ -8,9 +8,9 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/ui"
-	"fyne.io/fynedesk/internal/x11"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/ui"
+	"fyshos.com/fynedesk/internal/x11"
 )
 
 type clientProperties struct {

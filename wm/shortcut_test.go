@@ -4,7 +4,7 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 	"github.com/stretchr/testify/assert"
 )
 
