@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image/color"
 	"os"
 	"path"
 	"time"
@@ -173,6 +174,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackground())
 	objects := []fyne.CanvasObject{
 		bg,
+		canvas.NewRectangle(color.Transparent), // clear top edge for clocks
 		w.clocks,
 		w.date,
 		w.notifications}
@@ -243,9 +245,9 @@ type unpad struct {
 
 func (u *unpad) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	objects[0].Resize(objects[0].MinSize())
-	objects[0].Move(fyne.NewPos(5, theme.Padding()))
+	objects[0].Move(fyne.NewPos(5, 0))
 }
 
 func (u *unpad) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	return objects[0].MinSize().Add(fyne.NewSize(0, -2))
+	return objects[0].MinSize().Subtract(fyne.NewSize(0, theme.Padding()))
 }
