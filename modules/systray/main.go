@@ -13,6 +13,7 @@ import (
 	"image/png"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -180,7 +181,10 @@ func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (e
 		path, _ := ni.GetIconThemePath(t.conn.Context())
 		fullPath := ""
 		if path != "" {
-			fullPath = icon.FdoLookupIconPathInTheme("64", filepath.Join(path, "hicolor"), "", name)
+			fullPath = filepath.Join(path, name+".png")
+			if _, err := os.Stat(fullPath); err != nil { // not found, search instead
+				fullPath = icon.FdoLookupIconPathInTheme("64", filepath.Join(path, "hicolor"), "", name)
+			}
 		} else {
 			fullPath = icon.FdoLookupIconPath("", 64, name)
 		}
