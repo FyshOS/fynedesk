@@ -10,6 +10,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xprop"
 
 	"fyne.io/fyne/v2"
+
 	"fyshos.com/fynedesk"
 	"fyshos.com/fynedesk/internal/notify"
 	"fyshos.com/fynedesk/internal/x11"
@@ -39,7 +40,12 @@ func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
 	}
 	windowActiveSet(x.x, ev.Window)
 	if canFocus {
-		err = xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, xproto.TimeCurrentTime).Check()
+		if c := x.clientForWin(ev.Window); c != nil && c.Iconic() {
+			return // don't try to focus iconic windows
+		}
+
+		// ask for focus, when it is lost return to root window
+		err = xproto.SetInputFocusChecked(x.x.Conn(), 1, ev.Window, xproto.TimeCurrentTime).Check()
 		if err != nil {
 			fyne.LogError("Could not set focus", err)
 			return
