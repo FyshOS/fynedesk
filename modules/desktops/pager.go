@@ -31,5 +31,20 @@ func newPager(d *desktops) *pager {
 	} else {
 		p.ui = container.NewGridWithColumns(4, items...)
 	}
+	p.refresh()
+
 	return p
+}
+
+func (p *pager) refresh() {
+	desk := fynedesk.Instance()
+
+	for i, b := range p.ui.(*fyne.Container).Objects {
+		if i == desk.Desktop() {
+			b.(*widget.Button).Importance = widget.HighImportance
+		} else {
+			b.(*widget.Button).Importance = widget.MediumImportance
+		}
+		b.Refresh()
+	}
 }
