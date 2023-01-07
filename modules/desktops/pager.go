@@ -6,6 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"fyne.io/fynedesk"
 )
 
 type pager struct {
@@ -24,6 +25,10 @@ func newPager(d *desktops) *pager {
 		})
 	}
 
-	p.ui = container.NewGridWithColumns(1, items...)
+	if fynedesk.Instance() != nil && fynedesk.Instance().Settings().NarrowWidgetPanel() {
+		p.ui = container.NewGridWithColumns(1, items...)
+	} else {
+		p.ui = container.NewGridWithColumns(4, items...)
+	}
 	return p
 }
