@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image/color"
 	"os"
 	"path"
 	"time"
@@ -161,7 +162,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	})
 
 	w.rotated = &canvas.Image{}
-	w.clocks = container.NewMax(w.clock, container.New(&unpad{}, w.rotated))
+	w.clocks = container.NewMax(w.clock, container.New(&vClockPad{}, w.rotated))
 	if narrow {
 		w.clock.Hide()
 	} else {
@@ -173,6 +174,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackground())
 	objects := []fyne.CanvasObject{
 		bg,
+		canvas.NewRectangle(color.Transparent), // clear top edge for clocks
 		w.clocks,
 		w.date,
 		w.notifications}
@@ -238,14 +240,14 @@ func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 	return w
 }
 
-type unpad struct {
+type vClockPad struct {
 }
 
-func (u *unpad) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+func (u *vClockPad) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	objects[0].Resize(objects[0].MinSize())
-	objects[0].Move(fyne.NewPos(5, theme.Padding()))
+	objects[0].Move(fyne.NewPos(5, 0))
 }
 
-func (u *unpad) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	return objects[0].MinSize().Add(fyne.NewSize(0, -2))
+func (u *vClockPad) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	return objects[0].MinSize().Subtract(fyne.NewSize(0, theme.Padding()))
 }
