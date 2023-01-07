@@ -10,7 +10,7 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	wmtheme "fyne.io/fynedesk/theme"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 var (

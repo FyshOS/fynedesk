@@ -4,7 +4,8 @@ import (
 	"strconv"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fynedesk"
+
+	"fyshos.com/fynedesk"
 )
 
 const deskCount = 4

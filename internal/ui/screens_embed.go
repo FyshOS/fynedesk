@@ -1,6 +1,6 @@
 package ui
 
-import "fyne.io/fynedesk"
+import "fyshos.com/fynedesk"
 
 type embeddedScreensProvider struct {
 	active  *fynedesk.Screen

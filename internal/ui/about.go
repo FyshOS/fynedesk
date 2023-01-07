@@ -9,7 +9,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
-	wmTheme "fyne.io/fynedesk/theme"
+	wmTheme "fyshos.com/fynedesk/theme"
 )
 
 func newURLButton(label, link string) *widget.Button {
@@ -42,7 +42,7 @@ func (w *widgetPanel) showAbout() {
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
 	authors := widget.NewRichTextFromMarkdown("\n**Authors:**\n\n * Andy Williams\n * Stephen Houston\n * Jacob Alzén\n")
 	buttons := container.NewGridWithColumns(3,
-		newURLButton("Home Page", "https://fyne.io/fynedesk"),
+		newURLButton("Home Page", "https://fyshos.com/fynedesk"),
 		newURLButton("Report Issue", "https://github.com/fyne-io/fynedesk/issues/new"),
 		newURLButton("Sponsor", "https://github.com/sponsors/fyne-io"),
 	)

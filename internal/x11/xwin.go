@@ -6,7 +6,7 @@ package x11
 import (
 	"github.com/BurntSushi/xgb/xproto"
 
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 // XWin describes the additional functions that X windows need to expose to be managed

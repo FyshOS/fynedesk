@@ -2,7 +2,7 @@ package test
 
 import (
 	"fyne.io/fyne/v2"
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 // Settings is a simple struct for managing settings within our tests

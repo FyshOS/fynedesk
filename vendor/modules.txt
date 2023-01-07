@@ -1,4 +1,4 @@
-# fyne.io/fyne/v2 v2.3.0
+# fyne.io/fyne/v2 v2.3.1-0.20230101220108-f2141a6796a0
 ## explicit
 fyne.io/fyne/v2
 fyne.io/fyne/v2/app

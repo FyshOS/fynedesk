@@ -1,7 +1,7 @@
 //go:build linux || openbsd || freebsd || netbsd
 // +build linux openbsd freebsd netbsd
 
-package wm // import "fyne.io/fynedesk/internal/x11/wm"
+package wm // import "fyshos.com/fynedesk/internal/x11/wm"
 
 import (
 	"bytes"
@@ -28,14 +28,15 @@ import (
 
 	"fyne.io/fyne/v2"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/ui"
-	"fyne.io/fynedesk/internal/x11"
-	xwin "fyne.io/fynedesk/internal/x11/win"
-	wmTheme "fyne.io/fynedesk/theme"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/ui"
+	"fyshos.com/fynedesk/internal/x11"
+	xwin "fyshos.com/fynedesk/internal/x11/win"
+	wmTheme "fyshos.com/fynedesk/theme"
+	"fyshos.com/fynedesk/wm"
 )
 
 type x11WM struct {
@@ -145,8 +146,8 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	a.Settings().AddChangeListener(listener)
 	a.Preferences().AddChangeListener(mgr.refreshBorders)
 	go func() {
-		for {
-			<-listener
+		for range listener {
+			mgr.updateBackgrounds()
 			mgr.refreshBorders()
 			mgr.configureRoots()
 		}
@@ -616,8 +617,7 @@ func (x *x11WM) setupBindings() {
 	deskListener := make(chan fynedesk.DeskSettings)
 	fynedesk.Instance().Settings().AddChangeListener(deskListener)
 	go func() {
-		for {
-			<-deskListener
+		for range deskListener {
 			// this uses the state from the previous bind call
 			x.unbindShortcuts(x.rootID)
 			for _, c := range x.clients {
@@ -801,7 +801,14 @@ func (x *x11WM) updatedBackgroundImage() image.Image {
 		return img
 	}
 
-	img, _, err := image.Decode(bytes.NewReader(wmTheme.Background.StaticContent))
+	var res *fyne.StaticResource
+	if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantLight {
+		res = wmTheme.BackgroundLight
+	} else {
+		res = wmTheme.BackgroundDark
+	}
+
+	img, _, err := image.Decode(bytes.NewReader(res.StaticContent))
 	if err != nil {
 		fyne.LogError("Failed to read background resource", err)
 	}

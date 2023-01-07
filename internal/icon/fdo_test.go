@@ -12,8 +12,8 @@ import (
 	"fyne.io/fyne/v2"
 	_ "fyne.io/fyne/v2/test"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/test"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/test"
 )
 
 var iconTheme = "default_theme"

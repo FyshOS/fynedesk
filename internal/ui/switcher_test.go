@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/test"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/test"
 )
 
 func testWindows() []fynedesk.Window {

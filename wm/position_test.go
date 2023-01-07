@@ -5,9 +5,9 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/test"
-	"fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/test"
+	"fyshos.com/fynedesk/theme"
 )
 
 func TestPositionForNewWindow_Default(t *testing.T) {

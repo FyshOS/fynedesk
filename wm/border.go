@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmTheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmTheme "fyshos.com/fynedesk/theme"
 )
 
 func makeFiller(width float32) fyne.CanvasObject {

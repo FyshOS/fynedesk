@@ -7,8 +7,8 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/x11"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/x11"
 )
 
 type stack struct {

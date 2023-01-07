@@ -5,7 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 type embededWM struct {

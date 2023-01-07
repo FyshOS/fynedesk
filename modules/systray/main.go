@@ -13,6 +13,7 @@ import (
 	"image/png"
 	"io/ioutil"
 	"log"
+	"os"
 	"path/filepath"
 	"strconv"
 	"time"
@@ -26,12 +27,12 @@ import (
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/icon"
-	"fyne.io/fynedesk/modules/systray/generated/menu"
-	"fyne.io/fynedesk/modules/systray/generated/notifier"
-	"fyne.io/fynedesk/modules/systray/generated/watcher"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/icon"
+	"fyshos.com/fynedesk/modules/systray/generated/menu"
+	"fyshos.com/fynedesk/modules/systray/generated/notifier"
+	"fyshos.com/fynedesk/modules/systray/generated/watcher"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 const (
@@ -61,7 +62,7 @@ type tray struct {
 // NewTray creates a new module that will show a system tray in the status area
 func NewTray() fynedesk.Module {
 	iconSize := wmtheme.NarrowBarWidth
-	grid := container.NewGridWrap(fyne.NewSize(iconSize, iconSize))
+	grid := container.New(collapsingGridWrap(fyne.NewSize(iconSize, iconSize)))
 	t := &tray{box: grid, nodes: make(map[dbus.Sender]*widget.Button)}
 
 	conn, _ := dbus.ConnectSessionBus()
@@ -181,12 +182,19 @@ func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (e
 		fullPath := ""
 		if path != "" {
 			fullPath = filepath.Join(path, name+".png")
+			if _, err := os.Stat(fullPath); err != nil { // not found, search instead
+				fullPath = icon.FdoLookupIconPathInTheme("64", filepath.Join(path, "hicolor"), "", name)
+			}
 		} else {
 			fullPath = icon.FdoLookupIconPath("", 64, name)
 		}
-		// TODO handle errors
-		img, _ := ioutil.ReadFile(fullPath)
-		ico.SetIcon(fyne.NewStaticResource(name, img))
+		img, err := ioutil.ReadFile(fullPath)
+		if err != nil {
+			fyne.LogError("Failed to load status icon", err)
+			ico.SetIcon(wmtheme.BrokenImageIcon)
+		} else {
+			ico.SetIcon(fyne.NewStaticResource(name, img))
+		}
 	}
 
 	ico.Refresh()

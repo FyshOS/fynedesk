@@ -18,9 +18,9 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
+	"fyshos.com/fynedesk/wm"
 )
 
 const randrHelper = "arandr"

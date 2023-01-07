@@ -14,5 +14,5 @@ func testLogDir() string {
 func TestLogPath(t *testing.T) {
 	path := logPathRelativeTo(testLogDir())
 
-	assert.Equal(t, "testdata/cache/fyne/io.fyne.fynedesk/fynedesk.log", path)
+	assert.Equal(t, "testdata/cache/fyne/com.fyshos.fynedesk/fynedesk.log", path)
 }

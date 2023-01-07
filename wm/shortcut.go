@@ -5,7 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 // ShortcutHandler is a simple implementation for tracking registered shortcuts

@@ -6,8 +6,8 @@ package wm
 import (
 	"github.com/BurntSushi/xgb/xproto"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/ui"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/ui"
 )
 
 // switcherInstance and the methods below manage the X to ui.Switcher bindings.

@@ -1,6 +1,6 @@
 package icon
 
-import "fyne.io/fynedesk"
+import "fyshos.com/fynedesk"
 
 type appCache struct {
 	source  fynedesk.ApplicationProvider

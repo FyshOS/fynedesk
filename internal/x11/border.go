@@ -4,9 +4,9 @@
 package x11
 
 import (
-	"fyne.io/fynedesk"
-	wmTheme "fyne.io/fynedesk/theme"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	wmTheme "fyshos.com/fynedesk/theme"
+	"fyshos.com/fynedesk/wm"
 )
 
 // BorderWidth is the number of pixels required for a border

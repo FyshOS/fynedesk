@@ -14,9 +14,9 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/x11"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/x11"
+	"fyshos.com/fynedesk/wm"
 )
 
 type client struct {

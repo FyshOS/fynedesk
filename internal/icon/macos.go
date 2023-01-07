@@ -15,8 +15,8 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 type macOSAppBundle struct {

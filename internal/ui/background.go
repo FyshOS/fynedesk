@@ -10,8 +10,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 type background struct {
@@ -75,7 +75,11 @@ func (b *background) loadModules() []fyne.CanvasObject {
 func (b *background) updateBackground(path string) {
 	_, err := os.Stat(path)
 	if path == "" || os.IsNotExist(err) {
-		b.wallpaper.Resource = wmtheme.Background
+		if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantLight {
+			b.wallpaper.Resource = wmtheme.BackgroundLight
+		} else {
+			b.wallpaper.Resource = wmtheme.BackgroundDark
+		}
 		b.wallpaper.File = ""
 	} else {
 		b.wallpaper.Resource = nil
@@ -105,7 +109,11 @@ func newBackground() *background {
 	if imagePath != "" {
 		bg = canvas.NewImageFromFile(imagePath)
 	} else {
-		bg = canvas.NewImageFromResource(wmtheme.Background)
+		if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantLight {
+			bg = canvas.NewImageFromResource(wmtheme.BackgroundLight)
+		} else {
+			bg = canvas.NewImageFromResource(wmtheme.BackgroundDark)
+		}
 	}
 	bg.ScaleMode = canvas.ImageScaleFastest
 
