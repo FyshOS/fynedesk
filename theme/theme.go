@@ -60,7 +60,7 @@ var (
 	MuteIcon = theme.NewThemedResource(resourceMuteSvg)
 
 	// BorderWidth is the width of window frames
-	BorderWidth = float32(4)
+	BorderWidth = float32(6)
 	// ButtonWidth is the width of window buttons
 	ButtonWidth = float32(28)
 	// NarrowBarWidth is the size for the bars in narrow layout

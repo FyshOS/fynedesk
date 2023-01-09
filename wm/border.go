@@ -15,9 +15,10 @@ import (
 	wmTheme "fyshos.com/fynedesk/theme"
 )
 
-func makeFiller(width float32) fyne.CanvasObject {
-	filler := canvas.NewRectangle(color.Transparent) // make a border on the X axis only
-	filler.SetMinSize(fyne.NewSize(width, 2))        // width forced
+// makeFiller creates a 0-width object to force padding on the edge of a container
+func makeFiller() fyne.CanvasObject {
+	filler := canvas.NewRectangle(color.Transparent)
+	filler.SetMinSize(fyne.NewSize(0, 2))
 
 	return filler
 }
@@ -58,16 +59,16 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 
 	var titleBar *Border
 	if buttonPos == "Right" {
-		titleBar = newColoredHBox(win.Focused(), win, makeFiller(1),
+		titleBar = newColoredHBox(win.Focused(), win,
 			title,
 			layout.NewSpacer(),
 			min,
 			max,
 			newCloseButton(win),
-			makeFiller(0),
+			makeFiller(),
 		)
 	} else {
-		titleBar = newColoredHBox(win.Focused(), win, makeFiller(0),
+		titleBar = newColoredHBox(win.Focused(), win, makeFiller(),
 			newCloseButton(win),
 			max,
 			min,
@@ -87,10 +88,10 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 
 		if buttonPos == "Right" {
 			titleBar.prepend(appIcon)
-			titleBar.prepend(makeFiller(1))
+			titleBar.prepend(makeFiller())
 		} else {
 			titleBar.append(appIcon)
-			titleBar.append(makeFiller(1))
+			titleBar.append(makeFiller())
 		}
 		titleBar.appIcon = appIcon
 	}

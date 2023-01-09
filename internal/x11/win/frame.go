@@ -826,13 +826,13 @@ func (f *frame) topRightPixelWidth() uint16 {
 	screen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 	scale := screen.CanvasScale()
 
-	iconPix := x11.TitleHeight(x11.XWin(f.client))
-	iconAndBorderPix := iconPix + x11.BorderWidth(x11.XWin(f.client))*2 + uint16((theme.Padding()*2)*scale)
+	iconPix := x11.ButtonWidth(x11.XWin(f.client))
+	iconAndBorderPix := iconPix + x11.BorderWidth(x11.XWin(f.client))*2 + uint16(theme.Padding()*scale)
 	if fynedesk.Instance().Settings().BorderButtonPosition() == "Right" {
-		iconAndBorderPix += iconAndBorderPix * 2
+		iconAndBorderPix *= 3
 	}
 
-	return iconAndBorderPix
+	return iconAndBorderPix - uint16(theme.Padding()*scale)
 }
 
 func (f *frame) unmaximizeApply() {
