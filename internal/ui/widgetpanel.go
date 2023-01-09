@@ -2,8 +2,7 @@ package ui
 
 import (
 	"image/color"
-	"os"
-	"path"
+	"os/user"
 	"time"
 
 	"github.com/disintegration/imaging"
@@ -202,14 +201,13 @@ func (w *widgetPanel) accountLabel() string {
 	if w.desk.Settings().NarrowWidgetPanel() {
 		return ""
 	}
-
-	homedir, err := os.UserHomeDir()
+	currentUser, err := user.Current()
 	if err != nil {
 		fyne.LogError("Unable to look up user", err)
 		return "Account"
 	}
-
-	return path.Base(homedir)
+	displayName := currentUser.Username
+	return displayName
 }
 
 func (w *widgetPanel) reloadModules(mods []fynedesk.Module) {
