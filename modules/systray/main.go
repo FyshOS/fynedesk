@@ -206,10 +206,14 @@ func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (e
 func (t *tray) RegisterStatusNotifierHost(service string, sender dbus.Sender) (err *dbus.Error) {
 	log.Println("Register Host", service, sender)
 
-	watcher.Emit(t.conn, &watcher.StatusNotifierWatcher_StatusNotifierHostRegisteredSignal{
+	e := watcher.Emit(t.conn, &watcher.StatusNotifierWatcher_StatusNotifierHostRegisteredSignal{
 		Path: dbus.ObjectPath(service),
 		Body: &watcher.StatusNotifierWatcher_StatusNotifierHostRegisteredSignalBody{},
 	})
+	// TODO: See the need of returning this error
+	if e != nil {
+		fyne.LogError("it was not emit the notification ", err)
+	}
 	return nil
 }
 

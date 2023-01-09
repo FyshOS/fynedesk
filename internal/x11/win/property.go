@@ -21,11 +21,17 @@ import (
 )
 
 func windowActiveReq(x *xgbutil.XUtil, win xproto.Window) {
-	ewmh.ActiveWindowReq(x, win)
+	err := ewmh.ActiveWindowReq(x, win)
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func windowAllowedActionsSet(x *xgbutil.XUtil, win xproto.Window, actions []string) {
-	ewmh.WmAllowedActionsSet(x, win, actions)
+	err := ewmh.WmAllowedActionsSet(x, win, actions)
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func windowBorderless(x *xgbutil.XUtil, win xproto.Window) bool {
@@ -200,5 +206,8 @@ func windowStateGet(x *xgbutil.XUtil, win xproto.Window) uint {
 }
 
 func windowStateSet(x *xgbutil.XUtil, win xproto.Window, state uint) {
-	icccm.WmStateSet(x, win, &icccm.WmState{State: state})
+	err := icccm.WmStateSet(x, win, &icccm.WmState{State: state})
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }

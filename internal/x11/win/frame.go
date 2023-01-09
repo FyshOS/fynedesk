@@ -139,11 +139,19 @@ func newFrame(c *client) *frame {
 		offsetX = int16(borderWidth)
 		offsetY = int16(titleHeight)
 		xproto.ReparentWindow(c.wm.Conn(), c.win, c.id, int16(borderWidth), int16(titleHeight))
-		ewmh.FrameExtentsSet(c.wm.X(), c.win, &ewmh.FrameExtents{Left: int(borderWidth), Right: int(borderWidth),
-			Top: int(titleHeight), Bottom: int(borderWidth)})
+		err = ewmh.FrameExtentsSet(c.wm.X(), c.win, &ewmh.FrameExtents{
+			Left:  int(borderWidth),
+			Right: int(borderWidth),
+			Top:   int(titleHeight), Bottom: int(borderWidth)})
+		if err != nil {
+			fyne.LogError("", err)
+		}
 	} else {
 		xproto.ReparentWindow(c.wm.Conn(), c.win, c.id, attrs.X, attrs.Y)
-		ewmh.FrameExtentsSet(c.wm.X(), c.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
+		err = ewmh.FrameExtentsSet(c.wm.X(), c.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
+		if err != nil {
+			fyne.LogError("", err)
+		}
 	}
 
 	if full || maximized {
@@ -199,7 +207,10 @@ func (f *frame) addBorder() {
 		fyne.LogError("Configure Window Error", err)
 	}
 
-	ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: int(borderWidth), Right: int(borderWidth), Top: int(titleHeight), Bottom: int(borderWidth)})
+	err = ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: int(borderWidth), Right: int(borderWidth), Top: int(titleHeight), Bottom: int(borderWidth)})
+	if err != nil {
+		fyne.LogError("", err)
+	}
 	f.notifyInnerGeometry()
 }
 
@@ -804,7 +815,10 @@ func (f *frame) removeBorder() {
 		fyne.LogError("Configure Window Error", err)
 	}
 
-	ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
+	err = ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
+	if err != nil {
+		fyne.LogError("", err)
+	}
 	f.notifyInnerGeometry()
 }
 

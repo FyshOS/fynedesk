@@ -19,7 +19,10 @@ func newURLButton(label, link string) *widget.Button {
 			fyne.LogError("Could not parse URL", err)
 		}
 
-		fyne.CurrentApp().OpenURL(u)
+		err = fyne.CurrentApp().OpenURL(u)
+		if err != nil {
+			fyne.LogError("", err)
+		}
 	})
 }
 
