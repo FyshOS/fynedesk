@@ -167,7 +167,7 @@ func windowSizeWithIncrement(x *xgbutil.XUtil, win xproto.Window, width uint16, 
 		return width, height
 	}
 
-	var baseWidth, baseHeight uint16 = 0, 0
+	var baseWidth, baseHeight uint16
 	if nh.BaseWidth > 0 {
 		baseWidth = uint16(nh.BaseWidth)
 	} else {
