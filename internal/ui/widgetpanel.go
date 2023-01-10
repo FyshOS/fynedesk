@@ -43,11 +43,9 @@ func (w *widgetRenderer) Refresh() {
 
 	w.panel.account.SetText(w.panel.accountLabel())
 	if w.panel.desk.Settings().NarrowWidgetPanel() {
-		w.panel.search.Hide()
 		w.panel.clocks.Objects[0].Hide()
 		w.panel.clocks.Objects[1].Show()
 	} else {
-		w.panel.search.Show()
 		w.panel.clocks.Objects[0].Show()
 		w.panel.clocks.Objects[1].Hide()
 	}
@@ -69,7 +67,7 @@ type widgetPanel struct {
 	desk            fynedesk.Desktop
 	about, settings fyne.Window
 
-	account, search *widget.Button
+	account         *widget.Button
 	clock, vClock   *canvas.Text
 	date            *widget.Label
 	rotated         *canvas.Image
@@ -168,8 +166,6 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	} else {
 		w.clocks.Objects[1].Hide()
 	}
-	w.search = widget.NewButtonWithIcon("", theme.SearchIcon(), ShowAppLauncher)
-	bottom := container.NewBorder(nil, nil, w.search, nil, w.account)
 
 	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackground())
 	objects := []fyne.CanvasObject{
@@ -180,7 +176,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 		w.notifications}
 
 	w.modules = container.NewVBox()
-	objects = append(objects, layout.NewSpacer(), w.modules, bottom)
+	objects = append(objects, layout.NewSpacer(), w.modules, w.account)
 	w.loadModules(w.desk.Modules())
 
 	return &widgetRenderer{
