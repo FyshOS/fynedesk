@@ -4,6 +4,7 @@
 package x11
 
 import (
+	"fyne.io/fyne/v2"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -69,7 +70,10 @@ func WindowActiveGet(x *xgbutil.XUtil) (xproto.Window, error) {
 func WindowExtendedHintsAdd(x *xgbutil.XUtil, win xproto.Window, hint string) {
 	extendedHints, _ := ewmh.WmStateGet(x, win) // error unimportant
 	extendedHints = append(extendedHints, hint)
-	ewmh.WmStateSet(x, win, extendedHints)
+	err := ewmh.WmStateSet(x, win, extendedHints)
+	if err != nil {
+		fyne.LogError("it was not possible to add the hint ", err)
+	}
 }
 
 // WindowExtendedHintsGet returns a hint from the window
@@ -90,7 +94,10 @@ func WindowExtendedHintsRemove(x *xgbutil.XUtil, win xproto.Window, hint string)
 	for i, curHint := range extendedHints {
 		if curHint == hint {
 			extendedHints = append(extendedHints[:i], extendedHints[i+1:]...)
-			ewmh.WmStateSet(x, win, extendedHints)
+			e := ewmh.WmStateSet(x, win, extendedHints)
+			if e != nil {
+				fyne.LogError("it was not possible to add the hint ", e)
+			}
 			return
 		}
 	}

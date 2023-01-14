@@ -347,12 +347,18 @@ func (c *client) Unmaximize() {
 }
 
 func (c *client) fullscreenMessage(action x11.WindowStateAction) {
-	ewmh.WmStateReq(c.wm.X(), c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
+	err := ewmh.WmStateReq(c.wm.X(), c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func (c *client) maximizeMessage(action x11.WindowStateAction) {
-	ewmh.WmStateReqExtra(c.wm.X(), c.win, int(action), "_NET_WM_STATE_MAXIMIZED_VERT",
+	err := ewmh.WmStateReqExtra(c.wm.X(), c.win, int(action), "_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_MAXIMIZED_HORZ", 1)
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func (c *client) newFrame() {
@@ -397,9 +403,12 @@ func (c *client) positionNewWindow() {
 			decorated, fynedesk.Instance().Screens())
 	}
 
-	xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	err = xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(x), uint32(y),
 		uint32(w), uint32(h)}).Check()
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func (c *client) stateMessage(state int) {

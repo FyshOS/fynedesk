@@ -4,6 +4,7 @@
 package wm
 
 import (
+	"fyne.io/fyne/v2"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -28,15 +29,24 @@ const (
 )
 
 func windowActiveSet(x *xgbutil.XUtil, win xproto.Window) {
-	ewmh.ActiveWindowSet(x, win)
+	err := ewmh.ActiveWindowSet(x, win)
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func windowClientListUpdate(wm *x11WM) {
-	ewmh.ClientListSet(wm.X(), wm.getWindowsFromClients(wm.mappingOrder))
+	err := ewmh.ClientListSet(wm.X(), wm.getWindowsFromClients(wm.mappingOrder))
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func windowClientListStackingUpdate(wm *x11WM) {
-	ewmh.ClientListStackingSet(wm.X(), wm.getWindowsFromClients(wm.clients))
+	err := ewmh.ClientListStackingSet(wm.X(), wm.getWindowsFromClients(wm.clients))
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func windowOverrideGet(x *xgbutil.XUtil, win xproto.Window) bool {

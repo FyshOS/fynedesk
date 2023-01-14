@@ -357,7 +357,10 @@ func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
 	var displays fyne.CanvasObject
 	if _, err := exec.LookPath(randrHelper); err == nil {
 		displays = widget.NewButtonWithIcon("Manage Displays", wmtheme.DisplayIcon, func() {
-			exec.Command(randrHelper).Start()
+			e := exec.Command(randrHelper).Start()
+			if e != nil {
+				fyne.LogError("", e)
+			}
 		})
 	} else {
 		displays = widget.NewLabel("This requires " + randrHelper)
