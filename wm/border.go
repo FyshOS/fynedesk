@@ -33,6 +33,10 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 		if app != nil {
 			icon = app.Icon(iconTheme, int(wmTheme.TitleHeight*2))
 		}
+
+		if icon == nil {
+			icon = wmTheme.BrokenImageIcon
+		}
 	}
 
 	max := &widget.Button{Icon: wmTheme.MaximizeIcon, Importance: widget.LowImportance, OnTapped: func() {
@@ -80,22 +84,19 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 	titleBar.title = title
 	titleBar.max = max
 
-	if icon != nil {
-		appIcon := &widget.Button{Icon: icon, Importance: widget.LowImportance}
-		appIcon.OnTapped = func() {
-			titleBar.showMenu(appIcon)
-		}
-
-		if buttonPos == "Right" {
-			titleBar.prepend(appIcon)
-			titleBar.prepend(makeFiller())
-		} else {
-			titleBar.append(appIcon)
-			titleBar.append(makeFiller())
-		}
-		titleBar.appIcon = appIcon
+	appIcon := &widget.Button{Icon: icon, Importance: widget.LowImportance}
+	appIcon.OnTapped = func() {
+		titleBar.showMenu(appIcon)
 	}
 
+	if buttonPos == "Right" {
+		titleBar.prepend(appIcon)
+		titleBar.prepend(makeFiller())
+	} else {
+		titleBar.append(appIcon)
+		titleBar.append(makeFiller())
+	}
+	titleBar.appIcon = appIcon
 	return titleBar
 }
 

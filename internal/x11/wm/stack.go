@@ -4,6 +4,7 @@
 package wm
 
 import (
+	"fyne.io/fyne/v2"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
 
@@ -55,7 +56,10 @@ func (s *stack) RemoveWindow(win fynedesk.Window) {
 	} else {
 		// focus root
 		if wm := fynedesk.Instance().WindowManager().(*x11WM); wm.X() != nil {
-			ewmh.ActiveWindowReq(wm.X(), wm.rootID)
+			err := ewmh.ActiveWindowReq(wm.X(), wm.rootID)
+			if err != nil {
+				fyne.LogError("There was an error trying to remove the window ", err)
+			}
 		}
 	}
 

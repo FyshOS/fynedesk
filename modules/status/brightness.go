@@ -199,10 +199,10 @@ func newBrightness() fynedesk.Module {
 		if err != nil {
 			fyne.LogError("Could not launch xbacklight or brightnessctl", err)
 			mode = noBacklight
+		} else {
+			mode = brightnessctl
 		}
-		mode = brightnessctl
 	}
-
 	return &brightness{mode: mode}
 }
 

@@ -132,13 +132,34 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 		return nil, errors.New("window manager detected, running embedded")
 	}
 
-	ewmh.SupportedSet(mgr.x, x11.SupportedHints)
-	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
-	ewmh.SupportingWmCheckSet(mgr.x, mgr.x.Dummy(), mgr.x.Dummy())
-	ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), ui.RootWindowName)
-	ewmh.DesktopViewportSet(mgr.x, []ewmh.DesktopViewport{{X: 0, Y: 0}}) // Will always be 0, 0 until virtual desktops are supported
-	ewmh.NumberOfDesktopsSet(mgr.x, 1)                                   // Will always be 1 until virtual desktops are supported
-	ewmh.CurrentDesktopSet(mgr.x, 0)                                     // Will always be 0 until virtual desktops are supported
+	err = ewmh.SupportedSet(mgr.x, x11.SupportedHints)
+	if err != nil {
+		fyne.LogError("", err)
+	}
+	err = ewmh.SupportingWmCheckSet(mgr.x, mgr.x.RootWin(), mgr.x.Dummy())
+	if err != nil {
+		fyne.LogError("", err)
+	}
+	err = ewmh.SupportingWmCheckSet(mgr.x, mgr.x.Dummy(), mgr.x.Dummy())
+	if err != nil {
+		fyne.LogError("", err)
+	}
+	err = ewmh.WmNameSet(mgr.x, mgr.x.Dummy(), ui.RootWindowName)
+	if err != nil {
+		fyne.LogError("", err)
+	}
+	err = ewmh.DesktopViewportSet(mgr.x, []ewmh.DesktopViewport{{X: 0, Y: 0}}) // Will always be 0, 0 until virtual desktops are supported
+	if err != nil {
+		fyne.LogError("", err)
+	}
+	err = ewmh.NumberOfDesktopsSet(mgr.x, 1) // Will always be 1 until virtual desktops are supported
+	if err != nil {
+		fyne.LogError("", err)
+	}
+	err = ewmh.CurrentDesktopSet(mgr.x, 0) // Will always be 0 until virtual desktops are supported
+	if err != nil {
+		fyne.LogError("", err)
+	}
 
 	x11.LoadCursors(conn)
 
@@ -163,7 +184,10 @@ func (x *x11WM) AddStackListener(l fynedesk.StackListener) {
 func (x *x11WM) Blank() {
 	go func() {
 		time.Sleep(time.Second / 3)
-		exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
+		err := exec.Command("xset", "-display", os.Getenv("DISPLAY"), "dpms", "force", "off").Start()
+		if err != nil {
+			fyne.LogError("", err)
+		}
 	}()
 }
 
@@ -458,8 +482,15 @@ func (x *x11WM) configureRoots() {
 	rootWidth := maxX - minX
 	rootHeight := maxY - minY
 
-	ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: rootWidth, Height: rootHeight})              // The size will grow when virtual desktops are supported
-	ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(rootWidth), Height: uint(rootHeight)}}) // The array will grow when virtual desktops are supported
+	err := ewmh.DesktopGeometrySet(x.x, &ewmh.DesktopGeometry{Width: rootWidth, Height: rootHeight}) // The size will grow when virtual desktops are supported
+	if err != nil {
+		fyne.LogError("", err)
+	}
+
+	err = ewmh.WorkareaSet(x.x, []ewmh.Workarea{{X: 0, Y: 0, Width: uint(rootWidth), Height: uint(rootHeight)}}) // The array will grow when virtual desktops are supported
+	if err != nil {
+		fyne.LogError("", err)
+	}
 	go x.updateBackgrounds()
 }
 
@@ -833,7 +864,10 @@ func (x *x11WM) updateBackgrounds() {
 		}
 	}
 
-	root.XSurfaceSet(x.x.RootWin())
+	err = root.XSurfaceSet(x.x.RootWin())
+	if err != nil {
+		fyne.LogError("", err)
+	}
 	root.XDraw()
 	root.XPaint(x.x.RootWin())
 
