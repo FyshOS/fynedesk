@@ -10,6 +10,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xprop"
 
 	"fyne.io/fyne/v2"
+
 	"fyshos.com/fynedesk"
 	"fyshos.com/fynedesk/internal/notify"
 	"fyshos.com/fynedesk/internal/x11"
@@ -39,7 +40,12 @@ func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
 	}
 	windowActiveSet(x.x, ev.Window)
 	if canFocus {
-		err = xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, xproto.TimeCurrentTime).Check()
+		if c := x.clientForWin(ev.Window); c != nil && c.Iconic() {
+			return // don't try to focus iconic windows
+		}
+
+		// ask for focus, when it is lost return to root window
+		err = xproto.SetInputFocusChecked(x.x.Conn(), 1, ev.Window, xproto.TimeCurrentTime).Check()
 		if err != nil {
 			fyne.LogError("Could not set focus", err)
 			return
@@ -179,18 +185,23 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 		if ev.Detail == keyCodeTab {
 			x.showOrSelectAppSwitcher(shift)
 			return
-		} else if ev.Detail == keyCodeEscape {
-			x.cancelAppSwitcher()
-			return
-		} else if ev.Detail == keyCodeReturn || ev.Detail == keyCodeEnter {
-			x.applyAppSwitcher()
-			return
-		} else if ev.Detail == keyCodeLeft {
-			x.previousAppSwitcher()
-			return
-		} else if ev.Detail == keyCodeRight {
-			x.nextAppSwitcher()
-			return
+		}
+
+		if switcherInstance != nil {
+			switch ev.Detail {
+			case keyCodeEscape:
+				x.cancelAppSwitcher()
+				return
+			case keyCodeReturn, keyCodeEnter:
+				x.applyAppSwitcher()
+				return
+			case keyCodeLeft:
+				x.previousAppSwitcher()
+				return
+			case keyCodeRight:
+				x.nextAppSwitcher()
+				return
+			}
 		}
 	}
 	numlock := ev.State & xproto.ModMask2

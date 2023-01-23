@@ -301,9 +301,14 @@ func (x *x11WM) bindShortcuts(win xproto.Window) {
 }
 
 func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
+	keybind.Initialize(x.x)
 	switch n {
 	case fyne.KeySpace:
 		return keyCodeSpace
+	case fyne.KeyLeft:
+		return keyCodeLeft
+	case fyne.KeyRight:
+		return keyCodeRight
 	case deskDriver.KeyPrintScreen:
 		return keyCodePrintScreen
 	case fyne.KeyTab:
@@ -321,9 +326,16 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 	case fynedesk.KeyVolumeUp:
 		return keyCodeVolumeMore
 	case fyne.KeyL:
-		keybind.Initialize(x.x)
 		codes := keybind.StrToKeycodes(x.x, "L")
 		return codes[0]
+	}
+
+	for i := 0; i <= 9; i++ {
+		id := strconv.Itoa(i)
+		if n == fyne.KeyName(id) {
+			codes := keybind.StrToKeycodes(x.x, id)
+			return codes[0]
+		}
 	}
 
 	return 0

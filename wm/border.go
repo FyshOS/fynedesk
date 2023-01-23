@@ -1,6 +1,7 @@
 package wm
 
 import (
+	"fmt"
 	"image/color"
 
 	"fyne.io/fyne/v2"
@@ -153,12 +154,27 @@ func (c *Border) showMenu(from fyne.CanvasObject) {
 		}),
 		max,
 		fyne.NewMenuItemSeparator(),
+		c.makeDesktopMenu(),
+		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Close", func() {
 			c.win.Close()
 		}))
 
 	pos := c.win.Position()
 	fynedesk.Instance().ShowMenuAt(menu, pos.Add(from.Position()))
+}
+
+func (c *Border) makeDesktopMenu() *fyne.MenuItem {
+	desks := make([]*fyne.MenuItem, 4)
+	for i := 0; i < 4; i++ {
+		deskID := i
+		desks[i] = fyne.NewMenuItem(fmt.Sprintf("Desktop %d", i+1), func() {
+			c.win.SetDesktop(deskID)
+		})
+	}
+	ret := fyne.NewMenuItem("Move to Desktop", nil)
+	ret.ChildMenu = fyne.NewMenu("", desks...)
+	return ret
 }
 
 // CreateRenderer creates a new renderer for this border

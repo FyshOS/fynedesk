@@ -14,7 +14,7 @@ type Window struct {
 	iconic, focused, fullscreen, maximized, raised bool
 
 	parent        fynedesk.Window
-	x, y          int
+	x, y, desk    int
 	width, height uint
 }
 
@@ -33,6 +33,11 @@ func (w *Window) Capture() image.Image {
 // Close this test window
 func (w *Window) Close() {
 	// no-op
+}
+
+// Desktop returns the id of the desktop this window is associated with
+func (w *Window) Desktop() int {
+	return w.desk
 }
 
 // Fullscreened returns true if this window has been made full screen
@@ -108,6 +113,11 @@ func (w *Window) SetClass(class []string) {
 // SetCommand is a test utility to set the command property of this window
 func (w *Window) SetCommand(cmd string) {
 	w.props.cmd = cmd
+}
+
+// SetDesktop sets the index of a desktop this window would associate with
+func (w *Window) SetDesktop(id int) {
+	w.desk = id
 }
 
 // SetIconName is a test utility to set the icon-name property of this window

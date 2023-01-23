@@ -5,6 +5,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 
 	_ "fyshos.com/fynedesk/modules/composit"
+	_ "fyshos.com/fynedesk/modules/desktops"
 	_ "fyshos.com/fynedesk/modules/launcher"
 	_ "fyshos.com/fynedesk/modules/status"
 	_ "fyshos.com/fynedesk/modules/systray"

@@ -120,6 +120,10 @@ func (b *bar) createIcon(data fynedesk.AppData, win fynedesk.Window) *barIcon {
 }
 
 func (b *bar) taskbarIconTapped(win fynedesk.Window) {
+	if win.Desktop() != fynedesk.Instance().Desktop() {
+		b.desk.SetDesktop(win.Desktop())
+		return
+	}
 	if !win.Iconic() && win.TopWindow() {
 		win.Iconify()
 		return
