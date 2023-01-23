@@ -177,7 +177,7 @@ func (b *bar) updateTaskbar() {
 }
 
 func (b *bar) updateIconOrder() {
-	var index = -1
+	var index = 0
 	for i, obj := range b.children {
 		if _, ok := obj.(*canvas.Rectangle); ok {
 			index = i
@@ -185,8 +185,8 @@ func (b *bar) updateIconOrder() {
 		}
 	}
 	var taskbarIcons []*barIcon
-	if index != -1 {
-		taskbarIcons = b.icons[index:]
+	if index != 0 {
+		taskbarIcons = b.icons[index-1:]
 	}
 
 	b.icons = nil
@@ -236,6 +236,9 @@ func (b *bar) winIcon(win *appWindow) fyne.Resource {
 }
 
 func (b *bar) appendLauncherIcons() {
+	search := newBarIcon(theme.SearchIcon(), nil, nil)
+	search.onTapped = ShowAppLauncher
+	b.append(search)
 	for _, name := range b.desk.Settings().LauncherIcons() {
 		app := b.desk.IconProvider().FindAppFromName(name)
 		if app == nil {
