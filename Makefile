@@ -20,5 +20,5 @@ uninstall:
 	-rm $(DESTDIR)$(PREFIX)/share/xsessions/fynedesk.desktop
 
 embed:
-	DISPLAY=:0 Xephyr :1 -screen 1280x720 &
-	DISPLAY=:1 go run ./cmd/fynedesk
+	Xephyr :5 -screen 1280x720 &
+	DISPLAY=:5 go run ./cmd/fynedesk
