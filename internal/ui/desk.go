@@ -80,6 +80,10 @@ func (l *desktop) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(640, 480) // tiny - window manager will scale up to screen size
 }
 
+func (l *desktop) Root() fyne.Window {
+	return l.root
+}
+
 func (l *desktop) ShowMenuAt(menu *fyne.Menu, pos fyne.Position) {
 	l.showMenu(menu, pos)
 }
@@ -157,7 +161,7 @@ func (l *desktop) ContentBoundsPixels(screen *fynedesk.Screen) (x, y, w, h uint3
 	screenW := uint32(screen.Width)
 	screenH := uint32(screen.Height)
 	pad := wmtheme.WidgetPanelWidth
-	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
+	if l.Settings().NarrowWidgetPanel() {
 		pad = wmtheme.NarrowBarWidth
 	}
 	if l.screens.Primary() == screen {

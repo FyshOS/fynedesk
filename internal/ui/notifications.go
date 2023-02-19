@@ -33,7 +33,7 @@ func (n *notification) show(list *fyne.Container) {
 		n.popup = fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
 		n.popup.SetContent(n.renderer)
 
-		winSize := fynedesk.Instance().(*desktop).root.Canvas().Size()
+		winSize := fynedesk.Instance().Root().Canvas().Size()
 		pos := fyne.NewPos(winSize.Width-280-wmtheme.NarrowBarWidth, 10)
 		fynedesk.Instance().WindowManager().ShowOverlay(n.popup, fyne.NewSize(270, 120), pos)
 	} else {
