@@ -111,6 +111,9 @@ github.com/fyne-io/glfw-js
 ## explicit
 github.com/fyne-io/image/ico
 github.com/fyne-io/image/xpm
+# github.com/fyshos/fyles v0.0.0-20230219172605-cc78f5f807a8
+## explicit
+github.com/fyshos/fyles/pkg/fyles
 # github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
 github.com/go-gl/gl/v2.1/gl
 github.com/go-gl/gl/v2.1/gl/KHR
@@ -194,6 +197,7 @@ golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
 # golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
+## explicit
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix

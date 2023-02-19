@@ -11,11 +11,13 @@ require (
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/disintegration/imaging v1.6.2
 	github.com/fyne-io/image v0.0.0-20221020213044-f609c6a24345
+	github.com/fyshos/fyles v0.0.0-20230219172605-cc78f5f807a8
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/jackmordaunt/icns v1.0.1-0.20200413110149-9e181b441ab2
 	github.com/mafik/pulseaudio v0.0.0-20200511091429-8449222912dd
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/stretchr/testify v1.8.0
+	golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb
 )
 
