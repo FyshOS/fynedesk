@@ -126,7 +126,7 @@ github.com/srwiley/rasterx
 ## explicit
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
-# github.com/yuin/goldmark v1.3.8
+# github.com/yuin/goldmark v1.4.13
 github.com/yuin/goldmark
 github.com/yuin/goldmark/ast
 github.com/yuin/goldmark/parser
@@ -142,18 +142,17 @@ golang.org/x/image/font
 golang.org/x/image/math/f64
 golang.org/x/image/math/fixed
 golang.org/x/image/vector
-# golang.org/x/net v0.0.0-20210917221730-978cfadd31cf
-## explicit
+# golang.org/x/net v0.0.0-20220722155237-a158d28d115b
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
-# golang.org/x/sys v0.0.0-20210630005230-0f9fa26af87c
+# golang.org/x/sys v0.0.0-20220722155257-8c9f86f7a55f
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
-# golang.org/x/text v0.3.7
+# golang.org/x/text v0.3.8
 ## explicit
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
