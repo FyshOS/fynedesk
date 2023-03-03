@@ -10,7 +10,7 @@ import (
 )
 
 const (
-	fileIconSize      = 64
+	fileIconSize      = 52
 	fileTextSize      = 20
 	fileIconCellWidth = fileIconSize * 1.25
 )

@@ -110,8 +110,8 @@ github.com/fyne-io/image v0.0.0-20221020213044-f609c6a24345 h1:ONkcbJmsWUOHyjUm0
 github.com/fyne-io/image v0.0.0-20221020213044-f609c6a24345/go.mod h1:eO7W361vmlPOrykIg+Rsh1SZ3tQBaOsfzZhsIOb/Lm0=
 github.com/fyne-io/xgbutil v0.0.0-20191220152344-7d838166824d h1:8+poQtDqiRfAZmeyYRlInuaIBsQEflmxtpJeZklvNuE=
 github.com/fyne-io/xgbutil v0.0.0-20191220152344-7d838166824d/go.mod h1:vPqYMuTmTyrLNDQWQXy9lqdnV+WRQn6jhaSon8TppBs=
-github.com/fyshos/fyles v0.0.0-20230219172605-cc78f5f807a8 h1:tq2MoK8t6CDEm//NkJQdG05eb06rxIcYnBAKjwJLScs=
-github.com/fyshos/fyles v0.0.0-20230219172605-cc78f5f807a8/go.mod h1:yjgxR9tuDcgZRA9XWnmtSvBO691eVD+8xITuPJ+uw5M=
+github.com/fyshos/fyles v0.0.0-20230303221306-09cac62fd3e4 h1:slj7MdQRpx9iV7OK9JKOfxVfZi4ihsZm4MOJvosyjbQ=
+github.com/fyshos/fyles v0.0.0-20230303221306-09cac62fd3e4/go.mod h1:yjgxR9tuDcgZRA9XWnmtSvBO691eVD+8xITuPJ+uw5M=
 github.com/ghodss/yaml v1.0.0/go.mod h1:4dBDuWmgqj2HViK6kFavaiC9ZROes6MMH2rRYeMEF04=
 github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 h1:zDw5v7qm4yH7N8C8uWd+8Ii9rROdgWxQuGoJ9WDXxfk=
 github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6/go.mod h1:9YTyiznxEY1fVinfM7RvRcjRHbw2xLBJ3AAGIT0I4Nw=

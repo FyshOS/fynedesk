@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/storage"
+
 	lib "github.com/fyshos/fyles/pkg/fyles"
 	"golang.org/x/sys/execabs"
 
@@ -29,13 +30,14 @@ func (f *fyles) Destroy() {
 
 func (f *fyles) ScreenAreaWidget() fyne.CanvasObject {
 	icons := lib.NewFylesPanel(f.tapped, fynedesk.Instance().Root())
+	icons.HideParent = true
 	home, _ := os.UserHomeDir()
 	icons.SetDir(storage.NewFileURI(filepath.Join(home, "Desktop")))
 
 	desk := fynedesk.Instance()
-	var barPad fyne.CanvasObject
+	var barPad *canvas.Rectangle
 	if desk.Settings().NarrowLeftLauncher() {
-		barPad := canvas.NewRectangle(color.Transparent)
+		barPad = canvas.NewRectangle(color.Transparent)
 		barPad.SetMinSize(fyne.NewSize(wmtheme.NarrowBarWidth, 1))
 	}
 
@@ -46,7 +48,7 @@ func (f *fyles) ScreenAreaWidget() fyne.CanvasObject {
 	widgetPad := canvas.NewRectangle(color.Transparent)
 	widgetPad.SetMinSize(fyne.NewSize(rightIndent, 1))
 
-	return container.NewBorder(nil, nil, barPad, widgetPad, icons)
+	return container.NewBorder(nil, nil, barPad, widgetPad, container.NewPadded(icons))
 }
 
 func (f *fyles) Metadata() fynedesk.ModuleMetadata {

@@ -111,7 +111,7 @@ github.com/fyne-io/glfw-js
 ## explicit
 github.com/fyne-io/image/ico
 github.com/fyne-io/image/xpm
-# github.com/fyshos/fyles v0.0.0-20230219172605-cc78f5f807a8
+# github.com/fyshos/fyles v0.0.0-20230303221306-09cac62fd3e4
 ## explicit
 github.com/fyshos/fyles/pkg/fyles
 # github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
