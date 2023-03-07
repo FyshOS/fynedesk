@@ -16,9 +16,7 @@ require (
 	github.com/nfnt/resize v0.0.0-20180221191011-83c6a9932646
 	github.com/srwiley/oksvg v0.0.0-20210519022825-9fc0c575d5fe // indirect
 	github.com/stretchr/testify v1.5.1
-	golang.org/x/image v0.0.0-20210628002857-a66eb6448b8d // indirect
-	golang.org/x/net v0.0.0-20210917221730-978cfadd31cf // indirect
-	golang.org/x/text v0.3.7 // indirect
+	golang.org/x/image v0.5.0 // indirect
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb
 )
 
