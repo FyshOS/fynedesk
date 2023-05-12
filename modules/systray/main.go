@@ -18,6 +18,7 @@ import (
 	"strconv"
 	"time"
 
+	"fyshos.com/fynedesk/internal/icon"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
@@ -28,7 +29,6 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 	"fyshos.com/fynedesk"
-	"fyshos.com/fynedesk/internal/icon"
 	"fyshos.com/fynedesk/modules/systray/generated/menu"
 	"fyshos.com/fynedesk/modules/systray/generated/notifier"
 	"fyshos.com/fynedesk/modules/systray/generated/watcher"
@@ -138,21 +138,9 @@ func NewTray() fynedesk.Module {
 					}
 				}
 			case "org.kde.StatusNotifierItem.NewIcon":
-				ic, err := t.ni.GetIconPixmap(t.conn.Context())
-				if err != nil {
-					fyne.LogError("Failed to load replacement systray image", err)
-					break
-				}
-
-				img := pixelsToImage(ic[0])
-				w := &bytes.Buffer{}
-				_ = png.Encode(w, img)
-
 				ico, ok := t.nodes[dbus.Sender(v.Sender)]
 				if ok {
-					unique := strconv.Itoa(resourceID) + ".png"
-					resourceID++
-					ico.SetIcon(fyne.NewStaticResource(unique, w.Bytes()))
+					t.updateIcon(ico, t.ni)
 				}
 			default:
 				log.Println("Also", v.Name)
@@ -169,7 +157,6 @@ func (t *tray) Destroy() {
 
 func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (err *dbus.Error) {
 	ni := notifier.NewStatusNotifierItem(t.conn.Object(string(sender), dbus.ObjectPath(service)))
-	t.ni = ni
 
 	ico, ok := t.nodes[sender]
 	if !ok {
@@ -189,35 +176,8 @@ func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (e
 		t.box.Add(ico)
 	}
 
-	ic, _ := ni.GetIconPixmap(t.conn.Context())
-	if len(ic) > 0 {
-		img := pixelsToImage(ic[0])
-		unique := strconv.Itoa(resourceID) + ".png"
-		resourceID++
-		w := &bytes.Buffer{}
-		_ = png.Encode(w, img)
-		ico.SetIcon(fyne.NewStaticResource(unique, w.Bytes()))
-	} else {
-		name, _ := ni.GetIconName(t.conn.Context())
-		path, _ := ni.GetIconThemePath(t.conn.Context())
-		fullPath := ""
-		if path != "" {
-			fullPath = filepath.Join(path, name+".png")
-			if _, err := os.Stat(fullPath); err != nil { // not found, search instead
-				fullPath = icon.FdoLookupIconPathInTheme("64", filepath.Join(path, "hicolor"), "", name)
-			}
-		} else {
-			fullPath = icon.FdoLookupIconPath("", 64, name)
-		}
-		img, err := ioutil.ReadFile(fullPath)
-		if err != nil {
-			fyne.LogError("Failed to load status icon", err)
-			ico.SetIcon(wmtheme.BrokenImageIcon)
-		} else {
-			ico.SetIcon(fyne.NewStaticResource(name, img))
-		}
-	}
-
+	t.ni = ni
+	t.updateIcon(ico, ni)
 	ico.Refresh()
 	t.box.Refresh()
 
@@ -335,6 +295,37 @@ func (t *tray) showMenu(sender string, name dbus.ObjectPath, from fyne.CanvasObj
 		pos.Y = float32(screen.Height)/screen.CanvasScale() - size.Height
 	}
 	fynedesk.Instance().WindowManager().ShowOverlay(w, size, pos)
+}
+
+func (t *tray) updateIcon(ico *widget.Button, ni *notifier.StatusNotifierItem) {
+	ic, _ := ni.GetIconPixmap(t.conn.Context())
+	if len(ic) > 0 {
+		img := pixelsToImage(ic[0])
+		unique := strconv.Itoa(resourceID) + ".png"
+		resourceID++
+		w := &bytes.Buffer{}
+		_ = png.Encode(w, img)
+		ico.SetIcon(fyne.NewStaticResource(unique, w.Bytes()))
+	} else {
+		name, _ := ni.GetIconName(t.conn.Context())
+		path, _ := ni.GetIconThemePath(t.conn.Context())
+		fullPath := ""
+		if path != "" {
+			fullPath = filepath.Join(path, name+".png")
+			if _, err := os.Stat(fullPath); err != nil { // not found, search instead
+				fullPath = icon.FdoLookupIconPathInTheme("64", filepath.Join(path, "hicolor"), "", name)
+			}
+		} else {
+			fullPath = icon.FdoLookupIconPath("", 64, name)
+		}
+		img, err := ioutil.ReadFile(fullPath)
+		if err != nil {
+			fyne.LogError("Failed to load status icon", err)
+			ico.SetIcon(wmtheme.BrokenImageIcon)
+		} else {
+			ico.SetIcon(fyne.NewStaticResource(name, img))
+		}
+	}
 }
 
 func createPropSpec() map[string]map[string]*prop.Prop {
