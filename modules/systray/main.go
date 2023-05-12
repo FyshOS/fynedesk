@@ -54,6 +54,7 @@ var trayMeta = fynedesk.ModuleMetadata{
 type tray struct {
 	conn *dbus.Conn
 	menu *menu.Dbusmenu
+	ni   *notifier.StatusNotifierItem
 
 	box   *fyne.Container
 	nodes map[dbus.Sender]*widget.Button
@@ -116,6 +117,7 @@ func NewTray() fynedesk.Module {
 	}
 
 	watchErr := t.conn.AddMatchSignal(dbus.WithMatchInterface("org.freedesktop.DBus"), dbus.WithMatchObjectPath("/org/freedesktop/DBus"))
+	_ = t.conn.AddMatchSignal(dbus.WithMatchInterface("org.kde.StatusNotifierItem"))
 	if watchErr != nil {
 		fyne.LogError("Failed to monitor systray name loss", watchErr)
 		return t
@@ -125,18 +127,36 @@ func NewTray() fynedesk.Module {
 	t.conn.Signal(c)
 	go func() {
 		for v := range c {
-			if v.Name != "org.freedesktop.DBus.NameOwnerChanged" {
+			switch v.Name {
+			case "org.freedesktop.DBus.NameOwnerChanged":
+				name := v.Body[0]
+				newOwner := v.Body[2]
+				if newOwner == "" {
+					if item, ok := t.nodes[dbus.Sender(name.(string))]; ok {
+						t.box.Remove(item)
+						t.box.Refresh()
+					}
+				}
+			case "org.kde.StatusNotifierItem.NewIcon":
+				ic, err := t.ni.GetIconPixmap(t.conn.Context())
+				if err != nil {
+					fyne.LogError("Failed to load replacement systray image", err)
+					break
+				}
+
+				img := pixelsToImage(ic[0])
+				w := &bytes.Buffer{}
+				_ = png.Encode(w, img)
+
+				ico, ok := t.nodes[dbus.Sender(v.Sender)]
+				if ok {
+					unique := strconv.Itoa(resourceID) + ".png"
+					resourceID++
+					ico.SetIcon(fyne.NewStaticResource(unique, w.Bytes()))
+				}
+			default:
 				log.Println("Also", v.Name)
 				continue
-			}
-
-			name := v.Body[0]
-			newOwner := v.Body[2]
-			if newOwner == "" {
-				if item, ok := t.nodes[dbus.Sender(name.(string))]; ok {
-					t.box.Remove(item)
-					t.box.Refresh()
-				}
 			}
 		}
 	}()
@@ -149,6 +169,7 @@ func (t *tray) Destroy() {
 
 func (t *tray) RegisterStatusNotifierItem(service string, sender dbus.Sender) (err *dbus.Error) {
 	ni := notifier.NewStatusNotifierItem(t.conn.Object(string(sender), dbus.ObjectPath(service)))
+	t.ni = ni
 
 	ico, ok := t.nodes[sender]
 	if !ok {
