@@ -5,7 +5,6 @@ import (
 	"sort"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
@@ -57,11 +56,11 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 			w2.Close()
 		}
 	})
-	items1 := []fyne.CanvasObject{container.NewMax(canvas.NewRectangle(theme.ErrorColor()),
-		&widget.Button{Icon: theme.LogoutIcon(), Importance: widget.LowImportance, OnTapped: func() {
+	items1 := []fyne.CanvasObject{
+		&widget.Button{Icon: theme.LogoutIcon(), Importance: widget.DangerImportance, OnTapped: func() {
 			w2.Close()
 			w.desk.WindowManager().Close()
-		}})}
+		}}}
 	isEmbed := w.desk.(*desktop).root.Title() != RootWindowName
 	if !isEmbed {
 		items1 = append(items1, &widget.Button{Icon: wmtheme.LockIcon, Importance: widget.LowImportance, OnTapped: func() {
