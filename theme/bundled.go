@@ -1,7 +1,7 @@
 package theme
 
 import (
-	_ "embed"
+	_ "embed" // embedding static files from assets directory
 
 	"fyne.io/fyne/v2"
 )
