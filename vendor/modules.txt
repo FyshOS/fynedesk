@@ -1,5 +1,5 @@
 # fyne.io/fyne/v2 v2.3.1-0.20230101220108-f2141a6796a0
-## explicit
+## explicit; go 1.14
 fyne.io/fyne/v2
 fyne.io/fyne/v2/app
 fyne.io/fyne/v2/canvas
@@ -44,6 +44,7 @@ fyne.io/fyne/v2/theme
 fyne.io/fyne/v2/tools/playground
 fyne.io/fyne/v2/widget
 # fyne.io/systray v1.10.1-0.20221115204952-d16a6177e6f1
+## explicit; go 1.13
 fyne.io/systray
 fyne.io/systray/internal/generated/menu
 fyne.io/systray/internal/generated/notifier
@@ -83,6 +84,7 @@ github.com/BurntSushi/xgbutil/xwindow
 ## explicit
 github.com/Knetic/govaluate
 # github.com/benoitkugler/textlayout v0.3.0
+## explicit; go 1.17
 github.com/benoitkugler/textlayout/fonts
 github.com/benoitkugler/textlayout/fonts/binaryreader
 github.com/benoitkugler/textlayout/fonts/glyphsnames
@@ -95,23 +97,29 @@ github.com/benoitkugler/textlayout/harfbuzz
 github.com/benoitkugler/textlayout/language
 github.com/benoitkugler/textlayout/unicodedata
 # github.com/davecgh/go-spew v1.1.1
+## explicit
 github.com/davecgh/go-spew/spew
 # github.com/disintegration/imaging v1.6.2
 ## explicit
 github.com/disintegration/imaging
 # github.com/fredbi/uri v0.1.0
+## explicit; go 1.11
 github.com/fredbi/uri
 # github.com/fsnotify/fsnotify v1.5.4
+## explicit; go 1.16
 github.com/fsnotify/fsnotify
 # github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe
+## explicit; go 1.14
 github.com/fyne-io/gl-js
 # github.com/fyne-io/glfw-js v0.0.0-20220120001248-ee7290d23504
+## explicit; go 1.14
 github.com/fyne-io/glfw-js
 # github.com/fyne-io/image v0.0.0-20221020213044-f609c6a24345
-## explicit
+## explicit; go 1.14
 github.com/fyne-io/image/ico
 github.com/fyne-io/image/xpm
 # github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6
+## explicit; go 1.12
 github.com/go-gl/gl/v2.1/gl
 github.com/go-gl/gl/v2.1/gl/KHR
 github.com/go-gl/gl/v3.1/gles2
@@ -119,6 +127,7 @@ github.com/go-gl/gl/v3.1/gles2/KHR
 github.com/go-gl/gl/v3.2-core/gl
 github.com/go-gl/gl/v3.2-core/gl/KHR
 # github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b
+## explicit; go 1.10
 github.com/go-gl/glfw/v3.3/glfw
 github.com/go-gl/glfw/v3.3/glfw/glfw/deps
 github.com/go-gl/glfw/v3.3/glfw/glfw/deps/glad
@@ -127,26 +136,30 @@ github.com/go-gl/glfw/v3.3/glfw/glfw/deps/vs2008
 github.com/go-gl/glfw/v3.3/glfw/glfw/include/GLFW
 github.com/go-gl/glfw/v3.3/glfw/glfw/src
 # github.com/go-text/typesetting v0.0.0-20221212183139-1eb938670a1f
+## explicit; go 1.15
 github.com/go-text/typesetting/di
 github.com/go-text/typesetting/font
 github.com/go-text/typesetting/language
 github.com/go-text/typesetting/segmenter
 github.com/go-text/typesetting/shaping
 # github.com/godbus/dbus/v5 v5.1.0
-## explicit
+## explicit; go 1.12
 github.com/godbus/dbus/v5
 github.com/godbus/dbus/v5/introspect
 github.com/godbus/dbus/v5/prop
 # github.com/goki/freetype v0.0.0-20220119013949-7a161fd3728c
+## explicit
 github.com/goki/freetype
 github.com/goki/freetype/raster
 github.com/goki/freetype/truetype
 # github.com/gopherjs/gopherjs v1.17.2
+## explicit; go 1.17
 github.com/gopherjs/gopherjs/js
 # github.com/jackmordaunt/icns v1.0.1-0.20200413110149-9e181b441ab2
-## explicit
+## explicit; go 1.14
 github.com/jackmordaunt/icns
 # github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e
+## explicit
 github.com/jsummers/gobmp
 # github.com/mafik/pulseaudio v0.0.0-20200511091429-8449222912dd
 ## explicit
@@ -155,20 +168,26 @@ github.com/mafik/pulseaudio
 ## explicit
 github.com/nfnt/resize
 # github.com/pkg/errors v0.8.1
+## explicit
 github.com/pkg/errors
 # github.com/pmezard/go-difflib v1.0.0
+## explicit
 github.com/pmezard/go-difflib/difflib
 # github.com/srwiley/oksvg v0.0.0-20220731023508-a61f04f16b76
+## explicit; go 1.17
 github.com/srwiley/oksvg
 # github.com/srwiley/rasterx v0.0.0-20210519020934-456a8d69b780
+## explicit
 github.com/srwiley/rasterx
 # github.com/stretchr/testify v1.8.0
-## explicit
+## explicit; go 1.13
 github.com/stretchr/testify/assert
 github.com/stretchr/testify/require
 # github.com/tevino/abool v1.2.0
+## explicit; go 1.14
 github.com/tevino/abool
 # github.com/yuin/goldmark v1.4.0
+## explicit; go 1.15
 github.com/yuin/goldmark
 github.com/yuin/goldmark/ast
 github.com/yuin/goldmark/parser
@@ -177,6 +196,7 @@ github.com/yuin/goldmark/renderer/html
 github.com/yuin/goldmark/text
 github.com/yuin/goldmark/util
 # golang.org/x/image v0.0.0-20220601225756-64ec528b34cd
+## explicit; go 1.12
 golang.org/x/image/bmp
 golang.org/x/image/ccitt
 golang.org/x/image/colornames
@@ -188,18 +208,22 @@ golang.org/x/image/tiff
 golang.org/x/image/tiff/lzw
 golang.org/x/image/vector
 # golang.org/x/mobile v0.0.0-20211207041440-4e6c2922fdee
+## explicit; go 1.16
 golang.org/x/mobile/exp/f32
 # golang.org/x/net v0.0.0-20211118161319-6a13c67c3ce4
+## explicit; go 1.17
 golang.org/x/net/html
 golang.org/x/net/html/atom
 golang.org/x/net/html/charset
 # golang.org/x/sys v0.0.0-20220412211240-33da011f77ad
+## explicit; go 1.17
 golang.org/x/sys/execabs
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
 # golang.org/x/text v0.3.7
+## explicit; go 1.17
 golang.org/x/text/encoding
 golang.org/x/text/encoding/charmap
 golang.org/x/text/encoding/htmlindex
@@ -218,8 +242,10 @@ golang.org/x/text/language
 golang.org/x/text/runes
 golang.org/x/text/transform
 # gopkg.in/yaml.v3 v3.0.1
+## explicit
 gopkg.in/yaml.v3
 # honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2
+## explicit
 honnef.co/go/js/dom
 # howett.net/plist v0.0.0-20181124034731-591f970eefbb
 ## explicit
