@@ -45,6 +45,7 @@ func newCloseButton(win fynedesk.Window) fyne.CanvasObject {
 	b.ExtendBaseWidget(b)
 	b.Importance = widget.LowImportance
 	b.bg = canvas.NewRectangle(color.Transparent)
+	b.bg.CornerRadius = theme.InputRadiusSize()
 
 	b.OnTapped = func() {
 		win.Close()
