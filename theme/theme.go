@@ -18,6 +18,8 @@ var (
 
 	// FyneAboutBackground is the image used as a background to the about screen
 	FyneAboutBackground = resourceFyneaboutbgPng
+	// FyneLogo is the fyne tooklit icon
+	FyneLogo = resourceFynePng
 	// AppIcon is the image for this application icon
 	AppIcon = resourceIconPng
 
