@@ -159,7 +159,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	})
 
 	w.rotated = &canvas.Image{}
-	w.clocks = container.NewMax(w.clock, container.New(&vClockPad{}, w.rotated))
+	w.clocks = container.NewStack(w.clock, container.New(&vClockPad{}, w.rotated))
 	if narrow {
 		w.clock.Hide()
 	} else {
@@ -237,7 +237,7 @@ func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 type vClockPad struct {
 }
 
-func (u *vClockPad) Layout(objects []fyne.CanvasObject, size fyne.Size) {
+func (u *vClockPad) Layout(objects []fyne.CanvasObject, _ fyne.Size) {
 	objects[0].Resize(objects[0].MinSize())
 	objects[0].Move(fyne.NewPos(5, 0))
 }
