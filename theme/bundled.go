@@ -78,6 +78,29 @@ var resourceFyneaboutbgPng = &fyne.StaticResource{
 	StaticContent: fyneAboutBgPng,
 }
 
+//go:embed assets/icon.png
+var fyneResourceIconPng []byte
+
+var resourceIconPng = &fyne.StaticResource{
+	StaticName: "icon.png",
+}
+
+//go:embed assets/icon.svg
+var fyneIconSvg []byte
+
+var resourceIconSvg = &fyne.StaticResource{
+	StaticName:    "icon.svg",
+	StaticContent: fyneIconSvg,
+}
+
+//go:embed assets/icon2.svg
+var fyneIcon2Svg []byte
+
+var resourceIcon2Svg = &fyne.StaticResource{
+	StaticName:    "icon2.svg",
+	StaticContent: fyneIcon2Svg,
+}
+
 //go:embed assets/internet.svg
 var internetSvg []byte
 

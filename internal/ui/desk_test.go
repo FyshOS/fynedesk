@@ -7,15 +7,14 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
+	"fyshos.com/fynedesk"
+	wmTest "fyshos.com/fynedesk/test"
+	wmTheme "fyshos.com/fynedesk/theme"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
-	"fyne.io/fyne/v2/theme"
-
-	"fyshos.com/fynedesk"
-	wmTest "fyshos.com/fynedesk/test"
-	wmTheme "fyshos.com/fynedesk/theme"
 )
 
 func TestDeskLayout_Layout(t *testing.T) {
@@ -23,7 +22,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 		Width: 2000, Height: 1000, Scale: 1.0}), settings: wmTest.NewSettings()}
 	l.bar = testBar([]string{})
 	l.widgets = newWidgetPanel(l)
-	bg := &background{wallpaper: container.NewStack(canvas.NewImageFromResource(theme.FyneLogo()))}
+	bg := &background{wallpaper: container.NewStack(canvas.NewImageFromResource(wmTheme.AppIcon))}
 	deskSize := fyne.NewSize(2000, 1000)
 
 	l.Layout([]fyne.CanvasObject{bg, l.bar, l.widgets}, deskSize)

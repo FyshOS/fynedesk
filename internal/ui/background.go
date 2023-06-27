@@ -22,7 +22,7 @@ type background struct {
 }
 
 func (b *background) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewMax(b.loadModules()...)
+	c := container.NewStack(b.loadModules()...)
 	return &backgroundRenderer{b: b, c: c}
 }
 

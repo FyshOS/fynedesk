@@ -16,6 +16,8 @@ var (
 
 	// FyneAboutBackground is the image used as a background to the about screen
 	FyneAboutBackground = resourceFyneaboutbgPng
+	// AppIcon is the image for this application icon
+	AppIcon = resourceIconPng
 
 	// BatteryIcon is the material design icon for battery in light and dark theme
 	BatteryIcon = theme.NewThemedResource(resourceBatterySvg)
