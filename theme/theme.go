@@ -1,7 +1,5 @@
 package theme // import "fyshos.com/fynedesk/theme"
 
-//go:generate fyne bundle -package theme -o bundled.go assets
-
 import (
 	"image/color"
 
@@ -37,7 +35,7 @@ var (
 	EthernetIcon = theme.NewThemedResource(resourceEthernetSvg)
 	// WifiIcon is the material design icon for a wireless network connection
 	WifiIcon = theme.NewThemedResource(resourceWifiSvg)
-	//WifiOffIcon is the material design icon for a wireless device without a connection
+	// WifiOffIcon is the material design icon for a wireless device without a connection
 	WifiOffIcon = theme.NewThemedResource(resourceWifioffSvg)
 	// PowerIcon is the material design icon for a power connection in light and dark theme
 	PowerIcon = theme.NewThemedResource(resourcePowerSvg)
