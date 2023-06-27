@@ -9,6 +9,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 
@@ -22,7 +23,7 @@ func TestDeskLayout_Layout(t *testing.T) {
 		Width: 2000, Height: 1000, Scale: 1.0}), settings: wmTest.NewSettings()}
 	l.bar = testBar([]string{})
 	l.widgets = newWidgetPanel(l)
-	bg := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}
+	bg := &background{wallpaper: container.NewStack(canvas.NewImageFromResource(theme.FyneLogo()))}
 	deskSize := fyne.NewSize(2000, 1000)
 
 	l.Layout([]fyne.CanvasObject{bg, l.bar, l.widgets}, deskSize)
@@ -73,9 +74,8 @@ func TestBackgroundChange(t *testing.T) {
 		fyne.LogError("Could not get current working directory", err)
 		t.FailNow()
 	}
-	assert.Equal(t, wmTheme.BackgroundDark, bg.wallpaper.Resource)
 
 	l.settings.(*wmTest.Settings).SetBackground(filepath.Join(workingDir, "testdata", "fyne.png"))
 	l.updateBackgrounds(l.Settings().Background())
-	assert.Equal(t, l.settings.Background(), bg.wallpaper.File)
+	assert.Equal(t, l.settings.Background(), bg.wallpaper.Objects[0].(*canvas.Image).File)
 }

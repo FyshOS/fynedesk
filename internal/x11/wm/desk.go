@@ -4,7 +4,6 @@
 package wm // import "fyshos.com/fynedesk/internal/x11/wm"
 
 import (
-	"bytes"
 	"errors"
 	"image"
 	"math"
@@ -24,18 +23,18 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
+	"github.com/FyshOS/backgrounds/builtin"
 	"github.com/nfnt/resize"
 
 	"fyne.io/fyne/v2"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/theme"
+	"fyne.io/fyne/v2/driver/software"
 	"fyne.io/fyne/v2/widget"
 
 	"fyshos.com/fynedesk"
 	"fyshos.com/fynedesk/internal/ui"
 	"fyshos.com/fynedesk/internal/x11"
 	xwin "fyshos.com/fynedesk/internal/x11/win"
-	wmTheme "fyshos.com/fynedesk/theme"
 	"fyshos.com/fynedesk/wm"
 )
 
@@ -817,7 +816,7 @@ func (x *x11WM) unbindShortcuts(win xproto.Window) {
 	}
 }
 
-func (x *x11WM) updatedBackgroundImage() image.Image {
+func (x *x11WM) updatedBackgroundImage(w, h int) image.Image {
 	path := fynedesk.Instance().Settings().Background()
 	if path != "" {
 		file, err := os.Open(path)
@@ -829,21 +828,17 @@ func (x *x11WM) updatedBackgroundImage() image.Image {
 			fyne.LogError("Failed to read background image", err)
 		}
 		_ = file.Close()
-		return img
+
+		return resize.Resize(uint(w), uint(h), img, resize.Lanczos3)
 	}
 
-	var res *fyne.StaticResource
-	if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantLight {
-		res = wmTheme.BackgroundLight
-	} else {
-		res = wmTheme.BackgroundDark
-	}
-
-	img, _, err := image.Decode(bytes.NewReader(res.StaticContent))
-	if err != nil {
-		fyne.LogError("Failed to read background resource", err)
-	}
-	return img
+	set := fyne.CurrentApp().Settings()
+	b := &builtin.Builtin{}
+	c := software.NewCanvas()
+	c.SetContent(b.Load(set.Theme(), set.ThemeVariant()))
+	c.SetScale(1.0)
+	c.Resize(fyne.NewSize(float32(w), float32(h)))
+	return c.Capture()
 }
 
 func (x *x11WM) updateBackgrounds() {
@@ -854,9 +849,8 @@ func (x *x11WM) updateBackgrounds() {
 	}
 	root := xgraphics.New(x.x, image.Rect(0, 0, int(geom.Width), int(geom.Height)))
 
-	data := x.updatedBackgroundImage()
 	for _, screen := range fynedesk.Instance().Screens().Screens() {
-		scaled := resize.Resize(uint(screen.Width), uint(screen.Height), data, resize.Lanczos3)
+		scaled := x.updatedBackgroundImage(screen.Width, screen.Height)
 		for y := screen.Y; y < screen.Y+screen.Height; y++ {
 			for x := screen.X; x < screen.X+screen.Width; x++ {
 				root.Set(x, y, scaled.At(x-screen.X, y-screen.Y))
