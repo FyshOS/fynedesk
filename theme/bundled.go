@@ -6,8 +6,6 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-
-
 //go:embed assets/battery.svg
 var batterySvg []byte
 
@@ -76,8 +74,8 @@ var resourceFyneaboutbgPng = &fyne.StaticResource{
 var fyneResourceIconPng []byte
 
 var resourceIconPng = &fyne.StaticResource{
-	StaticName: "icon.png",
-  StaticContent: fyneResourceIconPng,
+	StaticName:    "icon.png",
+	StaticContent: fyneResourceIconPng,
 }
 
 //go:embed assets/internet.svg
