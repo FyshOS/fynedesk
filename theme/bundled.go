@@ -6,21 +6,7 @@ import (
 	"fyne.io/fyne/v2"
 )
 
-//go:embed assets/background-dark.png
-var backgroundDarkPng []byte
 
-var resourceBackgroundDarkPng = &fyne.StaticResource{
-	StaticName:    "background-dark.png",
-	StaticContent: backgroundDarkPng,
-}
-
-//go:embed assets/background-light.png
-var backgroundLightPng []byte
-
-var resourceBackgroundLightPng = &fyne.StaticResource{
-	StaticName:    "background-light.png",
-	StaticContent: backgroundLightPng,
-}
 
 //go:embed assets/battery.svg
 var batterySvg []byte
@@ -91,22 +77,6 @@ var fyneResourceIconPng []byte
 
 var resourceIconPng = &fyne.StaticResource{
 	StaticName: "icon.png",
-}
-
-//go:embed assets/icon.svg
-var fyneIconSvg []byte
-
-var resourceIconSvg = &fyne.StaticResource{
-	StaticName:    "icon.svg",
-	StaticContent: fyneIconSvg,
-}
-
-//go:embed assets/icon2.svg
-var fyneIcon2Svg []byte
-
-var resourceIcon2Svg = &fyne.StaticResource{
-	StaticName:    "icon2.svg",
-	StaticContent: fyneIcon2Svg,
 }
 
 //go:embed assets/internet.svg
