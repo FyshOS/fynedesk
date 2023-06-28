@@ -4,6 +4,8 @@ go 1.17
 
 require (
 	fyne.io/fyne/v2 v2.3.6-0.20230623155050-630ec4ee2ce4
+	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
+	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 	github.com/BurntSushi/xgb v0.0.0-20201008132610-5f9e7b3c49cd
 	github.com/BurntSushi/xgbutil v0.0.0-20160919175755-f7c97cef3b4e
 	github.com/FyshOS/backgrounds v0.0.0-20230616202904-0a8b6ebaa184
@@ -20,8 +22,6 @@ require (
 
 require (
 	fyne.io/systray v1.10.1-0.20230602210930-b6a2d6ca2a7b // indirect
-	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
-	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/fredbi/uri v0.1.0 // indirect
 	github.com/fsnotify/fsnotify v1.6.0 // indirect

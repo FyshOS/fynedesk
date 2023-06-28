@@ -77,6 +77,7 @@ var fyneResourceIconPng []byte
 
 var resourceIconPng = &fyne.StaticResource{
 	StaticName: "icon.png",
+  StaticContent: fyneResourceIconPng,
 }
 
 //go:embed assets/internet.svg
