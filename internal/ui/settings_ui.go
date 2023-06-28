@@ -400,7 +400,7 @@ func (w *widgetPanel) showSettings() {
 	fyneSettings := settings.NewSettings()
 
 	tabs := container.NewAppTabs(
-		&container.TabItem{Text: "Fyne Settings", Icon: theme.FyneLogo(),
+		&container.TabItem{Text: "Fyne Settings", Icon: wmtheme.FyneLogo,
 			Content: fyneSettings.LoadAppearanceScreen(win)},
 		&container.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
 			Content: ui.loadAppearanceScreen()},

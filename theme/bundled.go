@@ -70,6 +70,14 @@ var resourceEthernetSvg = &fyne.StaticResource{
 	StaticContent: ethernetSvg,
 }
 
+//go:embed assets/fyne.png
+var fynePng []byte
+
+var resourceFynePng = &fyne.StaticResource{
+	StaticName:    "fyne.png",
+	StaticContent: fynePng,
+}
+
 //go:embed assets/fyne_about_bg.png
 var fyneAboutBgPng []byte
 
