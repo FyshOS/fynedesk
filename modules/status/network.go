@@ -76,15 +76,14 @@ func (n *network) isEthernetConnected() (bool, error) {
 			return false, nil
 		}
 	} else if scutil, _ := exec.LookPath("scutil"); scutil != "" {
-		out, err := exec.Command("bash", []string{"-c", "scutil --nwi | grep address"}...).Output()
+		out, err := exec.Command("bash", []string{"-c", "scutil --nwi | grep address | wc -l"}...).Output()
 		if err != nil {
 			log.Println("Error running scutil tool", err)
 			return false, err
 		}
-		if strings.TrimSpace(string(out)) != "" {
-			return true, nil
+		if strings.TrimSpace(string(out)) == "0" {
+			return false, nil
 		}
-		return false, nil
 	} else {
 		out, err := exec.Command("bash", []string{"-c", "ifconfig | pcregrep -M -o '^[^\\t:]+:([^\\n]|\\n\\t)*status: active'"}...).Output()
 		if err != nil {

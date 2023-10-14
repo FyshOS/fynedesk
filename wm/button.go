@@ -3,13 +3,14 @@ package wm
 import (
 	"image/color"
 
+	"fyshos.com/fynedesk"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-	"fyshos.com/fynedesk"
 )
 
 const (
@@ -45,11 +46,12 @@ func newCloseButton(win fynedesk.Window) fyne.CanvasObject {
 	b.ExtendBaseWidget(b)
 	b.Importance = widget.LowImportance
 	b.bg = canvas.NewRectangle(color.Transparent)
+	b.bg.CornerRadius = theme.InputRadiusSize()
 
 	b.OnTapped = func() {
 		win.Close()
 	}
 
 	b.Icon = theme.CancelIcon()
-	return container.NewMax(b.bg, b)
+	return container.NewStack(b.bg, b)
 }

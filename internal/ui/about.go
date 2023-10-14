@@ -53,7 +53,7 @@ func (w *widgetPanel) showAbout() {
 	bg := canvas.NewImageFromResource(wmTheme.FyneAboutBackground)
 	bg.FillMode = canvas.ImageFillContain
 	bg.Translucency = 0.67
-	win.SetContent(container.NewMax(bg, container.NewBorder(title, buttons, nil, nil, authors)))
+	win.SetContent(container.NewStack(bg, container.NewBorder(title, buttons, nil, nil, authors)))
 	win.SetCloseIntercept(func() {
 		win.Hide()
 	})

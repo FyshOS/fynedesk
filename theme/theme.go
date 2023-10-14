@@ -1,7 +1,5 @@
 package theme // import "fyshos.com/fynedesk/theme"
 
-//go:generate fyne bundle -package theme -o bundled.go assets
-
 import (
 	"image/color"
 
@@ -16,12 +14,12 @@ var (
 	// PointerDefault is the standard pointer resource
 	PointerDefault = resourcePointerPng
 
-	// BackgroundLight is the default background image for the light variant
-	BackgroundLight = resourceBackgroundLightPng
-	// BackgroundDark is the default background image for the dark variant
-	BackgroundDark = resourceBackgroundDarkPng
 	// FyneAboutBackground is the image used as a background to the about screen
 	FyneAboutBackground = resourceFyneaboutbgPng
+	// FyneLogo is the fyne tooklit icon
+	FyneLogo = resourceFynePng
+	// AppIcon is the image for this application icon
+	AppIcon = resourceIconPng
 
 	// BatteryIcon is the material design icon for battery in light and dark theme
 	BatteryIcon = theme.NewThemedResource(resourceBatterySvg)
@@ -37,7 +35,7 @@ var (
 	EthernetIcon = theme.NewThemedResource(resourceEthernetSvg)
 	// WifiIcon is the material design icon for a wireless network connection
 	WifiIcon = theme.NewThemedResource(resourceWifiSvg)
-	//WifiOffIcon is the material design icon for a wireless device without a connection
+	// WifiOffIcon is the material design icon for a wireless device without a connection
 	WifiOffIcon = theme.NewThemedResource(resourceWifioffSvg)
 	// PowerIcon is the material design icon for a power connection in light and dark theme
 	PowerIcon = theme.NewThemedResource(resourcePowerSvg)
@@ -60,9 +58,9 @@ var (
 	MuteIcon = theme.NewThemedResource(resourceMuteSvg)
 
 	// BorderWidth is the width of window frames
-	BorderWidth = float32(6)
+	BorderWidth = float32(4)
 	// ButtonWidth is the width of window buttons
-	ButtonWidth = float32(28)
+	ButtonWidth = float32(32)
 	// NarrowBarWidth is the size for the bars in narrow layout
 	NarrowBarWidth = float32(36)
 	// TitleHeight is the height of a frame titleBar

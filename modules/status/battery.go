@@ -64,7 +64,7 @@ func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 	b.fill = canvas.NewRectangle(theme.ForegroundColor())
 	prop := canvas.NewRectangle(color.Transparent)
 	prop.SetMinSize(b.icon.MinSize().Add(fyne.NewSize(theme.Padding()*4, 0)))
-	icon := container.NewMax(container.NewCenter(prop, b.icon), container.NewWithoutLayout(b.fill))
+	icon := container.NewStack(container.NewCenter(prop, b.icon), container.NewWithoutLayout(b.fill))
 
 	// Set first value then tick
 	val, _ := b.value()

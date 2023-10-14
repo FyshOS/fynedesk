@@ -11,18 +11,18 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	"fyshos.com/fynedesk"
-	wmtheme "fyshos.com/fynedesk/theme"
+	"github.com/FyshOS/backgrounds/builtin"
 )
 
 type background struct {
 	widget.BaseWidget
 
 	objects   []fyne.CanvasObject
-	wallpaper *canvas.Image
+	wallpaper *fyne.Container
 }
 
 func (b *background) CreateRenderer() fyne.WidgetRenderer {
-	c := container.NewMax(b.loadModules()...)
+	c := container.NewStack(b.loadModules()...)
 	return &backgroundRenderer{b: b, c: c}
 }
 
@@ -75,15 +75,13 @@ func (b *background) loadModules() []fyne.CanvasObject {
 func (b *background) updateBackground(path string) {
 	_, err := os.Stat(path)
 	if path == "" || os.IsNotExist(err) {
-		if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantLight {
-			b.wallpaper.Resource = wmtheme.BackgroundLight
-		} else {
-			b.wallpaper.Resource = wmtheme.BackgroundDark
-		}
-		b.wallpaper.File = ""
+		set := fyne.CurrentApp().Settings()
+		src := &builtin.Builtin{}
+		b.wallpaper.Objects[0] = src.Load(set.Theme(), set.ThemeVariant())
 	} else {
-		b.wallpaper.Resource = nil
-		b.wallpaper.File = path
+		bg := canvas.NewImageFromFile(path)
+		bg.ScaleMode = canvas.ImageScaleFastest
+		b.wallpaper.Objects[0] = bg
 	}
 	b.loadModules()
 	canvas.Refresh(b.wallpaper)
@@ -104,20 +102,19 @@ func backgroundPath() string {
 }
 
 func newBackground() *background {
-	var bg *canvas.Image
+	var bg fyne.CanvasObject
 	imagePath := backgroundPath()
 	if imagePath != "" {
-		bg = canvas.NewImageFromFile(imagePath)
+		img := canvas.NewImageFromFile(imagePath)
+		img.ScaleMode = canvas.ImageScaleFastest
+		bg = img
 	} else {
-		if fyne.CurrentApp().Settings().ThemeVariant() == theme.VariantLight {
-			bg = canvas.NewImageFromResource(wmtheme.BackgroundLight)
-		} else {
-			bg = canvas.NewImageFromResource(wmtheme.BackgroundDark)
-		}
+		set := fyne.CurrentApp().Settings()
+		b := &builtin.Builtin{}
+		bg = b.Load(set.Theme(), set.ThemeVariant())
 	}
-	bg.ScaleMode = canvas.ImageScaleFastest
 
-	ret := &background{wallpaper: bg}
+	ret := &background{wallpaper: container.NewStack(bg)}
 	ret.ExtendBaseWidget(ret)
 	return ret
 }
