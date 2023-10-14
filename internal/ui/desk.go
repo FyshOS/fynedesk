@@ -5,13 +5,13 @@ import (
 	"os/exec"
 	"strconv"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/container"
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
-
 	"fyshos.com/fynedesk"
 	wmtheme "fyshos.com/fynedesk/theme"
 	"fyshos.com/fynedesk/wm"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 )
 
 const (
@@ -61,7 +61,7 @@ func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0].(*background)
 	bg.Resize(size)
 	if l.Settings().NarrowLeftLauncher() {
-		l.bar.Resize(size)
+		l.bar.Resize(fyne.NewSize(wmtheme.NarrowBarWidth, size.Height))
 		l.bar.Move(fyne.NewPos(0, 0))
 	} else {
 		barHeight := l.bar.MinSize().Height
