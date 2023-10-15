@@ -223,7 +223,12 @@ func (s *Switcher) HideCancel() {
 	}()
 }
 
-func showAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
+// Show the app switcher, it would then be hidden with HideApply or HideCancel.
+func (s *Switcher) Show() {
+	s.win.Show()
+}
+
+func newAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
 	s := &Switcher{provider: prov}
 	s.icons = s.loadIcons(wins)
 	if len(s.icons) <= 1 { // don't actually show if only 1 is visible
@@ -235,20 +240,19 @@ func showAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.Applicatio
 		off = len(s.icons) + off // plus a negative is minus
 	}
 	s.win.Canvas().Focus(s.icons[off].(*switchIcon))
-	s.win.Show()
 	return s
 }
 
-// ShowAppSwitcher shows the application Switcher to change windows.
+// NewAppSwitcher creates the application Switcher to change windows.
 // The most recently used not-top window will be selected by default.
 // If the Switcher was already visible then it will select the next window in order.
-func ShowAppSwitcher(wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
-	return showAppSwitcherAt(1, wins, prov)
+func NewAppSwitcher(wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
+	return newAppSwitcherAt(1, wins, prov)
 }
 
-// ShowAppSwitcherReverse shows the application Switcher to change windows.
+// NewAppSwitcherReverse creates the application Switcher to change windows.
 // The least recently used window will be selected by default.
 // If the Switcher was already visible then it will select the last window in order.
-func ShowAppSwitcherReverse(wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
-	return showAppSwitcherAt(-1, wins, prov)
+func NewAppSwitcherReverse(wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
+	return newAppSwitcherAt(-1, wins, prov)
 }
