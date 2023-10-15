@@ -1,13 +1,11 @@
 package ui
 
 import (
-	"image/color"
 	"os"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
 	"fyshos.com/fynedesk"
@@ -17,41 +15,12 @@ import (
 type background struct {
 	widget.BaseWidget
 
-	objects   []fyne.CanvasObject
 	wallpaper *fyne.Container
 }
 
 func (b *background) CreateRenderer() fyne.WidgetRenderer {
 	c := container.NewStack(b.loadModules()...)
-	return &backgroundRenderer{b: b, c: c}
-}
-
-type backgroundRenderer struct {
-	b *background
-	c *fyne.Container
-}
-
-func (b *backgroundRenderer) Layout(s fyne.Size) {
-	b.c.Layout.Layout(b.c.Objects, s)
-}
-
-func (b *backgroundRenderer) MinSize() fyne.Size {
-	return b.c.Layout.MinSize(b.c.Objects)
-}
-
-func (b *backgroundRenderer) Refresh() {
-	b.c.Objects = b.b.objects
-}
-
-func (b *backgroundRenderer) BackgroundColor() color.Color {
-	return theme.BackgroundColor()
-}
-
-func (b *backgroundRenderer) Objects() []fyne.CanvasObject {
-	return b.c.Objects
-}
-
-func (b *backgroundRenderer) Destroy() {
+	return widget.NewSimpleRenderer(c)
 }
 
 func (b *background) loadModules() []fyne.CanvasObject {
@@ -68,7 +37,6 @@ func (b *background) loadModules() []fyne.CanvasObject {
 		}
 	}
 
-	b.objects = objects
 	return objects
 }
 
