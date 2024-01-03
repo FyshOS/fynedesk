@@ -158,6 +158,6 @@ func (a *auth) CancelAuthentication(cookie string, sender dbus.Sender) (err *dbu
 }
 
 func StartAuthAgent() {
-	a := &auth{}
+	a := &auth{windows: make(map[string]fyne.Window)}
 	go a.register()
 }
