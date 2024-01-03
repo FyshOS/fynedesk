@@ -38,12 +38,9 @@ type client struct {
 // NewClient creates a new X11 client for the specified window ID and X window manager
 func NewClient(win xproto.Window, wm x11.XWM) x11.XWin {
 	c := &client{win: win, wm: wm, desk: fynedesk.Instance().Desktop()}
-	err := xproto.ChangeWindowAttributesChecked(wm.Conn(), win, xproto.CwEventMask,
+	xproto.ChangeWindowAttributes(wm.Conn(), win, xproto.CwEventMask,
 		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow |
-			xproto.EventMaskVisibilityChange}).Check()
-	if err != nil {
-		fyne.LogError("Could not change window attributes", err)
-	}
+			xproto.EventMaskVisibilityChange})
 	windowAllowedActionsSet(wm.X(), win, x11.AllowedActions)
 
 	initialHints := x11.WindowExtendedHintsGet(wm.X(), c.win)
@@ -92,10 +89,7 @@ func (c *client) Close() {
 	}
 
 	if !askNicely {
-		err := xproto.DestroyWindowChecked(c.wm.Conn(), c.win).Check()
-		if err != nil {
-			fyne.LogError("Close Error", err)
-		}
+		xproto.DestroyWindow(c.wm.Conn(), c.win)
 
 		return
 	}
@@ -118,10 +112,7 @@ func (c *client) Close() {
 		return
 	}
 
-	err = xproto.SendEventChecked(c.wm.Conn(), false, c.win, 0, string(cm.Bytes())).Check()
-	if err != nil {
-		fyne.LogError("Window Delete Error", err)
-	}
+	xproto.SendEvent(c.wm.Conn(), false, c.win, 0, string(cm.Bytes()))
 }
 
 func (c *client) Desktop() int {
@@ -316,11 +307,8 @@ func (c *client) RaiseAbove(win fynedesk.Window) {
 		return
 	}
 
-	err := xproto.ConfigureWindowChecked(c.wm.Conn(), c.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-		[]uint32{uint32(topID), uint32(xproto.StackModeAbove)}).Check()
-	if err != nil {
-		fyne.LogError("Restack Error", err)
-	}
+	xproto.ConfigureWindow(c.wm.Conn(), c.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		[]uint32{uint32(topID), uint32(xproto.StackModeAbove)})
 }
 
 func (c *client) RaiseToTop() {
@@ -430,12 +418,9 @@ func (c *client) positionNewWindow() {
 			decorated, fynedesk.Instance().Screens())
 	}
 
-	err = xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	xproto.ConfigureWindow(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(x), uint32(y),
-		uint32(w), uint32(h)}).Check()
-	if err != nil {
-		fyne.LogError("", err)
-	}
+		uint32(w), uint32(h)})
 }
 
 func (c *client) stateMessage(state int) {
