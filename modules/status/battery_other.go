@@ -4,7 +4,6 @@
 package status
 
 import (
-	"io/ioutil"
 	"os"
 	"strconv"
 	"strings"
@@ -13,7 +12,7 @@ import (
 )
 
 func (b *battery) powered() (bool, error) {
-	status, err := ioutil.ReadFile("/sys/class/power_supply/BAT0/status")
+	status, err := os.ReadFile("/sys/class/power_supply/BAT0/status")
 	if err != nil {
 		return true, err // assume power if no battery info
 	}
@@ -23,11 +22,11 @@ func (b *battery) powered() (bool, error) {
 
 func (b *battery) value() (float64, error) {
 	nowFile, fullFile := pickChargeOrEnergy()
-	fullStr, err1 := ioutil.ReadFile(fullFile)
+	fullStr, err1 := os.ReadFile(fullFile)
 	if os.IsNotExist(err1) {
 		return 0, err1 // return quietly if the file was not present (desktop?)
 	}
-	nowStr, err2 := ioutil.ReadFile(nowFile)
+	nowStr, err2 := os.ReadFile(nowFile)
 	if err1 != nil || err2 != nil {
 		fyne.LogError("Error reading battery info", err1)
 		return 0, err1

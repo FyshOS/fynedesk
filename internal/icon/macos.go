@@ -4,7 +4,6 @@ import (
 	"bytes"
 	_ "image/jpeg" // support JPEG images
 	"image/png"    // PNG support is required as we use it directly
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -110,7 +109,7 @@ type macOSAppProvider struct {
 func (m *macOSAppProvider) forEachApplication(f func(name, path, category string) bool) {
 	for _, root := range m.rootDirs {
 		category := filepath.Base(root)
-		files, err := ioutil.ReadDir(root)
+		files, err := os.ReadDir(root)
 		if err != nil {
 			fyne.LogError("Could not read applications directory "+root, err)
 			return
