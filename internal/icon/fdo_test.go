@@ -36,21 +36,21 @@ func setTestEnv(t *testing.T) {
 	}
 }
 
-//applications/app1.desktop and icons/default_theme/apps/32x32/app1.png
+// applications/app1.desktop and icons/default_theme/apps/32x32/app1.png
 func TestFdoLookupDefaultTheme(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app1")
 	assert.Equal(t, true, exists(data))
 }
 
-//applications/com.fyne.app.desktop and icons/default_theme/apps/scalable/app2.svg
+// applications/com.fyne.app.desktop and icons/default_theme/apps/scalable/app2.svg
 func TestFdoFileNameMisMatchAndScalable(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app2")
 	assert.Equal(t, true, exists(data))
 }
 
-//check the category from app1
+// check the category from app1
 func TestFdoIconCategory(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app1")
@@ -61,7 +61,7 @@ func TestFdoIconCategory(t *testing.T) {
 	assert.Equal(t, "Utility", data.(*fdoApplicationData).mainCategory())
 }
 
-//applications/app3.desktop and applications/app3.png
+// applications/app3.desktop and applications/app3.png
 func TestFdoIconNameIsPath(t *testing.T) {
 	setTestEnv(t)
 	dataLocation := os.Getenv("XDG_DATA_DIRS")
@@ -75,56 +75,56 @@ func TestFdoIconNameIsPath(t *testing.T) {
 	assert.Equal(t, true, exists(data))
 }
 
-//check NoDisplay from app4
+// check NoDisplay from app4
 func TestFdoIconHide(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app4")
 	assert.Equal(t, true, data.Hidden())
 }
 
-//applications/app4.desktop and pixmaps/app4.png
+// applications/app4.desktop and pixmaps/app4.png
 func TestFdoIconInPixmaps(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app4")
 	assert.Equal(t, true, exists(data))
 }
 
-//applications/app5.desktop and icons/hicolor/32x32/apps/app5.png
+// applications/app5.desktop and icons/hicolor/32x32/apps/app5.png
 func TestFdoIconHicolorFallback(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app5")
 	assert.Equal(t, true, exists(data))
 }
 
-//applications/app6.desktop and icons/hicolor/scalable/apps/app6.svg
+// applications/app6.desktop and icons/hicolor/scalable/apps/app6.svg
 func TestFdoIconHicolorFallbackScalable(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app6")
 	assert.Equal(t, true, exists(data))
 }
 
-//applications/app7.desktop and icons/default_theme/apps/16x16/app7.png
+// applications/app7.desktop and icons/default_theme/apps/16x16/app7.png
 func TestFdoLookupDefaultThemeDifferentSize(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app7")
 	assert.Equal(t, true, exists(data))
 }
 
-//applications/app8.desktop and icons/third_theme/apps/32/app8.png
+// applications/app8.desktop and icons/third_theme/apps/32/app8.png
 func TestFdoLookupAnyThemeFallback(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app8")
 	assert.Equal(t, true, exists(data))
 }
 
-//applications/xterm.desktop and icons/third_theme/emblems/16x16/app9.png
+// applications/xterm.desktop and icons/third_theme/emblems/16x16/app9.png
 func TestFdoLookupIconNotInApps(t *testing.T) {
 	setTestEnv(t)
 	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("xterm")
 	assert.Equal(t, true, exists(data))
 }
 
-//missing - not able to match
+// missing - not able to match
 func TestFdoLookupMissing(t *testing.T) {
 	setTestEnv(t)
 	provider := NewFDOIconProvider()
