@@ -11,7 +11,6 @@ import (
 	"image"
 	"image/color"
 	"image/png"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -324,7 +323,7 @@ func (t *tray) updateIcon(i *node) {
 		} else {
 			fullPath = icon.FdoLookupIconPath("", 64, name)
 		}
-		img, err := ioutil.ReadFile(fullPath)
+		img, err := os.ReadFile(fullPath)
 		if err != nil {
 			fyne.LogError("Failed to load status icon", err)
 			i.ico.SetIcon(wmtheme.BrokenImageIcon)

@@ -23,7 +23,7 @@ type notification struct {
 func (n *notification) show(list *fyne.Container) {
 	title := widget.NewLabel(n.message.Title)
 	title.TextStyle = fyne.TextStyle{Bold: true}
-	title.Wrapping = fyne.TextTruncate
+	title.Truncation = fyne.TextTruncateEllipsis
 	text := widget.NewLabel(n.message.Body)
 	text.Wrapping = fyne.TextWrapWord
 	n.renderer = container.NewVBox(title, text)

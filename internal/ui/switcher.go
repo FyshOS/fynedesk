@@ -42,7 +42,7 @@ func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 	bg.CornerRadius = theme.InputRadiusSize()
 	img := canvas.NewImageFromResource(res)
 	text := widget.NewLabelWithStyle(title, fyne.TextAlignCenter, fyne.TextStyle{})
-	text.Wrapping = fyne.TextTruncate
+	text.Truncation = fyne.TextTruncateEllipsis
 	return &switchIconRenderer{icon: s, bg: bg,
 		img: img, text: text, objects: []fyne.CanvasObject{bg, img, text}}
 }

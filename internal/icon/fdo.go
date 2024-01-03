@@ -2,7 +2,7 @@ package icon // import "fyshos.com/fynedesk/internal/icon"
 
 import (
 	"bufio"
-	"io/ioutil"
+	"io/fs"
 	"math"
 	"os"
 	"os/exec"
@@ -124,7 +124,7 @@ func (data fdoApplicationData) mainCategory() string {
 }
 
 func loadIcon(path string) fyne.Resource {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		fyne.LogError("Failed to load image", err)
 		return nil
@@ -154,7 +154,7 @@ func fdoForEachApplicationFile(f func(data fynedesk.AppData) bool) {
 	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
 		testLocation := filepath.Join(dataDir, "applications")
-		files, err := ioutil.ReadDir(testLocation)
+		files, err := os.ReadDir(testLocation)
 		if err != nil {
 			continue
 		}
@@ -211,7 +211,7 @@ func (f *fdoIconProvider) lookupApplication(appName string) fynedesk.AppData {
 	return f.lookupApplicationByMetadata(appName)
 }
 
-func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDir string, joiner string, iconName string) string {
+func fdoClosestSizeIcon(files []fs.DirEntry, iconSize int, format string, baseDir string, joiner string, iconName string) string {
 	var sizes []int
 	for _, f := range files {
 		if format == "32x32" {
@@ -270,7 +270,7 @@ func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDi
 }
 
 func lookupAnyIconSizeInThemeDir(dir string, joiner string, iconName string, iconSize int) string {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return ""
 	}
@@ -285,7 +285,7 @@ func lookupAnyIconSizeInThemeDir(dir string, joiner string, iconName string, ico
 	}
 
 	directory := filepath.Join(dir, joiner)
-	files, err = ioutil.ReadDir(directory)
+	files, err = os.ReadDir(directory)
 	if err != nil {
 		return ""
 	}
@@ -424,7 +424,7 @@ func fdoLookupAvailableThemes() []string {
 	var themes []string
 	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
-		files, err := ioutil.ReadDir(filepath.Join(dataDir, "icons"))
+		files, err := os.ReadDir(filepath.Join(dataDir, "icons"))
 		if err != nil {
 			continue
 		}
