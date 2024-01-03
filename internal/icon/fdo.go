@@ -360,8 +360,8 @@ func FdoLookupIconPathInTheme(iconSize string, dir string, parentDir string, ico
 			}
 			if len(inheritedThemes) > 0 {
 				for _, theme := range inheritedThemes {
-					dir = filepath.Join(parentDir, "icons", theme)
-					iconPath := FdoLookupIconPathInTheme(iconSize, dir, parentDir, iconName)
+					childDir := filepath.Join(parentDir, "icons", theme)
+					iconPath := FdoLookupIconPathInTheme(iconSize, childDir, parentDir, iconName)
 					if iconPath != "" {
 						return iconPath
 					}
