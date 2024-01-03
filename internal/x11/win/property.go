@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"math"
 
-	"fyne.io/fyne/v2"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -15,6 +14,8 @@ import (
 	"github.com/BurntSushi/xgbutil/motif"
 	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
+
+	"fyne.io/fyne/v2"
 
 	"fyshos.com/fynedesk"
 	"fyshos.com/fynedesk/internal/x11"
@@ -69,16 +70,18 @@ func windowCommand(x *xgbutil.XUtil, win xproto.Window) string {
 	return command
 }
 
-func windowIcon(x *xgbutil.XUtil, win xproto.Window, width int, height int) bytes.Buffer {
-	var w bytes.Buffer
+func windowIcon(x *xgbutil.XUtil, win xproto.Window, width int, height int) *bytes.Buffer {
 	img, err := xgraphics.FindIcon(x, win, width, height)
 	if err != nil {
-		fyne.LogError("Could not get window icon", err)
-		return w
+		fyne.LogError("ICON: Could not get window icon", err)
+		return nil
 	}
-	err = img.WritePng(&w)
+
+	w := &bytes.Buffer{}
+	err = img.WritePng(w)
 	if err != nil {
-		fyne.LogError("Could not convert icon to png", err)
+		fyne.LogError("ICON: Could not convert icon to png", err)
+		return nil
 	}
 	return w
 }
