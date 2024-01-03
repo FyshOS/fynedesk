@@ -330,13 +330,14 @@ func (l *desktop) Screens() fynedesk.ScreenList {
 // NewDesktop creates a new desktop in fullscreen for main usage.
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An ApplicationProvider is used to lookup application icons from the operating system.
-func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider, screenProvider fynedesk.ScreenList) fynedesk.Desktop {
-	desk := newDesktop(app, wm, icons)
+func NewDesktop(app fyne.App, mgr fynedesk.WindowManager, icons fynedesk.ApplicationProvider, screenProvider fynedesk.ScreenList) fynedesk.Desktop {
+	desk := newDesktop(app, mgr, icons)
 	desk.run = desk.runFull
 	screenProvider.AddChangeListener(desk.setupRoot)
 	desk.screens = screenProvider
 
 	desk.setupRoot()
+	wm.StartAuthAgent()
 	go desk.startXscreensaver()
 	return desk
 }
