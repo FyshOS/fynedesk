@@ -57,7 +57,7 @@ type ident struct {
 	Details map[string]dbus.Variant
 }
 
-func (a *auth) BeginAuthentication(action_id, message, icon_name string, details map[string]string, cookie string, ids []ident, sender dbus.Sender) (err *dbus.Error) {
+func (a *auth) BeginAuthentication(actionID, message, iconName string, details map[string]string, cookie string, ids []ident, sender dbus.Sender) (err *dbus.Error) {
 	wg := &sync.WaitGroup{}
 	wg.Add(1)
 	pass := widget.NewPasswordEntry()
@@ -157,6 +157,7 @@ func (a *auth) CancelAuthentication(cookie string, sender dbus.Sender) (err *dbu
 	return nil
 }
 
+// StartAuthAgent asks our policy kit agent to start listening for auth requests.
 func StartAuthAgent() {
 	a := &auth{windows: make(map[string]fyne.Window)}
 	go a.register()
