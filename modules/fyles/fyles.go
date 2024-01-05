@@ -60,10 +60,11 @@ func (f *fyles) Metadata() fynedesk.ModuleMetadata {
 func (f *fyles) setDesktopDir(p *lib.Panel) {
 	home, _ := os.UserHomeDir()
 	u := storage.NewFileURI(filepath.Join(home, "Desktop"))
-	trash := newTrashURI(filepath.Join(home, ".local", "share", "Trash", "files"))
+	settings := newCustomURI("settings://", "Settings", theme.SettingsIcon())
+	trash := newCustomURI("file://"+filepath.Join(home, ".local", "share", "Trash", "files"), "Trash", theme.DeleteIcon())
 
 	list, err := storage.List(u)
-	list = append([]fyne.URI{trash}, list...)
+	list = append([]fyne.URI{settings, trash}, list...)
 	if err != nil {
 		fyne.LogError("Could not read Desktop dir", err)
 	} else {
@@ -72,6 +73,10 @@ func (f *fyles) setDesktopDir(p *lib.Panel) {
 }
 
 func (f *fyles) tapped(u fyne.URI) {
+	if u.Scheme() == "settings" {
+		fynedesk.Instance().ShowSettings()
+		return
+	}
 	p, err := execabs.LookPath("fyles")
 	if p != "" && err == nil {
 		if ok, _ := storage.CanList(u); ok {
@@ -105,17 +110,20 @@ func filterHidden() storage.FileFilter {
 
 type trashURI struct {
 	fyne.URI
+
+	name string
+	icon fyne.Resource
 }
 
-func newTrashURI(s string) fyne.URI {
-	u := storage.NewFileURI(s)
-	return &trashURI{URI: u}
+func newCustomURI(str, name string, icon fyne.Resource) fyne.URI {
+	u, _ := storage.ParseURI(str)
+	return &trashURI{URI: u, name: name, icon: icon}
 }
 
 func (t *trashURI) Name() string {
-	return "Trash"
+	return t.name
 }
 
 func (t *trashURI) Icon() fyne.Resource {
-	return theme.DeleteIcon()
+	return t.icon
 }

@@ -21,6 +21,7 @@ type Desktop interface {
 
 	Desktop() int
 	SetDesktop(int)
+	ShowSettings()
 }
 
 var instance Desktop

@@ -57,6 +57,8 @@ func (*Desktop) Desktop() int {
 func (*Desktop) SetDesktop(int) {
 }
 
+func (*Desktop) ShowSettings() {}
+
 // IconProvider returns the icon provider, by default it uses a simple in-memory implementation
 func (td *Desktop) IconProvider() fynedesk.ApplicationProvider {
 	return td.icons

@@ -57,6 +57,10 @@ func (l *desktop) SetDesktop(id int) {
 	}
 }
 
+func (l *desktop) ShowSettings() {
+	l.widgets.showSettings()
+}
+
 func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0].(*background)
 	bg.Resize(size)
