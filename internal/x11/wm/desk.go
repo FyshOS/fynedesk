@@ -264,6 +264,23 @@ func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, p fyne.Position) {
 	x.ShowOverlay(win, s, p)
 }
 
+func (x *x11WM) ShowModal(w fyne.Window, s fyne.Size) {
+	w.SetTitle(windowNameMenu)
+	w.SetFixedSize(true)
+	w.Resize(s)
+	w.CenterOnScreen()
+
+	w.Show()
+	x.menuSize = s
+
+	root := fynedesk.Instance().Screens().Primary()
+	scale := root.CanvasScale()
+	p := fyne.NewPos((float32(root.Width)/scale-s.Width)/2, (float32(root.Height)/scale-s.Height)/2)
+
+	x.menuPos = p
+	x.menuWin = w
+}
+
 func (x *x11WM) X() *xgbutil.XUtil {
 	return x.x
 }

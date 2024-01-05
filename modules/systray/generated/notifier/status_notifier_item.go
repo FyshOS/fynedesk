@@ -317,7 +317,8 @@ func (o *StatusNotifierItem) GetIconName(ctx context.Context) (iconName string, 
 // GetIconPixmap gets org.kde.StatusNotifierItem.IconPixmap property.
 //
 // Annotations:
-//   @org.qtproject.QtDBus.QtTypeName = KDbusImageVector
+//
+//	@org.qtproject.QtDBus.QtTypeName = KDbusImageVector
 func (o *StatusNotifierItem) GetIconPixmap(ctx context.Context) (iconPixmap []struct {
 	V0 int32
 	V1 int32
@@ -336,7 +337,8 @@ func (o *StatusNotifierItem) GetOverlayIconName(ctx context.Context) (overlayIco
 // GetOverlayIconPixmap gets org.kde.StatusNotifierItem.OverlayIconPixmap property.
 //
 // Annotations:
-//   @org.qtproject.QtDBus.QtTypeName = KDbusImageVector
+//
+//	@org.qtproject.QtDBus.QtTypeName = KDbusImageVector
 func (o *StatusNotifierItem) GetOverlayIconPixmap(ctx context.Context) (overlayIconPixmap []struct {
 	V0 int32
 	V1 int32
@@ -355,7 +357,8 @@ func (o *StatusNotifierItem) GetAttentionIconName(ctx context.Context) (attentio
 // GetAttentionIconPixmap gets org.kde.StatusNotifierItem.AttentionIconPixmap property.
 //
 // Annotations:
-//   @org.qtproject.QtDBus.QtTypeName = KDbusImageVector
+//
+//	@org.qtproject.QtDBus.QtTypeName = KDbusImageVector
 func (o *StatusNotifierItem) GetAttentionIconPixmap(ctx context.Context) (attentionIconPixmap []struct {
 	V0 int32
 	V1 int32

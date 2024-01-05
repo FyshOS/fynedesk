@@ -155,12 +155,9 @@ func newFrame(c *client) *frame {
 	}
 
 	if full || maximized {
-		err = xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		xproto.ConfigureWindow(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-			[]uint32{uint32(offsetX), uint32(offsetY), uint32(framed.childWidth), uint32(framed.childHeight)}).Check()
-		if err != nil {
-			fyne.LogError("Configure Window Error", err)
-		}
+			[]uint32{uint32(offsetX), uint32(offsetY), uint32(framed.childWidth), uint32(framed.childHeight)})
 	}
 
 	windowStateSet(c.wm.X(), c.win, icccm.StateNormal)
@@ -194,20 +191,14 @@ func (f *frame) addBorder() {
 	}
 	f.applyTheme(true)
 
-	err := xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	xproto.ConfigureWindow(f.client.wm.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(x), uint32(y), uint32(f.childWidth), uint32(f.childHeight)}).Check()
-	if err != nil {
-		fyne.LogError("Configure Window Error", err)
-	}
-	err = xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		[]uint32{uint32(x), uint32(y), uint32(f.childWidth), uint32(f.childHeight)})
+	xproto.ConfigureWindow(f.client.wm.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(f.x), uint32(f.y), uint32(w), uint32(h)}).Check()
-	if err != nil {
-		fyne.LogError("Configure Window Error", err)
-	}
+		[]uint32{uint32(f.x), uint32(f.y), uint32(w), uint32(h)})
 
-	err = ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: int(borderWidth), Right: int(borderWidth), Top: int(titleHeight), Bottom: int(borderWidth)})
+	err := ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: int(borderWidth), Right: int(borderWidth), Top: int(titleHeight), Bottom: int(borderWidth)})
 	if err != nil {
 		fyne.LogError("", err)
 	}
@@ -215,12 +206,9 @@ func (f *frame) addBorder() {
 }
 
 func (f *frame) applyBorderlessTheme() {
-	err := xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	xproto.ConfigureWindow(f.client.wm.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(0), uint32(0), uint32(f.width), uint32(f.height)}).Check()
-	if err != nil {
-		fyne.LogError("Configure Window Error", err)
-	}
+		[]uint32{uint32(0), uint32(0), uint32(f.width), uint32(f.height)})
 }
 
 func (f *frame) applyTheme(force bool) {
@@ -290,11 +278,8 @@ func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image
 			i += 4
 		}
 	}
-	err := xproto.PutImageChecked(f.client.wm.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
-		uint16(width), uint16(height), 0, int16(yoff), 0, depth, data).Check()
-	if err != nil {
-		fyne.LogError("Put image error", err)
-	}
+	xproto.PutImage(f.client.wm.Conn(), xproto.ImageFormatZPixmap, xproto.Drawable(pid), draw,
+		uint16(width), uint16(height), 0, int16(yoff), 0, depth, data)
 }
 
 func (f *frame) createPixmaps(depth byte) error {
@@ -621,11 +606,8 @@ func (f *frame) mouseMotion(x, y int16) {
 	if refresh {
 		f.applyTheme(true)
 	}
-	err := xproto.ChangeWindowAttributesChecked(f.client.wm.Conn(), f.client.id, xproto.CwCursor,
-		[]uint32{uint32(cursor)}).Check()
-	if err != nil {
-		fyne.LogError("Set Cursor Error", err)
-	}
+	xproto.ChangeWindowAttributes(f.client.wm.Conn(), f.client.id, xproto.CwCursor,
+		[]uint32{uint32(cursor)})
 }
 
 func (f *frame) lookupResizeCursor(x, y int16) xproto.Cursor {
@@ -802,20 +784,14 @@ func (f *frame) removeBorder() {
 	}
 	f.applyTheme(true)
 
-	err := xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	xproto.ConfigureWindow(f.client.wm.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
-	if err != nil {
-		fyne.LogError("Configure Window Error", err)
-	}
-	err = xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)})
+	xproto.ConfigureWindow(f.client.wm.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{0, 0, uint32(f.childWidth), uint32(f.childHeight)}).Check()
-	if err != nil {
-		fyne.LogError("Configure Window Error", err)
-	}
+		[]uint32{0, 0, uint32(f.childWidth), uint32(f.childHeight)})
 
-	err = ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
+	err := ewmh.FrameExtentsSet(f.client.wm.X(), f.client.win, &ewmh.FrameExtents{Left: 0, Right: 0, Top: 0, Bottom: 0})
 	if err != nil {
 		fyne.LogError("", err)
 	}
@@ -892,18 +868,12 @@ func (f *frame) updateGeometry(x, y int16, w, h uint16, force bool) {
 	f.childWidth = uint16(innerW)
 	f.childHeight = uint16(innerH)
 
-	err := xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	xproto.ConfigureWindow(f.client.wm.Conn(), f.client.id, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)}).Check()
-	if err != nil {
-		fyne.LogError("Configure Window Error", err)
-	}
-	err = xproto.ConfigureWindowChecked(f.client.wm.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		[]uint32{uint32(f.x), uint32(f.y), uint32(f.width), uint32(f.height)})
+	xproto.ConfigureWindow(f.client.wm.Conn(), f.client.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{innerX, innerY, uint32(f.childWidth), uint32(f.childHeight)}).Check()
-	if err != nil {
-		fyne.LogError("Configure Window Error", err)
-	}
+		[]uint32{innerX, innerY, uint32(f.childWidth), uint32(f.childHeight)})
 
 	newScreen := fynedesk.Instance().Screens().ScreenForWindow(f.client)
 	if newScreen != currentScreen {
