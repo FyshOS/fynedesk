@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/storage"
+	"fyne.io/fyne/v2/theme"
 
 	lib "github.com/fyshos/fyles/pkg/fyles"
 	"golang.org/x/sys/execabs"
@@ -113,4 +114,8 @@ func newTrashURI(s string) fyne.URI {
 
 func (t *trashURI) Name() string {
 	return "Trash"
+}
+
+func (t *trashURI) Icon() fyne.Resource {
+	return theme.DeleteIcon()
 }
