@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"strconv"
 
+	"fyshos.com/fynedesk/internal/notify"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -69,6 +71,12 @@ func (l *desktop) SetDesktop(id int) {
 			item.Move(fyne.NewPos(newX, newY))
 		}
 	}).Start()
+
+	for _, m := range l.Modules() {
+		if desk, ok := m.(notify.DesktopNotify); ok {
+			desk.DesktopChangeNotify(id)
+		}
+	}
 }
 
 func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {

@@ -20,6 +20,11 @@ type desktops struct {
 	gui     *pager
 }
 
+func (d *desktops) DesktopChangeNotify(id int) {
+	d.current = id
+	d.gui.refresh()
+}
+
 func (d *desktops) Destroy() {
 }
 
