@@ -6,6 +6,7 @@ import (
 	"strconv"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 
@@ -46,15 +47,28 @@ func (l *desktop) Desktop() int {
 }
 
 func (l *desktop) SetDesktop(id int) {
+	diff := id - l.desk
 	l.desk = id
 
-	for _, item := range l.wm.Windows() {
-		if item.Desktop() == id {
-			item.Uniconify()
-		} else {
-			item.Iconify()
-		}
+	display := l.Screens().Primary() // TODO need to iterate/find full virtual height
+	off := float32(diff*-display.Height) / display.Scale
+	wins := l.wm.Windows()
+
+	starts := make([]fyne.Position, len(wins))
+	deltas := make([]fyne.Delta, len(wins))
+	for i, win := range wins {
+		starts[i] = win.Position()
+		deltas[i] = fyne.NewDelta(0, off)
 	}
+
+	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
+		for i, item := range l.wm.Windows() {
+			newX := starts[i].X + deltas[i].DX*f
+			newY := starts[i].Y + deltas[i].DY*f
+
+			item.Move(fyne.NewPos(newX, newY))
+		}
+	}).Start()
 }
 
 func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
