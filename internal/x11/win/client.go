@@ -129,8 +129,10 @@ func (c *client) SetDesktop(id int) {
 	diff := id - c.desk
 	c.desk = id
 
-	display := d.Screens().Primary() // TODO need to iterate/find full virtual height
-	off := float32(diff*display.Height) / display.Scale
+	_, height := d.RootSizePixels()
+	offPix := float32(diff * -int(height))
+	display := d.Screens().ScreenForWindow(c)
+	off := offPix / display.Scale
 
 	start := c.Position()
 	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {

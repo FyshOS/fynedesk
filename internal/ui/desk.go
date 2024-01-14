@@ -52,14 +52,17 @@ func (l *desktop) SetDesktop(id int) {
 	diff := id - l.desk
 	l.desk = id
 
-	display := l.Screens().Primary() // TODO need to iterate/find full virtual height
-	off := float32(diff*-display.Height) / display.Scale
+	_, height := l.RootSizePixels()
+	offPix := float32(diff * -int(height))
 	wins := l.wm.Windows()
 
 	starts := make([]fyne.Position, len(wins))
 	deltas := make([]fyne.Delta, len(wins))
 	for i, win := range wins {
 		starts[i] = win.Position()
+
+		display := l.Screens().ScreenForWindow(win)
+		off := offPix / display.Scale
 		deltas[i] = fyne.NewDelta(0, off)
 	}
 
@@ -191,6 +194,22 @@ func (l *desktop) ContentBoundsPixels(screen *fynedesk.Screen) (x, y, w, h uint3
 		return bar, 0, screenW - bar - wid, screenH
 	}
 	return 0, 0, screenW, screenH
+}
+
+func (l *desktop) RootSizePixels() (w, h uint32) {
+	for _, screen := range l.Screens().Screens() {
+		right := uint32(screen.X + screen.Width)
+		bottom := uint32(screen.Y + screen.Height)
+
+		if right > w {
+			w = right
+		}
+		if bottom > h {
+			h = bottom
+		}
+	}
+
+	return w, h
 }
 
 func (l *desktop) IconProvider() fynedesk.ApplicationProvider {

@@ -45,7 +45,11 @@ func (*Desktop) Capture() image.Image {
 
 // ContentBoundsPixels returns a default value for how much space maximised apps should use
 func (*Desktop) ContentBoundsPixels(_ *fynedesk.Screen) (x, y, w, h uint32) {
-	return 0, 0, uint32(320), uint32(240)
+	return 0, 0, 320, 240
+}
+
+func (*Desktop) RootSizePixels() (w, h uint32) {
+	return 320, 240
 }
 
 // Desktop returns the index of the current desktop (in test this is always 0)
