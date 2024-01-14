@@ -1,7 +1,6 @@
 package ui
 
 import (
-	"fmt"
 	"image/color"
 	"os"
 	"sort"
@@ -64,7 +63,7 @@ func (w *widgetPanel) askLogout() {
 		win.Close()
 	})
 
-	header := widget.NewRichTextFromMarkdown(fmt.Sprintf("### Log out"))
+	header := widget.NewRichTextFromMarkdown("### Log out")
 	header.Truncation = fyne.TextTruncateEllipsis
 	bottomPad := canvas.NewRectangle(color.Transparent)
 	bottomPad.SetMinSize(fyne.NewSquareSize(10))
