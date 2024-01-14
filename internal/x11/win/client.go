@@ -205,7 +205,7 @@ func (c *client) Move(pos fyne.Position) {
 
 	targetX := int16(pos.X * screen.CanvasScale())
 	targetY := int16(pos.Y * screen.CanvasScale())
-	c.frame.queueGeometry(targetX, targetY, c.frame.width, c.frame.height, false)
+	c.frame.updateGeometry(targetX, targetY, c.frame.width, c.frame.height, false)
 }
 
 func (c *client) NotifyBorderChange() {
