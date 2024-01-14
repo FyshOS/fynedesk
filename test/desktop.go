@@ -48,6 +48,7 @@ func (*Desktop) ContentBoundsPixels(_ *fynedesk.Screen) (x, y, w, h uint32) {
 	return 0, 0, 320, 240
 }
 
+// RootSizePixels returns the total number of pixels required to fit all the screens
 func (*Desktop) RootSizePixels() (w, h uint32) {
 	return 320, 240
 }
