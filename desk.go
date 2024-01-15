@@ -9,6 +9,7 @@ type Desktop interface {
 	RecentApps() []AppData
 	Settings() DeskSettings
 	ContentBoundsPixels(*Screen) (x, y, w, h uint32)
+	RootSizePixels() (w, h uint32)
 	Screens() ScreenList
 
 	IconProvider() ApplicationProvider

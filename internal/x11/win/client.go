@@ -6,13 +6,14 @@ package win
 import (
 	"image"
 
-	"fyne.io/fyne/v2"
-
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 
 	"fyshos.com/fynedesk"
 	"fyshos.com/fynedesk/internal/x11"
@@ -125,12 +126,20 @@ func (c *client) SetDesktop(id int) {
 	}
 
 	d := fynedesk.Instance()
+	diff := id - c.desk
 	c.desk = id
-	if id == d.Desktop() {
-		c.Uniconify()
-	} else {
-		c.Iconify()
-	}
+
+	_, height := d.RootSizePixels()
+	offPix := float32(diff * -int(height))
+	display := d.Screens().ScreenForWindow(c)
+	off := offPix / display.Scale
+
+	start := c.Position()
+	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
+		newY := start.Y + off*f
+
+		c.Move(fyne.NewPos(start.X, newY))
+	}).Start()
 }
 
 func (c *client) Expose() {
@@ -191,6 +200,14 @@ func (c *client) Maximize() {
 
 func (c *client) Maximized() bool {
 	return c.maximized
+}
+
+func (c *client) Move(pos fyne.Position) {
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
+
+	targetX := int16(pos.X * screen.CanvasScale())
+	targetY := int16(pos.Y * screen.CanvasScale())
+	c.frame.updateGeometry(targetX, targetY, c.frame.width, c.frame.height, false)
 }
 
 func (c *client) NotifyBorderChange() {
