@@ -93,6 +93,8 @@ const (
 	keyCodeEnter = 108
 	keyCodeLeft  = 113
 	keyCodeRight = 114
+	keyCodeUp    = 111
+	keyCodeDown  = 116
 
 	keyCodeBrightLess = 232
 	keyCodeBrightMore = 233
@@ -333,6 +335,10 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 		return keyCodeLeft
 	case fyne.KeyRight:
 		return keyCodeRight
+	case fyne.KeyUp:
+		return keyCodeUp
+	case fyne.KeyDown:
+		return keyCodeDown
 	case deskDriver.KeyPrintScreen:
 		return keyCodePrintScreen
 	case fyne.KeyTab:
