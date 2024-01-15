@@ -478,20 +478,14 @@ func (x *x11WM) configureRoots() {
 			xproto.SendEvent(x.x.Conn(), false, x.rootID, xproto.EventMaskStructureNotify, string(notifyEv.Bytes()))
 
 			// we need to trigger a move so that the correct scale is picked up
-			err = xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			xproto.ConfigureWindow(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-				[]uint32{uint32(screen.X + 1), uint32(screen.Y + 1), uint32(screen.Width - 2), uint32(screen.Height - 2)}).Check()
-			if err != nil {
-				fyne.LogError("Configure Window Error", err)
-			}
+				[]uint32{uint32(screen.X + 1), uint32(screen.Y + 1), uint32(screen.Width - 2), uint32(screen.Height - 2)})
 
 			// and then set the correct location
-			err = xproto.ConfigureWindowChecked(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
+			xproto.ConfigureWindow(x.x.Conn(), x.rootID, xproto.ConfigWindowX|xproto.ConfigWindowY|
 				xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-				[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)}).Check()
-			if err != nil {
-				fyne.LogError("Configure Window Error", err)
-			}
+				[]uint32{uint32(screen.X), uint32(screen.Y), uint32(screen.Width), uint32(screen.Height)})
 		}
 	}
 
@@ -547,12 +541,9 @@ func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEve
 		x.configureRoots() // we added a root window, so reconfigure
 		return
 	}
-	err := xproto.ConfigureWindowChecked(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	xproto.ConfigureWindow(x.x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight,
-		[]uint32{uint32(xcoord), uint32(ycoord), uint32(width), uint32(height)}).Check()
-	if err != nil {
-		fyne.LogError("Configure Window Error", err)
-	}
+		[]uint32{uint32(xcoord), uint32(ycoord), uint32(width), uint32(height)})
 }
 
 func (x *x11WM) destroyWindow(win xproto.Window) {
@@ -653,11 +644,8 @@ func (x *x11WM) setActiveScreenFromWindow(win fynedesk.Window) {
 }
 
 func (x *x11WM) setInitialWindowAttributes(win xproto.Window) {
-	err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), win, xproto.CwCursor,
-		[]uint32{uint32(x11.DefaultCursor)}).Check()
-	if err != nil {
-		fyne.LogError("Set Cursor Error", err)
-	}
+	xproto.ChangeWindowAttributes(x.x.Conn(), win, xproto.CwCursor,
+		[]uint32{uint32(x11.DefaultCursor)})
 }
 
 func (x *x11WM) setupBindings() {
@@ -738,7 +726,7 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 		screen := fynedesk.Instance().Screens().Primary()
 		w, h := x.menuSize.Width*screen.CanvasScale(), x.menuSize.Height*screen.CanvasScale()
 		mx, my := screen.X+int(x.menuPos.X*screen.CanvasScale()), screen.Y+int(x.menuPos.Y*screen.CanvasScale())
-		xproto.ConfigureWindowChecked(x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+		xproto.ConfigureWindow(x.Conn(), win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 			xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(mx), uint32(my),
 			uint32(w), uint32(h)})
 
