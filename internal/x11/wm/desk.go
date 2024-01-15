@@ -261,6 +261,14 @@ func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, p fyne.Position) {
 	pop.OnDismiss = win.Close
 	pop.Show()
 	pop.Resize(s)
+	go func() {
+		// TODO figure why sometimes this doesn't draw (size and minsize are correct)
+		// and then remove this workaround goroutine
+		time.Sleep(time.Second / 10)
+		pop.Resize(s)
+		time.Sleep(time.Second / 4)
+		pop.Resize(s)
+	}()
 	x.ShowOverlay(win, s, p)
 }
 

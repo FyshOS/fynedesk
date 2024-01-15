@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"time"
 
+	wmTheme "fyshos.com/fynedesk/theme"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -36,6 +38,9 @@ func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 		title = app.Name()
 	} else {
 		res = s.win.Properties().Icon()
+	}
+	if res == nil {
+		res = wmTheme.BrokenImageIcon
 	}
 
 	bg := canvas.NewRectangle(color.Transparent)
