@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -234,7 +235,11 @@ func (d *deskSettings) load() {
 		d.launcherZoomScale = 2.0
 	}
 
-	moduleNames := fyne.CurrentApp().Preferences().StringWithFallback("modulenames", "Battery|Brightness|Compositor|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops|SystemTray")
+	defaultModules := "Battery|Brightness|Compositor|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops|SystemTray"
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" { // testing
+		defaultModules = "Battery|Brightness|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops"
+	}
+	moduleNames := fyne.CurrentApp().Preferences().StringWithFallback("modulenames", defaultModules)
 	if moduleNames != "" {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
