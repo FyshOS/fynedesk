@@ -39,7 +39,3 @@ jobs:
 
     - name: Staticcheck
       run: staticcheck -go 1.19 ./...
-<<<<<<< HEAD
-
-=======
->>>>>>> ca3bca0c40a833df8ac3a90b0d2021eb2304646b
