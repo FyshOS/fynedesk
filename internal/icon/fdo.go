@@ -13,8 +13,6 @@ import (
 	"fyne.io/fyne/v2"
 
 	"fyshos.com/fynedesk"
-	wmTheme "fyshos.com/fynedesk/theme"
-
 	_ "github.com/fyne-io/image/xpm" // load XPM icons to supported image format
 )
 
@@ -67,7 +65,7 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 	if path == "" {
 		path = FdoLookupIconPath(theme, size, data.iconName)
 		if path == "" {
-			return wmTheme.BrokenImageIcon
+			return nil
 		}
 	}
 
@@ -362,8 +360,8 @@ func FdoLookupIconPathInTheme(iconSize string, dir string, parentDir string, ico
 			}
 			if len(inheritedThemes) > 0 {
 				for _, theme := range inheritedThemes {
-					dir = filepath.Join(parentDir, "icons", theme)
-					iconPath := FdoLookupIconPathInTheme(iconSize, dir, parentDir, iconName)
+					childDir := filepath.Join(parentDir, "icons", theme)
+					iconPath := FdoLookupIconPathInTheme(iconSize, childDir, parentDir, iconName)
 					if iconPath != "" {
 						return iconPath
 					}

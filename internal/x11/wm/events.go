@@ -45,11 +45,7 @@ func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
 		}
 
 		// ask for focus, when it is lost return to root window
-		err = xproto.SetInputFocusChecked(x.x.Conn(), 1, ev.Window, xproto.TimeCurrentTime).Check()
-		if err != nil {
-			fyne.LogError("Could not set focus", err)
-			return
-		}
+		xproto.SetInputFocus(x.x.Conn(), 1, ev.Window, xproto.TimeCurrentTime).Check()
 	}
 	if notifyFocus {
 		protocolAtm, err := xprop.Atm(x.x, "WM_PROTOCOLS")
@@ -228,11 +224,8 @@ func (x *x11WM) handleKeyRelease(ev xproto.KeyReleaseEvent) {
 }
 
 func (x *x11WM) handleMouseEnter(ev xproto.EnterNotifyEvent) {
-	err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Event, xproto.CwCursor,
-		[]uint32{uint32(x11.DefaultCursor)}).Check()
-	if err != nil {
-		fyne.LogError("Set Cursor Error", err)
-	}
+	xproto.ChangeWindowAttributes(x.x.Conn(), ev.Event, xproto.CwCursor,
+		[]uint32{uint32(x11.DefaultCursor)})
 	if mouseNotify, ok := fynedesk.Instance().(notify.MouseNotify); ok {
 		mouseNotify.MouseOutNotify()
 	}
@@ -241,8 +234,10 @@ func (x *x11WM) handleMouseEnter(ev xproto.EnterNotifyEvent) {
 func (x *x11WM) handleMouseLeave(ev xproto.LeaveNotifyEvent) {
 	if ev.Event == x.menuID { // dismiss overlay menus on mouse out
 		x.menuID = 0
-		x.menuWin.Close()
-		x.menuWin = nil
+		if x.menuWin != nil {
+			x.menuWin.Close()
+			x.menuWin = nil
+		}
 	}
 
 	for _, c := range x.clients {

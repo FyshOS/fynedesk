@@ -188,7 +188,8 @@ func (o *StatusNotifierWatcher) RegisterStatusNotifierHost(ctx context.Context, 
 // GetRegisteredStatusNotifierItems gets org.kde.StatusNotifierWatcher.RegisteredStatusNotifierItems property.
 //
 // Annotations:
-//   @org.qtproject.QtDBus.QtTypeName.Out0 = QStringList
+//
+//	@org.qtproject.QtDBus.QtTypeName.Out0 = QStringList
 func (o *StatusNotifierWatcher) GetRegisteredStatusNotifierItems(ctx context.Context) (registeredStatusNotifierItems []string, err error) {
 	err = o.object.CallWithContext(ctx, "org.freedesktop.DBus.Properties.Get", 0, InterfaceStatusNotifierWatcher, "RegisteredStatusNotifierItems").Store(&registeredStatusNotifierItems)
 	return

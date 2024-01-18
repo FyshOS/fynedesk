@@ -20,6 +20,11 @@ type desktops struct {
 	gui     *pager
 }
 
+func (d *desktops) DesktopChangeNotify(id int) {
+	d.current = id
+	d.gui.refresh()
+}
+
 func (d *desktops) Destroy() {
 }
 
@@ -37,13 +42,13 @@ func (d *desktops) Shortcuts() map[*fynedesk.Shortcut]func() {
 		}
 	}
 
-	mapping[&fynedesk.Shortcut{Name: "Switch to Previous Desktop", KeyName: fyne.KeyLeft, Modifier: fynedesk.UserModifier}] = func() {
+	mapping[&fynedesk.Shortcut{Name: "Switch to Previous Desktop", KeyName: fyne.KeyUp, Modifier: fynedesk.UserModifier}] = func() {
 		if d.current == 0 {
 			return
 		}
 		d.setDesktop(d.current - 1)
 	}
-	mapping[&fynedesk.Shortcut{Name: "Switch to Next Desktop", KeyName: fyne.KeyRight, Modifier: fynedesk.UserModifier}] = func() {
+	mapping[&fynedesk.Shortcut{Name: "Switch to Next Desktop", KeyName: fyne.KeyDown, Modifier: fynedesk.UserModifier}] = func() {
 		if d.current == deskCount-1 {
 			return
 		}

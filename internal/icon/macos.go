@@ -15,7 +15,6 @@ import (
 	"fyne.io/fyne/v2"
 
 	"fyshos.com/fynedesk"
-	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 type macOSAppBundle struct {
@@ -51,20 +50,20 @@ func (m *macOSAppBundle) Icon(_ string, _ int) fyne.Resource {
 	src, err := os.Open(m.iconPath)
 	if err != nil {
 		fyne.LogError("Failed to read icon data for "+m.iconPath, err)
-		return wmtheme.BrokenImageIcon
+		return nil
 	}
 
 	icon, err := icns.Decode(src)
 	if err != nil {
 		fyne.LogError("Failed to parse icon data for "+m.iconPath, err)
-		return wmtheme.BrokenImageIcon
+		return nil
 	}
 
 	var data bytes.Buffer
 	err = png.Encode(&data, icon)
 	if err != nil {
 		fyne.LogError("Failed to encode icon data for "+m.iconPath, err)
-		return wmtheme.BrokenImageIcon
+		return nil
 	}
 
 	iconName := filepath.Base(m.iconPath)

@@ -6,13 +6,14 @@ package win
 import (
 	"image"
 
-	"fyne.io/fyne/v2"
-
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 
 	"fyshos.com/fynedesk"
 	"fyshos.com/fynedesk/internal/x11"
@@ -38,12 +39,9 @@ type client struct {
 // NewClient creates a new X11 client for the specified window ID and X window manager
 func NewClient(win xproto.Window, wm x11.XWM) x11.XWin {
 	c := &client{win: win, wm: wm, desk: fynedesk.Instance().Desktop()}
-	err := xproto.ChangeWindowAttributesChecked(wm.Conn(), win, xproto.CwEventMask,
+	xproto.ChangeWindowAttributes(wm.Conn(), win, xproto.CwEventMask,
 		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow |
-			xproto.EventMaskVisibilityChange}).Check()
-	if err != nil {
-		fyne.LogError("Could not change window attributes", err)
-	}
+			xproto.EventMaskVisibilityChange})
 	windowAllowedActionsSet(wm.X(), win, x11.AllowedActions)
 
 	initialHints := x11.WindowExtendedHintsGet(wm.X(), c.win)
@@ -92,10 +90,7 @@ func (c *client) Close() {
 	}
 
 	if !askNicely {
-		err := xproto.DestroyWindowChecked(c.wm.Conn(), c.win).Check()
-		if err != nil {
-			fyne.LogError("Close Error", err)
-		}
+		xproto.DestroyWindow(c.wm.Conn(), c.win)
 
 		return
 	}
@@ -118,10 +113,7 @@ func (c *client) Close() {
 		return
 	}
 
-	err = xproto.SendEventChecked(c.wm.Conn(), false, c.win, 0, string(cm.Bytes())).Check()
-	if err != nil {
-		fyne.LogError("Window Delete Error", err)
-	}
+	xproto.SendEvent(c.wm.Conn(), false, c.win, 0, string(cm.Bytes()))
 }
 
 func (c *client) Desktop() int {
@@ -134,12 +126,20 @@ func (c *client) SetDesktop(id int) {
 	}
 
 	d := fynedesk.Instance()
+	diff := id - c.desk
 	c.desk = id
-	if id == d.Desktop() {
-		c.Uniconify()
-	} else {
-		c.Iconify()
-	}
+
+	_, height := d.RootSizePixels()
+	offPix := float32(diff * -int(height))
+	display := d.Screens().ScreenForWindow(c)
+	off := offPix / display.Scale
+
+	start := c.Position()
+	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
+		newY := start.Y + off*f
+
+		c.Move(fyne.NewPos(start.X, newY))
+	}).Start()
 }
 
 func (c *client) Expose() {
@@ -200,6 +200,14 @@ func (c *client) Maximize() {
 
 func (c *client) Maximized() bool {
 	return c.maximized
+}
+
+func (c *client) Move(pos fyne.Position) {
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
+
+	targetX := int16(pos.X * screen.CanvasScale())
+	targetY := int16(pos.Y * screen.CanvasScale())
+	c.frame.updateGeometry(targetX, targetY, c.frame.width, c.frame.height, false)
 }
 
 func (c *client) NotifyBorderChange() {
@@ -316,11 +324,8 @@ func (c *client) RaiseAbove(win fynedesk.Window) {
 		return
 	}
 
-	err := xproto.ConfigureWindowChecked(c.wm.Conn(), c.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-		[]uint32{uint32(topID), uint32(xproto.StackModeAbove)}).Check()
-	if err != nil {
-		fyne.LogError("Restack Error", err)
-	}
+	xproto.ConfigureWindow(c.wm.Conn(), c.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		[]uint32{uint32(topID), uint32(xproto.StackModeAbove)})
 }
 
 func (c *client) RaiseToTop() {
@@ -430,12 +435,9 @@ func (c *client) positionNewWindow() {
 			decorated, fynedesk.Instance().Screens())
 	}
 
-	err = xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	xproto.ConfigureWindow(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(x), uint32(y),
-		uint32(w), uint32(h)}).Check()
-	if err != nil {
-		fyne.LogError("", err)
-	}
+		uint32(w), uint32(h)})
 }
 
 func (c *client) stateMessage(state int) {

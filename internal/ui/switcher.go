@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"time"
 
+	wmTheme "fyshos.com/fynedesk/theme"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -37,12 +39,15 @@ func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 	} else {
 		res = s.win.Properties().Icon()
 	}
+	if res == nil {
+		res = wmTheme.BrokenImageIcon
+	}
 
 	bg := canvas.NewRectangle(color.Transparent)
 	bg.CornerRadius = theme.InputRadiusSize()
 	img := canvas.NewImageFromResource(res)
 	text := widget.NewLabelWithStyle(title, fyne.TextAlignCenter, fyne.TextStyle{})
-	text.Wrapping = fyne.TextTruncate
+	text.Truncation = fyne.TextTruncateEllipsis
 	return &switchIconRenderer{icon: s, bg: bg,
 		img: img, text: text, objects: []fyne.CanvasObject{bg, img, text}}
 }

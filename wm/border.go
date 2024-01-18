@@ -33,10 +33,6 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 		if app != nil {
 			icon = app.Icon(iconTheme, int(wmTheme.TitleHeight*2))
 		}
-
-		if icon == nil {
-			icon = wmTheme.BrokenImageIcon
-		}
 	}
 
 	max := &widget.Button{Icon: wmTheme.MaximizeIcon, Importance: widget.LowImportance, OnTapped: func() {
@@ -188,6 +184,7 @@ func (c *Border) CreateRenderer() fyne.WidgetRenderer {
 // SetIcon tells the border to change the icon that should be used
 func (c *Border) SetIcon(icon fyne.Resource) {
 	if icon == nil {
+		c.appIcon.Icon = nil
 		return
 	}
 

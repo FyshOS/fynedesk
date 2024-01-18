@@ -8,9 +8,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
     - uses: WillAbides/setup-go-faster@v1.13.0
       with:
-        go-version: '1.19'     
+        go-version: '1.21.x'
 
     - name: Get dependencies
       run: |
@@ -37,4 +39,7 @@ jobs:
 
     - name: Staticcheck
       run: staticcheck -go 1.19 ./...
+<<<<<<< HEAD
 
+=======
+>>>>>>> ca3bca0c40a833df8ac3a90b0d2021eb2304646b
