@@ -16,7 +16,7 @@ const (
 	separatorWidth   = 2
 )
 
-//barLayout returns a layout used for zooming linear groups of icons
+// barLayout returns a layout used for zooming linear groups of icons
 type barLayout struct {
 	bar *bar
 
@@ -24,12 +24,12 @@ type barLayout struct {
 	mousePosition fyne.Position // Current coordinates of the mouse cursor
 }
 
-//setPointerInside tells the barLayout that the mouse is inside of the Layout.
+// setPointerInside tells the barLayout that the mouse is inside of the Layout.
 func (bl *barLayout) setPointerInside(inside bool) {
 	bl.mouseInside = inside
 }
 
-//setPointerPosition tells the barLayout that the mouse position has been updated.
+// setPointerPosition tells the barLayout that the mouse position has been updated.
 func (bl *barLayout) setPointerPosition(position fyne.Position) {
 	bl.mousePosition = position
 }

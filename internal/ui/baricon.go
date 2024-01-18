@@ -82,7 +82,7 @@ type barIcon struct {
 	windowData *appWindow       // The window data associated with this icon (if it is a task window)
 }
 
-//Tapped means barIcon has been clicked
+// Tapped means barIcon has been clicked
 func (bi *barIcon) Tapped(*fyne.PointEvent) {
 	bi.onTapped()
 }
@@ -112,7 +112,7 @@ func removeFromBar(icon fynedesk.AppData) {
 	settings.(*deskSettings).setLauncherIcons(icons)
 }
 
-//TappedSecondary means barIcon has been clicked by a secondary binding
+// TappedSecondary means barIcon has been clicked by a secondary binding
 func (bi *barIcon) TappedSecondary(*fyne.PointEvent) {
 	app := bi.appData
 	if app == nil && bi.windowData != nil {
