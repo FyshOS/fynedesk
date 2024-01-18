@@ -11,7 +11,7 @@ require (
 	github.com/FyshOS/backgrounds v0.0.0-20230616202904-0a8b6ebaa184
 	github.com/Knetic/govaluate v3.0.0+incompatible
 	github.com/disintegration/imaging v1.6.2
-	github.com/fyne-io/image v0.0.0-20221020213044-f609c6a24345
+	github.com/fyne-io/image v0.0.0-20221020213044-f609c6a24345 // indirect
 	github.com/godbus/dbus/v5 v5.1.0
 	github.com/jackmordaunt/icns v1.0.1-0.20200413110149-9e181b441ab2
 	github.com/mafik/pulseaudio v0.0.0-20200511091429-8449222912dd

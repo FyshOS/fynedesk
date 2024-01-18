@@ -2,7 +2,7 @@ package icon // import "fyshos.com/fynedesk/internal/icon"
 
 import (
 	"bufio"
-	"io/ioutil"
+	"io/fs"
 	"math"
 	"os"
 	"os/exec"
@@ -26,7 +26,7 @@ var (
 		"Office", "Science", "Settings", "System", "Utility"}
 )
 
-//fdoApplicationData is a structure that contains information about .desktop files
+// fdoApplicationData is a structure that contains information about .desktop files
 type fdoApplicationData struct {
 	name     string // Application name
 	iconName string // Icon name
@@ -38,12 +38,12 @@ type fdoApplicationData struct {
 	iconCache  fyne.Resource
 }
 
-//Name returns the name associated with an fdo app
+// Name returns the name associated with an fdo app
 func (data *fdoApplicationData) Name() string {
 	return data.name
 }
 
-//Categories returns a list of the categories this icon has configured
+// Categories returns a list of the categories this icon has configured
 func (data *fdoApplicationData) Categories() []string {
 	return data.categories
 }
@@ -52,12 +52,12 @@ func (data *fdoApplicationData) Hidden() bool {
 	return data.hide
 }
 
-//IconName returns the name of the icon that an fdo app wishes to use
+// IconName returns the name of the icon that an fdo app wishes to use
 func (data *fdoApplicationData) IconName() string {
 	return data.iconName
 }
 
-//IconPath returns the path of the icon that an fdo app wishes to use
+// IconPath returns the path of the icon that an fdo app wishes to use
 func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 	if data.iconCache != nil {
 		return data.iconCache
@@ -75,7 +75,7 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 	return data.iconCache
 }
 
-//extractArgs sanitises argument parameters from an Exec configuration
+// extractArgs sanitises argument parameters from an Exec configuration
 func extractArgs(args []string) []string {
 	var ret []string
 	for _, arg := range args {
@@ -88,7 +88,7 @@ func extractArgs(args []string) []string {
 	return ret
 }
 
-//Run executes the command for this fdo app
+// Run executes the command for this fdo app
 func (data *fdoApplicationData) Run(env []string) error {
 	vars := os.Environ()
 	vars = append(vars, env...)
@@ -126,7 +126,7 @@ func (data fdoApplicationData) mainCategory() string {
 }
 
 func loadIcon(path string) fyne.Resource {
-	data, err := ioutil.ReadFile(path)
+	data, err := os.ReadFile(path)
 	if err != nil {
 		fyne.LogError("Failed to load image", err)
 		return nil
@@ -135,7 +135,7 @@ func loadIcon(path string) fyne.Resource {
 	return fyne.NewStaticResource(filepath.Base(path), data)
 }
 
-//fdoLookupXdgDataDirs returns a string slice of all XDG_DATA_DIRS
+// fdoLookupXdgDataDirs returns a string slice of all XDG_DATA_DIRS
 func fdoLookupXdgDataDirs() []string {
 	dataLocation := os.Getenv("XDG_DATA_DIRS")
 	locationLookup := strings.Split(dataLocation, ":")
@@ -156,7 +156,7 @@ func fdoForEachApplicationFile(f func(data fynedesk.AppData) bool) {
 	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
 		testLocation := filepath.Join(dataDir, "applications")
-		files, err := ioutil.ReadDir(testLocation)
+		files, err := os.ReadDir(testLocation)
 		if err != nil {
 			continue
 		}
@@ -177,7 +177,7 @@ func fdoForEachApplicationFile(f func(data fynedesk.AppData) bool) {
 	}
 }
 
-//lookupApplicationByMetadata looks up an application by comparing the requested name to the contents of .desktop files
+// lookupApplicationByMetadata looks up an application by comparing the requested name to the contents of .desktop files
 func (f *fdoIconProvider) lookupApplicationByMetadata(appName string) fynedesk.AppData {
 	var returnIcon fynedesk.AppData
 	f.cache.forEachCachedApplication(func(_ string, icon fynedesk.AppData) bool {
@@ -190,7 +190,7 @@ func (f *fdoIconProvider) lookupApplicationByMetadata(appName string) fynedesk.A
 	return returnIcon
 }
 
-//lookupApplication looks up an application by name and returns an fdoApplicationData struct
+// lookupApplication looks up an application by name and returns an fdoApplicationData struct
 func (f *fdoIconProvider) lookupApplication(appName string) fynedesk.AppData {
 	if appName == "" {
 		return nil
@@ -213,7 +213,7 @@ func (f *fdoIconProvider) lookupApplication(appName string) fynedesk.AppData {
 	return f.lookupApplicationByMetadata(appName)
 }
 
-func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDir string, joiner string, iconName string) string {
+func fdoClosestSizeIcon(files []fs.DirEntry, iconSize int, format string, baseDir string, joiner string, iconName string) string {
 	var sizes []int
 	for _, f := range files {
 		if format == "32x32" {
@@ -272,7 +272,7 @@ func fdoClosestSizeIcon(files []os.FileInfo, iconSize int, format string, baseDi
 }
 
 func lookupAnyIconSizeInThemeDir(dir string, joiner string, iconName string, iconSize int) string {
-	files, err := ioutil.ReadDir(dir)
+	files, err := os.ReadDir(dir)
 	if err != nil {
 		return ""
 	}
@@ -287,7 +287,7 @@ func lookupAnyIconSizeInThemeDir(dir string, joiner string, iconName string, ico
 	}
 
 	directory := filepath.Join(dir, joiner)
-	files, err = ioutil.ReadDir(directory)
+	files, err = os.ReadDir(directory)
 	if err != nil {
 		return ""
 	}
@@ -388,7 +388,7 @@ func FdoLookupIconPathInTheme(iconSize string, dir string, parentDir string, ico
 	return ""
 }
 
-//FdoLookupIconPath will take the name of an icon and find a matching image file
+// FdoLookupIconPath will take the name of an icon and find a matching image file
 func FdoLookupIconPath(theme string, size int, iconName string) string {
 	locationLookup := fdoLookupXdgDataDirs()
 	iconTheme := theme
@@ -426,7 +426,7 @@ func fdoLookupAvailableThemes() []string {
 	var themes []string
 	locationLookup := fdoLookupXdgDataDirs()
 	for _, dataDir := range locationLookup {
-		files, err := ioutil.ReadDir(filepath.Join(dataDir, "icons"))
+		files, err := os.ReadDir(filepath.Join(dataDir, "icons"))
 		if err != nil {
 			continue
 		}
@@ -442,7 +442,7 @@ func fdoLookupAvailableThemes() []string {
 	return themes
 }
 
-//newFdoIconData creates and returns a struct that contains needed fields from a .desktop file
+// newFdoIconData creates and returns a struct that contains needed fields from a .desktop file
 func newFdoIconData(desktopPath string) fynedesk.AppData {
 	file, err := os.Open(desktopPath)
 	if err != nil {
@@ -495,7 +495,7 @@ type fdoIconProvider struct {
 	cache *appCache
 }
 
-//AvailableApps returns all of the available applications in a AppData slice
+// AvailableApps returns all of the available applications in a AppData slice
 func (f *fdoIconProvider) AvailableApps() []fynedesk.AppData {
 	var icons []fynedesk.AppData
 	fdoForEachApplicationFile(func(icon fynedesk.AppData) bool {
@@ -508,17 +508,17 @@ func (f *fdoIconProvider) AvailableApps() []fynedesk.AppData {
 	return icons
 }
 
-//AvailableThemes returns all available icon themes in a string slice
+// AvailableThemes returns all available icon themes in a string slice
 func (f *fdoIconProvider) AvailableThemes() []string {
 	return fdoLookupAvailableThemes()
 }
 
-//FindAppFromName matches an icon name to a location and returns an AppData interface
+// FindAppFromName matches an icon name to a location and returns an AppData interface
 func (f *fdoIconProvider) FindAppFromName(appName string) fynedesk.AppData {
 	return f.lookupApplication(appName)
 }
 
-//FindAppsMatching returns a list of icons that match a partial name of an app and returns an AppData slice
+// FindAppsMatching returns a list of icons that match a partial name of an app and returns an AppData slice
 func (f *fdoIconProvider) FindAppsMatching(appName string) []fynedesk.AppData {
 	var icons []fynedesk.AppData
 	f.cache.forEachCachedApplication(func(_ string, icon fynedesk.AppData) bool {
@@ -536,7 +536,7 @@ func (f *fdoIconProvider) FindAppsMatching(appName string) []fynedesk.AppData {
 	return icons
 }
 
-//FindAppFromWinInfo matches window information to an icon location and returns an AppData interface
+// FindAppFromWinInfo matches window information to an icon location and returns an AppData interface
 func (f *fdoIconProvider) FindAppFromWinInfo(win fynedesk.Window) fynedesk.AppData {
 	app := f.lookupApplication(win.Properties().Command())
 	if app != nil {
