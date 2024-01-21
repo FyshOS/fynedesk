@@ -94,6 +94,8 @@ func (w *Window) Position() fyne.Position {
 	return fyne.NewPos(0, 0)
 }
 
+func (w *Window) Size() fyne.Size { return fyne.Size{} }
+
 // Properties obtains the window properties currently set
 func (w *Window) Properties() fynedesk.WindowProperties {
 	return w.props

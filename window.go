@@ -30,6 +30,7 @@ type Window interface {
 	Parent() Window
 	Properties() WindowProperties // Request the properties set on this window
 	Position() fyne.Position
+	Size() fyne.Size
 	Move(position fyne.Position)
 
 	Desktop() int

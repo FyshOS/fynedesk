@@ -309,6 +309,14 @@ func (c *client) Position() fyne.Position {
 		float32(c.frame.y)/screen.CanvasScale())
 }
 
+func (c *client) Size() fyne.Size {
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
+
+	return fyne.NewSize(
+		float32(c.frame.width)/screen.CanvasScale(),
+		float32(c.frame.height)/screen.CanvasScale())
+}
+
 func (c *client) QueueMoveResizeGeometry(x int, y int, width uint, height uint) {
 	c.frame.queueGeometry(int16(x), int16(y), uint16(width), uint16(height), true)
 }

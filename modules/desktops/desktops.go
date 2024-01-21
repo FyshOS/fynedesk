@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 
 	"fyshos.com/fynedesk"
 )
@@ -21,8 +22,9 @@ type desktops struct {
 }
 
 func (d *desktops) DesktopChangeNotify(id int) {
+	oldID := d.current
 	d.current = id
-	d.gui.refresh()
+	d.gui.refreshFrom(oldID)
 }
 
 func (d *desktops) Destroy() {
@@ -58,13 +60,14 @@ func (d *desktops) Shortcuts() map[*fynedesk.Shortcut]func() {
 }
 
 func (d *desktops) StatusAreaWidget() fyne.CanvasObject {
-	return d.gui.ui
+	return container.NewStack(d.gui.ui, d.gui.wins)
 }
 
 func (d *desktops) setDesktop(id int) {
+	oldID := d.current
 	d.current = id
 	fynedesk.Instance().SetDesktop(id)
-	d.gui.refresh()
+	d.gui.refreshFrom(oldID)
 }
 
 // newDesktops creates a new module that will manage virtual desktops and display a pager widget.
