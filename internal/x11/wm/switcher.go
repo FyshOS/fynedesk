@@ -70,7 +70,13 @@ func (x *x11WM) previousAppSwitcher() {
 }
 
 func (x *x11WM) showOrSelectAppSwitcher(reverse bool) {
-	if len(x.clients) <= 1 {
+	var visible []fynedesk.Window
+	for _, win := range x.clients {
+		if win.Desktop() == fynedesk.Instance().Desktop() && !win.Iconic() {
+			visible = append(visible, win)
+		}
+	}
+	if len(visible) <= 1 {
 		return
 	}
 	xproto.GrabKeyboard(x.x.Conn(), true, x.x.RootWin(), xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
