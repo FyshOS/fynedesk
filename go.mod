@@ -3,7 +3,7 @@ module fyshos.com/fynedesk
 go 1.17
 
 require (
-	fyne.io/fyne/v2 v2.4.4-0.20240107115323-8458aff4b006
+	fyne.io/fyne/v2 v2.4.3
 	github.com/BurntSushi/xgb v0.0.0-20201008132610-5f9e7b3c49cd
 	github.com/BurntSushi/xgbutil v0.0.0-20160919175755-f7c97cef3b4e
 	github.com/FyshOS/backgrounds v0.0.0-20230616202904-0a8b6ebaa184
@@ -36,7 +36,6 @@ require (
 	github.com/niemeyer/pretty v0.0.0-20200227124842-a10e7caefd8e // indirect
 	github.com/pkg/errors v0.8.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/rymdport/portal v0.0.0-20231123202536-da45518a87bb // indirect
 	github.com/srwiley/oksvg v0.0.0-20221011165216-be6e8873101c // indirect
 	github.com/srwiley/rasterx v0.0.0-20220730225603-2ab79fcdd4ef // indirect
 	github.com/yuin/goldmark v1.5.5 // indirect
@@ -47,6 +46,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20200227125254-8fa46927fb4f // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
+	honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 // indirect
 )
 
 replace github.com/BurntSushi/xgbutil => github.com/fyne-io/xgbutil v0.0.0-20191220152344-7d838166824d
