@@ -265,6 +265,7 @@ func (x *x11WM) handleMouseMotion(ev xproto.MotionNotifyEvent) {
 			}
 			if ev.State&xproto.ButtonMask1 != 0 {
 				c.(x11.XWin).NotifyMouseDrag(ev.RootX, ev.RootY)
+				x.NotifyWindowMoved(c)
 			} else {
 				c.(x11.XWin).NotifyMouseMotion(ev.RootX, ev.RootY)
 			}
@@ -333,6 +334,12 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 			removeState()
 		} else {
 			addState()
+		}
+	}
+	for _, c := range x.clients {
+		if c.(x11.XWin).ChildID() == ev.Window {
+			x.NotifyWindowMoved(c)
+			break
 		}
 	}
 }
@@ -426,4 +433,6 @@ func (x *x11WM) moveResize(moveX, moveY int16, c x11.XWin) {
 	x.moveResizingLastX = moveX
 	x.moveResizingLastY = moveY
 	c.QueueMoveResizeGeometry(x.moveResizingX, x.moveResizingY, uint(w), uint(h))
+
+	x.NotifyWindowMoved(c)
 }

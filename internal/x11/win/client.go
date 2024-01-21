@@ -136,9 +136,17 @@ func (c *client) SetDesktop(id int) {
 
 	start := c.Position()
 	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
-		newY := start.Y + off*f
+		newY := start.Y - off*f
 
 		c.Move(fyne.NewPos(start.X, newY))
+
+		type moveNotifier interface {
+			NotifyWindowMoved(win fynedesk.Window)
+		}
+		if mover, ok := fynedesk.Instance().WindowManager().(moveNotifier); ok {
+			mover.NotifyWindowMoved(c)
+		}
+
 	}).Start()
 }
 
