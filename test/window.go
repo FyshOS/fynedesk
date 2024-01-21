@@ -94,6 +94,7 @@ func (w *Window) Position() fyne.Position {
 	return fyne.NewPos(0, 0)
 }
 
+// Size returns 0x0 for test windows
 func (w *Window) Size() fyne.Size { return fyne.Size{} }
 
 // Properties obtains the window properties currently set
