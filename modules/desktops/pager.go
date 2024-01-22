@@ -13,26 +13,30 @@ import (
 )
 
 type pager struct {
-	ui   fyne.CanvasObject
-	wins *fyne.Container
+	buttons, labels *fyne.Container
+	wins            *fyne.Container
 }
 
 func newPager(d *desktops) *pager {
 	p := &pager{wins: container.NewWithoutLayout()}
 
-	items := make([]fyne.CanvasObject, deskCount)
+	buttons := make([]fyne.CanvasObject, deskCount)
+	labels := make([]fyne.CanvasObject, deskCount)
 	for i := 0; i < deskCount; i++ {
 		id := strconv.Itoa(i + 1)
 		deskID := i
-		items[i] = widget.NewButton(id, func() {
+		buttons[i] = widget.NewButton("", func() {
 			d.setDesktop(deskID)
 		})
+		labels[i] = widget.NewLabelWithStyle(id, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	}
 
 	if fynedesk.Instance() != nil && fynedesk.Instance().Settings().NarrowWidgetPanel() {
-		p.ui = container.NewGridWithColumns(1, items...)
+		p.buttons = container.NewGridWithColumns(1, buttons...)
+		p.labels = container.NewGridWithColumns(1, labels...)
 	} else {
-		p.ui = container.NewGridWithColumns(4, items...)
+		p.buttons = container.NewGridWithColumns(4, buttons...)
+		p.labels = container.NewGridWithColumns(4, labels...)
 	}
 	p.refresh()
 	fynedesk.Instance().WindowManager().AddStackListener(p)
@@ -66,15 +70,20 @@ func (p *pager) refreshFrom(oldID int) {
 	wins := fynedesk.Instance().WindowManager().Windows()
 
 	var rects []fyne.CanvasObject
-	for i, b := range p.ui.(*fyne.Container).Objects {
+	for i, b := range p.buttons.Objects {
+		l := p.labels.Objects[i]
 		if i == desk.Desktop() {
 			b.(*widget.Button).Importance = widget.HighImportance
+			l.(*widget.Label).Importance = widget.LowImportance
 		} else {
 			b.(*widget.Button).Importance = widget.MediumImportance
+			l.(*widget.Label).Importance = widget.MediumImportance
 		}
+
 		b.Refresh()
+		l.Refresh()
 	}
-	pivot := p.ui.(*fyne.Container).Objects[oldID]
+	pivot := p.buttons.Objects[oldID]
 
 	for j := len(wins) - 1; j >= 0; j-- {
 		win := wins[j]

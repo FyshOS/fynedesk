@@ -60,7 +60,7 @@ func (d *desktops) Shortcuts() map[*fynedesk.Shortcut]func() {
 }
 
 func (d *desktops) StatusAreaWidget() fyne.CanvasObject {
-	return container.NewStack(d.gui.ui, d.gui.wins)
+	return container.NewStack(d.gui.buttons, d.gui.wins, d.gui.labels)
 }
 
 func (d *desktops) setDesktop(id int) {
