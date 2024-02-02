@@ -3,8 +3,9 @@ package test
 import (
 	"image"
 
-	"fyne.io/fyne/v2"
 	"fyshos.com/fynedesk"
+
+	"fyne.io/fyne/v2"
 )
 
 // Window is an in-memory virtual window for test purposes
@@ -80,6 +81,9 @@ func (w *Window) Maximized() bool {
 	return false
 }
 
+// Move the window, does nothing in test windows
+func (w *Window) Move(fyne.Position) {}
+
 // Parent returns a window that this should be positioned within, if set.
 func (w *Window) Parent() fynedesk.Window {
 	return w.parent
@@ -89,6 +93,9 @@ func (w *Window) Parent() fynedesk.Window {
 func (w *Window) Position() fyne.Position {
 	return fyne.NewPos(0, 0)
 }
+
+// Size returns 0x0 for test windows
+func (w *Window) Size() fyne.Size { return fyne.Size{} }
 
 // Properties obtains the window properties currently set
 func (w *Window) Properties() fynedesk.WindowProperties {

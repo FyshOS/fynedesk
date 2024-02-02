@@ -4,9 +4,10 @@
 package wm
 
 import (
-	"fyne.io/fyne/v2"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
+
+	"fyne.io/fyne/v2"
 
 	"fyshos.com/fynedesk"
 	"fyshos.com/fynedesk/internal/x11"
@@ -46,6 +47,10 @@ func (s *stack) RaiseToTop(win fynedesk.Window) {
 
 	wm := fynedesk.Instance().WindowManager().(*x11WM)
 	windowClientListStackingUpdate(wm)
+
+	for _, l := range s.listeners {
+		l.WindowOrderChanged()
+	}
 }
 
 func (s *stack) RemoveWindow(win fynedesk.Window) {

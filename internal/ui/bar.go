@@ -148,6 +148,10 @@ func (b *bar) WindowAdded(win fynedesk.Window) {
 	}
 }
 
+func (b *bar) WindowMoved(_ fynedesk.Window) {}
+
+func (b *bar) WindowOrderChanged() {}
+
 func (b *bar) WindowRemoved(win fynedesk.Window) {
 	if win.Properties().SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
 		return

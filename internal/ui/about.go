@@ -43,10 +43,10 @@ func (w *widgetPanel) showAbout() {
 
 	title := widget.NewRichTextFromMarkdown("**Version:** " + version())
 	title.Segments[0].(*widget.TextSegment).Style.Alignment = fyne.TextAlignCenter
-	authors := widget.NewRichTextFromMarkdown("\n**Authors:**\n\n * Andy Williams\n * Stephen Houston\n * Jacob Alzén\n")
+	authors := widget.NewRichTextFromMarkdown("\n**Authors:**\n\n * Andy Williams\n * Stephen Houston\n * Jacob Alzén\n * Tai Groot\n")
 	buttons := container.NewGridWithColumns(3,
 		newURLButton("Home Page", "https://fyshos.com/fynedesk"),
-		newURLButton("Report Issue", "https://github.com/fyne-io/fynedesk/issues/new"),
+		newURLButton("Report Issue", "https://github.com/FyshOS/fynedesk/issues/new"),
 		newURLButton("Sponsor", "https://github.com/sponsors/fyne-io"),
 	)
 

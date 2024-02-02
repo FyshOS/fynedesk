@@ -4,6 +4,7 @@ import (
 	"strconv"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 
 	"fyshos.com/fynedesk"
 )
@@ -18,6 +19,12 @@ var desksMeta = fynedesk.ModuleMetadata{
 type desktops struct {
 	current int
 	gui     *pager
+}
+
+func (d *desktops) DesktopChangeNotify(id int) {
+	oldID := d.current
+	d.current = id
+	d.gui.refreshFrom(oldID)
 }
 
 func (d *desktops) Destroy() {
@@ -37,13 +44,13 @@ func (d *desktops) Shortcuts() map[*fynedesk.Shortcut]func() {
 		}
 	}
 
-	mapping[&fynedesk.Shortcut{Name: "Switch to Previous Desktop", KeyName: fyne.KeyLeft, Modifier: fynedesk.UserModifier}] = func() {
+	mapping[&fynedesk.Shortcut{Name: "Switch to Previous Desktop", KeyName: fyne.KeyUp, Modifier: fynedesk.UserModifier}] = func() {
 		if d.current == 0 {
 			return
 		}
 		d.setDesktop(d.current - 1)
 	}
-	mapping[&fynedesk.Shortcut{Name: "Switch to Next Desktop", KeyName: fyne.KeyRight, Modifier: fynedesk.UserModifier}] = func() {
+	mapping[&fynedesk.Shortcut{Name: "Switch to Next Desktop", KeyName: fyne.KeyDown, Modifier: fynedesk.UserModifier}] = func() {
 		if d.current == deskCount-1 {
 			return
 		}
@@ -53,13 +60,14 @@ func (d *desktops) Shortcuts() map[*fynedesk.Shortcut]func() {
 }
 
 func (d *desktops) StatusAreaWidget() fyne.CanvasObject {
-	return d.gui.ui
+	return container.NewStack(d.gui.buttons, d.gui.wins, d.gui.labels)
 }
 
 func (d *desktops) setDesktop(id int) {
+	oldID := d.current
 	d.current = id
 	fynedesk.Instance().SetDesktop(id)
-	d.gui.refresh()
+	d.gui.refreshFrom(oldID)
 }
 
 // newDesktops creates a new module that will manage virtual desktops and display a pager widget.

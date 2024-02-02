@@ -40,8 +40,9 @@ type frame struct {
 	resizeLeft, resizeRight             bool
 	moveOnly, ignoreDrag                bool
 
-	borderTop, borderTopRight xproto.Pixmap
-	borderTopWidth            uint16
+	borderTop, borderTopRight             xproto.Pixmap
+	borderTopGC, borderTopRightGC, rectGC xproto.Gcontext
+	borderTopWidth                        uint16
 
 	hovered    desktop.Hoverable
 	clickCount int
@@ -305,6 +306,20 @@ func (f *frame) createPixmaps(depth byte) error {
 		xproto.Drawable(f.client.wm.X().Screen().Root), rightWidthPix, heightPix)
 	f.borderTopRight = pid
 
+	backR, backG, backB, _ := theme.DisabledButtonColor().RGBA()
+	if f.client.Focused() {
+		backR, backG, backB, _ = theme.BackgroundColor().RGBA()
+	}
+	bgColor := uint32(uint8(backR))<<16 | uint32(uint8(backG))<<8 | uint32(uint8(backB))
+
+	f.rectGC, _ = xproto.NewGcontextId(f.client.wm.Conn())
+	xproto.CreateGC(f.client.wm.Conn(), f.rectGC, xproto.Drawable(f.client.id), xproto.GcForeground, []uint32{bgColor})
+
+	f.borderTopGC, _ = xproto.NewGcontextId(f.client.wm.Conn())
+	xproto.CreateGC(f.client.wm.Conn(), f.borderTopGC, xproto.Drawable(f.borderTop), xproto.GcForeground, []uint32{bgColor})
+	f.borderTopRightGC, _ = xproto.NewGcontextId(f.client.wm.Conn())
+	xproto.CreateGC(f.client.wm.Conn(), f.borderTopRightGC, xproto.Drawable(f.borderTopRight), xproto.GcForeground, []uint32{bgColor})
+
 	return nil
 }
 
@@ -324,35 +339,20 @@ func (f *frame) decorate(force bool) {
 		refresh = true
 	}
 
-	backR, backG, backB, _ := theme.DisabledButtonColor().RGBA()
-	if f.client.Focused() {
-		backR, backG, backB, _ = theme.BackgroundColor().RGBA()
-	}
-	bgColor := uint32(uint8(backR))<<16 | uint32(uint8(backG))<<8 | uint32(uint8(backB))
-
-	drawTop, _ := xproto.NewGcontextId(f.client.wm.Conn())
-	xproto.CreateGC(f.client.wm.Conn(), drawTop, xproto.Drawable(f.borderTop), xproto.GcForeground, []uint32{bgColor})
-	drawTopRight, _ := xproto.NewGcontextId(f.client.wm.Conn())
-	xproto.CreateGC(f.client.wm.Conn(), drawTopRight, xproto.Drawable(f.borderTopRight), xproto.GcForeground, []uint32{bgColor})
-
 	if refresh || f.canvas == nil {
-		f.drawDecoration(f.borderTop, drawTop, f.borderTopRight, drawTopRight, depth)
+		f.drawDecoration(f.borderTop, f.borderTopGC, f.borderTopRight, f.borderTopRightGC, depth)
 	}
 
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
-	draw, _ := xproto.NewGcontextId(f.client.wm.Conn())
-	xproto.CreateGC(f.client.wm.Conn(), draw, xproto.Drawable(f.client.id), xproto.GcForeground, []uint32{bgColor})
 	rect := xproto.Rectangle{X: 0, Y: 0, Width: f.width, Height: f.height}
-	xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
+	xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), f.rectGC, []xproto.Rectangle{rect})
 
 	rightWidthPix := f.topRightPixelWidth()
-	rect = xproto.Rectangle{X: 0, Y: 0, Width: f.borderTopWidth, Height: x11.TitleHeight(x11.XWin(f.client))}
-	xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), draw, []xproto.Rectangle{rect})
 	minWidth := f.canvas.Content().MinSize().Width
 	widthPix := uint16(minWidth*f.canvas.Scale()) - rightWidthPix
-	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), drawTop,
+	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), f.borderTopGC,
 		0, 0, 0, 0, widthPix, heightPix)
-	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), drawTopRight,
+	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), f.borderTopRightGC,
 		0, 0, int16(f.width-rightWidthPix), 0, rightWidthPix, heightPix)
 }
 
@@ -404,6 +404,19 @@ func (f *frame) freePixmaps() {
 	if f.borderTopRight != 0 {
 		xproto.FreePixmap(f.client.wm.Conn(), f.borderTopRight)
 		f.borderTopRight = 0
+	}
+
+	if f.rectGC != 0 {
+		xproto.FreeGC(f.client.wm.Conn(), f.rectGC)
+		f.rectGC = 0
+	}
+	if f.borderTopGC != 0 {
+		xproto.FreeGC(f.client.wm.Conn(), f.borderTopGC)
+		f.borderTopGC = 0
+	}
+	if f.borderTopRightGC != 0 {
+		xproto.FreeGC(f.client.wm.Conn(), f.borderTopRightGC)
+		f.borderTopRightGC = 0
 	}
 }
 
@@ -819,7 +832,7 @@ func (f *frame) topRightPixelWidth() uint16 {
 	iconPix := x11.ButtonWidth(x11.XWin(f.client))
 	iconAndBorderPix := iconPix + x11.BorderWidth(x11.XWin(f.client))*2 + uint16(theme.Padding()*scale)
 	if fynedesk.Instance().Settings().BorderButtonPosition() == "Right" {
-		iconAndBorderPix *= 3
+		iconAndBorderPix = 3*iconAndBorderPix - uint16(theme.Padding()*scale)
 	}
 
 	return iconAndBorderPix - uint16(theme.Padding()*scale)

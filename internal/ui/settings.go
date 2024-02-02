@@ -2,6 +2,7 @@ package ui
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
@@ -234,13 +235,17 @@ func (d *deskSettings) load() {
 		d.launcherZoomScale = 2.0
 	}
 
-	moduleNames := fyne.CurrentApp().Preferences().StringWithFallback("modulenames", "Battery|Brightness|Compositor|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops")
+	defaultModules := "Battery|Brightness|Compositor|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops|SystemTray"
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" { // testing
+		defaultModules = "Battery|Brightness|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops"
+	}
+	moduleNames := fyne.CurrentApp().Preferences().StringWithFallback("modulenames", defaultModules)
 	if moduleNames != "" {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
 	d.modifier = fyne.KeyModifier(fyne.CurrentApp().Preferences().IntWithFallback("keyboardmodifier", int(fyne.KeyModifierSuper)))
-	d.narrowLeftLauncher = fyne.CurrentApp().Preferences().Bool("launchernarrowleft")
-	d.narrowPanel = fyne.CurrentApp().Preferences().Bool("narrowpanel")
+	d.narrowLeftLauncher = fyne.CurrentApp().Preferences().BoolWithFallback("launchernarrowleft", true)
+	d.narrowPanel = fyne.CurrentApp().Preferences().BoolWithFallback("narrowpanel", true)
 
 	d.borderButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
 
