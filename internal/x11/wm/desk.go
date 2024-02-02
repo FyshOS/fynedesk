@@ -618,6 +618,12 @@ func (x *x11WM) RootID() xproto.Window {
 	return x.rootID
 }
 
+func (x *x11WM) NotifyWindowMoved(win fynedesk.Window) {
+	for _, l := range x.listeners {
+		go l.WindowMoved(win)
+	}
+}
+
 func (x *x11WM) hideWindow(win xproto.Window) {
 	c := x.clientForWin(win)
 	if c == nil || win == c.FrameID() {

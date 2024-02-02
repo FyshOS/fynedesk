@@ -136,9 +136,17 @@ func (c *client) SetDesktop(id int) {
 
 	start := c.Position()
 	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
-		newY := start.Y + off*f
+		newY := start.Y - off*f
 
 		c.Move(fyne.NewPos(start.X, newY))
+
+		type moveNotifier interface {
+			NotifyWindowMoved(win fynedesk.Window)
+		}
+		if mover, ok := fynedesk.Instance().WindowManager().(moveNotifier); ok {
+			mover.NotifyWindowMoved(c)
+		}
+
 	}).Start()
 }
 
@@ -307,6 +315,14 @@ func (c *client) Position() fyne.Position {
 	return fyne.NewPos(
 		float32(c.frame.x)/screen.CanvasScale(),
 		float32(c.frame.y)/screen.CanvasScale())
+}
+
+func (c *client) Size() fyne.Size {
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
+
+	return fyne.NewSize(
+		float32(c.frame.width)/screen.CanvasScale(),
+		float32(c.frame.height)/screen.CanvasScale())
 }
 
 func (c *client) QueueMoveResizeGeometry(x int, y int, width uint, height uint) {
