@@ -4,6 +4,7 @@ import (
 	"image/color"
 	"os"
 	"sort"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -56,6 +57,7 @@ func (w *widgetPanel) askLogout() {
 	win := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
 	logout := widget.NewButtonWithIcon("Logout", theme.LogoutIcon(), func() {
 		win.Close()
+		time.Sleep(time.Second / 10)
 		w.desk.WindowManager().Close()
 	})
 	logout.Importance = widget.DangerImportance
