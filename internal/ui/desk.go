@@ -5,14 +5,13 @@ import (
 	"os/exec"
 	"strconv"
 
-	"fyshos.com/fynedesk/internal/notify"
-
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 
 	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/notify"
 	wmtheme "fyshos.com/fynedesk/theme"
 	"fyshos.com/fynedesk/wm"
 )
@@ -82,11 +81,15 @@ func (l *desktop) SetDesktop(id int) {
 	}
 }
 
+func (l *desktop) ShowSettings() {
+	l.widgets.showSettings()
+}
+
 func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0].(*background)
 	bg.Resize(size)
 	if l.Settings().NarrowLeftLauncher() {
-		l.bar.Resize(size)
+		l.bar.Resize(fyne.NewSize(wmtheme.NarrowBarWidth, size.Height))
 		l.bar.Move(fyne.NewPos(0, 0))
 	} else {
 		barHeight := l.bar.MinSize().Height
@@ -103,6 +106,10 @@ func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 
 func (l *desktop) MinSize(_ []fyne.CanvasObject) fyne.Size {
 	return fyne.NewSize(640, 480) // tiny - window manager will scale up to screen size
+}
+
+func (l *desktop) Root() fyne.Window {
+	return l.root
 }
 
 func (l *desktop) ShowMenuAt(menu *fyne.Menu, pos fyne.Position) {
@@ -182,7 +189,7 @@ func (l *desktop) ContentBoundsPixels(screen *fynedesk.Screen) (x, y, w, h uint3
 	screenW := uint32(screen.Width)
 	screenH := uint32(screen.Height)
 	pad := wmtheme.WidgetPanelWidth
-	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
+	if l.Settings().NarrowWidgetPanel() {
 		pad = wmtheme.NarrowBarWidth
 	}
 	if l.screens.Primary() == screen {
