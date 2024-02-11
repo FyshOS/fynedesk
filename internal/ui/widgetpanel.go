@@ -79,17 +79,21 @@ func (w *widgetPanel) clockTick() {
 	go func() {
 		for {
 			<-tick.C
-			w.clock.Text = w.formattedTime()
-			w.vClock.Text = w.formattedTime()
-			canvas.Refresh(w.clock)
-			if w.desk.Settings().NarrowWidgetPanel() {
-				w.rotate(w.vClock)
-			}
-
-			w.date.SetText(w.formattedDate())
-			canvas.Refresh(w.date)
+			w.clockRefresh()
 		}
 	}()
+}
+
+func (w *widgetPanel) clockRefresh() {
+	w.clock.Text = w.formattedTime()
+	w.vClock.Text = w.formattedTime()
+	canvas.Refresh(w.clock)
+	if w.desk.Settings().NarrowWidgetPanel() {
+		w.rotate(w.vClock)
+	}
+
+	w.date.SetText(w.formattedDate())
+	canvas.Refresh(w.date)
 }
 
 func (w *widgetPanel) formattedTime() string {
@@ -165,6 +169,7 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 	} else {
 		w.clocks.Objects[1].Hide()
 	}
+	w.clockRefresh()
 
 	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackground())
 	objects := []fyne.CanvasObject{
@@ -235,6 +240,7 @@ func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 }
 
 type vClockPad struct {
+	minCache fyne.Size
 }
 
 func (u *vClockPad) Layout(objects []fyne.CanvasObject, _ fyne.Size) {
@@ -243,5 +249,7 @@ func (u *vClockPad) Layout(objects []fyne.CanvasObject, _ fyne.Size) {
 }
 
 func (u *vClockPad) MinSize(objects []fyne.CanvasObject) fyne.Size {
-	return objects[0].MinSize().Subtract(fyne.NewSize(0, theme.Padding()))
+	clockMin := objects[0].MinSize()
+	u.minCache = u.minCache.Max(clockMin)
+	return u.minCache.Subtract(fyne.NewSize(0, theme.Padding()))
 }

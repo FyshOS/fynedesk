@@ -445,7 +445,7 @@ func (c *client) positionNewWindow() {
 		primary := fynedesk.Instance().Screens().Primary()
 		x = primary.Width - int(w)
 		y = primary.Height - int(h)
-	} else if (!requestPosition && !hasPosition) || !c.positionIsValid(x, y) {
+	} else if !requestPosition && !hasPosition || !c.positionIsValid(x, y) {
 		decorated := !windowBorderless(c.wm.X(), c.win)
 		x, y, w, h = wm.PositionForNewWindow(c, int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
 			decorated, fynedesk.Instance().Screens())
