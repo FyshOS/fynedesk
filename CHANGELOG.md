@@ -3,6 +3,29 @@
 This file lists the main changes with each version of the FyneDesk project.
 More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
 
+## 0.4 - Ongoing
+
+### Added
+
+* Virtual desktops and pager widget
+* Add support for permissions requests in apps
+* Add app search to app bar
+* Add systray module
+* Support launching xscreenaver for screen lock
+
+### Changed
+
+* New "thin bars" layout of desktop by default
+* Show a dialog to confirm before logging out
+* Move to abstract light/dark backgrounds from Jost Grant
+* Update to Fyne 2.4 theme with rounded corners
+
+### Fixed
+
+* Performance improvements in border painting
+* 
+
+
 ## 0.3 - 17 December 2021
 
 ### Added
