@@ -24,7 +24,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 ### Fixed
 
 * Performance improvements in border painting
-* 
+* Date widget could move behind clock in some configurations
 
 
 ## 0.3 - 17 December 2021
