@@ -19,6 +19,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Show a dialog to confirm before logging out
 * Move to abstract light/dark backgrounds from Jost Grant
 * Update to Fyne 2.4 theme with rounded corners
+* Dim iconified windows in switcher
 
 ### Fixed
 
