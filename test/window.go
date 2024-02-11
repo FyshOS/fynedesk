@@ -82,7 +82,7 @@ func (w *Window) Maximized() bool {
 }
 
 // Move the window, does nothing in test windows
-func (w *Window) Move(fyne.Position) {}
+func (w *Window) Move(_ fyne.Position) {}
 
 // Parent returns a window that this should be positioned within, if set.
 func (w *Window) Parent() fynedesk.Window {
@@ -93,6 +93,9 @@ func (w *Window) Parent() fynedesk.Window {
 func (w *Window) Position() fyne.Position {
 	return fyne.NewPos(0, 0)
 }
+
+// Resize the window, does nothing in test windows
+func (w *Window) Resize(_ fyne.Size) {}
 
 // Size returns 0x0 for test windows
 func (w *Window) Size() fyne.Size { return fyne.Size{} }

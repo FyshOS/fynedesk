@@ -32,6 +32,7 @@ type Window interface {
 	Position() fyne.Position
 	Size() fyne.Size
 	Move(position fyne.Position)
+	Resize(fyne.Size)
 
 	Desktop() int
 	SetDesktop(int)

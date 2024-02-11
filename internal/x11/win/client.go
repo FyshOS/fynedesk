@@ -211,6 +211,9 @@ func (c *client) Maximized() bool {
 }
 
 func (c *client) Move(pos fyne.Position) {
+	if c.frame == nil {
+		return
+	}
 	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
 
 	targetX := int16(pos.X * screen.CanvasScale())
@@ -317,7 +320,19 @@ func (c *client) Position() fyne.Position {
 		float32(c.frame.y)/screen.CanvasScale())
 }
 
+func (c *client) Resize(s fyne.Size) {
+	if c.frame == nil {
+		return
+	}
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
+
+	c.frame.updateGeometry(c.frame.x, c.frame.y, uint16(s.Width*screen.Scale), uint16(s.Height*screen.Scale), false)
+}
+
 func (c *client) Size() fyne.Size {
+	if c.frame == nil {
+		return fyne.Size{}
+	}
 	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
 
 	return fyne.NewSize(

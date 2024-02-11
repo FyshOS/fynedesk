@@ -68,6 +68,11 @@ func (l *desktop) SetDesktop(id int) {
 
 	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
 		for i, item := range l.wm.Windows() {
+			// TODO move this to floating once we support them
+			if item.Properties().SkipTaskbar() {
+				continue
+			}
+
 			newX := starts[i].X + deltas[i].DX*f
 			newY := starts[i].Y + deltas[i].DY*f
 
