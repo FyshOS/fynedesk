@@ -7,6 +7,7 @@ import (
 	_ "fyshos.com/fynedesk/modules/desktops"
 	_ "fyshos.com/fynedesk/modules/fyles"
 	_ "fyshos.com/fynedesk/modules/launcher"
+	_ "fyshos.com/fynedesk/modules/quaketerm"
 	_ "fyshos.com/fynedesk/modules/status"
 	_ "fyshos.com/fynedesk/modules/systray"
 

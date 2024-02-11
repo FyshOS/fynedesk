@@ -87,7 +87,7 @@ func (p *pager) refreshFrom(oldID int) {
 
 	for j := len(wins) - 1; j >= 0; j-- {
 		win := wins[j]
-		if win.Iconic() {
+		if win.Iconic() || win.Properties().SkipTaskbar() {
 			continue
 		}
 

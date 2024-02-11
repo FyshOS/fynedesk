@@ -20,8 +20,12 @@ require (
 	howett.net/plist v0.0.0-20181124034731-591f970eefbb
 )
 
+require github.com/creack/pty v1.1.11 // indirect
+
 require (
 	fyne.io/systray v1.10.1-0.20231230205326-d160fd363db9 // indirect
+	github.com/ActiveState/termtest/conpty v0.5.0 // indirect
+	github.com/Azure/go-ansiterm v0.0.0-20170929234023-d6e3b3328b78 // indirect
 	github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 // indirect
 	github.com/BurntSushi/graphics-go v0.0.0-20160129215708-b43f31a4a966 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
@@ -29,6 +33,7 @@ require (
 	github.com/fsnotify/fsnotify v1.7.0 // indirect
 	github.com/fyne-io/gl-js v0.0.0-20220119005834-d2da28d9ccfe // indirect
 	github.com/fyne-io/glfw-js v0.0.0-20240101223322-6e1efdc71b7a // indirect
+	github.com/fyne-io/terminal v0.0.0-20240206170039-2e129cdfd85f
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20231223183121-56fa3ac82ce7 // indirect
 	github.com/go-text/render v0.0.0-20230619120952-35bccb6164b8 // indirect
