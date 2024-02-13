@@ -37,8 +37,8 @@ cloud.google.com/go/storage v1.6.0/go.mod h1:N7U0C8pVQ/+NIKOBQyamJIeKQKkZ+mxpohl
 cloud.google.com/go/storage v1.8.0/go.mod h1:Wv1Oy7z6Yz3DshWRJFhqM/UCfaWIRTdp0RXyy7KQOVs=
 cloud.google.com/go/storage v1.10.0/go.mod h1:FLPqc6j+Ki4BU591ie1oL6qBQGu2Bl/tZ9ullr3+Kg0=
 dmitri.shuralyov.com/gpu/mtl v0.0.0-20190408044501-666a987793e9/go.mod h1:H6x//7gZCb22OMCxBHrMx7a5I7Hp++hsVxbQ4BYO7hU=
-fyne.io/fyne/v2 v2.4.4-0.20240107115323-8458aff4b006 h1:7zQ59DzG2vWbcHvE/ElPhrkP5Qy8CO15fJenSm22v74=
-fyne.io/fyne/v2 v2.4.4-0.20240107115323-8458aff4b006/go.mod h1:lcFfOoGu75+eS+ERtXM8OZQy+czyIfHxohlc9wSCslE=
+fyne.io/fyne/v2 v2.4.4 h1:4efSRpoikcGbqQN83yzC9WmF8UNq9olsaJQ/Ejme6Z8=
+fyne.io/fyne/v2 v2.4.4/go.mod h1:VyrxAOZ3NRZRWBvNIJbfqoKOG4DdbewoPk7ozqJKNPY=
 fyne.io/systray v1.10.1-0.20231230205326-d160fd363db9 h1:E/gHmMVyk8TuI6JIgNIv/Qu1JABMVFBIkQ8lYRa5gkQ=
 fyne.io/systray v1.10.1-0.20231230205326-d160fd363db9/go.mod h1:RVwqP9nYMo7h5zViCBHri2FgjXF7H2cub7MAq4NSoLs=
 github.com/BurntSushi/freetype-go v0.0.0-20160129220410-b763ddbfe298 h1:1qlsVAQJXZHsaM8b6OLVo6muQUQd4CwkH/D3fnnbHXA=
@@ -109,9 +109,9 @@ github.com/go-gl/glfw/v3.3/glfw v0.0.0-20231223183121-56fa3ac82ce7 h1:7tf/0aw5Dx
 github.com/go-gl/glfw/v3.3/glfw v0.0.0-20231223183121-56fa3ac82ce7/go.mod h1:tQ2UAYgL5IevRw8kRxooKSPJfGvJ9fJQFa0TUsXzTg8=
 github.com/go-text/render v0.0.0-20230619120952-35bccb6164b8 h1:VkKnvzbvHqgEfm351rfr8Uclu5fnwq8HP2ximUzJsBM=
 github.com/go-text/render v0.0.0-20230619120952-35bccb6164b8/go.mod h1:h29xCucjNsDcYb7+0rJokxVwYAq+9kQ19WiFuBKkYtc=
-github.com/go-text/typesetting v0.0.0-20230616162802-9c17dd34aa4a h1:VjN8ttdfklC0dnAdKbZqGNESdERUxtE3l8a/4Grgarc=
-github.com/go-text/typesetting v0.0.0-20230616162802-9c17dd34aa4a/go.mod h1:evDBbvNR/KaVFZ2ZlDSOWWXIUKq0wCOEtzLxRM8SG3k=
-github.com/go-text/typesetting-utils v0.0.0-20230616150549-2a7df14b6a22 h1:LBQTFxP2MfsyEDqSKmUBZaDuDHN1vpqDyOZjcqS7MYI=
+github.com/go-text/typesetting v0.1.0 h1:vioSaLPYcHwPEPLT7gsjCGDCoYSbljxoHJzMnKwVvHw=
+github.com/go-text/typesetting v0.1.0/go.mod h1:d22AnmeKq/on0HNv73UFriMKc4Ez6EqZAofLhAzpSzI=
+github.com/go-text/typesetting-utils v0.0.0-20231211103740-d9332ae51f04 h1:zBx+p/W2aQYtNuyZNcTfinWvXBQwYtDfme051PR/lAY=
 github.com/godbus/dbus/v5 v5.0.4/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
 github.com/godbus/dbus/v5 v5.1.0 h1:4KLkAxT3aOY8Li4FRJe/KvhoNFFxo0m6fNuFUO8QJUk=
 github.com/godbus/dbus/v5 v5.1.0/go.mod h1:xhWf0FNVPg57R7Z0UbKHbJfkEywrmjJnf7w5xrFpKfA=
@@ -261,8 +261,6 @@ github.com/rogpeppe/fastuuid v1.2.0/go.mod h1:jVj6XXZzXRy/MSR5jhDC/2q6DgLz+nrA6L
 github.com/rogpeppe/go-internal v1.3.0/go.mod h1:M8bDsm7K2OlrFYOpmOWEs/qY81heoFRclV5y23lUDJ4=
 github.com/russross/blackfriday/v2 v2.0.1/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/ryanuber/columnize v0.0.0-20160712163229-9b3edd62028f/go.mod h1:sm1tb6uqfes/u+d4ooFouqFdy9/2g9QGwK3SQygK0Ts=
-github.com/rymdport/portal v0.0.0-20231123202536-da45518a87bb h1:ejEomhJX7G4p8dFImv2zcQd2Oa0IpWIeB/FUZRnpQKg=
-github.com/rymdport/portal v0.0.0-20231123202536-da45518a87bb/go.mod h1:RYYAnv4sssTQ7ceErKl7UD8auER/0yFV7CgmfS/uAD8=
 github.com/sean-/seed v0.0.0-20170313163322-e2103e2c3529/go.mod h1:DxrIzT+xaE7yg65j358z/aeFdxmN0P9QXhEzd20vsDc=
 github.com/shurcooL/go v0.0.0-20200502201357-93f07166e636/go.mod h1:TDJrrUr11Vxrven61rcy3hJMUqaf/CLWYhHNPmT14Lk=
 github.com/shurcooL/httpfs v0.0.0-20190707220628-8d4bc4ba7749/go.mod h1:ZY1cvUeJuFPAdZ/B6v7RHavJWZn2YPVFQ1OSXhCGOkg=
@@ -660,6 +658,8 @@ gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c/go.mod h1:K4uyk7z7BCEPqu6E+C
 gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
 gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
 gopkg.in/yaml.v3 v3.0.1/go.mod h1:K4uyk7z7BCEPqu6E+C64Yfv1cQ7kz7rIZviUmN+EgEM=
+honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2 h1:oomkgU6VaQDsV6qZby2uz1Lap0eXmku8+2em3A/l700=
+honnef.co/go/js/dom v0.0.0-20210725211120-f030747120f2/go.mod h1:sUMDUKNB2ZcVjt92UnLy3cdGs+wDAcrPdV3JP6sVgA4=
 honnef.co/go/tools v0.0.0-20190102054323-c2f93a96b099/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190106161140-3f1c8253044a/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
 honnef.co/go/tools v0.0.0-20190418001031-e561f6794a2a/go.mod h1:rf3lG4BRIbNafJWhAfAdb/ePZxsR/4RtNHQocxwk9r4=
