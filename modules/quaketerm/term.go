@@ -132,6 +132,10 @@ func (t *term) show() {
 }
 
 func (t *term) toggle() {
+	if t.ui == nil {
+		t.createTerm() // lazy load UI
+	}
+
 	if !t.shown {
 		t.win = t.getHandle()
 
@@ -158,7 +162,6 @@ func matchTheme(bg, over *canvas.Rectangle) {
 }
 
 func newTerm() fynedesk.Module {
-	t := &term{}
-	t.createTerm()
-	return t
+	// don't load UI until it is first called on
+	return &term{}
 }
