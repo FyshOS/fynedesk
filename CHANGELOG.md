@@ -9,9 +9,9 @@ More detailed release notes can be found on the [releases page](https://github.c
 
 * Virtual desktops and pager widget
 * Add support for permissions requests in apps
-* Add app search to app bar
 * Add systray module
 * Support launching xscreenaver for screen lock
+* Include a "Quake mode" terminal module using <meta>+` key
 
 ### Changed
 
@@ -19,6 +19,7 @@ More detailed release notes can be found on the [releases page](https://github.c
 * Show a dialog to confirm before logging out
 * Move to abstract light/dark backgrounds from Jost Grant
 * Update to Fyne 2.4 theme with rounded corners
+* Add app search to app bar
 * Dim iconified windows in switcher
 
 ### Fixed
