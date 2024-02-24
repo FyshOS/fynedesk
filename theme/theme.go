@@ -14,10 +14,10 @@ var (
 	// PointerDefault is the standard pointer resource
 	PointerDefault = resourcePointerPng
 
-	// FyneAboutBackground is the image used as a background to the about screen
-	FyneAboutBackground = resourceFyneaboutbgPng
 	// FyneLogo is the fyne tooklit icon
 	FyneLogo = resourceFynePng
+	// FyshOSLogo is the fyne tooklit icon
+	FyshOSLogo = resourceFyshOSPng
 	// AppIcon is the image for this application icon
 	AppIcon = resourceIconPng
 
