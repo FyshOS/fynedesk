@@ -62,12 +62,12 @@ var resourceFynePng = &fyne.StaticResource{
 	StaticContent: fynePng,
 }
 
-//go:embed assets/fyne_about_bg.png
-var fyneAboutBgPng []byte
+//go:embed assets/fish_onwhite.png
+var fyshOSPng []byte
 
-var resourceFyneaboutbgPng = &fyne.StaticResource{
-	StaticName:    "fyne_about_bg.png",
-	StaticContent: fyneAboutBgPng,
+var resourceFyshOSPng = &fyne.StaticResource{
+	StaticName:    "fish_onwhite.png",
+	StaticContent: fyshOSPng,
 }
 
 //go:embed assets/icon.png
