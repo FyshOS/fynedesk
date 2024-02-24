@@ -36,6 +36,7 @@ func (w *widgetPanel) showAbout() {
 
 		for _, win := range w.desk.WindowManager().Windows() {
 			if win.Properties().Title() == w.about.Title() {
+				win.SetDesktop(w.desk.Desktop())
 				w.desk.WindowManager().RaiseToTop(win)
 				break
 			}
