@@ -1,22 +1,23 @@
 package ui
 
 import (
-	"os"
-	"path"
+	"image/color"
+	"os/user"
 	"time"
+
+	"github.com/disintegration/imaging"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/driver/software"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
-
-const widgetPanelWidth = float32(200)
 
 type widgetRenderer struct {
 	panel *widgetPanel
@@ -36,15 +37,19 @@ func (w *widgetRenderer) Layout(size fyne.Size) {
 }
 
 func (w *widgetRenderer) Refresh() {
-	r, _, _, _ := theme.BackgroundColor().RGBA()
-	if uint8(r) > 0x99 {
-		w.bg.FillColor = wmtheme.WidgetPanelBackgroundLight
-	} else {
-		w.bg.FillColor = wmtheme.WidgetPanelBackgroundDark
-	}
+	w.bg.FillColor = wmtheme.WidgetPanelBackground()
 	w.bg.Refresh()
 
+	w.panel.account.SetText(w.panel.accountLabel())
+	if w.panel.desk.Settings().NarrowWidgetPanel() {
+		w.panel.clocks.Objects[0].Hide()
+		w.panel.clocks.Objects[1].Show()
+	} else {
+		w.panel.clocks.Objects[0].Show()
+		w.panel.clocks.Objects[1].Hide()
+	}
 	w.panel.clock.Color = theme.ForegroundColor()
+	w.panel.vClock.Color = theme.ForegroundColor()
 	canvas.Refresh(w.panel.clock)
 }
 
@@ -61,10 +66,12 @@ type widgetPanel struct {
 	desk            fynedesk.Desktop
 	about, settings fyne.Window
 
-	clock         *canvas.Text
-	date          *widget.Label
-	modules       *fyne.Container
-	notifications fyne.CanvasObject
+	account         *widget.Button
+	clock, vClock   *canvas.Text
+	date            *widget.Label
+	rotated         *canvas.Image
+	modules, clocks *fyne.Container
+	notifications   fyne.CanvasObject
 }
 
 func (w *widgetPanel) clockTick() {
@@ -72,13 +79,21 @@ func (w *widgetPanel) clockTick() {
 	go func() {
 		for {
 			<-tick.C
-			w.clock.Text = w.formattedTime()
-			canvas.Refresh(w.clock)
-
-			w.date.SetText(formattedDate())
-			canvas.Refresh(w.date)
+			w.clockRefresh()
 		}
 	}()
+}
+
+func (w *widgetPanel) clockRefresh() {
+	w.clock.Text = w.formattedTime()
+	w.vClock.Text = w.formattedTime()
+	canvas.Refresh(w.clock)
+	if w.desk.Settings().NarrowWidgetPanel() {
+		w.rotate(w.vClock)
+	}
+
+	w.date.SetText(w.formattedDate())
+	canvas.Refresh(w.date)
 }
 
 func (w *widgetPanel) formattedTime() string {
@@ -89,8 +104,12 @@ func (w *widgetPanel) formattedTime() string {
 	return time.Now().Format("15:04")
 }
 
-func formattedDate() string {
-	return time.Now().Format("2 January")
+func (w *widgetPanel) formattedDate() string {
+	format := "2 Jan"
+	if w.desk.Settings().NarrowWidgetPanel() {
+		format = "2\nJan"
+	}
+	return time.Now().Format(format)
 }
 
 func (w *widgetPanel) createClock() {
@@ -104,8 +123,15 @@ func (w *widgetPanel) createClock() {
 		TextStyle: style,
 		TextSize:  3 * theme.TextSize(),
 	}
+	w.vClock = &canvas.Text{
+		Color:     theme.ForegroundColor(),
+		Text:      w.formattedTime(),
+		Alignment: fyne.TextAlignCenter,
+		TextStyle: style,
+		TextSize:  wmtheme.NarrowBarWidth * 1.5,
+	}
 	w.date = &widget.Label{
-		Text:      formattedDate(),
+		Text:      w.formattedDate(),
 		Alignment: fyne.TextAlignCenter,
 		TextStyle: style,
 	}
@@ -113,30 +139,48 @@ func (w *widgetPanel) createClock() {
 	go w.clockTick()
 }
 
+func (w *widgetPanel) rotate(time *canvas.Text) {
+	c := software.NewTransparentCanvas()
+	c.SetPadded(false)
+	c.SetContent(time)
+
+	img := c.Capture()
+	out := imaging.Rotate270(img)
+
+	w.rotated.Image = out
+	ratio := time.MinSize().Width / time.MinSize().Height
+	space := wmtheme.NarrowBarWidth - theme.Padding()*2
+	w.rotated.SetMinSize(fyne.NewSize(space, space*ratio))
+	w.rotated.Refresh()
+}
+
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
-	accountLabel := "Account"
-	homedir, err := os.UserHomeDir()
-	if err == nil {
-		accountLabel = path.Base(homedir)
-	} else {
-		fyne.LogError("Unable to look up user", err)
-	}
+	narrow := w.desk.Settings().NarrowWidgetPanel()
+	accountLabel := w.accountLabel()
 	var account *widget.Button
-	account = widget.NewButtonWithIcon(accountLabel, wmtheme.UserIcon, func() {
+	w.account = widget.NewButtonWithIcon(accountLabel, wmtheme.UserIcon, func() {
 		w.showAccountMenu(account)
 	})
-	appExecButton := widget.NewButtonWithIcon("", theme.SearchIcon(), ShowAppLauncher)
 
-	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackgroundDark)
+	w.rotated = &canvas.Image{}
+	w.clocks = container.NewStack(w.clock, container.New(&vClockPad{}, w.rotated))
+	if narrow {
+		w.clock.Hide()
+	} else {
+		w.clocks.Objects[1].Hide()
+	}
+	w.clockRefresh()
+
+	bg := canvas.NewRectangle(wmtheme.WidgetPanelBackground())
 	objects := []fyne.CanvasObject{
 		bg,
-		w.clock,
+		canvas.NewRectangle(color.Transparent), // clear top edge for clocks
+		w.clocks,
 		w.date,
 		w.notifications}
 
 	w.modules = container.NewVBox()
-	objects = append(objects, layout.NewSpacer(), w.modules,
-		container.NewBorder(nil, nil, appExecButton, nil, account))
+	objects = append(objects, layout.NewSpacer(), w.modules, w.account)
 	w.loadModules(w.desk.Modules())
 
 	return &widgetRenderer{
@@ -148,7 +192,23 @@ func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
 }
 
 func (w *widgetPanel) MinSize() fyne.Size {
-	return fyne.NewSize(widgetPanelWidth, 200)
+	if w.desk.Settings().NarrowWidgetPanel() {
+		return fyne.NewSize(wmtheme.NarrowBarWidth, 200)
+	}
+	return fyne.NewSize(wmtheme.WidgetPanelWidth, 200)
+}
+
+func (w *widgetPanel) accountLabel() string {
+	if w.desk.Settings().NarrowWidgetPanel() {
+		return ""
+	}
+	currentUser, err := user.Current()
+	if err != nil {
+		fyne.LogError("Unable to look up user", err)
+		return "Account"
+	}
+	displayName := currentUser.Username
+	return displayName
 }
 
 func (w *widgetPanel) reloadModules(mods []fynedesk.Module) {
@@ -177,4 +237,19 @@ func newWidgetPanel(rootDesk fynedesk.Desktop) *widgetPanel {
 	w.createClock()
 
 	return w
+}
+
+type vClockPad struct {
+	minCache fyne.Size
+}
+
+func (u *vClockPad) Layout(objects []fyne.CanvasObject, _ fyne.Size) {
+	objects[0].Resize(objects[0].MinSize())
+	objects[0].Move(fyne.NewPos(5, 0))
+}
+
+func (u *vClockPad) MinSize(objects []fyne.CanvasObject) fyne.Size {
+	clockMin := objects[0].MinSize()
+	u.minCache = u.minCache.Max(clockMin)
+	return u.minCache.Subtract(fyne.NewSize(0, theme.Padding()))
 }

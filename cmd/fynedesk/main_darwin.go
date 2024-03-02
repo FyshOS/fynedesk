@@ -6,9 +6,9 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/icon"
-	"fyne.io/fynedesk/internal/ui"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/icon"
+	"fyshos.com/fynedesk/internal/ui"
 )
 
 func setupDesktop(a fyne.App) fynedesk.Desktop {

@@ -1,4 +1,4 @@
-package fynedesk // import "fyne.io/fynedesk"
+package fynedesk // import "fyshos.com/fynedesk"
 
 import "fyne.io/fyne/v2"
 
@@ -8,7 +8,8 @@ type Desktop interface {
 	RunApp(AppData) error
 	RecentApps() []AppData
 	Settings() DeskSettings
-	ContentSizePixels(screen *Screen) (uint32, uint32)
+	ContentBoundsPixels(*Screen) (x, y, w, h uint32)
+	RootSizePixels() (w, h uint32)
 	Screens() ScreenList
 
 	IconProvider() ApplicationProvider
@@ -17,6 +18,9 @@ type Desktop interface {
 
 	AddShortcut(shortcut *Shortcut, handler func())
 	ShowMenuAt(menu *fyne.Menu, pos fyne.Position)
+
+	Desktop() int
+	SetDesktop(int)
 }
 
 var instance Desktop

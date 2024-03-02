@@ -11,8 +11,8 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 var networkMeta = fynedesk.ModuleMetadata{
@@ -70,6 +70,15 @@ func (n *network) isEthernetConnected() (bool, error) {
 		out, err := exec.Command("bash", []string{"-c", "ip link | grep \",UP,\" | grep -v LOOPBACK | grep -v \": wl\" | wc -l"}...).Output()
 		if err != nil {
 			log.Println("Error running ip tool", err)
+			return false, err
+		}
+		if strings.TrimSpace(string(out)) == "0" {
+			return false, nil
+		}
+	} else if scutil, _ := exec.LookPath("scutil"); scutil != "" {
+		out, err := exec.Command("bash", []string{"-c", "scutil --nwi | grep address | wc -l"}...).Output()
+		if err != nil {
+			log.Println("Error running scutil tool", err)
 			return false, err
 		}
 		if strings.TrimSpace(string(out)) == "0" {
@@ -133,7 +142,7 @@ func (n *network) StatusAreaWidget() fyne.CanvasObject {
 	n.icon = &widget.Button{Icon: wmtheme.WifiOffIcon, Importance: widget.LowImportance, OnTapped: n.showSettings}
 	n.tick()
 
-	return container.NewBorder(nil, nil, n.icon, nil, n.name)
+	return container.New(&handleNarrow{}, n.icon, n.name)
 }
 
 func (n *network) Metadata() fynedesk.ModuleMetadata {

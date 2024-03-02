@@ -5,8 +5,8 @@ import (
 
 	"github.com/stretchr/testify/assert"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/test"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/test"
 )
 
 func testWindows() []fynedesk.Window {
@@ -22,7 +22,8 @@ func testWindows() []fynedesk.Window {
 
 func TestShowAppSwitcher(t *testing.T) {
 	wins := testWindows()
-	s := ShowAppSwitcher(wins, test.NewAppProvider())
+	s := NewAppSwitcher(wins, test.NewAppProvider())
+	s.Show()
 
 	assert.NotNil(t, s.win)
 	assert.Equal(t, 1, s.currentIndex())
@@ -30,7 +31,8 @@ func TestShowAppSwitcher(t *testing.T) {
 
 func TestShowAppSwitcherReverse(t *testing.T) {
 	wins := testWindows()
-	s := ShowAppSwitcherReverse(wins, test.NewAppProvider())
+	s := NewAppSwitcherReverse(wins, test.NewAppProvider())
+	s.Show()
 
 	assert.NotNil(t, s.win)
 	assert.Equal(t, len(wins)-1, s.currentIndex())
@@ -38,7 +40,7 @@ func TestShowAppSwitcherReverse(t *testing.T) {
 
 func TestSwitcher_Next(t *testing.T) {
 	wins := testWindows()
-	s := ShowAppSwitcher(wins, test.NewAppProvider())
+	s := NewAppSwitcher(wins, test.NewAppProvider())
 
 	current := s.currentIndex()
 	s.Next()
@@ -51,7 +53,7 @@ func TestSwitcher_Next(t *testing.T) {
 
 func TestSwitcher_Previous(t *testing.T) {
 	wins := testWindows()
-	s := ShowAppSwitcher(wins, test.NewAppProvider())
+	s := NewAppSwitcher(wins, test.NewAppProvider())
 
 	current := s.currentIndex()
 	s.Previous()
@@ -64,7 +66,8 @@ func TestSwitcher_Previous(t *testing.T) {
 
 func TestSwitcher_HideApply(t *testing.T) {
 	wins := testWindows()
-	s := ShowAppSwitcher(wins, test.NewAppProvider())
+	s := NewAppSwitcher(wins, test.NewAppProvider())
+	s.Show()
 
 	s.HideApply()
 	assert.True(t, wins[s.currentIndex()].(*test.Window).TopWindow())
@@ -72,7 +75,8 @@ func TestSwitcher_HideApply(t *testing.T) {
 
 func TestSwitcher_HideCancel(t *testing.T) {
 	wins := testWindows()
-	s := ShowAppSwitcher(wins, test.NewAppProvider())
+	s := NewAppSwitcher(wins, test.NewAppProvider())
+	s.Show()
 
 	s.HideCancel()
 	assert.False(t, wins[s.currentIndex()].(*test.Window).TopWindow())

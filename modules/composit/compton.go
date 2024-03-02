@@ -4,7 +4,7 @@ import (
 	"os/exec"
 
 	"fyne.io/fyne/v2"
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 var compizMeta = fynedesk.ModuleMetadata{
@@ -34,7 +34,7 @@ func (c *comp) enable() {
 		return
 	}
 
-	_ = exec.Command(path, "-c", "-C", "-r", "20", "-f", "-i", "1.0").Start()
+	_ = exec.Command(path, "--vsync", "drm", "-c", "-C", "-r", "20", "-f", "-i", "1.0").Start()
 }
 
 // newCompiz creates a new module that will manage composition of the windows.

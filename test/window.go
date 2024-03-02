@@ -3,8 +3,9 @@ package test
 import (
 	"image"
 
+	"fyshos.com/fynedesk"
+
 	"fyne.io/fyne/v2"
-	"fyne.io/fynedesk"
 )
 
 // Window is an in-memory virtual window for test purposes
@@ -12,11 +13,15 @@ type Window struct {
 	props dummyProperties
 
 	iconic, focused, fullscreen, maximized, raised bool
+
+	parent        fynedesk.Window
+	x, y, desk    int
+	width, height uint
 }
 
 // NewWindow creates a virtual window with the given title ("" is acceptable)
 func NewWindow(title string) *Window {
-	win := &Window{}
+	win := &Window{width: 10, height: 10}
 	win.props.name = title
 	return win
 }
@@ -29,6 +34,11 @@ func (w *Window) Capture() image.Image {
 // Close this test window
 func (w *Window) Close() {
 	// no-op
+}
+
+// Desktop returns the id of the desktop this window is associated with
+func (w *Window) Desktop() int {
+	return w.desk
 }
 
 // Fullscreened returns true if this window has been made full screen
@@ -71,10 +81,24 @@ func (w *Window) Maximized() bool {
 	return false
 }
 
+// Move the window, does nothing in test windows
+func (w *Window) Move(_ fyne.Position) {}
+
+// Parent returns a window that this should be positioned within, if set.
+func (w *Window) Parent() fynedesk.Window {
+	return w.parent
+}
+
 // Position returns 0, 0 for test windows
 func (w *Window) Position() fyne.Position {
 	return fyne.NewPos(0, 0)
 }
+
+// Resize the window, does nothing in test windows
+func (w *Window) Resize(_ fyne.Size) {}
+
+// Size returns 0x0 for test windows
+func (w *Window) Size() fyne.Size { return fyne.Size{} }
 
 // Properties obtains the window properties currently set
 func (w *Window) Properties() fynedesk.WindowProperties {
@@ -101,9 +125,25 @@ func (w *Window) SetCommand(cmd string) {
 	w.props.cmd = cmd
 }
 
+// SetDesktop sets the index of a desktop this window would associate with
+func (w *Window) SetDesktop(id int) {
+	w.desk = id
+}
+
 // SetIconName is a test utility to set the icon-name property of this window
 func (w *Window) SetIconName(name string) {
 	w.props.iconName = name
+}
+
+// SetGeometry is a test utility to set the position and size of this window
+func (w *Window) SetGeometry(x, y int, width, height uint) {
+	w.x, w.y = x, y
+	w.width, w.height = width, height
+}
+
+// SetParent is a test utility to set a parent of this window
+func (w *Window) SetParent(p fynedesk.Window) {
+	w.parent = p
 }
 
 // TopWindow returns true if this window has been raised above all others

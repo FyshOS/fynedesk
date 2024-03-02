@@ -1,6 +1,6 @@
 package launcher
 
-import "fyne.io/fynedesk"
+import "fyshos.com/fynedesk"
 
 func init() {
 	fynedesk.RegisterModule(calcMeta)

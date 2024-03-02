@@ -1,9 +1,8 @@
 package test
 
 import (
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
-
-	"fyne.io/fynedesk"
+	"fyne.io/fyne/v2"
+	"fyshos.com/fynedesk"
 )
 
 // Settings is a simple struct for managing settings within our tests
@@ -19,6 +18,8 @@ type Settings struct {
 	clockFormatting        string
 
 	moduleNames []string
+
+	narrowPanel, narrowLeftLauncher bool
 }
 
 // NewSettings returns an in-memory settings instance
@@ -107,8 +108,8 @@ func (s *Settings) SetLauncherZoomScale(scale float32) {
 }
 
 // KeyboardModifier returns the preferred keyboard modifier for shortcuts.
-func (s *Settings) KeyboardModifier() deskDriver.Modifier {
-	return deskDriver.SuperModifier
+func (s *Settings) KeyboardModifier() fyne.KeyModifier {
+	return fyne.KeyModifierSuper
 }
 
 // ModuleNames returns the names of modules that should be enabled
@@ -119,6 +120,26 @@ func (s *Settings) ModuleNames() []string {
 // SetModuleNames supports configuring the modules that should be loaded
 func (s *Settings) SetModuleNames(mods []string) {
 	s.moduleNames = mods
+}
+
+// NarrowLeftLauncher returns true when the user requested a narrow launcher bar on the left.
+func (s *Settings) NarrowLeftLauncher() bool {
+	return s.narrowLeftLauncher
+}
+
+// SetNarrowLeftLauncher allows tests to specify the value for a narrow left hand launcher.
+func (s *Settings) SetNarrowLeftLauncher(narrow bool) {
+	s.narrowLeftLauncher = narrow
+}
+
+// NarrowWidgetPanel returns true when the user requested a narrow widget panel.
+func (s *Settings) NarrowWidgetPanel() bool {
+	return s.narrowPanel
+}
+
+// SetNarrowWidgetPanel allows tests to specify the value for a narrow widget panel.
+func (s *Settings) SetNarrowWidgetPanel(narrow bool) {
+	s.narrowPanel = narrow
 }
 
 // BorderButtonPosition returns the position of the toolbar buttons.

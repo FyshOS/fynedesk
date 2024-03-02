@@ -13,15 +13,14 @@ import (
 	"fyne.io/fyne/v2/cmd/fyne_settings/settings"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/dialog"
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
+	"fyshos.com/fynedesk/wm"
 )
 
 const randrHelper = "arandr"
@@ -91,6 +90,12 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 	clockFormat := &widget.RadioGroup{Options: []string{"12h", "24h"}, Required: true, Horizontal: true}
 	clockFormat.SetSelected(d.settings.ClockFormatting())
 
+	layoutLabel := widget.NewLabelWithStyle("Layout", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	narrowBar := widget.NewCheck("Narrow Side App Bar", nil)
+	narrowBar.Checked = d.settings.NarrowLeftLauncher()
+	narrowWidget := widget.NewCheck("Narrow Widget Bar", nil)
+	narrowWidget.Checked = d.settings.NarrowWidgetPanel()
+
 	borderButtonLabel := widget.NewLabelWithStyle("Border Button Position", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	borderButton := &widget.Select{Options: []string{"Left", "Right"}}
 	borderButton.SetSelected(d.settings.BorderButtonPosition())
@@ -110,8 +115,10 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 
 	bg := container.NewBorder(nil, nil, bgLabel, bgButtons, bgPath)
 	time := container.NewBorder(nil, nil, clockLabel, clockFormat)
+	lay := container.NewBorder(nil, nil, layoutLabel,
+		container.NewGridWithColumns(2, narrowBar, narrowWidget))
 	border := container.NewBorder(nil, nil, borderButtonLabel, borderButton)
-	top := container.NewVBox(bg, time, border)
+	top := container.NewVBox(bg, time, lay, border)
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	themeCurrent := container.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
@@ -123,6 +130,8 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 			d.settings.setIconTheme(themeLabel.Text)
 			d.settings.setClockFormatting(clockFormat.Selected)
 			d.settings.setBorderButtonPosition(borderButton.Selected)
+			d.settings.setNarrowLeftLauncher(narrowBar.Checked)
+			d.settings.setNarrowWidgetPanel(narrowWidget.Checked)
 		}})
 
 	return container.NewBorder(top, applyButton, nil, nil, bottom)
@@ -292,9 +301,9 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	userMod := d.settings.modifier
 	modType := widget.NewRadioGroup([]string{"Super", "Alt"}, func(mod string) {
 		if mod == "Alt" {
-			userMod = deskDriver.AltModifier
+			userMod = fyne.KeyModifierAlt
 		} else {
-			userMod = deskDriver.SuperModifier
+			userMod = fyne.KeyModifierSuper
 		}
 
 		var mods []fyne.CanvasObject
@@ -305,7 +314,7 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 		modVBox.Refresh()
 	})
 	modType.Horizontal = true
-	if d.settings.modifier == deskDriver.AltModifier {
+	if d.settings.modifier == fyne.KeyModifierAlt {
 		modType.Selected = "Alt"
 	} else {
 		modType.Selected = "Super"
@@ -348,7 +357,10 @@ func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
 	var displays fyne.CanvasObject
 	if _, err := exec.LookPath(randrHelper); err == nil {
 		displays = widget.NewButtonWithIcon("Manage Displays", wmtheme.DisplayIcon, func() {
-			exec.Command(randrHelper).Start()
+			e := exec.Command(randrHelper).Start()
+			if e != nil {
+				fyne.LogError("", e)
+			}
 		})
 	} else {
 		displays = widget.NewLabel("This requires " + randrHelper)
@@ -388,7 +400,7 @@ func (w *widgetPanel) showSettings() {
 	fyneSettings := settings.NewSettings()
 
 	tabs := container.NewAppTabs(
-		&container.TabItem{Text: "Fyne Settings", Icon: theme.FyneLogo(),
+		&container.TabItem{Text: "Fyne Settings", Icon: wmtheme.FyneLogo,
 			Content: fyneSettings.LoadAppearanceScreen(win)},
 		&container.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
 			Content: ui.loadAppearanceScreen()},
@@ -408,22 +420,22 @@ func (w *widgetPanel) showSettings() {
 	win.Show()
 }
 
-func modifierToString(mods deskDriver.Modifier, userMod deskDriver.Modifier) string {
+func modifierToString(mods fyne.KeyModifier, userMod fyne.KeyModifier) string {
 	var s []string
 	if (mods & fynedesk.UserModifier) != 0 {
 		mods |= userMod
 	}
 
-	if (mods & deskDriver.ShiftModifier) != 0 {
+	if (mods & fyne.KeyModifierShift) != 0 {
 		s = append(s, "Shift")
 	}
-	if (mods & deskDriver.ControlModifier) != 0 {
+	if (mods & fyne.KeyModifierControl) != 0 {
 		s = append(s, "Control")
 	}
-	if (mods & deskDriver.AltModifier) != 0 {
+	if (mods & fyne.KeyModifierAlt) != 0 {
 		s = append(s, "Alt")
 	}
-	if (mods & deskDriver.SuperModifier) != 0 {
+	if (mods & fyne.KeyModifierSuper) != 0 {
 		if runtime.GOOS == "darwin" {
 			s = append(s, "Command")
 		} else {

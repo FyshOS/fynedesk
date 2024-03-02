@@ -5,16 +5,16 @@ import (
 	"path/filepath"
 	"testing"
 
-	"fyne.io/fyne/v2/theme"
 	"github.com/stretchr/testify/assert"
+
+	"fyshos.com/fynedesk"
+	wmTest "fyshos.com/fynedesk/test"
+	wmTheme "fyshos.com/fynedesk/theme"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/test"
-
-	"fyne.io/fynedesk"
-	wmTest "fyne.io/fynedesk/test"
-	wmTheme "fyne.io/fynedesk/theme"
 )
 
 func TestDeskLayout_Layout(t *testing.T) {
@@ -22,16 +22,21 @@ func TestDeskLayout_Layout(t *testing.T) {
 		Width: 2000, Height: 1000, Scale: 1.0}), settings: wmTest.NewSettings()}
 	l.bar = testBar([]string{})
 	l.widgets = newWidgetPanel(l)
-	bg := &background{wallpaper: canvas.NewImageFromResource(theme.FyneLogo())}
+	bg := &background{wallpaper: container.NewStack(canvas.NewImageFromResource(wmTheme.AppIcon))}
 	deskSize := fyne.NewSize(2000, 1000)
 
 	l.Layout([]fyne.CanvasObject{bg, l.bar, l.widgets}, deskSize)
 
-	assert.Equal(t, bg.Size(), deskSize)
-	assert.Equal(t, l.widgets.Position().X+l.widgets.Size().Width, deskSize.Width)
-	assert.Equal(t, l.widgets.Size().Height, deskSize.Height)
-	assert.Equal(t, l.bar.Size().Width, deskSize.Width)
-	assert.Equal(t, l.bar.Position().Y+l.bar.Size().Height-1, deskSize.Height) // -1 rounding fix, desk.go:53
+	assert.Equal(t, deskSize, bg.Size())
+	assert.Equal(t, deskSize.Width, l.widgets.Position().X+l.widgets.Size().Width)
+	assert.Equal(t, deskSize.Height, l.widgets.Size().Height)
+	if l.Settings().NarrowLeftLauncher() {
+		assert.Equal(t, deskSize.Width, wmTheme.NarrowBarWidth)
+		assert.Equal(t, deskSize.Height, l.bar.Size().Height)
+	} else {
+		assert.Equal(t, deskSize.Width, l.bar.Size().Width)
+		assert.Equal(t, deskSize.Height, l.bar.Position().Y+l.bar.Size().Height-1) // -1 rounding fix, desk.go:49
+	}
 }
 
 func TestScaleVars_Up(t *testing.T) {
@@ -55,10 +60,9 @@ func TestScaleVars_Down(t *testing.T) {
 }
 
 func TestBackgroundChange(t *testing.T) {
-	l := &desktop{screens: wmTest.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
-		Width: 2000, Height: 1000, Scale: 1.0})}
-	fynedesk.SetInstance(l)
-	l.app = test.NewApp()
+	l := NewEmbeddedDesktop(test.NewApp(), wmTest.NewAppProvider()).(*desktop)
+	l.screens = wmTest.NewScreensProvider(&fynedesk.Screen{Name: "Screen0", X: 0, Y: 0,
+		Width: 2000, Height: 1000, Scale: 1.0})
 	l.settings = wmTest.NewSettings()
 	l.setupRoot()
 
@@ -69,9 +73,8 @@ func TestBackgroundChange(t *testing.T) {
 		fyne.LogError("Could not get current working directory", err)
 		t.FailNow()
 	}
-	assert.Equal(t, wmTheme.Background, bg.wallpaper.Resource)
 
 	l.settings.(*wmTest.Settings).SetBackground(filepath.Join(workingDir, "testdata", "fyne.png"))
 	l.updateBackgrounds(l.Settings().Background())
-	assert.Equal(t, l.settings.Background(), bg.wallpaper.File)
+	assert.Equal(t, l.settings.Background(), bg.wallpaper.Objects[0].(*canvas.Image).File)
 }

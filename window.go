@@ -27,8 +27,15 @@ type Window interface {
 	Uniconify()           // Request to restore this window and possibly children of this window from being minimized
 	Unmaximize()          // Request to restore this window to its size before being maximized
 
+	Parent() Window
 	Properties() WindowProperties // Request the properties set on this window
 	Position() fyne.Position
+	Size() fyne.Size
+	Move(position fyne.Position)
+	Resize(fyne.Size)
+
+	Desktop() int
+	SetDesktop(int)
 }
 
 // WindowProperties encapsulates the metadata that a window can provide.

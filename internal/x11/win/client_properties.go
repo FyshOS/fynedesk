@@ -8,9 +8,9 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/ui"
-	"fyne.io/fynedesk/internal/x11"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/ui"
+	"fyshos.com/fynedesk/internal/x11"
 )
 
 type clientProperties struct {
@@ -52,9 +52,11 @@ func (c *clientProperties) Icon() fyne.Resource {
 	settings := fynedesk.Instance().Settings()
 	iconSize := int(settings.LauncherIconSize() * settings.LauncherZoomScale())
 	xIcon := windowIcon(c.c.wm.X(), c.c.win, iconSize, iconSize)
-	if len(xIcon.Bytes()) != 0 {
-		c.iconCache = fyne.NewStaticResource(c.Title(), xIcon.Bytes())
+	if xIcon == nil {
+		return nil
 	}
+
+	c.iconCache = fyne.NewStaticResource(c.Title(), xIcon.Bytes())
 	return c.iconCache
 }
 

@@ -4,17 +4,17 @@
 package wm
 
 import (
-	"fyne.io/fyne/v2"
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/notify"
-	"fyne.io/fynedesk/internal/x11"
-	"fyne.io/fynedesk/wm"
+	"fyne.io/fyne/v2"
+
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/notify"
+	"fyshos.com/fynedesk/internal/x11"
+	"fyshos.com/fynedesk/wm"
 )
 
 func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
@@ -40,11 +40,12 @@ func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
 	}
 	windowActiveSet(x.x, ev.Window)
 	if canFocus {
-		err = xproto.SetInputFocusChecked(x.x.Conn(), 2, ev.Window, xproto.TimeCurrentTime).Check()
-		if err != nil {
-			fyne.LogError("Could not set focus", err)
-			return
+		if c := x.clientForWin(ev.Window); c != nil && c.Iconic() {
+			return // don't try to focus iconic windows
 		}
+
+		// ask for focus, when it is lost return to root window
+		xproto.SetInputFocus(x.x.Conn(), 1, ev.Window, xproto.TimeCurrentTime).Check()
 	}
 	if notifyFocus {
 		protocolAtm, err := xprop.Atm(x.x, "WM_PROTOCOLS")
@@ -168,7 +169,7 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 
 func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 	userMod := ev.State&xproto.ModMask4 != 0
-	if fynedesk.Instance().Settings().KeyboardModifier() == deskDriver.AltModifier {
+	if fynedesk.Instance().Settings().KeyboardModifier() == fyne.KeyModifierAlt {
 		userMod = ev.State&xproto.ModMask1 != 0
 	}
 	ctrl := ev.State&xproto.ModMaskControl != 0
@@ -180,27 +181,31 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 		if ev.Detail == keyCodeTab {
 			x.showOrSelectAppSwitcher(shift)
 			return
-		} else if ev.Detail == keyCodeEscape {
-			x.cancelAppSwitcher()
-			return
-		} else if ev.Detail == keyCodeReturn || ev.Detail == keyCodeEnter {
-			x.applyAppSwitcher()
-			return
-		} else if ev.Detail == keyCodeLeft {
-			x.previousAppSwitcher()
-			return
-		} else if ev.Detail == keyCodeRight {
-			x.nextAppSwitcher()
-			return
+		}
+
+		if switcherInstance != nil {
+			switch ev.Detail {
+			case keyCodeEscape:
+				x.cancelAppSwitcher()
+				return
+			case keyCodeReturn, keyCodeEnter:
+				x.applyAppSwitcher()
+				return
+			case keyCodeLeft:
+				x.previousAppSwitcher()
+				return
+			case keyCodeRight:
+				x.nextAppSwitcher()
+				return
+			}
 		}
 	}
-
+	numlock := ev.State & xproto.ModMask2
 	if desk, ok := fynedesk.Instance().(wm.ShortcutManager); ok {
 		for _, shortcut := range desk.Shortcuts() {
 			mask := x.modifierToKeyMask(shortcut.Modifier)
 			code := x.keyNameToCode(shortcut.KeyName)
-
-			if code == ev.Detail && (mask == ev.State || mask == xproto.ModMaskAny) {
+			if code == ev.Detail && (mask == ev.State-numlock || mask == xproto.ModMaskAny) {
 				go desk.TypedShortcut(shortcut)
 				return
 			}
@@ -210,7 +215,7 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 
 func (x *x11WM) handleKeyRelease(ev xproto.KeyReleaseEvent) {
 	userMod := keyCodeSuper
-	if fynedesk.Instance().Settings().KeyboardModifier() == deskDriver.AltModifier {
+	if fynedesk.Instance().Settings().KeyboardModifier() == fyne.KeyModifierAlt {
 		userMod = keyCodeAlt
 	}
 	if ev.Detail == xproto.Keycode(userMod) {
@@ -219,11 +224,8 @@ func (x *x11WM) handleKeyRelease(ev xproto.KeyReleaseEvent) {
 }
 
 func (x *x11WM) handleMouseEnter(ev xproto.EnterNotifyEvent) {
-	err := xproto.ChangeWindowAttributesChecked(x.x.Conn(), ev.Event, xproto.CwCursor,
-		[]uint32{uint32(x11.DefaultCursor)}).Check()
-	if err != nil {
-		fyne.LogError("Set Cursor Error", err)
-	}
+	xproto.ChangeWindowAttributes(x.x.Conn(), ev.Event, xproto.CwCursor,
+		[]uint32{uint32(x11.DefaultCursor)})
 	if mouseNotify, ok := fynedesk.Instance().(notify.MouseNotify); ok {
 		mouseNotify.MouseOutNotify()
 	}
@@ -232,8 +234,10 @@ func (x *x11WM) handleMouseEnter(ev xproto.EnterNotifyEvent) {
 func (x *x11WM) handleMouseLeave(ev xproto.LeaveNotifyEvent) {
 	if ev.Event == x.menuID { // dismiss overlay menus on mouse out
 		x.menuID = 0
-		x.menuWin.Close()
-		x.menuWin = nil
+		if x.menuWin != nil {
+			x.menuWin.Close()
+			x.menuWin = nil
+		}
 	}
 
 	for _, c := range x.clients {
@@ -261,6 +265,7 @@ func (x *x11WM) handleMouseMotion(ev xproto.MotionNotifyEvent) {
 			}
 			if ev.State&xproto.ButtonMask1 != 0 {
 				c.(x11.XWin).NotifyMouseDrag(ev.RootX, ev.RootY)
+				x.NotifyWindowMoved(c)
 			} else {
 				c.(x11.XWin).NotifyMouseMotion(ev.RootX, ev.RootY)
 			}
@@ -329,6 +334,12 @@ func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeSta
 			removeState()
 		} else {
 			addState()
+		}
+	}
+	for _, c := range x.clients {
+		if c.(x11.XWin).ChildID() == ev.Window {
+			x.NotifyWindowMoved(c)
+			break
 		}
 	}
 }
@@ -422,4 +433,6 @@ func (x *x11WM) moveResize(moveX, moveY int16, c x11.XWin) {
 	x.moveResizingLastX = moveX
 	x.moveResizingLastY = moveY
 	c.QueueMoveResizeGeometry(x.moveResizingX, x.moveResizingY, uint(w), uint(h))
+
+	x.NotifyWindowMoved(c)
 }

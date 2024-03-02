@@ -9,8 +9,8 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmTheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmTheme "fyshos.com/fynedesk/theme"
 )
 
 // bar is the main widget housing app icons and taskbar area
@@ -120,6 +120,10 @@ func (b *bar) createIcon(data fynedesk.AppData, win fynedesk.Window) *barIcon {
 }
 
 func (b *bar) taskbarIconTapped(win fynedesk.Window) {
+	if win.Desktop() != fynedesk.Instance().Desktop() {
+		b.desk.SetDesktop(win.Desktop())
+		return
+	}
 	if !win.Iconic() && win.TopWindow() {
 		win.Iconify()
 		return
@@ -143,6 +147,10 @@ func (b *bar) WindowAdded(win fynedesk.Window) {
 		b.append(icon)
 	}
 }
+
+func (b *bar) WindowMoved(_ fynedesk.Window) {}
+
+func (b *bar) WindowOrderChanged() {}
 
 func (b *bar) WindowRemoved(win fynedesk.Window) {
 	if win.Properties().SkipTaskbar() || b.desk.Settings().LauncherDisableTaskbar() {
@@ -177,7 +185,7 @@ func (b *bar) updateTaskbar() {
 }
 
 func (b *bar) updateIconOrder() {
-	var index = -1
+	var index = 0
 	for i, obj := range b.children {
 		if _, ok := obj.(*canvas.Rectangle); ok {
 			index = i
@@ -185,8 +193,8 @@ func (b *bar) updateIconOrder() {
 		}
 	}
 	var taskbarIcons []*barIcon
-	if index != -1 {
-		taskbarIcons = b.icons[index:]
+	if index != 0 {
+		taskbarIcons = b.icons[index-1:]
 	}
 
 	b.icons = nil
@@ -236,6 +244,9 @@ func (b *bar) winIcon(win *appWindow) fyne.Resource {
 }
 
 func (b *bar) appendLauncherIcons() {
+	search := newBarIcon(theme.SearchIcon(), nil, nil)
+	search.onTapped = ShowAppLauncher
+	b.append(search)
 	for _, name := range b.desk.Settings().LauncherIcons() {
 		app := b.desk.IconProvider().FindAppFromName(name)
 		if app == nil {
@@ -253,7 +264,12 @@ func (b *bar) appendLauncherIcons() {
 
 // CreateRenderer creates the renderer that will be responsible for painting the widget
 func (b *bar) CreateRenderer() fyne.WidgetRenderer {
-	bg := canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	var bg fyne.CanvasObject
+	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
+		bg = canvas.NewRectangle(wmTheme.WidgetPanelBackground())
+	} else {
+		bg = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	}
 	return &barRenderer{objects: b.children, background: bg, layout: newBarLayout(b), appBar: b}
 }
 
@@ -278,7 +294,7 @@ type barRenderer struct {
 	layout barLayout
 
 	appBar     *bar
-	background *canvas.LinearGradient
+	background fyne.CanvasObject
 	objects    []fyne.CanvasObject
 }
 
@@ -306,7 +322,11 @@ func (b *barRenderer) Objects() []fyne.CanvasObject {
 
 // Refresh will recalculate the widget and repaint it
 func (b *barRenderer) Refresh() {
-	b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
+		b.background = canvas.NewRectangle(wmTheme.WidgetPanelBackground())
+	} else {
+		b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+	}
 	if b.appBar.separator != nil {
 		b.appBar.separator.FillColor = theme.ForegroundColor()
 	}

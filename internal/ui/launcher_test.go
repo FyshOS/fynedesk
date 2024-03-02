@@ -3,8 +3,8 @@ package ui
 import (
 	"testing"
 
-	"fyne.io/fynedesk"
-	wmTest "fyne.io/fynedesk/test"
+	"fyshos.com/fynedesk"
+	wmTest "fyshos.com/fynedesk/test"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"

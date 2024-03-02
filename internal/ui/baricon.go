@@ -8,7 +8,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 // appWindow describes a type of icon that refers to an open window rather than an app.

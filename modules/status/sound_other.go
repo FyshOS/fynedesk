@@ -8,7 +8,7 @@ import (
 
 	"github.com/mafik/pulseaudio"
 
-	wmtheme "fyne.io/fynedesk/theme"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 // Destroy tidies up resources

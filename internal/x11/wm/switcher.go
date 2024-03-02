@@ -4,23 +4,35 @@
 package wm
 
 import (
+	"time"
+
 	"github.com/BurntSushi/xgb/xproto"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/ui"
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/ui"
 )
 
-// switcherInstance and the methods below manage the X to ui.Switcher bindings.
-// This is needed due to the way that releasing Super is only reported if we grab the whole keyboard.
-// Therefore the UI cannot handle keyboard input - so we add it here instead.
-var switcherInstance *ui.Switcher
+var (
+	// switcherInstance and the methods below manage the X to ui.Switcher bindings.
+	// This is needed due to the way that releasing Super is only reported if we grab the whole keyboard.
+	// Therefore the UI cannot handle keyboard input - so we add it here instead.
+	switcherInstance *ui.Switcher
+
+	// ignoreSwitcher helps us track where key pres+lift is faster than window show
+	ignoreSwitcher bool
+)
 
 func (x *x11WM) applyAppSwitcher() {
 	if switcherInstance == nil {
-		return
+		ignoreSwitcher = true
+		go func() {
+			time.Sleep(time.Second / 4)
+			ignoreSwitcher = false
+		}()
+	} else {
+		go switcherInstance.HideApply()
 	}
 
-	go switcherInstance.HideApply()
 	xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
 	windowClientListStackingUpdate(x)
 	switcherInstance = nil
@@ -28,10 +40,15 @@ func (x *x11WM) applyAppSwitcher() {
 
 func (x *x11WM) cancelAppSwitcher() {
 	if switcherInstance == nil {
-		return
+		ignoreSwitcher = true
+		go func() {
+			time.Sleep(time.Second / 4)
+			ignoreSwitcher = false
+		}()
+	} else {
+		go switcherInstance.HideCancel()
 	}
 
-	go switcherInstance.HideCancel()
 	xproto.UngrabKeyboard(x.x.Conn(), xproto.TimeCurrentTime)
 	switcherInstance = nil
 }
@@ -53,7 +70,13 @@ func (x *x11WM) previousAppSwitcher() {
 }
 
 func (x *x11WM) showOrSelectAppSwitcher(reverse bool) {
-	if len(x.clients) <= 1 {
+	var visible []fynedesk.Window
+	for _, win := range x.clients {
+		if win.Desktop() == fynedesk.Instance().Desktop() && !win.Iconic() {
+			visible = append(visible, win)
+		}
+	}
+	if len(visible) <= 1 {
 		return
 	}
 	xproto.GrabKeyboard(x.x.Conn(), true, x.x.RootWin(), xproto.TimeCurrentTime, xproto.GrabModeAsync, xproto.GrabModeAsync)
@@ -70,9 +93,22 @@ func (x *x11WM) showOrSelectAppSwitcher(reverse bool) {
 
 	go func() {
 		if reverse {
-			switcherInstance = ui.ShowAppSwitcherReverse(x.Windows(), fynedesk.Instance().IconProvider())
+			win := ui.NewAppSwitcherReverse(x.Windows(), fynedesk.Instance().IconProvider())
+
+			if ignoreSwitcher {
+				ignoreSwitcher = false
+			} else {
+				switcherInstance = win
+				win.Show()
+			}
 		} else {
-			switcherInstance = ui.ShowAppSwitcher(x.Windows(), fynedesk.Instance().IconProvider())
+			win := ui.NewAppSwitcher(x.Windows(), fynedesk.Instance().IconProvider())
+			if ignoreSwitcher {
+				ignoreSwitcher = false
+			} else {
+				switcherInstance = win
+				win.Show()
+			}
 		}
 	}()
 }

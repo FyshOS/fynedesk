@@ -17,6 +17,7 @@ type WindowManager interface {
 	Run()
 	ShowOverlay(fyne.Window, fyne.Size, fyne.Position)
 	ShowMenuOverlay(*fyne.Menu, fyne.Size, fyne.Position)
+	ShowModal(fyne.Window, fyne.Size)
 }
 
 // Stack describes an ordered list of windows.
@@ -35,4 +36,7 @@ type Stack interface {
 type StackListener interface {
 	WindowAdded(Window)
 	WindowRemoved(Window)
+
+	WindowMoved(Window)
+	WindowOrderChanged()
 }

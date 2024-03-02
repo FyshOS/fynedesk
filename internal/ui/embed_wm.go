@@ -5,7 +5,7 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 type embededWM struct {
@@ -41,6 +41,12 @@ func (e *embededWM) ShowOverlay(w fyne.Window, s fyne.Size, p fyne.Position) {
 
 func (e *embededWM) ShowMenuOverlay(*fyne.Menu, fyne.Size, fyne.Position) {
 	// no-op, handled by desktop in embed mode
+}
+
+func (e *embededWM) ShowModal(w fyne.Window, s fyne.Size) {
+	w.Resize(s)
+	w.CenterOnScreen()
+	w.Show()
 }
 
 func (e *embededWM) TopWindow() fynedesk.Window {

@@ -2,13 +2,13 @@ package ui
 
 import (
 	"os"
+	"runtime"
 	"strings"
 	"sync"
 
-	"fyne.io/fyne/v2"
-	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyshos.com/fynedesk"
 
-	"fyne.io/fynedesk"
+	"fyne.io/fyne/v2"
 )
 
 type deskSettings struct {
@@ -22,8 +22,10 @@ type deskSettings struct {
 	borderButtonPosition   string
 	clockFormatting        string
 
-	modifier    deskDriver.Modifier
+	modifier    fyne.KeyModifier
 	moduleNames []string
+
+	narrowPanel, narrowLeftLauncher bool
 
 	listenerLock    sync.Mutex
 	changeListeners []chan fynedesk.DeskSettings
@@ -57,12 +59,20 @@ func (d *deskSettings) LauncherZoomScale() float32 {
 	return d.launcherZoomScale
 }
 
-func (d *deskSettings) KeyboardModifier() deskDriver.Modifier {
+func (d *deskSettings) KeyboardModifier() fyne.KeyModifier {
 	return d.modifier
 }
 
 func (d *deskSettings) ModuleNames() []string {
 	return d.moduleNames
+}
+
+func (d *deskSettings) NarrowWidgetPanel() bool {
+	return d.narrowPanel
+}
+
+func (d *deskSettings) NarrowLeftLauncher() bool {
+	return d.narrowLeftLauncher
 }
 
 func (d *deskSettings) BorderButtonPosition() string {
@@ -146,7 +156,7 @@ func (d *deskSettings) setLauncherZoomScale(scale float32) {
 	d.apply()
 }
 
-func (d *deskSettings) setKeyboardModifier(mod deskDriver.Modifier) {
+func (d *deskSettings) setKeyboardModifier(mod fyne.KeyModifier) {
 	d.modifier = mod
 	fyne.CurrentApp().Preferences().SetInt("keyboardmodifier", int(d.modifier))
 	d.apply()
@@ -156,6 +166,18 @@ func (d *deskSettings) setModuleNames(names []string) {
 	newModuleNames := strings.Join(names, "|")
 	d.moduleNames = names
 	fyne.CurrentApp().Preferences().SetString("modulenames", newModuleNames)
+	d.apply()
+}
+
+func (d *deskSettings) setNarrowLeftLauncher(narrow bool) {
+	d.narrowLeftLauncher = narrow
+	fyne.CurrentApp().Preferences().SetBool("launchernarrowleft", narrow)
+	d.apply()
+}
+
+func (d *deskSettings) setNarrowWidgetPanel(narrow bool) {
+	d.narrowPanel = narrow
+	fyne.CurrentApp().Preferences().SetBool("narrowpanel", narrow)
 	d.apply()
 }
 
@@ -213,11 +235,17 @@ func (d *deskSettings) load() {
 		d.launcherZoomScale = 2.0
 	}
 
-	moduleNames := fyne.CurrentApp().Preferences().StringWithFallback("modulenames", "Battery|Brightness|Compositor|Sound|Launcher: Calculate|Launcher: Open URLs")
+	defaultModules := "Battery|Brightness|Compositor|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops|SystemTray"
+	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" { // testing
+		defaultModules = "Battery|Brightness|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops"
+	}
+	moduleNames := fyne.CurrentApp().Preferences().StringWithFallback("modulenames", defaultModules)
 	if moduleNames != "" {
 		d.moduleNames = strings.Split(moduleNames, "|")
 	}
-	d.modifier = deskDriver.Modifier(fyne.CurrentApp().Preferences().IntWithFallback("keyboardmodifier", int(deskDriver.SuperModifier)))
+	d.modifier = fyne.KeyModifier(fyne.CurrentApp().Preferences().IntWithFallback("keyboardmodifier", int(fyne.KeyModifierSuper)))
+	d.narrowLeftLauncher = fyne.CurrentApp().Preferences().BoolWithFallback("launchernarrowleft", true)
+	d.narrowPanel = fyne.CurrentApp().Preferences().BoolWithFallback("narrowpanel", true)
 
 	d.borderButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
 

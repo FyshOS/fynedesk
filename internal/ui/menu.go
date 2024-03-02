@@ -1,18 +1,21 @@
 package ui
 
 import (
+	"image/color"
 	"os"
 	"sort"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 func (w *widgetPanel) appendAppCategories(acc *widget.Accordion, win fyne.Window) {
@@ -50,6 +53,48 @@ func (w *widgetPanel) appendAppCategories(acc *widget.Accordion, win fyne.Window
 	acc.Refresh()
 }
 
+func (w *widgetPanel) askLogout() {
+	win := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
+	logout := widget.NewButtonWithIcon("Logout", theme.LogoutIcon(), func() {
+		win.Close()
+		time.Sleep(time.Second / 10)
+		w.desk.WindowManager().Close()
+	})
+	logout.Importance = widget.DangerImportance
+	cancel := widget.NewButton("Cancel", func() {
+		win.Close()
+	})
+
+	header := widget.NewRichTextFromMarkdown("### Log out")
+	header.Truncation = fyne.TextTruncateEllipsis
+	bottomPad := canvas.NewRectangle(color.Transparent)
+	bottomPad.SetMinSize(fyne.NewSquareSize(10))
+	content := container.NewBorder(
+		header,
+		container.NewVBox(
+			container.NewHBox(layout.NewSpacer(),
+				container.NewGridWithColumns(2, cancel, logout),
+				layout.NewSpacer()), bottomPad),
+		nil, nil,
+		widget.NewLabel("Are you sure you want to log out?"))
+
+	r, g, b, _ := theme.OverlayBackgroundColor().RGBA()
+	bgCol := &color.NRGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 230}
+
+	bg := canvas.NewRectangle(bgCol)
+	icon := canvas.NewImageFromResource(theme.LogoutIcon())
+	iconBox := container.NewWithoutLayout(icon)
+	icon.Resize(fyne.NewSize(92, 92))
+	icon.Move(fyne.NewPos(280-92-theme.Padding(), theme.Padding()))
+	win.SetContent(container.NewStack(
+		iconBox, bg,
+		container.NewPadded(content)))
+
+	win.Resize(fyne.NewSize(280, 150))
+	win.CenterOnScreen()
+	win.Show()
+}
+
 func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 	w2 := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
 	w2.Canvas().SetOnTypedKey(func(k *fyne.KeyEvent) {
@@ -57,16 +102,16 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 			w2.Close()
 		}
 	})
-	items1 := []fyne.CanvasObject{container.NewMax(canvas.NewRectangle(theme.ErrorColor()),
-		&widget.Button{Icon: theme.LogoutIcon(), Importance: widget.LowImportance, OnTapped: func() {
+	items1 := []fyne.CanvasObject{
+		&widget.Button{Icon: theme.LogoutIcon(), Importance: widget.DangerImportance, OnTapped: func() {
+			w.askLogout()
 			w2.Close()
-			w.desk.WindowManager().Close()
-		}})}
+		}}}
 	isEmbed := w.desk.(*desktop).root.Title() != RootWindowName
 	if !isEmbed {
 		items1 = append(items1, &widget.Button{Icon: wmtheme.LockIcon, Importance: widget.LowImportance, OnTapped: func() {
 			w2.Close()
-			w.desk.WindowManager().Blank()
+			w.desk.(*desktop).LockScreen()
 		}})
 		if os.Getenv("FYNE_DESK_RUNNER") != "" {
 			items1 = append(items1, &widget.Button{Icon: theme.ViewRefreshIcon(), Importance: widget.LowImportance, OnTapped: func() {

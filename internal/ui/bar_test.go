@@ -5,11 +5,12 @@ import (
 	"testing"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/theme"
 
-	wmTest "fyne.io/fynedesk/test"
-	wmTheme "fyne.io/fynedesk/theme"
+	wmTest "fyshos.com/fynedesk/test"
+	wmTheme "fyshos.com/fynedesk/theme"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -82,10 +83,15 @@ func TestAppBarBackground(t *testing.T) {
 	testBar := testBar(icons)
 	testBar.disableTaskbar = true
 
-	grad := test.WidgetRenderer(testBar).(*barRenderer).background
-	assert.Equal(t, color.Transparent, grad.EndColor)
-	assert.Equal(t, theme.BackgroundColor(), grad.StartColor)
-	assert.Equal(t, testBar.iconSize+theme.Padding()*2, grad.Size().Width)
+	bg := test.WidgetRenderer(testBar).(*barRenderer).background
+	if testBar.desk.Settings().NarrowLeftLauncher() {
+		assert.Equal(t, wmTheme.WidgetPanelBackground(), bg.(*canvas.Rectangle).FillColor)
+		assert.Equal(t, wmTheme.NarrowBarWidth, bg.Size().Width)
+	} else {
+		assert.Equal(t, color.Transparent, bg.(*canvas.LinearGradient).EndColor)
+		assert.Equal(t, theme.BackgroundColor(), bg.(*canvas.LinearGradient).StartColor)
+		assert.Equal(t, testBar.iconSize+theme.Padding()*2, bg.Size().Width)
+	}
 }
 
 func TestIconsAndIconThemeChange(t *testing.T) {
@@ -101,13 +107,14 @@ func TestIconsAndIconThemeChange(t *testing.T) {
 	testBar.updateIcons()
 
 	assert.Equal(t, "Maximize", testBar.desk.Settings().IconTheme())
-	assert.Equal(t, wmTheme.MaximizeIcon, testBar.children[0].(*barIcon).resource)
+	assert.Equal(t, theme.SearchIcon(), testBar.children[0].(*barIcon).resource)
+	assert.Equal(t, wmTheme.MaximizeIcon, testBar.children[1].(*barIcon).resource)
 
 	testBar.desk.Settings().(*wmTest.Settings).SetIconTheme("TestIconTheme")
 	testBar.updateIcons()
 
 	assert.Equal(t, "TestIconTheme", testBar.desk.Settings().IconTheme())
-	assert.Equal(t, wmTheme.IconifyIcon, testBar.children[0].(*barIcon).resource)
+	assert.Equal(t, wmTheme.IconifyIcon, testBar.children[1].(*barIcon).resource)
 }
 
 func TestIconOrderChange(t *testing.T) {
@@ -117,15 +124,16 @@ func TestIconOrderChange(t *testing.T) {
 
 	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App1", "App2", "App3"})
 	testBar.updateIconOrder()
-	assert.Equal(t, "App1", testBar.children[0].(*barIcon).appData.Name())
-	assert.Equal(t, "App2", testBar.children[1].(*barIcon).appData.Name())
-	assert.Equal(t, "App3", testBar.children[2].(*barIcon).appData.Name())
+	assert.Equal(t, theme.SearchIcon(), testBar.children[0].(*barIcon).resource)
+	assert.Equal(t, "App1", testBar.children[1].(*barIcon).appData.Name())
+	assert.Equal(t, "App2", testBar.children[2].(*barIcon).appData.Name())
+	assert.Equal(t, "App3", testBar.children[3].(*barIcon).appData.Name())
 
 	testBar.desk.Settings().(*wmTest.Settings).SetLauncherIcons([]string{"App3", "App1", "App2"})
 	testBar.updateIconOrder()
-	assert.Equal(t, "App3", testBar.children[0].(*barIcon).appData.Name())
-	assert.Equal(t, "App1", testBar.children[1].(*barIcon).appData.Name())
-	assert.Equal(t, "App2", testBar.children[2].(*barIcon).appData.Name())
+	assert.Equal(t, "App3", testBar.children[1].(*barIcon).appData.Name())
+	assert.Equal(t, "App1", testBar.children[2].(*barIcon).appData.Name())
+	assert.Equal(t, "App2", testBar.children[3].(*barIcon).appData.Name())
 }
 
 func TestIconSizeChange(t *testing.T) {
@@ -204,7 +212,7 @@ func TestIconTaskbarDisabled(t *testing.T) {
 	testBar.updateIconOrder()
 
 	separatorTest := false
-	if len(testBar.icons) == len(testBar.children)-1 {
+	if len(testBar.icons) == len(testBar.children)-2 {
 		separatorTest = true
 	}
 	assert.Equal(t, true, separatorTest)

@@ -7,7 +7,7 @@ import (
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
 
-	"fyne.io/fynedesk"
+	"fyshos.com/fynedesk"
 )
 
 // Desktop is an in-memory implementation for test purposes
@@ -29,6 +29,7 @@ func NewDesktop() *Desktop {
 func NewDesktopWithWM(wm fynedesk.WindowManager) *Desktop {
 	desk := NewDesktop()
 	desk.wm = wm
+	fynedesk.SetInstance(desk)
 	return desk
 }
 
@@ -42,9 +43,23 @@ func (*Desktop) Capture() image.Image {
 	return nil // could be implemented if required for testing
 }
 
-// ContentSizePixels returns a default value for how much space maximised apps should use
-func (*Desktop) ContentSizePixels(_ *fynedesk.Screen) (uint32, uint32) {
-	return uint32(320), uint32(240)
+// ContentBoundsPixels returns a default value for how much space maximised apps should use
+func (*Desktop) ContentBoundsPixels(_ *fynedesk.Screen) (x, y, w, h uint32) {
+	return 0, 0, 320, 240
+}
+
+// RootSizePixels returns the total number of pixels required to fit all the screens
+func (*Desktop) RootSizePixels() (w, h uint32) {
+	return 320, 240
+}
+
+// Desktop returns the index of the current desktop (in test this is always 0)
+func (*Desktop) Desktop() int {
+	return 0
+}
+
+// SetDesktop sets the desired desktop index, a no-op in test code
+func (*Desktop) SetDesktop(int) {
 }
 
 // IconProvider returns the icon provider, by default it uses a simple in-memory implementation

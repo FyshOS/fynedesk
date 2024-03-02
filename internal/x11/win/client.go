@@ -6,17 +6,18 @@ package win
 import (
 	"image"
 
-	"fyne.io/fyne/v2"
-
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xprop"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/x11"
-	"fyne.io/fynedesk/wm"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/x11"
+	"fyshos.com/fynedesk/wm"
 )
 
 type client struct {
@@ -32,17 +33,15 @@ type client struct {
 
 	frame *frame
 	wm    x11.XWM
+	desk  int
 }
 
 // NewClient creates a new X11 client for the specified window ID and X window manager
 func NewClient(win xproto.Window, wm x11.XWM) x11.XWin {
-	c := &client{win: win, wm: wm}
-	err := xproto.ChangeWindowAttributesChecked(wm.Conn(), win, xproto.CwEventMask,
+	c := &client{win: win, wm: wm, desk: fynedesk.Instance().Desktop()}
+	xproto.ChangeWindowAttributes(wm.Conn(), win, xproto.CwEventMask,
 		[]uint32{xproto.EventMaskPropertyChange | xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow |
-			xproto.EventMaskVisibilityChange}).Check()
-	if err != nil {
-		fyne.LogError("Could not change window attributes", err)
-	}
+			xproto.EventMaskVisibilityChange})
 	windowAllowedActionsSet(wm.X(), win, x11.AllowedActions)
 
 	initialHints := x11.WindowExtendedHintsGet(wm.X(), c.win)
@@ -91,10 +90,7 @@ func (c *client) Close() {
 	}
 
 	if !askNicely {
-		err := xproto.DestroyWindowChecked(c.wm.Conn(), c.win).Check()
-		if err != nil {
-			fyne.LogError("Close Error", err)
-		}
+		xproto.DestroyWindow(c.wm.Conn(), c.win)
 
 		return
 	}
@@ -117,10 +113,41 @@ func (c *client) Close() {
 		return
 	}
 
-	err = xproto.SendEventChecked(c.wm.Conn(), false, c.win, 0, string(cm.Bytes())).Check()
-	if err != nil {
-		fyne.LogError("Window Delete Error", err)
+	xproto.SendEvent(c.wm.Conn(), false, c.win, 0, string(cm.Bytes()))
+}
+
+func (c *client) Desktop() int {
+	return c.desk
+}
+
+func (c *client) SetDesktop(id int) {
+	if c.desk == id {
+		return
 	}
+
+	d := fynedesk.Instance()
+	diff := id - c.desk
+	c.desk = id
+
+	_, height := d.RootSizePixels()
+	offPix := float32(diff * -int(height))
+	display := d.Screens().ScreenForWindow(c)
+	off := offPix / display.Scale
+
+	start := c.Position()
+	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
+		newY := start.Y - off*f
+
+		c.Move(fyne.NewPos(start.X, newY))
+
+		type moveNotifier interface {
+			NotifyWindowMoved(win fynedesk.Window)
+		}
+		if mover, ok := fynedesk.Instance().WindowManager().(moveNotifier); ok {
+			mover.NotifyWindowMoved(c)
+		}
+
+	}).Start()
 }
 
 func (c *client) Expose() {
@@ -156,6 +183,10 @@ func (c *client) Fullscreened() bool {
 }
 
 func (c *client) Iconify() {
+	if c.iconic {
+		return
+	}
+
 	c.stateMessage(icccm.StateIconic)
 	windowStateSet(c.wm.X(), c.win, icccm.StateIconic)
 }
@@ -177,6 +208,17 @@ func (c *client) Maximize() {
 
 func (c *client) Maximized() bool {
 	return c.maximized
+}
+
+func (c *client) Move(pos fyne.Position) {
+	if c.frame == nil {
+		return
+	}
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
+
+	targetX := int16(pos.X * screen.CanvasScale())
+	targetY := int16(pos.Y * screen.CanvasScale())
+	c.frame.updateGeometry(targetX, targetY, c.frame.width, c.frame.height, false)
 }
 
 func (c *client) NotifyBorderChange() {
@@ -256,12 +298,46 @@ func (c *client) NotifyUnMaximize() {
 	x11.WindowExtendedHintsRemove(c.wm.X(), c.win, "_NET_WM_STATE_MAXIMIZED_HORZ")
 }
 
+func (c *client) Parent() fynedesk.Window {
+	id := x11.WindowTransientForGet(c.wm.X(), c.win)
+	if id == 0 {
+		return nil
+	}
+
+	for _, win := range c.wm.Windows() {
+		if win.(x11.XWin).ChildID() == id {
+			return win
+		}
+	}
+	return nil
+}
+
 func (c *client) Position() fyne.Position {
 	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
 
 	return fyne.NewPos(
 		float32(c.frame.x)/screen.CanvasScale(),
 		float32(c.frame.y)/screen.CanvasScale())
+}
+
+func (c *client) Resize(s fyne.Size) {
+	if c.frame == nil {
+		return
+	}
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
+
+	c.frame.updateGeometry(c.frame.x, c.frame.y, uint16(s.Width*screen.Scale), uint16(s.Height*screen.Scale), false)
+}
+
+func (c *client) Size() fyne.Size {
+	if c.frame == nil {
+		return fyne.Size{}
+	}
+	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
+
+	return fyne.NewSize(
+		float32(c.frame.width)/screen.CanvasScale(),
+		float32(c.frame.height)/screen.CanvasScale())
 }
 
 func (c *client) QueueMoveResizeGeometry(x int, y int, width uint, height uint) {
@@ -279,11 +355,8 @@ func (c *client) RaiseAbove(win fynedesk.Window) {
 		return
 	}
 
-	err := xproto.ConfigureWindowChecked(c.wm.Conn(), c.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
-		[]uint32{uint32(topID), uint32(xproto.StackModeAbove)}).Check()
-	if err != nil {
-		fyne.LogError("Restack Error", err)
-	}
+	xproto.ConfigureWindow(c.wm.Conn(), c.id, xproto.ConfigWindowSibling|xproto.ConfigWindowStackMode,
+		[]uint32{uint32(topID), uint32(xproto.StackModeAbove)})
 }
 
 func (c *client) RaiseToTop() {
@@ -324,6 +397,10 @@ func (c *client) Unfullscreen() {
 }
 
 func (c *client) Uniconify() {
+	if !c.iconic {
+		return
+	}
+
 	c.stateMessage(icccm.StateNormal)
 	windowStateSet(c.wm.X(), c.win, icccm.StateNormal)
 }
@@ -333,12 +410,18 @@ func (c *client) Unmaximize() {
 }
 
 func (c *client) fullscreenMessage(action x11.WindowStateAction) {
-	ewmh.WmStateReq(c.wm.X(), c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
+	err := ewmh.WmStateReq(c.wm.X(), c.win, int(action), "_NET_WM_STATE_FULLSCREEN")
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func (c *client) maximizeMessage(action x11.WindowStateAction) {
-	ewmh.WmStateReqExtra(c.wm.X(), c.win, int(action), "_NET_WM_STATE_MAXIMIZED_VERT",
+	err := ewmh.WmStateReqExtra(c.wm.X(), c.win, int(action), "_NET_WM_STATE_MAXIMIZED_VERT",
 		"_NET_WM_STATE_MAXIMIZED_HORZ", 1)
+	if err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 func (c *client) newFrame() {
@@ -366,7 +449,7 @@ func (c *client) positionNewWindow() {
 	requestPosition := false
 	hints, err := icccm.WmNormalHintsGet(c.wm.X(), c.win)
 	if err == nil {
-		if hints.Flags&icccm.SizeHintPPosition != 0 || hints.Flags&icccm.SizeHintUSPosition != 0 {
+		if (hints.Flags&icccm.SizeHintPPosition != 0 || hints.Flags&icccm.SizeHintUSPosition != 0) && c.Parent() == nil {
 			requestPosition = true
 		}
 	}
@@ -377,15 +460,15 @@ func (c *client) positionNewWindow() {
 		primary := fynedesk.Instance().Screens().Primary()
 		x = primary.Width - int(w)
 		y = primary.Height - int(h)
-	} else if (!requestPosition && !hasPosition) || !c.positionIsValid(x, y) {
+	} else if !requestPosition && !hasPosition || !c.positionIsValid(x, y) {
 		decorated := !windowBorderless(c.wm.X(), c.win)
-		x, y, w, h = wm.PositionForNewWindow(int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
+		x, y, w, h = wm.PositionForNewWindow(c, int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
 			decorated, fynedesk.Instance().Screens())
 	}
 
-	xproto.ConfigureWindowChecked(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
+	xproto.ConfigureWindow(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{uint32(x), uint32(y),
-		uint32(w), uint32(h)}).Check()
+		uint32(w), uint32(h)})
 }
 
 func (c *client) stateMessage(state int) {

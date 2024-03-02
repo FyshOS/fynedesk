@@ -1,9 +1,7 @@
-package icon // import "fyne.io/fynedesk/internal/icon"
+package icon // import "fyshos.com/fynedesk/internal/icon"
 
 import (
 	"bufio"
-	"bytes"
-	"image/png"
 	"io/fs"
 	"math"
 	"os"
@@ -14,8 +12,8 @@ import (
 
 	"fyne.io/fyne/v2"
 
-	"fyne.io/fynedesk"
-	wmTheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	_ "github.com/fyne-io/image/xpm" // load XPM icons to supported image format
 )
 
 var (
@@ -65,9 +63,9 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 
 	path := data.iconPath
 	if path == "" {
-		path = fdoLookupIconPath(theme, size, data.iconName)
+		path = FdoLookupIconPath(theme, size, data.iconName)
 		if path == "" {
-			return wmTheme.BrokenImageIcon
+			return nil
 		}
 	}
 
@@ -130,19 +128,6 @@ func loadIcon(path string) fyne.Resource {
 	if err != nil {
 		fyne.LogError("Failed to load image", err)
 		return nil
-	}
-
-	if path[len(path)-4:] == ".xpm" {
-		var w bytes.Buffer
-		img := parseXPM(data)
-		err := png.Encode(&w, img)
-		data = w.Bytes()
-
-		if err != nil {
-			fyne.LogError("Failed to re-encode XPM image", err)
-			return nil
-		}
-		path = path[:len(path)-4] + ".png"
 	}
 
 	return fyne.NewStaticResource(filepath.Base(path), data)
@@ -313,8 +298,9 @@ func lookupAnyIconSizeInThemeDir(dir string, joiner string, iconName string, ico
 	return closestMatch
 }
 
-// lookupIconPathInTheme searches icon locations to find a match using a provided theme directory
-func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconName string) string {
+// FdoLookupIconPathInTheme searches icon locations to find a match using a provided theme directory.
+// The dir path is the root of the theme, parentDir is used to look up inherited themes
+func FdoLookupIconPathInTheme(iconSize string, dir string, parentDir string, iconName string) string {
 	if _, err := os.Stat(dir); os.IsNotExist(err) {
 		return ""
 	}
@@ -374,8 +360,8 @@ func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconNa
 			}
 			if len(inheritedThemes) > 0 {
 				for _, theme := range inheritedThemes {
-					dir = filepath.Join(parentDir, "icons", theme)
-					iconPath := lookupIconPathInTheme(iconSize, dir, parentDir, iconName)
+					childDir := filepath.Join(parentDir, "icons", theme)
+					iconPath := FdoLookupIconPathInTheme(iconSize, childDir, parentDir, iconName)
 					if iconPath != "" {
 						return iconPath
 					}
@@ -400,15 +386,15 @@ func lookupIconPathInTheme(iconSize string, dir string, parentDir string, iconNa
 	return ""
 }
 
-// fdoLookupIconPath will take the name of an icon and find a matching image file
-func fdoLookupIconPath(theme string, size int, iconName string) string {
+// FdoLookupIconPath will take the name of an icon and find a matching image file
+func FdoLookupIconPath(theme string, size int, iconName string) string {
 	locationLookup := fdoLookupXdgDataDirs()
 	iconTheme := theme
 	iconSize := strconv.Itoa(size)
 	for _, dataDir := range locationLookup {
 		//Example is /usr/share/icons/icon_theme
 		dir := filepath.Join(dataDir, "icons", iconTheme)
-		iconPath := lookupIconPathInTheme(iconSize, dir, dataDir, iconName)
+		iconPath := FdoLookupIconPathInTheme(iconSize, dir, dataDir, iconName)
 		if iconPath != "" {
 			return iconPath
 		}
@@ -416,7 +402,7 @@ func fdoLookupIconPath(theme string, size int, iconName string) string {
 	for _, dataDir := range locationLookup {
 		//Hicolor is the default fallback theme - Example /usr/share/icons/icon_theme/hicolor
 		dir := filepath.Join(dataDir, "icons", "hicolor")
-		iconPath := lookupIconPathInTheme(iconSize, dir, dataDir, iconName)
+		iconPath := FdoLookupIconPathInTheme(iconSize, dir, dataDir, iconName)
 		if iconPath != "" {
 			return iconPath
 		}

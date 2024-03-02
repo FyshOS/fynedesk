@@ -5,12 +5,16 @@ import (
 	"os/exec"
 	"strconv"
 
+	"fyshos.com/fynedesk/internal/notify"
+
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/wm"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
+	"fyshos.com/fynedesk/wm"
 )
 
 const (
@@ -37,15 +41,63 @@ type desktop struct {
 	widgets *widgetPanel
 	mouse   fyne.CanvasObject
 	root    fyne.Window
+	desk    int
+}
+
+func (l *desktop) Desktop() int {
+	return l.desk
+}
+
+func (l *desktop) SetDesktop(id int) {
+	diff := id - l.desk
+	l.desk = id
+
+	_, height := l.RootSizePixels()
+	offPix := float32(diff * -int(height))
+	wins := l.wm.Windows()
+
+	starts := make([]fyne.Position, len(wins))
+	deltas := make([]fyne.Delta, len(wins))
+	for i, win := range wins {
+		starts[i] = win.Position()
+
+		display := l.Screens().ScreenForWindow(win)
+		off := offPix / display.Scale
+		deltas[i] = fyne.NewDelta(0, off)
+	}
+
+	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
+		for i, item := range l.wm.Windows() {
+			// TODO move this to floating once we support them
+			if item.Properties().SkipTaskbar() {
+				continue
+			}
+
+			newX := starts[i].X + deltas[i].DX*f
+			newY := starts[i].Y + deltas[i].DY*f
+
+			item.Move(fyne.NewPos(newX, newY))
+		}
+	}).Start()
+
+	for _, m := range l.Modules() {
+		if desk, ok := m.(notify.DesktopNotify); ok {
+			desk.DesktopChangeNotify(id)
+		}
+	}
 }
 
 func (l *desktop) Layout(objects []fyne.CanvasObject, size fyne.Size) {
 	bg := objects[0].(*background)
 	bg.Resize(size)
-
-	barHeight := l.bar.MinSize().Height
-	l.bar.Resize(fyne.NewSize(size.Width, barHeight+1)) // add 1 so rounding cannot trigger mouse out on bottom edge
-	l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
+	if l.Settings().NarrowLeftLauncher() {
+		l.bar.Resize(size)
+		l.bar.Move(fyne.NewPos(0, 0))
+	} else {
+		barHeight := l.bar.MinSize().Height
+		l.bar.Resize(fyne.NewSize(size.Width, barHeight+1)) // add 1 so rounding cannot trigger mouse out on bottom edge
+		l.bar.Move(fyne.NewPos(0, size.Height-barHeight))
+	}
 	l.bar.Refresh()
 
 	widgetsWidth := l.widgets.MinSize().Width
@@ -131,13 +183,38 @@ func (l *desktop) Settings() fynedesk.DeskSettings {
 	return l.settings
 }
 
-func (l *desktop) ContentSizePixels(screen *fynedesk.Screen) (uint32, uint32) {
+func (l *desktop) ContentBoundsPixels(screen *fynedesk.Screen) (x, y, w, h uint32) {
 	screenW := uint32(screen.Width)
 	screenH := uint32(screen.Height)
-	if l.screens.Primary() == screen {
-		return screenW - uint32(widgetPanelWidth*screen.CanvasScale()), screenH
+	pad := wmtheme.WidgetPanelWidth
+	if fynedesk.Instance().Settings().NarrowWidgetPanel() {
+		pad = wmtheme.NarrowBarWidth
 	}
-	return screenW, screenH
+	if l.screens.Primary() == screen {
+		bar := uint32(0)
+		if l.Settings().NarrowLeftLauncher() {
+			bar = uint32(wmtheme.NarrowBarWidth * screen.CanvasScale())
+		}
+		wid := uint32(pad * screen.CanvasScale())
+		return bar, 0, screenW - bar - wid, screenH
+	}
+	return 0, 0, screenW, screenH
+}
+
+func (l *desktop) RootSizePixels() (w, h uint32) {
+	for _, screen := range l.Screens().Screens() {
+		right := uint32(screen.X + screen.Width)
+		bottom := uint32(screen.Y + screen.Height)
+
+		if right > w {
+			w = right
+		}
+		if bottom > h {
+			h = bottom
+		}
+	}
+
+	return w, h
 }
 
 func (l *desktop) IconProvider() fynedesk.ApplicationProvider {
@@ -228,8 +305,7 @@ func (l *desktop) MouseOutNotify() {
 }
 
 func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSettings) {
-	for {
-		s := <-settings
+	for s := range settings {
 		l.clearModuleCache()
 		l.updateBackgrounds(s.Background())
 		l.widgets.reloadModules(l.Modules())
@@ -243,10 +319,20 @@ func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSetting
 	}
 }
 
+func (l *desktop) startFyneSettingsChangeListener(settings chan fyne.Settings) {
+	for range settings {
+		l.updateBackgrounds(l.Settings().Background())
+	}
+}
+
 func (l *desktop) addSettingsChangeListener() {
 	listener := make(chan fynedesk.DeskSettings)
 	l.Settings().AddChangeListener(listener)
 	go l.startSettingsChangeListener(listener)
+
+	fyneListener := make(chan fyne.Settings)
+	l.app.Settings().AddChangeListener(fyneListener)
+	go l.startFyneSettingsChangeListener(fyneListener)
 }
 
 func (l *desktop) registerShortcuts() {
@@ -256,17 +342,30 @@ func (l *desktop) registerShortcuts() {
 		func() {
 			// dummy - the wm handles app switcher
 		})
-	l.AddShortcut(fynedesk.NewShortcut("Switch App Previous", fyne.KeyTab, fynedesk.UserModifier|deskDriver.ShiftModifier),
+	l.AddShortcut(fynedesk.NewShortcut("Switch App Previous", fyne.KeyTab, fynedesk.UserModifier|fyne.KeyModifierShift),
 		func() {
 			// dummy - the wm handles app switcher
 		})
-	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Window", KeyName: deskDriver.KeyPrintScreen,
-		Modifier: deskDriver.ShiftModifier},
+	l.AddShortcut(fynedesk.NewShortcut("Print Window", deskDriver.KeyPrintScreen, fyne.KeyModifierShift),
 		l.screenshotWindow)
-	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Print Screen", KeyName: deskDriver.KeyPrintScreen},
+	l.AddShortcut(fynedesk.NewShortcut("Print Screen", deskDriver.KeyPrintScreen, 0),
 		l.screenshot)
-	fynedesk.Instance().AddShortcut(&fynedesk.Shortcut{Name: "Calculator", KeyName: fynedesk.KeyCalculator},
+	l.AddShortcut(fynedesk.NewShortcut("Calculator", fynedesk.KeyCalculator, 0),
 		l.calculator)
+	l.AddShortcut(fynedesk.NewShortcut("Lock screen", fyne.KeyL, fynedesk.UserModifier),
+		l.LockScreen)
+}
+
+func (l *desktop) startXscreensaver() {
+	_, err := exec.LookPath("xscreensaver")
+	if err != nil {
+		fyne.LogError("xscreensaver command not found", err)
+		return
+	}
+	err = exec.Command("xscreensaver", "-no-splash").Start()
+	if err != nil {
+		fyne.LogError("Failed to lock screen", err)
+	}
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
@@ -277,13 +376,15 @@ func (l *desktop) Screens() fynedesk.ScreenList {
 // NewDesktop creates a new desktop in fullscreen for main usage.
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An ApplicationProvider is used to lookup application icons from the operating system.
-func NewDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider, screenProvider fynedesk.ScreenList) fynedesk.Desktop {
-	desk := newDesktop(app, wm, icons)
+func NewDesktop(app fyne.App, mgr fynedesk.WindowManager, icons fynedesk.ApplicationProvider, screenProvider fynedesk.ScreenList) fynedesk.Desktop {
+	desk := newDesktop(app, mgr, icons)
 	desk.run = desk.runFull
 	screenProvider.AddChangeListener(desk.setupRoot)
 	desk.screens = screenProvider
 
 	desk.setupRoot()
+	wm.StartAuthAgent()
+	go desk.startXscreensaver()
 	return desk
 }
 
@@ -317,5 +418,19 @@ func (l *desktop) calculator() {
 	err := exec.Command("calculator").Start()
 	if err != nil {
 		fyne.LogError("Failed to open calculator", err)
+	}
+}
+
+func (l *desktop) LockScreen() {
+	_, err := exec.LookPath("xscreensaver-command")
+	if err != nil {
+		fyne.LogError("xscreensaver-command not found", err)
+		l.WindowManager().Blank()
+		return
+	}
+	err = exec.Command("xscreensaver-command", "-lock").Start()
+	if err != nil {
+		fyne.LogError("Failed to lock screen", err)
+		l.WindowManager().Blank()
 	}
 }

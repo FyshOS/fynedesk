@@ -1,6 +1,6 @@
 package test
 
-import "fyne.io/fynedesk"
+import "fyshos.com/fynedesk"
 
 type testScreensProvider struct {
 	screens []*fynedesk.Screen

@@ -8,10 +8,11 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+
 	"github.com/mafik/pulseaudio"
 
-	"fyne.io/fynedesk"
-	wmtheme "fyne.io/fynedesk/theme"
+	"fyshos.com/fynedesk"
+	wmtheme "fyshos.com/fynedesk/theme"
 )
 
 var soundMeta = fynedesk.ModuleMetadata{
@@ -100,7 +101,7 @@ func (b *sound) StatusAreaWidget() fyne.CanvasObject {
 	sound := container.NewBorder(nil, nil, less, more, b.bar)
 
 	go b.offsetValue(0)
-	return container.NewBorder(nil, nil, b.mute, nil, sound)
+	return container.New(&handleNarrow{}, b.mute, sound)
 }
 
 // Metadata returns ModuleMetadata

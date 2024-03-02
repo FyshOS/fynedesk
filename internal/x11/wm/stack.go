@@ -7,8 +7,10 @@ import (
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
 
-	"fyne.io/fynedesk"
-	"fyne.io/fynedesk/internal/x11"
+	"fyne.io/fyne/v2"
+
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/x11"
 )
 
 type stack struct {
@@ -45,6 +47,10 @@ func (s *stack) RaiseToTop(win fynedesk.Window) {
 
 	wm := fynedesk.Instance().WindowManager().(*x11WM)
 	windowClientListStackingUpdate(wm)
+
+	for _, l := range s.listeners {
+		l.WindowOrderChanged()
+	}
 }
 
 func (s *stack) RemoveWindow(win fynedesk.Window) {
@@ -55,7 +61,10 @@ func (s *stack) RemoveWindow(win fynedesk.Window) {
 	} else {
 		// focus root
 		if wm := fynedesk.Instance().WindowManager().(*x11WM); wm.X() != nil {
-			ewmh.ActiveWindowReq(wm.X(), wm.rootID)
+			err := ewmh.ActiveWindowReq(wm.X(), wm.rootID)
+			if err != nil {
+				fyne.LogError("There was an error trying to remove the window ", err)
+			}
 		}
 	}
 
