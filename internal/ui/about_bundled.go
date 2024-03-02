@@ -8,5 +8,5 @@ import "fyne.io/fyne/v2"
 var resourceAuthors = &fyne.StaticResource{
 	StaticName: "AUTHORS",
 	StaticContent: []byte(
-		"Andy Williams <andy@andy.xyz>\nStephen Houston <smhouston88@gmail.com>\nJacob Alzén <tutanota.com>\nTai Groot <tai@taigrr.com>\n"),
+		"Andy Williams <andy@andy.xyz>\nStephen Houston <smhouston88@gmail.com>\nJacob Alzén jacalz@tutanota.com>\nTai Groot <tai@taigrr.com>\n"),
 }
