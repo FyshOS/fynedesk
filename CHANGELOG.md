@@ -1,9 +1,9 @@
 # Changelog
 
 This file lists the main changes with each version of the FyneDesk project.
-More detailed release notes can be found on the [releases page](https://github.com/fyne-io/desktop/releases). 
+More detailed release notes can be found on the [releases page](https://github.com/fyshos/fynedesk/releases).
 
-## 0.4 - Ongoing
+## 0.4 - 2 March 2024
 
 ### Added
 
