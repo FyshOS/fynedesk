@@ -850,14 +850,15 @@ func (x *x11WM) updatedBackgroundImage(w, h int) image.Image {
 		file, err := os.Open(path)
 		if err != nil {
 			fyne.LogError("Failed to open background image", err)
+		} else {
+			img, _, err := image.Decode(file)
+			if err != nil {
+				fyne.LogError("Failed to read background image", err)
+			} else {
+				_ = file.Close()
+				return resize.Resize(uint(w), uint(h), img, resize.Lanczos3)
+			}
 		}
-		img, _, err := image.Decode(file)
-		if err != nil {
-			fyne.LogError("Failed to read background image", err)
-		}
-		_ = file.Close()
-
-		return resize.Resize(uint(w), uint(h), img, resize.Lanczos3)
 	}
 
 	set := fyne.CurrentApp().Settings()

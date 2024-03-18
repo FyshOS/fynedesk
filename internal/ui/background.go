@@ -42,7 +42,7 @@ func (b *background) loadModules() []fyne.CanvasObject {
 
 func (b *background) updateBackground(path string) {
 	_, err := os.Stat(path)
-	if path == "" || os.IsNotExist(err) {
+	if path == "" || err != nil {
 		set := fyne.CurrentApp().Settings()
 		src := &builtin.Builtin{}
 		b.wallpaper.Objects[0] = src.Load(set.Theme(), set.ThemeVariant())
