@@ -56,13 +56,12 @@ type x11WM struct {
 
 	currentBindings []*fynedesk.Shortcut
 
-	died           bool
-	rootID, menuID xproto.Window
-	menuSize       fyne.Size
-	menuPos        fyne.Position
-	menuWin        fyne.Window
-	transientMap   map[xproto.Window][]xproto.Window
-	oldRoot        *xgraphics.Image
+	died         bool
+	rootID       xproto.Window
+	menuSize     fyne.Size
+	menuPos      fyne.Position
+	transientMap map[xproto.Window][]xproto.Window
+	oldRoot      *xgraphics.Image
 }
 
 type moveResizeType uint32
@@ -247,7 +246,6 @@ func (x *x11WM) ShowOverlay(w fyne.Window, s fyne.Size, p fyne.Position) {
 	w.Show()
 	x.menuSize = s
 	x.menuPos = p
-	x.menuWin = w
 }
 
 func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, p fyne.Position) {
@@ -289,7 +287,6 @@ func (x *x11WM) ShowModal(w fyne.Window, s fyne.Size) {
 	p := fyne.NewPos((float32(root.Width)/scale-s.Width)/2, (float32(root.Height)/scale-s.Height)/2)
 
 	x.menuPos = p
-	x.menuWin = w
 }
 
 func (x *x11WM) X() *xgbutil.XUtil {
@@ -743,7 +740,6 @@ func (x *x11WM) showWindow(win xproto.Window, parent xproto.Window) {
 	if name == windowNameMenu {
 		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
 		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
-		x.menuID = win
 		xproto.ChangeWindowAttributes(x.Conn(), win, xproto.CwEventMask, []uint32{xproto.EventMaskLeaveWindow})
 
 		screen := fynedesk.Instance().Screens().Primary()
