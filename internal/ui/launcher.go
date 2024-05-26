@@ -42,6 +42,7 @@ type picker struct {
 
 	entry       *appEntry
 	appList     *fyne.Container
+	appScroll   *container.Scroll
 	activeIndex int
 }
 
@@ -62,14 +63,22 @@ func (l *picker) setActiveIndex(index int) {
 		return
 	}
 
-	l.appList.Objects[l.activeIndex].(*widget.Button).Importance = widget.MediumImportance
-	l.appList.Objects[index].(*widget.Button).Importance = widget.HighImportance
+	oldActive := l.appList.Objects[l.activeIndex].(*widget.Button)
+	oldActive.Importance = widget.MediumImportance
+	oldActive.Refresh()
+	active := l.appList.Objects[index].(*widget.Button)
+	active.Importance = widget.HighImportance
+	active.Refresh()
+
 	l.activeIndex = index
-	l.appList.Refresh()
+	l.appScroll.Offset = fyne.NewPos(0,
+		active.Position().Y+active.Size().Height/2-l.appScroll.Size().Height/2)
+	l.appScroll.Refresh()
 }
 
 func (l *picker) updateAppListMatching(input string) {
 	l.activeIndex = 0
+	l.appScroll.ScrollToTop()
 	l.appList.Objects = l.appButtonListMatching(input)
 	l.appList.Refresh()
 }
@@ -159,7 +168,7 @@ func newAppPicker(title string, callback func(fynedesk.AppData)) *picker {
 
 	appList := container.NewVBox()
 	appScroller := container.NewScroll(appList)
-	l := &picker{win: win, desk: fynedesk.Instance(), appList: appList, callback: callback}
+	l := &picker{win: win, desk: fynedesk.Instance(), appList: appList, appScroll: appScroller, callback: callback}
 
 	entry := &appEntry{pick: l}
 	entry.ExtendBaseWidget(entry)
