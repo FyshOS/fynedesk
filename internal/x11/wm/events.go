@@ -232,11 +232,11 @@ func (x *x11WM) handleMouseEnter(ev xproto.EnterNotifyEvent) {
 }
 
 func (x *x11WM) handleMouseLeave(ev xproto.LeaveNotifyEvent) {
-	if ev.Event == x.menuID { // dismiss overlay menus on mouse out
-		x.menuID = 0
-		if x.menuWin != nil {
-			x.menuWin.Close()
-			x.menuWin = nil
+	win := x.clientForWin(ev.Event)
+	if win == nil {
+		// dismiss overlay menus on mouse out
+		if x11.WindowName(x.X(), ev.Event) == windowNameMenu {
+			xproto.UnmapWindow(x.x.Conn(), ev.Event)
 		}
 	}
 
