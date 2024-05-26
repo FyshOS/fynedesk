@@ -113,7 +113,7 @@ func removeFromBar(icon fynedesk.AppData) {
 }
 
 // TappedSecondary means barIcon has been clicked by a secondary binding
-func (bi *barIcon) TappedSecondary(*fyne.PointEvent) {
+func (bi *barIcon) TappedSecondary(ev *fyne.PointEvent) {
 	app := bi.appData
 	if app == nil && bi.windowData != nil {
 		app = bi.windowData.findApp()
@@ -136,10 +136,8 @@ func (bi *barIcon) TappedSecondary(*fyne.PointEvent) {
 		addRemove.Label = "Pin " + app.Name()
 	}
 
-	c := fyne.CurrentApp().Driver().CanvasForObject(bi)
-	pos := fyne.CurrentApp().Driver().AbsolutePositionForObject(bi)
-	menu = widget.NewPopUpMenu(fyne.NewMenu("", []*fyne.MenuItem{addRemove}...), c)
-	menu.ShowAtPosition(pos)
+	items := []*fyne.MenuItem{addRemove}
+	fynedesk.Instance().ShowMenuAt(fyne.NewMenu("", items...), ev.AbsolutePosition)
 }
 
 // CreateRenderer is a private method to fyne which links this widget to its renderer
