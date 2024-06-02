@@ -462,15 +462,17 @@ func (f *frame) getInnerWindowCoordinates(w uint16, h uint16) (uint32, uint32, u
 
 func (f *frame) hide() {
 	stack := f.client.wm.Windows()
-	for i := len(stack) - 1; i >= 0; i-- {
+	for i := 0; i < len(stack); i++ {
 		if stack[i] == (interface{})(f.client).(fynedesk.Window) {
 			continue
 		}
 
-		if !stack[i].Iconic() {
-			stack[i].RaiseToTop()
-			stack[i].Focus()
+		if stack[i].Iconic() {
+			continue
 		}
+
+		stack[i].Focus()
+		break
 	}
 
 	borderWidth := x11.BorderWidth(x11.XWin(f.client))
