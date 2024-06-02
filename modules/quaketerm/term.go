@@ -139,6 +139,7 @@ func (t *term) toggle() {
 	if !t.shown {
 		t.win = t.getHandle()
 
+		t.win.Pin()
 		t.show()
 	} else {
 		t.hide()
