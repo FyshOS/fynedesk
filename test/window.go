@@ -12,7 +12,7 @@ import (
 type Window struct {
 	props dummyProperties
 
-	iconic, focused, fullscreen, maximized, raised bool
+	iconic, focused, fullscreen, maximized, raised, pinned bool
 
 	parent        fynedesk.Window
 	x, y, desk    int
@@ -87,6 +87,16 @@ func (w *Window) Move(_ fyne.Position) {}
 // Parent returns a window that this should be positioned within, if set.
 func (w *Window) Parent() fynedesk.Window {
 	return w.parent
+}
+
+// Pin requests that the window be visible on all desktops
+func (w *Window) Pin() {
+	w.pinned = true
+}
+
+// Pinned returns true if the window should be visible on all desktops
+func (w *Window) Pinned() bool {
+	return w.pinned
 }
 
 // Position returns 0, 0 for test windows
@@ -164,4 +174,10 @@ func (w *Window) Uniconify() {
 // Unmaximize removes the maximized state of this window
 func (w *Window) Unmaximize() {
 	w.maximized = false
+}
+
+// Unpin resets the state of being visible on all windows.
+// The window will return to being visible on its specified desktop.
+func (w *Window) Unpin() {
+	w.pinned = false
 }

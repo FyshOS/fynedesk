@@ -26,6 +26,7 @@ type client struct {
 	full      bool
 	iconic    bool
 	maximized bool
+	pinned    bool
 	props     *clientProperties
 
 	restoreX, restoreY          int16
@@ -128,6 +129,10 @@ func (c *client) SetDesktop(id int) {
 	d := fynedesk.Instance()
 	diff := id - c.desk
 	c.desk = id
+
+	if c.pinned {
+		return
+	}
 
 	_, height := d.RootSizePixels()
 	offPix := float32(diff * -int(height))
@@ -312,6 +317,16 @@ func (c *client) Parent() fynedesk.Window {
 	return nil
 }
 
+func (c *client) Pin() {
+	c.pinned = true
+	d := fynedesk.Instance()
+	c.SetDesktop(d.Desktop())
+}
+
+func (c *client) Pinned() bool {
+	return c.pinned
+}
+
 func (c *client) Position() fyne.Position {
 	screen := fynedesk.Instance().Screens().ScreenForWindow(c)
 
@@ -407,6 +422,15 @@ func (c *client) Uniconify() {
 
 func (c *client) Unmaximize() {
 	c.maximizeMessage(x11.WindowStateActionRemove)
+}
+
+func (c *client) Unpin() {
+	c.pinned = false
+	d := fynedesk.Instance()
+	id := d.Desktop()
+	c.desk = id
+
+	c.SetDesktop(id)
 }
 
 func (c *client) fullscreenMessage(action x11.WindowStateAction) {

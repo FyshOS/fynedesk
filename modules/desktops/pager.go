@@ -91,8 +91,13 @@ func (p *pager) refreshFrom(oldID int) {
 			continue
 		}
 
-		yPad := theme.Padding() * float32(win.Desktop()-oldID)
+		deskID := win.Desktop()
+		yPad := theme.Padding() * float32(deskID-oldID)
 		screen := fynedesk.Instance().Screens().ScreenForWindow(win)
+		if win.Pinned() {
+			yPad = theme.Padding() * float32(desk.Desktop()-oldID)
+			yPad -= float32(oldID-desk.Desktop()) * pivot.Size().Height
+		}
 
 		var obj fyne.CanvasObject
 		obj = canvas.NewRectangle(theme.DisabledColor())

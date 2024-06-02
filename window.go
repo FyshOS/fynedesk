@@ -36,6 +36,9 @@ type Window interface {
 
 	Desktop() int
 	SetDesktop(int)
+	Pin()
+	Pinned() bool
+	Unpin()
 }
 
 // WindowProperties encapsulates the metadata that a window can provide.
