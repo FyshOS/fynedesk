@@ -142,6 +142,9 @@ func (c *Border) showMenu(from fyne.CanvasObject) {
 	if c.win.Maximized() {
 		max.Checked = true
 	}
+
+	pos := c.win.Position()
+	menuPos := pos.Add(from.Position())
 	menu := fyne.NewMenu("",
 		title,
 		fyne.NewMenuItemSeparator(),
@@ -150,26 +153,45 @@ func (c *Border) showMenu(from fyne.CanvasObject) {
 		}),
 		max,
 		fyne.NewMenuItemSeparator(),
-		c.makeDesktopMenu(),
+		c.makeDesktopMenu(menuPos),
 		fyne.NewMenuItemSeparator(),
 		fyne.NewMenuItem("Close", func() {
 			c.win.Close()
 		}))
 
-	pos := c.win.Position()
-	fynedesk.Instance().ShowMenuAt(menu, pos.Add(from.Position()))
+	fynedesk.Instance().ShowMenuAt(menu, menuPos)
 }
 
-func (c *Border) makeDesktopMenu() *fyne.MenuItem {
+func (c *Border) makeDesktopMenu(pos fyne.Position) *fyne.MenuItem {
 	desks := make([]*fyne.MenuItem, 4)
 	for i := 0; i < 4; i++ {
 		deskID := i
 		desks[i] = fyne.NewMenuItem(fmt.Sprintf("Desktop %d", i+1), func() {
+			if c.win.Pinned() {
+				c.win.Unpin()
+			}
+
 			c.win.SetDesktop(deskID)
 		})
 	}
-	ret := fyne.NewMenuItem("Move to Desktop", nil)
-	ret.ChildMenu = fyne.NewMenu("", desks...)
+	pin := fyne.NewMenuItem("All Desktops", func() {
+		if c.win.Pinned() {
+			return
+		}
+
+		c.win.Pin()
+	})
+	if c.win.Pinned() {
+		pin.Checked = true
+	}
+	desks = append(desks, pin)
+
+	ret := fyne.NewMenuItem("Move to Desktop", func() {
+		fynedesk.Instance().ShowMenuAt(fyne.NewMenu("", desks...),
+			pos.Add(fyne.NewSize(40, 120)))
+
+	})
+	ret.ChildMenu = fyne.NewMenu("") // No-op to add the arrow...
 	return ret
 }
 
