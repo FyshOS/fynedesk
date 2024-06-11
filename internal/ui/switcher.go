@@ -47,7 +47,7 @@ func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 	bg.CornerRadius = theme.InputRadiusSize()
 	img := canvas.NewImageFromResource(res)
 	if s.win.Iconic() {
-		img.Translucency = 0.8
+		img.Translucency = 0.67
 	}
 	text := widget.NewLabelWithStyle(title, fyne.TextAlignCenter, fyne.TextStyle{})
 	text.Truncation = fyne.TextTruncateEllipsis

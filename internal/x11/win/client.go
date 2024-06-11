@@ -246,8 +246,8 @@ func (c *client) NotifyFullscreen() {
 }
 
 func (c *client) NotifyIconify() {
-	c.frame.hide()
 	c.iconic = true
+	c.frame.hide()
 	x11.WindowExtendedHintsAdd(c.wm.X(), c.win, "_NET_WM_STATE_HIDDEN")
 }
 

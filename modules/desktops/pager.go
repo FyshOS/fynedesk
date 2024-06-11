@@ -60,6 +60,9 @@ func (p *pager) WindowRemoved(_ fynedesk.Window) {
 	p.refresh()
 }
 
+func (p *pager) WindowStateChanged(_ fynedesk.Window) {
+}
+
 func (p *pager) refresh() {
 	desk := fynedesk.Instance()
 	p.refreshFrom(desk.Desktop())

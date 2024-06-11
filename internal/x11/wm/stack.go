@@ -121,6 +121,12 @@ func (s *stack) indexForWin(win fynedesk.Window) int {
 	return pos
 }
 
+func (s *stack) publishWindowChange(win fynedesk.Window) {
+	for _, l := range s.listeners {
+		l.WindowStateChanged(win)
+	}
+}
+
 func (s *stack) removeFromStack(win fynedesk.Window) {
 	pos := s.indexForWin(win)
 

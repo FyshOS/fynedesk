@@ -66,6 +66,12 @@ func (bi *barIconRenderer) Refresh() {
 	}
 	bi.Layout(bi.image.Size())
 
+	if bi.image.windowData != nil && bi.image.windowData.win.Iconic() {
+		if img, ok := bi.objects[0].(*canvas.Image); ok {
+			img.Translucency = 0.67
+		}
+	}
+
 	canvas.Refresh(bi.image)
 }
 

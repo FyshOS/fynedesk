@@ -36,6 +36,7 @@ type Stack interface {
 type StackListener interface {
 	WindowAdded(Window)
 	WindowRemoved(Window)
+	WindowStateChanged(Window)
 
 	WindowMoved(Window)
 	WindowOrderChanged()
