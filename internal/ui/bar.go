@@ -160,10 +160,20 @@ func (b *bar) WindowRemoved(win fynedesk.Window) {
 		if icon.windowData == nil || win != icon.windowData.win {
 			continue
 		}
-		if !win.Iconic() {
-			b.removeFromTaskbar(icon)
-			b.icons = append(b.icons[:i], b.icons[i+1:]...)
+
+		b.removeFromTaskbar(icon)
+		b.icons = append(b.icons[:i], b.icons[i+1:]...)
+		break
+	}
+}
+
+func (b *bar) WindowStateChanged(win fynedesk.Window) {
+	for _, icon := range b.icons {
+		if icon.windowData == nil || win != icon.windowData.win {
+			continue
 		}
+
+		icon.Refresh()
 		break
 	}
 }
