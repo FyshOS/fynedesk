@@ -207,7 +207,7 @@ func (s *Switcher) loadIcons(list []fynedesk.Window) []fyne.CanvasObject {
 	var ret []fyne.CanvasObject
 
 	for _, item := range list {
-		if item.Desktop() != fynedesk.Instance().Desktop() {
+		if item.Desktop() != fynedesk.Instance().Desktop() && !item.Pinned() {
 			continue
 		}
 		ret = append(ret, newSwitchIcon(s, item))
