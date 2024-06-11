@@ -72,7 +72,7 @@ func (x *x11WM) previousAppSwitcher() {
 func (x *x11WM) showOrSelectAppSwitcher(reverse bool) {
 	var visible []fynedesk.Window
 	for _, win := range x.clients {
-		if win.Desktop() == fynedesk.Instance().Desktop() && !win.Iconic() {
+		if win.Desktop() == fynedesk.Instance().Desktop() || win.Pinned() {
 			visible = append(visible, win)
 		}
 	}
