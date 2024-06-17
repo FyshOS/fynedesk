@@ -233,8 +233,13 @@ func (t *tray) parseMenuItem(id int32, menu *menu.Dbusmenu, in interface{}, pos 
 		}
 	} else {
 		ret.Label = fmt.Sprintf("%s", data["label"].Value())
+		if checkType, ok := data["toggle-type"]; ok && checkType.Value() == "checkmark" {
+			if checkState, ok := data["toggle-state"]; ok && checkState.Value().(int32) > 0 {
+				ret.Checked = true
+			}
+		}
 		ret.Action = func() {
-			err := menu.Event(t.conn.Context(), int32(id), "clicked", dbus.MakeVariant(id), uint32(time.Now().Unix()))
+			err := menu.Event(t.conn.Context(), id, "clicked", dbus.MakeVariant(id), uint32(time.Now().Unix()))
 			if err != nil {
 				fyne.LogError("Failed to message menu tap", err)
 			}
