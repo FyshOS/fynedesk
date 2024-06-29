@@ -1,0 +1,19 @@
+{
+	"Colors":{
+		"background":"#120818",
+		"button":"#3e1340",
+		"error":"#ff3a06",
+		"foreground":"#ffef56",
+		"hyperlink":"#ee018f",
+		"inputBackground":"#120818",
+		"inputBorder":"#2ac9f9",
+		"pressed":"#ffef56",
+		"primary":"#56f1ff",
+		"scrollBar":"#56f1ff",
+		"shadow":"#3e1340",
+		"success":"#8dff0a",
+		"warning":"#ff9535",
+		"fynedeskPanelBackground":"#56f1ff55",
+		"disabledButton":"#883b16"
+	}
+}
