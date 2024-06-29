@@ -1,0 +1,11 @@
+{
+  "Colors": {
+    "background": "#111111ff",
+    "hyperlink": "#003300ff",
+    "foreground": "#339966ff",
+    "primary": "#00ff0099",
+    "inputBorder": "#00ff0099",
+    "disabledButton": "#003300",
+    "fynedeskPanelBackground": "#00330099"
+  }
+}

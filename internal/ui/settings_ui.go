@@ -1,8 +1,12 @@
 package ui
 
 import (
+	"embed"
+	"fmt"
+	"io"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"runtime"
 	"sort"
 	"strconv"
@@ -24,6 +28,9 @@ import (
 )
 
 const randrHelper = "arandr"
+
+//go:embed "themes/*"
+var bundledThemes embed.FS
 
 type settingsUI struct {
 	settings *deskSettings
@@ -375,6 +382,86 @@ func (d *settingsUI) loadScreensGroup() fyne.CanvasObject {
 	return screens
 }
 
+func (d *settingsUI) loadThemeScreen() fyne.CanvasObject {
+	var themeList []string
+
+	embedList, _ := bundledThemes.ReadDir("themes")
+	for _, dir := range embedList {
+		themeList = append(themeList, dir.Name())
+	}
+
+	storageRoot := fyne.CurrentApp().Storage().RootURI()
+	themes, _ := storage.Child(storageRoot, "themes")
+	list, err := storage.List(themes)
+	if err != nil {
+		fyne.LogError("Unable to list themes - missing?", err)
+		themeList = make([]string, 1)
+	} else {
+		for _, l := range list {
+			if false {
+				themeList = append(themeList, l.Name())
+			}
+		}
+	}
+
+	useTheme := func(name string) {
+		dest := filepath.Join(filepath.Dir(storageRoot.Path()), "theme.json")
+		out, _ := os.Create(dest)
+		defer out.Close()
+		if name == "default" {
+			_, _ = io.WriteString(out, "{}")
+			return
+		}
+
+		var in io.ReadCloser
+		if builtin, err := bundledThemes.Open(filepath.Join("themes/", name, "theme.json")); err == nil {
+			in = builtin
+		} else {
+			source := filepath.Join(themes.Path(), name, "theme.json")
+			in, _ = os.Open(source)
+		}
+		defer in.Close()
+
+		_, err = io.Copy(out, in)
+	}
+	return widget.NewList(
+		func() int {
+			return len(themeList)
+		},
+		func() fyne.CanvasObject {
+			install := widget.NewButtonWithIcon("Install", theme.ComputerIcon(), nil)
+			preview := &canvas.Image{FillMode: canvas.ImageFillContain}
+			preview.SetMinSize(fyne.NewSize(160, 90))
+			return container.NewBorder(nil, nil, nil, preview,
+				container.NewBorder(nil, install, nil, nil,
+					widget.NewRichTextFromMarkdown("## Theme Name\n\nDescription...")))
+		},
+		func(id widget.ListItemID, o fyne.CanvasObject) {
+			outer := o.(*fyne.Container)
+			inner := outer.Objects[0].(*fyne.Container)
+			b := inner.Objects[1].(*widget.Button)
+			b.OnTapped = func() {
+				useTheme(themeList[id])
+			}
+			p := outer.Objects[1].(*canvas.Image)
+			if builtin, err := bundledThemes.Open(filepath.Join("themes/", themeList[id], "preview.png")); err == nil {
+				data, _ := io.ReadAll(builtin)
+				p.Resource = fyne.NewStaticResource(themeList[id]+"/preview.json", data)
+				p.File = ""
+				_ = builtin.Close()
+			} else {
+				source := filepath.Join(themes.Path(), themeList[id], "preview.png")
+				p.File = source
+				p.Resource = nil
+			}
+			p.Refresh()
+
+			l := inner.Objects[0].(*widget.RichText)
+			title := strings.Title(themeList[id])
+			l.ParseMarkdown(fmt.Sprintf("## %s\n\nDescription...", title))
+		})
+}
+
 func (w *widgetPanel) showSettings() {
 	if w.settings != nil {
 		w.settings.CenterOnScreen()
@@ -404,6 +491,7 @@ func (w *widgetPanel) showSettings() {
 			Content: fyneSettings.LoadAppearanceScreen(win)},
 		&container.TabItem{Text: "Appearance", Icon: fyneSettings.AppearanceIcon(),
 			Content: ui.loadAppearanceScreen()},
+		&container.TabItem{Text: "Theme", Icon: theme.ColorPaletteIcon(), Content: ui.loadThemeScreen()},
 		&container.TabItem{Text: "App Bar", Icon: wmtheme.IconifyIcon, Content: ui.loadBarScreen()},
 		&container.TabItem{Text: "Keyboard", Icon: wmtheme.KeyboardIcon, Content: ui.loadKeyboardScreen()},
 		&container.TabItem{Text: "Advanced", Icon: theme.SettingsIcon(),
