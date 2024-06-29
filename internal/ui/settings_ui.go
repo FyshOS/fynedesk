@@ -12,6 +12,9 @@ import (
 	"strconv"
 	"strings"
 
+	"golang.org/x/text/cases"
+	"golang.org/x/text/language"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/cmd/fyne_settings/settings"
@@ -457,7 +460,7 @@ func (d *settingsUI) loadThemeScreen() fyne.CanvasObject {
 			p.Refresh()
 
 			l := inner.Objects[0].(*widget.RichText)
-			title := strings.Title(themeList[id])
+			title := cases.Title(language.Make("en")).String(themeList[id])
 			l.ParseMarkdown(fmt.Sprintf("## %s\n\nDescription...", title))
 		})
 }
