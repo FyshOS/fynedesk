@@ -111,7 +111,7 @@ func (w *widgetPanel) showAccountMenu(_ fyne.CanvasObject) {
 	if !isEmbed {
 		items1 = append(items1, &widget.Button{Icon: wmtheme.LockIcon, Importance: widget.LowImportance, OnTapped: func() {
 			w2.Close()
-			w.desk.(*desktop).LockScreen()
+			w.desk.(*desktop).lockScreen()
 		}})
 		if os.Getenv("FYNE_DESK_RUNNER") != "" {
 			items1 = append(items1, &widget.Button{Icon: theme.ViewRefreshIcon(), Importance: widget.LowImportance, OnTapped: func() {
