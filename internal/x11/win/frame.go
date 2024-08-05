@@ -584,7 +584,7 @@ func (f *frame) mouseMotion(x, y int16) {
 	relX := x - f.x
 	relY := y - f.y
 
-	if uint16(relX) > f.width-f.topRightPixelWidth() {
+	if uint16(relX) > f.width-f.topRightPixelWidth() && f.canvas != nil {
 		relX = int16(f.canvas.Content().Size().Width*f.canvas.Scale()) - (int16(f.width) - relX)
 	}
 
