@@ -359,7 +359,7 @@ func (l *desktop) registerShortcuts() {
 	l.AddShortcut(fynedesk.NewShortcut("Calculator", fynedesk.KeyCalculator, 0),
 		l.calculator)
 	l.AddShortcut(fynedesk.NewShortcut("Lock screen", fyne.KeyL, fynedesk.UserModifier),
-		l.LockScreen)
+		l.lockScreen)
 }
 
 func (l *desktop) startXscreensaver() {
@@ -427,7 +427,7 @@ func (l *desktop) calculator() {
 	}
 }
 
-func (l *desktop) LockScreen() {
+func (l *desktop) lockScreen() {
 	_, err := exec.LookPath("xscreensaver-command")
 	if err != nil {
 		fyne.LogError("xscreensaver-command not found", err)
