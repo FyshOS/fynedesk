@@ -286,7 +286,14 @@ func (f *frame) copyDecorationPixels(width, height, xoff, yoff uint32, img image
 func (f *frame) createPixmaps(depth byte) error {
 	heightPix := x11.TitleHeight(x11.XWin(f.client))
 	rightWidthPix := f.topRightPixelWidth()
-	f.borderTopWidth = f.width - rightWidthPix
+	drawPix := f.width
+	if f.canvas != nil {
+		minPix := uint16(f.canvas.Content().MinSize().Width * f.canvas.Scale())
+		if drawPix < minPix {
+			drawPix = minPix
+		}
+	}
+	f.borderTopWidth = drawPix - rightWidthPix
 
 	pid, err := xproto.NewPixmapId(f.client.wm.Conn())
 	if err != nil {
@@ -385,15 +392,17 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	rightWidthPix := f.topRightPixelWidth()
 	minWidth := f.canvas.Content().MinSize().Width
 	winPixWidth := f.borderTopWidth + rightWidthPix
-	f.canvas.Resize(fyne.NewSize(float32(winPixWidth)/scale, wmTheme.TitleHeight))
-	widthPix := uint16(minWidth*f.canvas.Scale()) - rightWidthPix
+	winPtWidth := float32(winPixWidth) / scale
+	drawWidth := fyne.Max(minWidth, winPtWidth)
+	f.canvas.Resize(fyne.NewSize(drawWidth, wmTheme.TitleHeight))
+	widthPix := uint16(drawWidth*f.canvas.Scale()) - rightWidthPix
 	img := f.canvas.Capture()
 
-	// Draw in pixel rows so we don't overflow count usable by PutImageChecked
+	// Draw in pixel rows, so we don't overflow count usable by PutImageChecked
 	for i := uint16(0); i < heightPix; i++ {
 		f.copyDecorationPixels(uint32(widthPix), 1, 0, uint32(i), img, pidTop, drawTop, depth)
 	}
-	f.copyDecorationPixels(uint32(rightWidthPix), uint32(heightPix), uint32(winPixWidth-rightWidthPix), 0, img, pidTopRight, drawTopRight, depth)
+	f.copyDecorationPixels(uint32(rightWidthPix), uint32(heightPix), uint32(uint16(img.Bounds().Dx())-rightWidthPix), 0, img, pidTopRight, drawTopRight, depth)
 }
 
 func (f *frame) freePixmaps() {
@@ -575,6 +584,10 @@ func (f *frame) mouseMotion(x, y int16) {
 	relX := x - f.x
 	relY := y - f.y
 
+	if uint16(relX) > f.width-f.topRightPixelWidth() {
+		relX = int16(f.canvas.Content().Size().Width*f.canvas.Scale()) - (int16(f.width) - relX)
+	}
+
 	refresh := false
 	obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
 		func(obj fyne.CanvasObject) bool {
@@ -669,7 +682,12 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 
 	relX := x - f.x
 	relY := y - f.y
-	obj := wm.FindObjectAtPixelPositionMatching(int(relX), int(relY), f.canvas,
+
+	titlebarX := relX
+	if uint16(titlebarX) > f.width-f.topRightPixelWidth() {
+		titlebarX = int16(f.canvas.Content().Size().Width*f.canvas.Scale()) - (int16(f.width) - titlebarX)
+	}
+	obj := wm.FindObjectAtPixelPositionMatching(int(titlebarX), int(relY), f.canvas,
 		func(obj fyne.CanvasObject) bool {
 			_, ok := obj.(fyne.Tappable)
 			return ok
@@ -749,6 +767,10 @@ func (f *frame) mouseReleaseWaitForDoubleClick(relX int, relY int) {
 	var ctx context.Context
 	ctx, f.cancelFunc = context.WithDeadline(context.TODO(), time.Now().Add(time.Millisecond*300))
 	defer f.cancelFunc()
+
+	if uint16(relX) > f.width-f.topRightPixelWidth() {
+		relX = int(f.canvas.Content().Size().Width*f.canvas.Scale()) - (int(f.width) - relX)
+	}
 
 	<-ctx.Done()
 	if f.clickCount == 2 {
