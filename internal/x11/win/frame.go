@@ -9,16 +9,16 @@ import (
 	"math"
 	"time"
 
-	"fyne.io/fyne/v2"
-	"fyne.io/fyne/v2/driver/desktop"
-	"fyne.io/fyne/v2/test"
-	"fyne.io/fyne/v2/theme"
-	"fyne.io/fyne/v2/tools/playground"
-
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil/ewmh"
 	"github.com/BurntSushi/xgbutil/icccm"
 	"github.com/BurntSushi/xgbutil/xwindow"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/driver/software"
+	"fyne.io/fyne/v2/test"
+	"fyne.io/fyne/v2/theme"
 
 	"fyshos.com/fynedesk"
 	"fyshos.com/fynedesk/internal/x11"
@@ -374,7 +374,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	}
 
 	if f.canvas == nil {
-		canvas := playground.NewSoftwareCanvas()
+		canvas := software.NewCanvas()
 		canvas.SetPadded(false)
 
 		canvas.SetContent(wm.NewBorder(f.client, f.client.Properties().Icon(), canMaximize))
@@ -684,7 +684,7 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 	relY := y - f.y
 
 	titlebarX := relX
-	if uint16(titlebarX) > f.width-f.topRightPixelWidth() {
+	if uint16(titlebarX) > f.width-f.topRightPixelWidth() && f.canvas != nil {
 		titlebarX = int16(f.canvas.Content().Size().Width*f.canvas.Scale()) - (int16(f.width) - titlebarX)
 	}
 	obj := wm.FindObjectAtPixelPositionMatching(int(titlebarX), int(relY), f.canvas,
