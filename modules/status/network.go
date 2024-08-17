@@ -1,6 +1,7 @@
 package status
 
 import (
+	"errors"
 	"log"
 	"os"
 	"os/exec"
@@ -32,27 +33,20 @@ func (n *network) Destroy() {
 
 func (n *network) wirelessName() (string, error) {
 	net := ""
-	iw, _ := exec.LookPath("iw")
+	iw, _ := exec.LookPath("iwconfig")
 	if iw == "" {
-		iw, _ = exec.LookPath("/usr/sbin/iw")
+		iw, _ = exec.LookPath("/usr/sbin/iwconfig")
 	}
 	if iw != "" {
-		out, err := exec.Command("bash", []string{"-c", iw + " dev | grep Interface | cut -d \" \" -f2"}...).Output()
+		out, err := exec.Command("bash", []string{"-c", iw + " | grep ESSID | cut -d '\"' -f2"}...).Output()
 		if err != nil {
-			log.Println("Error running iw", err)
+			log.Println("Error running iwconfig", err)
 			return "", err
 		}
-		dev := strings.TrimSpace(string(out))
-		if dev == "" {
-			return "", nil
+		if strings.Contains(string(out), "ESSID") {
+			return "", errors.New("no network connected")
 		}
-
-		out, err = exec.Command("bash", []string{"-c", iw + " dev " + dev + " info | grep ssid | sed 's\\ssid\\\\g'"}...).Output()
-		if err != nil {
-			log.Println("Error running iw", err)
-			return "", err
-		}
-		net = string(out)
+		net = strings.TrimSpace(string(out))
 	} else {
 		out, err := exec.Command("bash", []string{"-c", "/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I  | awk -F' SSID: '  '/ SSID: / {print $2}'"}...).Output()
 		if err != nil {
