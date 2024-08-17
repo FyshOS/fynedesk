@@ -54,7 +54,7 @@ func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Borde
 		win.Iconify()
 	}}
 
-	title := canvas.NewText(win.Properties().Title(), theme.ForegroundColor())
+	title := canvas.NewText(win.Properties().Title(), theme.Color(theme.ColorNameForeground))
 	buttonPos := fynedesk.Instance().Settings().BorderButtonPosition()
 
 	var titleBar *Border
@@ -199,7 +199,7 @@ func (c *Border) makeDesktopMenu(pos fyne.Position) *fyne.MenuItem {
 //
 // Implements: fyne.Widget
 func (c *Border) CreateRenderer() fyne.WidgetRenderer {
-	render := &coloredBoxRenderer{b: c, bg: canvas.NewRectangle(theme.BackgroundColor())}
+	render := &coloredBoxRenderer{b: c, bg: canvas.NewRectangle(theme.Color(theme.ColorNameBackground))}
 	return render
 }
 
@@ -259,12 +259,12 @@ func (r *coloredBoxRenderer) Objects() []fyne.CanvasObject {
 func (r *coloredBoxRenderer) Refresh() {
 	r.bg.Resize(r.b.Size()) // Not sure why this resize is needed, but it is...
 	if r.b.win.Focused() {
-		r.bg.FillColor = theme.BackgroundColor()
+		r.bg.FillColor = theme.Color(theme.ColorNameBackground)
 	} else {
-		r.bg.FillColor = theme.DisabledButtonColor()
+		r.bg.FillColor = theme.Color(theme.ColorNameDisabledButton)
 	}
 	r.bg.Refresh()
 
-	r.b.title.Color = theme.ForegroundColor()
+	r.b.title.Color = theme.Color(theme.ColorNameForeground)
 	r.b.content.Refresh()
 }

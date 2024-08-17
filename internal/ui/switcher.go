@@ -112,7 +112,7 @@ func (s switchIconRenderer) MinSize() fyne.Size {
 
 func (s switchIconRenderer) Refresh() {
 	if s.icon.current {
-		s.bg.FillColor = theme.PrimaryColor()
+		s.bg.FillColor = theme.Color(theme.ColorNamePrimary)
 	} else {
 		s.bg.FillColor = color.Transparent
 	}

@@ -51,7 +51,7 @@ func (t *term) createTerm() {
 	win := fyne.CurrentApp().Driver().(desktop.Driver).CreateSplashWindow()
 	win.SetTitle(termTitle)
 
-	bg := canvas.NewRectangle(theme.BackgroundColor())
+	bg := canvas.NewRectangle(theme.Color(theme.ColorNameBackground))
 	img := canvas.NewImageFromResource(theme.NewDisabledResource(theme.ComputerIcon()))
 	img.FillMode = canvas.ImageFillContain
 	img.SetMinSize(fyne.NewSize(200, 200))
@@ -153,7 +153,7 @@ func matchTheme(bg, over *canvas.Rectangle) {
 		for {
 			<-ch
 
-			bg.FillColor = theme.BackgroundColor()
+			bg.FillColor = theme.Color(theme.ColorNameBackground)
 			bg.Refresh()
 			over.FillColor = wmTheme.WidgetPanelBackground()
 			over.Refresh()

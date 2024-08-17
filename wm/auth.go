@@ -128,7 +128,7 @@ func (a *auth) BeginAuthentication(actionID, message, iconName string, details m
 				layout.NewSpacer()), bottomPad),
 		nil, nil, f)
 
-	r, g, b, _ := theme.OverlayBackgroundColor().RGBA()
+	r, g, b, _ := theme.Color(theme.ColorNameOverlayBackground).RGBA()
 	bgCol := &color.NRGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 230}
 
 	bg := canvas.NewRectangle(bgCol)
