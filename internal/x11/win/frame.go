@@ -313,9 +313,9 @@ func (f *frame) createPixmaps(depth byte) error {
 		xproto.Drawable(f.client.wm.X().Screen().Root), rightWidthPix, heightPix)
 	f.borderTopRight = pid
 
-	backR, backG, backB, _ := theme.DisabledButtonColor().RGBA()
+	backR, backG, backB, _ := theme.Color(theme.ColorNameDisabledButton).RGBA()
 	if f.client.Focused() {
-		backR, backG, backB, _ = theme.BackgroundColor().RGBA()
+		backR, backG, backB, _ = theme.Color(theme.ColorNameBackground).RGBA()
 	}
 	bgColor := uint32(uint8(backR))<<16 | uint32(uint8(backG))<<8 | uint32(uint8(backB))
 

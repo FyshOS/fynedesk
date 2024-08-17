@@ -103,7 +103,7 @@ func (p *pager) refreshFrom(oldID int) {
 		}
 
 		var obj fyne.CanvasObject
-		obj = canvas.NewRectangle(theme.DisabledColor())
+		obj = canvas.NewRectangle(theme.Color(theme.ColorNameDisabled))
 		if win.Properties().Icon() != nil {
 			obj = container.NewStack(obj,
 				canvas.NewImageFromResource(win.Properties().Icon()))

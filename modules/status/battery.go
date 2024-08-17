@@ -61,7 +61,7 @@ func (b *battery) StatusAreaWidget() fyne.CanvasObject {
 
 	b.bar = widget.NewProgressBar()
 	b.icon = widget.NewIcon(wmtheme.BatteryIcon)
-	b.fill = canvas.NewRectangle(theme.ForegroundColor())
+	b.fill = canvas.NewRectangle(theme.Color(theme.ColorNameForeground))
 	prop := canvas.NewRectangle(color.Transparent)
 	prop.SetMinSize(b.icon.MinSize().Add(fyne.NewSize(theme.Padding()*4, 0)))
 	icon := container.NewStack(container.NewCenter(prop, b.icon), container.NewWithoutLayout(b.fill))
@@ -88,12 +88,12 @@ func (b *battery) setValue(val float64) {
 		b.fill.Hide()
 	} else if val < 0.1 {
 		b.icon.SetResource(theme.NewErrorThemedResource(wmtheme.BatteryIcon))
-		b.fill.FillColor = theme.ErrorColor()
+		b.fill.FillColor = theme.Color(theme.ColorNameError)
 		b.fill.Refresh()
 		b.fill.Show()
 	} else {
 		b.icon.SetResource(wmtheme.BatteryIcon)
-		b.fill.FillColor = theme.ForegroundColor()
+		b.fill.FillColor = theme.Color(theme.ColorNameForeground)
 		b.fill.Refresh()
 		b.fill.Show()
 	}

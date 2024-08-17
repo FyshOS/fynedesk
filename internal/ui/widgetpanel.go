@@ -48,8 +48,9 @@ func (w *widgetRenderer) Refresh() {
 		w.panel.clocks.Objects[0].Show()
 		w.panel.clocks.Objects[1].Hide()
 	}
-	w.panel.clock.Color = theme.ForegroundColor()
-	w.panel.vClock.Color = theme.ForegroundColor()
+	fg := theme.Color(theme.ColorNamePrimary)
+	w.panel.clock.Color = fg
+	w.panel.vClock.Color = fg
 	canvas.Refresh(w.panel.clock)
 }
 
@@ -116,15 +117,16 @@ func (w *widgetPanel) createClock() {
 	var style fyne.TextStyle
 	style.Monospace = true
 
+	fg := theme.Color(theme.ColorNamePrimary)
 	w.clock = &canvas.Text{
-		Color:     theme.ForegroundColor(),
+		Color:     fg,
 		Text:      w.formattedTime(),
 		Alignment: fyne.TextAlignCenter,
 		TextStyle: style,
 		TextSize:  3 * theme.TextSize(),
 	}
 	w.vClock = &canvas.Text{
-		Color:     theme.ForegroundColor(),
+		Color:     fg,
 		Text:      w.formattedTime(),
 		Alignment: fyne.TextAlignCenter,
 		TextStyle: style,
