@@ -3,7 +3,7 @@ module fyshos.com/fynedesk
 go 1.19
 
 require (
-	fyne.io/fyne/v2 v2.5.1-0.20240723013128-bbfc67312e64
+	fyne.io/fyne/v2 v2.5.1-0.20240815191931-e5989189e655
 	github.com/BurntSushi/xgb v0.0.0-20201008132610-5f9e7b3c49cd
 	github.com/BurntSushi/xgbutil v0.0.0-20160919175755-f7c97cef3b4e
 	github.com/FyshOS/backgrounds v0.0.0-20230616202904-0a8b6ebaa184
@@ -42,7 +42,7 @@ require (
 	github.com/fyne-io/terminal v0.0.0-20240728203942-56c3b98b9208
 	github.com/go-gl/gl v0.0.0-20211210172815-726fda9656d6 // indirect
 	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20240506104042-037f3cc74f2a // indirect
-	github.com/go-text/render v0.1.0 // indirect
+	github.com/go-text/render v0.1.1-0.20240418202334-dd62631dae9b // indirect
 	github.com/go-text/typesetting v0.1.0 // indirect
 	github.com/gopherjs/gopherjs v1.17.2 // indirect
 	github.com/jsummers/gobmp v0.0.0-20151104160322-e2ba15ffa76e // indirect
@@ -55,7 +55,7 @@ require (
 	golang.org/x/mobile v0.0.0-20231127183840-76ac6878050a // indirect
 	golang.org/x/net v0.25.0 // indirect
 	golang.org/x/sys v0.20.0
-	golang.org/x/text v0.16.0 // indirect
+	golang.org/x/text v0.16.0
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
