@@ -78,7 +78,7 @@ func (w *widgetPanel) askLogout() {
 		nil, nil,
 		widget.NewLabel("Are you sure you want to log out?"))
 
-	r, g, b, _ := theme.OverlayBackgroundColor().RGBA()
+	r, g, b, _ := theme.Color(theme.ColorNameOverlayBackground).RGBA()
 	bgCol := &color.NRGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: 230}
 
 	bg := canvas.NewRectangle(bgCol)

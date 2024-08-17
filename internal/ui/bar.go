@@ -66,7 +66,7 @@ func (b *bar) append(object fyne.CanvasObject) {
 
 // appendSeparator adds a separator between the default icons and the taskbar
 func (b *bar) appendSeparator() {
-	b.separator = canvas.NewRectangle(theme.ForegroundColor())
+	b.separator = canvas.NewRectangle(theme.Color(theme.ColorNameForeground))
 	b.append(b.separator)
 }
 
@@ -278,7 +278,7 @@ func (b *bar) CreateRenderer() fyne.WidgetRenderer {
 	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
 		bg = canvas.NewRectangle(wmTheme.WidgetPanelBackground())
 	} else {
-		bg = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+		bg = canvas.NewLinearGradient(theme.Color(theme.ColorNameBackground), color.Transparent, 180)
 	}
 	return &barRenderer{objects: b.children, background: bg, layout: newBarLayout(b), appBar: b}
 }
@@ -335,10 +335,10 @@ func (b *barRenderer) Refresh() {
 	if fynedesk.Instance().Settings().NarrowLeftLauncher() {
 		b.background = canvas.NewRectangle(wmTheme.WidgetPanelBackground())
 	} else {
-		b.background = canvas.NewLinearGradient(theme.BackgroundColor(), color.Transparent, 180)
+		b.background = canvas.NewLinearGradient(theme.Color(theme.ColorNameBackground), color.Transparent, 180)
 	}
 	if b.appBar.separator != nil {
-		b.appBar.separator.FillColor = theme.ForegroundColor()
+		b.appBar.separator.FillColor = theme.Color(theme.ColorNameForeground)
 	}
 	b.objects = b.appBar.children
 	b.Layout(b.appBar.Size())

@@ -89,7 +89,7 @@ func TestAppBarBackground(t *testing.T) {
 		assert.Equal(t, wmTheme.NarrowBarWidth, bg.Size().Width)
 	} else {
 		assert.Equal(t, color.Transparent, bg.(*canvas.LinearGradient).EndColor)
-		assert.Equal(t, theme.BackgroundColor(), bg.(*canvas.LinearGradient).StartColor)
+		assert.Equal(t, theme.Color(theme.ColorNameBackground), bg.(*canvas.LinearGradient).StartColor)
 		assert.Equal(t, testBar.iconSize+theme.Padding()*2, bg.Size().Width)
 	}
 }

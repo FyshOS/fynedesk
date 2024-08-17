@@ -68,8 +68,9 @@ func (w *widgetPanel) showAbout() {
 		widget.NewLabelWithStyle("\nWith great thanks to our many kind contributors\n", fyne.TextAlignCenter, fyne.TextStyle{Italic: true}))
 	scroll := container.NewScroll(content)
 
-	bgColor := withAlpha(theme.BackgroundColor(), 0xe0)
-	shadowColor := withAlpha(theme.BackgroundColor(), 0x33)
+	themeBG := theme.Color(theme.ColorNameBackground)
+	bgColor := withAlpha(themeBG, 0xe0)
+	shadowColor := withAlpha(themeBG, 0x33)
 
 	underlay := canvas.NewImageFromResource(theme2.FyshOSLogo)
 	bg := canvas.NewRectangle(bgColor)
@@ -81,11 +82,13 @@ func (w *widgetPanel) showAbout() {
 	fyne.CurrentApp().Settings().AddChangeListener(listen)
 	go func() {
 		for range listen {
-			bgColor = withAlpha(theme.BackgroundColor(), 0xe0)
+			themeBG := theme.Color(theme.ColorNameBackground)
+
+			bgColor = withAlpha(themeBG, 0xe0)
 			bg.FillColor = bgColor
 			bg.Refresh()
 
-			shadowColor = withAlpha(theme.BackgroundColor(), 0x33)
+			shadowColor = withAlpha(themeBG, 0x33)
 			footerBG.FillColor = bgColor
 			footer.Refresh()
 		}
