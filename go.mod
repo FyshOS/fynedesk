@@ -3,7 +3,7 @@ module fyshos.com/fynedesk
 go 1.19
 
 require (
-	fyne.io/fyne/v2 v2.5.1-0.20240815191931-e5989189e655
+	fyne.io/fyne/v2 v2.5.1
 	github.com/BurntSushi/xgb v0.0.0-20201008132610-5f9e7b3c49cd
 	github.com/BurntSushi/xgbutil v0.0.0-20160919175755-f7c97cef3b4e
 	github.com/FyshOS/backgrounds v0.0.0-20230616202904-0a8b6ebaa184
@@ -22,7 +22,7 @@ require (
 	github.com/BurntSushi/toml v1.4.0 // indirect
 	github.com/jeandeaual/go-locale v0.0.0-20240223122105-ce5225dcaa49 // indirect
 	github.com/nicksnyder/go-i18n/v2 v2.4.0 // indirect
-	github.com/rymdport/portal v0.2.2 // indirect
+	github.com/rymdport/portal v0.2.6 // indirect
 )
 
 require (
