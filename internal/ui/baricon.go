@@ -2,6 +2,10 @@ package ui
 
 import (
 	"image/color"
+	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -143,6 +147,22 @@ func (bi *barIcon) TappedSecondary(ev *fyne.PointEvent) {
 	}
 
 	items := []*fyne.MenuItem{addRemove}
+	root := sourceRoot()
+	editor := editorPath()
+	if root != "" && editor != "" {
+		srcDir := filepath.Join(root, app.Name())
+		if exists(srcDir) {
+			items = append(items, fyne.NewMenuItem("Edit", func() {
+				cmd := exec.Command(editor, srcDir)
+				err := cmd.Start()
+
+				if err != nil {
+					fyne.LogError("Failed to start Fysion", err)
+				}
+			}))
+		}
+	}
+
 	fynedesk.Instance().ShowMenuAt(fyne.NewMenu("", items...), ev.AbsolutePosition)
 }
 
@@ -159,4 +179,27 @@ func newBarIcon(res fyne.Resource, appData fynedesk.AppData, winData *appWindow)
 	barIcon.ExtendBaseWidget(barIcon)
 
 	return barIcon
+}
+
+func editorPath() string {
+	fysion, err := exec.LookPath("fysion")
+	if err == nil && fysion != "" {
+		return fysion
+	}
+
+	return ""
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func sourceRoot() string {
+	u, err := user.Current()
+	if err != nil {
+		return ""
+	}
+
+	return filepath.Join(u.HomeDir, "FysionApps")
 }
