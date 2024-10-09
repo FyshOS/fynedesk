@@ -760,6 +760,11 @@ func (f *frame) mouseRelease(x, y int16, b xproto.Button) {
 		f.cancelFunc()
 		return
 	}
+
+	go func() {
+		time.Sleep(time.Second / 2)
+		f.decorate(true)
+	}()
 	go f.mouseReleaseWaitForDoubleClick(int(relX), int(relY))
 }
 
