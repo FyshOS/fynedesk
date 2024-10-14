@@ -86,6 +86,10 @@ func (w *widgetPanel) clockTick() {
 }
 
 func (w *widgetPanel) clockRefresh() {
+	if w.rotated == nil {
+		return // not yet been drawn so don't worry
+	}
+
 	w.clock.Text = w.formattedTime()
 	w.vClock.Text = w.formattedTime()
 	canvas.Refresh(w.clock)
