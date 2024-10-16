@@ -2,9 +2,15 @@ package ui
 
 import (
 	"image/color"
+	"os"
+	"os/exec"
+	"os/user"
+	"path/filepath"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -143,6 +149,13 @@ func (bi *barIcon) TappedSecondary(ev *fyne.PointEvent) {
 	}
 
 	items := []*fyne.MenuItem{addRemove}
+	editor := editorPath()
+	if app.Source() != nil && editor != "" {
+		items = append(items, fyne.NewMenuItem("Edit", func() {
+			editApp(app, editor)
+		}))
+	}
+
 	fynedesk.Instance().ShowMenuAt(fyne.NewMenu("", items...), ev.AbsolutePosition)
 }
 
@@ -154,9 +167,81 @@ func (bi *barIcon) CreateRenderer() fyne.WidgetRenderer {
 	return render
 }
 
+func cloneRepo(src *fynedesk.AppSource, path string) error {
+	spin := widget.NewActivity()
+	prop := canvas.NewRectangle(color.Transparent)
+	prop.SetMinSize(fyne.NewSquareSize(56))
+
+	w := fyne.CurrentApp().Driver().(deskDriver.Driver).CreateSplashWindow()
+	w.SetContent(
+		container.NewBorder(nil, widget.NewLabel("Downloading..."), nil, nil,
+			container.NewStack(prop, spin)))
+	spin.Start()
+	w.Show()
+
+	defer func() {
+		w.Hide()
+		spin.Stop()
+	}()
+
+	cmd := exec.Command("git", "clone", src.Repo, path)
+	return cmd.Run()
+}
+
+func editApp(app fynedesk.AppData, editor string) {
+	root := sourceRoot()
+	srcDir := filepath.Join(root, app.Name())
+
+	if !exists(srcDir) {
+		if !exists(root) {
+			err := os.MkdirAll(root, 0755)
+			if err != nil {
+				fyne.LogError("Failed to make source root", err)
+				return
+			}
+		}
+
+		err := cloneRepo(app.Source(), srcDir)
+		if err != nil {
+			fyne.LogError("Error cloning the app source", err)
+			return
+		}
+	}
+
+	cmd := exec.Command(editor, srcDir)
+	err := cmd.Start()
+
+	if err != nil {
+		fyne.LogError("Failed to start app editor: "+editor, err)
+	}
+}
+
 func newBarIcon(res fyne.Resource, appData fynedesk.AppData, winData *appWindow) *barIcon {
 	barIcon := &barIcon{resource: res, appData: appData, windowData: winData}
 	barIcon.ExtendBaseWidget(barIcon)
 
 	return barIcon
+}
+
+func editorPath() string {
+	fysion, err := exec.LookPath("fysion")
+	if err == nil && fysion != "" {
+		return fysion
+	}
+
+	return ""
+}
+
+func exists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
+}
+
+func sourceRoot() string {
+	u, err := user.Current()
+	if err != nil {
+		return ""
+	}
+
+	return filepath.Join(u.HomeDir, "FysionApps")
 }

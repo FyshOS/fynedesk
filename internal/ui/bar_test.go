@@ -4,6 +4,8 @@ import (
 	"image/color"
 	"testing"
 
+	"fyshos.com/fynedesk"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/test"
@@ -36,6 +38,11 @@ func (d *dummyIcon) Icon(theme string, size int) fyne.Resource {
 }
 
 func (d *dummyIcon) Run([]string) error {
+	// no-op
+	return nil
+}
+
+func (d *dummyIcon) Source() *fynedesk.AppSource {
 	// no-op
 	return nil
 }

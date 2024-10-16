@@ -2,3 +2,7 @@
 Name=App2
 Exec=app2
 Icon=app2
+
+[X-Fyne Source]
+Repo=https://example.com/repo
+Dir=cmd/dir
