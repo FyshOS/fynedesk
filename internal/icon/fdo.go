@@ -57,7 +57,7 @@ func (data *fdoApplicationData) IconName() string {
 	return data.iconName
 }
 
-// IconPath returns the path of the icon that an fdo app wishes to use
+// Icon returns the path of the icon that an fdo app wishes to use
 func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 	if data.iconCache != nil {
 		return data.iconCache
@@ -112,7 +112,7 @@ func (data *fdoApplicationData) Run(env []string) error {
 	return cmd.Start()
 }
 
-func (data fdoApplicationData) mainCategory() string {
+func (data *fdoApplicationData) mainCategory() string {
 	if len(data.Categories()) == 0 {
 		return fallbackCategory
 	}
