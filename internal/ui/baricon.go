@@ -147,20 +147,17 @@ func (bi *barIcon) TappedSecondary(ev *fyne.PointEvent) {
 	}
 
 	items := []*fyne.MenuItem{addRemove}
-	root := sourceRoot()
 	editor := editorPath()
-	if root != "" && editor != "" {
-		srcDir := filepath.Join(root, app.Name())
-		if exists(srcDir) {
-			items = append(items, fyne.NewMenuItem("Edit", func() {
-				cmd := exec.Command(editor, srcDir)
-				err := cmd.Start()
+	if app.Source() != nil && editor != "" {
+		srcDir := filepath.Join(sourceRoot(), app.Name())
+		items = append(items, fyne.NewMenuItem("Edit", func() {
+			cmd := exec.Command(editor, srcDir)
+			err := cmd.Start()
 
-				if err != nil {
-					fyne.LogError("Failed to start Fysion", err)
-				}
-			}))
-		}
+			if err != nil {
+				fyne.LogError("Failed to start app editor: "+editor, err)
+			}
+		}))
 	}
 
 	fynedesk.Instance().ShowMenuAt(fyne.NewMenu("", items...), ev.AbsolutePosition)

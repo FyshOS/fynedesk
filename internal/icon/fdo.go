@@ -34,6 +34,8 @@ type fdoApplicationData struct {
 	categories []string
 	hide       bool
 	iconCache  fyne.Resource
+
+	source *fynedesk.AppSource
 }
 
 // Name returns the name associated with an fdo app
@@ -71,6 +73,10 @@ func (data *fdoApplicationData) Icon(theme string, size int) fyne.Resource {
 
 	data.iconCache = loadIcon(path)
 	return data.iconCache
+}
+
+func (data *fdoApplicationData) Source() *fynedesk.AppSource {
+	return data.source
 }
 
 // extractArgs sanitises argument parameters from an Exec configuration
@@ -457,7 +463,21 @@ func newFdoIconData(desktopPath string) fynedesk.AppData {
 		if strings.HasPrefix(line, "[") {
 			currentSection = line
 		}
-		if currentSection != "[Desktop Entry]" {
+		switch currentSection {
+		case "[X-Fyne Source]":
+			if fdoApp.source == nil {
+				fdoApp.source = &fynedesk.AppSource{}
+			}
+			if strings.HasPrefix(line, "Repo=") {
+				name := strings.SplitAfter(line, "=")
+				fdoApp.source.Repo = name[1]
+			}
+			if strings.HasPrefix(line, "Dir=") {
+				name := strings.SplitAfter(line, "=")
+				fdoApp.source.Dir = name[1]
+			}
+		case "[Desktop Entry]": // fall through to code below
+		default:
 			continue
 		}
 		if strings.HasPrefix(line, "Name=") {

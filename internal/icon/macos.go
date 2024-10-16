@@ -76,6 +76,10 @@ func (m *macOSAppBundle) Run([]string) error {
 	return exec.Command("open", "-a", m.runPath).Start()
 }
 
+func (m *macOSAppBundle) Source() *fynedesk.AppSource {
+	return nil
+}
+
 func loadAppBundle(name, path, category string) fynedesk.AppData {
 	buf, err := os.Open(filepath.Join(path, "Contents", "Info.plist"))
 	if err != nil {
