@@ -10,6 +10,13 @@ type AppData interface {
 	Categories() []string                      // Categories is a list of categories that the app fits in (platform specific)
 	Hidden() bool                              // Hidden specifies whether instances of this app should be hidden
 	Icon(theme string, size int) fyne.Resource // Icon returns an icon for the app in the requested theme and size
+
+	Source() *AppSource // Source will return the location of the app source code from metadata, if known
+}
+
+// AppSource represents the source code informtion of an application
+type AppSource struct {
+	Repo, Dir string
 }
 
 // ApplicationProvider describes a type that can locate icons and applications for the current system

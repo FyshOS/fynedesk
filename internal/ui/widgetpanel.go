@@ -48,7 +48,7 @@ func (w *widgetRenderer) Refresh() {
 		w.panel.clocks.Objects[0].Show()
 		w.panel.clocks.Objects[1].Hide()
 	}
-	fg := theme.Color(theme.ColorNamePrimary)
+	fg := theme.Color(theme.ColorNameForeground)
 	w.panel.clock.Color = fg
 	w.panel.vClock.Color = fg
 	canvas.Refresh(w.panel.clock)
@@ -86,6 +86,10 @@ func (w *widgetPanel) clockTick() {
 }
 
 func (w *widgetPanel) clockRefresh() {
+	if w.rotated == nil {
+		return // not yet been drawn so don't worry
+	}
+
 	w.clock.Text = w.formattedTime()
 	w.vClock.Text = w.formattedTime()
 	canvas.Refresh(w.clock)
@@ -117,7 +121,7 @@ func (w *widgetPanel) createClock() {
 	var style fyne.TextStyle
 	style.Monospace = true
 
-	fg := theme.Color(theme.ColorNamePrimary)
+	fg := theme.Color(theme.ColorNameForeground)
 	w.clock = &canvas.Text{
 		Color:     fg,
 		Text:      w.formattedTime(),

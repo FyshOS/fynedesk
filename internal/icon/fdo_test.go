@@ -102,6 +102,16 @@ func TestFdoIconHicolorFallbackScalable(t *testing.T) {
 	assert.Equal(t, true, exists(data))
 }
 
+// applications/com.fyne.app.desktop
+func TestFdoIconSource(t *testing.T) {
+	setTestEnv(t)
+	data := NewFDOIconProvider().(*fdoIconProvider).lookupApplication("app2")
+
+	assert.NotNil(t, data.Source())
+	assert.Equal(t, "https://example.com/repo", data.Source().Repo)
+	assert.Equal(t, "cmd/dir", data.Source().Dir)
+}
+
 // applications/app7.desktop and icons/default_theme/apps/16x16/app7.png
 func TestFdoLookupDefaultThemeDifferentSize(t *testing.T) {
 	setTestEnv(t)

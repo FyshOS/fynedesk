@@ -1,7 +1,7 @@
 <p align="center">
   <a href="https://godoc.org/fyshos.com/fynedesk" title="GoDoc Reference" rel="nofollow"><img src="https://img.shields.io/badge/go-documentation-blue.svg?style=flat" alt="GoDoc Reference"></a>
-  <a href="https://github.com/fyshos/fynedesk/releases/tag/v0.3.0" title="0.3.0 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.3.0-blue.svg?style=flat" alt="0.3.0 release"></a>
-  <a href='http://gophers.slack.com/messages/fyne'><img src='https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=blue' alt='Join us on Slack' /></a>
+  <a href="https://github.com/fyshos/fynedesk/releases/tag/v0.4.0" title="0.4.0 Release" rel="nofollow"><img src="https://img.shields.io/badge/version-0.4.0-blue.svg?style=flat" alt="0.4.0 release"></a>
+  <a href='http://gophers.slack.com/messages/fynedesk'><img src='https://img.shields.io/badge/join-us%20on%20slack-gray.svg?longCache=true&logo=slack&colorB=blue' alt='Join us on Slack' /></a>
 
   <br />
   <a href="https://goreportcard.com/report/fyshos.com/fynedesk"><img src="https://goreportcard.com/badge/fyshos.com/fynedesk" alt="Code Status" /></a>
@@ -16,7 +16,8 @@ It is built using the [Fyne](https://fyne.io) toolkit and is designed to be
 easy to use as well as easy to develop. We use the Go language and welcome
 any contributions or feedback for the project.
 
-<<<<<<< HEAD
+[![FyneDesk v0.4](https://img.youtube.com/vi/82Wu5k0xZOI/0.jpg)](https://www.youtube.com/watch?v=82Wu5k0xZOI)
+
 ## Dependencies
 
 ### Compiling
@@ -24,11 +25,6 @@ any contributions or feedback for the project.
 Compiling requires the same dependencies as Fyne. See the [Getting Started](https://developer.fyne.io/started/) documentation for installation steps.
 
 ### Running
-=======
-[![FyneDesk v0.4](https://img.youtube.com/vi/82Wu5k0xZOI/0.jpg)](https://www.youtube.com/watch?v=82Wu5k0xZOI)
-
-# Dependencies
->>>>>>> c4b4c54 (Updated docs and embed video of release)
 
 For a full desktop experience you will also need the following external tools installed:
 

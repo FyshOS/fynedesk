@@ -44,6 +44,10 @@ func (tad *testAppData) Icon(theme string, size int) fyne.Resource {
 	return wmTheme.IconifyIcon
 }
 
+func (tad *testAppData) Source() *fynedesk.AppSource {
+	return nil
+}
+
 type testAppProvider struct {
 	apps []fynedesk.AppData
 }

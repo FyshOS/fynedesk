@@ -84,5 +84,5 @@ func (i *calcItem) Title() string {
 }
 
 func (i *calcItem) Launch() {
-	fyne.CurrentApp().Driver().AllWindows()[0].Clipboard().SetContent(i.result)
+	fyne.CurrentApp().Clipboard().SetContent(i.result)
 }

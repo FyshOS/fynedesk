@@ -401,9 +401,7 @@ func (d *settingsUI) loadThemeScreen() fyne.CanvasObject {
 		themeList = make([]string, 1)
 	} else {
 		for _, l := range list {
-			if false {
-				themeList = append(themeList, l.Name())
-			}
+			themeList = append(themeList, l.Name())
 		}
 	}
 

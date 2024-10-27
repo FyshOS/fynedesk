@@ -184,3 +184,7 @@ func (n *networkApp) Hidden() bool {
 func (n *networkApp) Icon(theme string, size int) fyne.Resource {
 	return wmtheme.WifiIcon
 }
+
+func (n *networkApp) Source() *fynedesk.AppSource {
+	return nil
+}
