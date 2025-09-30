@@ -41,7 +41,9 @@ func (b *battery) batteryTick() {
 		for !b.done {
 			<-tick.C
 			val, _ := b.value()
-			b.setValue(val)
+			fyne.Do(func() {
+				b.setValue(val)
+			})
 		}
 	}()
 }

@@ -66,7 +66,7 @@ func TestBackgroundChange(t *testing.T) {
 	l.settings = wmTest.NewSettings()
 	l.setupRoot()
 
-	bg := l.root.Content().(*fyne.Container).Objects[0].(*background)
+	bg := l.root.Content().(*fyne.Container).Objects[0].(*fyne.Container).Objects[0].(*background)
 
 	workingDir, err := os.Getwd()
 	if err != nil {

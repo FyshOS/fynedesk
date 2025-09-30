@@ -3,6 +3,8 @@ package fynedesk
 import (
 	"image"
 
+	"github.com/FyshOS/saver"
+
 	"fyne.io/fyne/v2"
 )
 
@@ -18,6 +20,8 @@ type WindowManager interface {
 	ShowOverlay(fyne.Window, fyne.Size, fyne.Position)
 	ShowMenuOverlay(*fyne.Menu, fyne.Size, fyne.Position)
 	ShowModal(fyne.Window, fyne.Size)
+
+	ShowScreensaver(saver *saver.ScreenSaver)
 }
 
 // Stack describes an ordered list of windows.

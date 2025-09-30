@@ -1,8 +1,9 @@
 package test
 
 import (
-	"fyne.io/fyne/v2"
 	"fyshos.com/fynedesk"
+
+	"fyne.io/fyne/v2"
 )
 
 // Settings is a simple struct for managing settings within our tests
@@ -28,7 +29,7 @@ func NewSettings() *Settings {
 }
 
 // AddChangeListener is ignored for test instance
-func (*Settings) AddChangeListener(listener chan fynedesk.DeskSettings) {
+func (*Settings) AddChangeListener(listener func(fynedesk.DeskSettings)) {
 }
 
 // Background returns the path to background image (or "" if not set)
@@ -155,6 +156,21 @@ func (s *Settings) SetBorderButtonPosition(pos string) {
 // ClockFormatting returns the format that the clock uses for displaying the time. Either 12h or 24h.
 func (s *Settings) ClockFormatting() string {
 	return s.clockFormatting
+}
+
+// ScreenSaverClock returns if the text on the screensaver should be a clock.
+func (s *Settings) ScreenSaverClock() bool {
+	return true
+}
+
+// ScreenSaverLabel returns the string to use in the screensaver (if not a clock).
+func (s *Settings) ScreenSaverLabel() string {
+	return "FyshOS"
+}
+
+// ScreenSaverType returns whether this user should use FyshOS or XScreensaver savers.
+func (s *Settings) ScreenSaverType() string {
+	return "FyshOS"
 }
 
 // SetClockFormatting support setting the format that the clock should display

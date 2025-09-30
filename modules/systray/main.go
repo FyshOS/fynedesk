@@ -17,12 +17,12 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/FyshOS/appie"
 	"github.com/godbus/dbus/v5"
 	"github.com/godbus/dbus/v5/introspect"
 	"github.com/godbus/dbus/v5/prop"
 
 	"fyshos.com/fynedesk"
-	"fyshos.com/fynedesk/internal/icon"
 	"fyshos.com/fynedesk/modules/systray/generated/menu"
 	"fyshos.com/fynedesk/modules/systray/generated/notifier"
 	"fyshos.com/fynedesk/modules/systray/generated/watcher"
@@ -323,10 +323,10 @@ func (t *tray) updateIcon(i *node) {
 		if path != "" {
 			fullPath = filepath.Join(path, name+".png")
 			if _, err := os.Stat(fullPath); err != nil { // not found, search instead
-				fullPath = icon.FdoLookupIconPathInTheme("64", filepath.Join(path, "hicolor"), "", name)
+				fullPath = appie.FdoLookupIconPathInTheme("64", filepath.Join(path, "hicolor"), "", name)
 			}
 		} else {
-			fullPath = icon.FdoLookupIconPath("", 64, name)
+			fullPath = appie.FdoLookupIconPath("", 64, name)
 		}
 		img, err := os.ReadFile(fullPath)
 		if err != nil {

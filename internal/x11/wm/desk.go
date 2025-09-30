@@ -15,6 +15,7 @@ import (
 
 	"github.com/BurntSushi/xgb"
 	"github.com/BurntSushi/xgb/randr"
+	"github.com/BurntSushi/xgb/screensaver"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 	"github.com/BurntSushi/xgbutil/ewmh"
@@ -23,7 +24,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xevent"
 	"github.com/BurntSushi/xgbutil/xgraphics"
 	"github.com/BurntSushi/xgbutil/xprop"
-	"github.com/FyshOS/backgrounds/builtin"
+	"github.com/FyshOS/backgrounds"
 	"github.com/nfnt/resize"
 
 	"fyne.io/fyne/v2"
@@ -125,7 +126,8 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 		xproto.EventMaskButtonRelease |
 		xproto.EventMaskKeyPress |
 		xproto.EventMaskStructureNotify |
-		xproto.EventMaskSubstructureRedirect
+		xproto.EventMaskSubstructureRedirect |
+		screensaver.EventNotifyMask | screensaver.EventCycleMask
 	if err := xproto.ChangeWindowAttributesChecked(conn.Conn(), root, xproto.CwEventMask,
 		[]uint32{uint32(eventMask)}).Check(); err != nil {
 		conn.Conn().Close()
@@ -163,17 +165,14 @@ func NewX11WindowManager(a fyne.App) (fynedesk.WindowManager, error) {
 	}
 
 	x11.LoadCursors(conn)
+	mgr.initScreensaver()
 
-	listener := make(chan fyne.Settings)
-	a.Settings().AddChangeListener(listener)
+	a.Settings().AddListener(func(_ fyne.Settings) {
+		mgr.updateBackgrounds()
+		mgr.refreshBorders()
+		mgr.configureRoots()
+	})
 	a.Preferences().AddChangeListener(mgr.refreshBorders)
-	go func() {
-		for range listener {
-			mgr.updateBackgrounds()
-			mgr.refreshBorders()
-			mgr.configureRoots()
-		}
-	}()
 
 	return mgr, nil
 }
@@ -243,9 +242,9 @@ func (x *x11WM) ShowOverlay(w fyne.Window, s fyne.Size, p fyne.Position) {
 	w.SetFixedSize(true)
 	w.Resize(s)
 
-	w.Show()
 	x.menuSize = s
 	x.menuPos = p
+	w.Show()
 }
 
 func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, p fyne.Position) {
@@ -262,14 +261,6 @@ func (x *x11WM) ShowMenuOverlay(m *fyne.Menu, s fyne.Size, p fyne.Position) {
 	pop.OnDismiss = win.Close
 	pop.Show()
 	pop.Resize(s)
-	go func() {
-		// TODO figure why sometimes this doesn't draw (size and minsize are correct)
-		// and then remove this workaround goroutine
-		time.Sleep(time.Second / 10)
-		pop.Resize(s)
-		time.Sleep(time.Second / 4)
-		pop.Resize(s)
-	}()
 	x.ShowOverlay(win, s, p)
 }
 
@@ -421,9 +412,7 @@ func (x *x11WM) runLoop() {
 		case xproto.ClientMessageEvent:
 			x.handleClientMessage(ev)
 		case xproto.ConfigureNotifyEvent:
-			if ev.Window == x.x.RootWin() {
-				x.configureRoots()
-			}
+			x.notifyConfigure(ev)
 		case xproto.ConfigureRequestEvent:
 			x.configureWindow(ev.Window, ev)
 		case xproto.CreateNotifyEvent:
@@ -456,6 +445,8 @@ func (x *x11WM) runLoop() {
 			x.hideWindow(ev.Window)
 		case xproto.VisibilityNotifyEvent:
 			x.handleVisibilityChange(ev)
+		case screensaver.NotifyEvent:
+			// screensaver activate, except we manage it with an internal timer
 		}
 	}
 
@@ -516,6 +507,12 @@ func (x *x11WM) configureRoots() {
 		fyne.LogError("", err)
 	}
 	go x.updateBackgrounds()
+}
+
+func (x *x11WM) notifyConfigure(ev xproto.ConfigureNotifyEvent) {
+	if ev.Window == x.x.RootWin() {
+		x.configureRoots()
+	}
 }
 
 func (x *x11WM) configureWindow(win xproto.Window, ev xproto.ConfigureRequestEvent) {
@@ -620,7 +617,9 @@ func (x *x11WM) RootID() xproto.Window {
 
 func (x *x11WM) NotifyWindowMoved(win fynedesk.Window) {
 	for _, l := range x.listeners {
-		go l.WindowMoved(win)
+		fyne.Do(func() {
+			l.WindowMoved(win)
+		})
 	}
 }
 
@@ -669,26 +668,22 @@ func (x *x11WM) setInitialWindowAttributes(win xproto.Window) {
 }
 
 func (x *x11WM) setupBindings() {
-	deskListener := make(chan fynedesk.DeskSettings)
-	fynedesk.Instance().Settings().AddChangeListener(deskListener)
-	go func() {
-		for range deskListener {
-			// this uses the state from the previous bind call
-			x.unbindShortcuts(x.rootID)
-			for _, c := range x.clients {
-				x.unbindShortcuts(c.(x11.XWin).ChildID())
-			}
-			x.currentBindings = nil
-
-			// this call sets up the new cache of shortcuts
-			x.bindShortcuts(x.rootID)
-			for _, c := range x.clients {
-				x.bindShortcuts(c.(x11.XWin).ChildID())
-			}
-
-			go x.updateBackgrounds()
+	fynedesk.Instance().Settings().AddChangeListener(func(_ fynedesk.DeskSettings) {
+		// this uses the state from the previous bind call
+		x.unbindShortcuts(x.rootID)
+		for _, c := range x.clients {
+			x.unbindShortcuts(c.(x11.XWin).ChildID())
 		}
-	}()
+		x.currentBindings = nil
+
+		// this call sets up the new cache of shortcuts
+		x.bindShortcuts(x.rootID)
+		for _, c := range x.clients {
+			x.bindShortcuts(c.(x11.XWin).ChildID())
+		}
+
+		go x.updateBackgrounds()
+	})
 }
 
 func (x *x11WM) setupWindow(win xproto.Window) {
@@ -706,7 +701,9 @@ func (x *x11WM) setupWindow(win xproto.Window) {
 		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_TASKBAR")
 		x11.WindowExtendedHintsAdd(x.x, win, "_NET_WM_STATE_SKIP_PAGER")
 	}
-	x.AddWindow(c)
+	fyne.Do(func() {
+		x.AddWindow(c)
+	})
 	c.RaiseToTop()
 	c.Focus()
 	windowClientListUpdate(x)
@@ -858,7 +855,7 @@ func (x *x11WM) updatedBackgroundImage(w, h int) image.Image {
 	}
 
 	set := fyne.CurrentApp().Settings()
-	b := &builtin.Builtin{}
+	b := backgrounds.Default()
 	c := software.NewCanvas()
 	c.SetContent(b.Load(set.Theme(), set.ThemeVariant()))
 	c.SetScale(1.0)

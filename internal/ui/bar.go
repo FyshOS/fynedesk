@@ -3,6 +3,8 @@ package ui
 import (
 	"image/color"
 
+	"github.com/FyshOS/appie"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
@@ -84,7 +86,7 @@ func (b *bar) removeFromTaskbar(object fyne.CanvasObject) {
 	b.Refresh()
 }
 
-func (b *bar) newAppIcon(data fynedesk.AppData) *barIcon {
+func (b *bar) newAppIcon(data appie.AppData) *barIcon {
 	iconRes := b.appIcon(data)
 	icon := newBarIcon(iconRes, data, nil)
 
@@ -103,7 +105,7 @@ func (b *bar) newTaskIcon(win *appWindow) *barIcon {
 	return newBarIcon(iconRes, nil, win)
 }
 
-func (b *bar) createIcon(data fynedesk.AppData, win fynedesk.Window) *barIcon {
+func (b *bar) createIcon(data appie.AppData, win fynedesk.Window) *barIcon {
 	if data == nil && win == nil {
 		return nil
 	}
@@ -232,7 +234,7 @@ func (b *bar) updateIcons() {
 	b.Refresh()
 }
 
-func (b *bar) appIcon(data fynedesk.AppData) fyne.Resource {
+func (b *bar) appIcon(data appie.AppData) fyne.Resource {
 	return data.Icon(b.desk.Settings().IconTheme(), int((float32(b.iconSize)*b.iconScale)*b.desk.Screens().Primary().CanvasScale()))
 }
 

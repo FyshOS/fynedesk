@@ -65,7 +65,9 @@ func (p *pager) WindowStateChanged(_ fynedesk.Window) {
 
 func (p *pager) refresh() {
 	desk := fynedesk.Instance()
-	p.refreshFrom(desk.Desktop())
+	fyne.Do(func() {
+		p.refreshFrom(desk.Desktop())
+	})
 }
 
 func (p *pager) refreshFrom(oldID int) {

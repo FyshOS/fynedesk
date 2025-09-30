@@ -1,18 +1,22 @@
 package fynedesk // import "fyshos.com/fynedesk"
 
-import "fyne.io/fyne/v2"
+import (
+	"fyne.io/fyne/v2"
+
+	"github.com/FyshOS/appie"
+)
 
 // Desktop defines an embedded or full desktop environment that we can run.
 type Desktop interface {
 	Run()
-	RunApp(AppData) error
-	RecentApps() []AppData
+	RunApp(appie.AppData) error
+	RecentApps() []appie.AppData
 	Settings() DeskSettings
 	ContentBoundsPixels(*Screen) (x, y, w, h uint32)
 	RootSizePixels() (w, h uint32)
 	Screens() ScreenList
 
-	IconProvider() ApplicationProvider
+	IconProvider() appie.Provider
 	WindowManager() WindowManager
 	Modules() []Module
 
@@ -23,6 +27,9 @@ type Desktop interface {
 	Desktop() int
 	SetDesktop(int)
 	ShowSettings()
+
+	DelayScreenSaver()
+	TriggerScreenSaver()
 }
 
 var instance Desktop

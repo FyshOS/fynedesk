@@ -2,14 +2,21 @@ package ui
 
 import (
 	"image"
-
-	"fyne.io/fyne/v2"
+	"image/color"
 
 	"fyshos.com/fynedesk"
+	"github.com/FyshOS/saver"
+
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/widget"
 )
 
 type embededWM struct {
 	windows []fynedesk.Window
+	root    fyne.Window
 }
 
 func (e *embededWM) AddWindow(win fynedesk.Window) {
@@ -78,4 +85,56 @@ func (e *embededWM) Close() {
 	if len(windows) > 0 {
 		windows[0].Close() // ensure our root is asked to close as well
 	}
+}
+
+var visible bool
+
+func (e *embededWM) ShowScreensaver(s *saver.ScreenSaver) {
+	if visible {
+		return
+	}
+
+	visible = true
+	over := container.NewStack(canvas.NewRectangle(color.Black))
+
+	s.OnUnlocked = func() {
+		visible = false
+		e.root.Canvas().Overlays().Remove(over)
+	}
+
+	over.Add(s.MakeUI(e.root))
+	over.Resize(e.root.Canvas().Size())
+	e.root.Canvas().Overlays().Add(over)
+}
+
+func (e *embededWM) setWindow(win fyne.Window) fyne.CanvasObject {
+	e.root = win
+
+	return newSaverMonitor(fynedesk.Instance().DelayScreenSaver)
+}
+
+type saverMonitor struct {
+	widget.BaseWidget
+
+	cb func()
+}
+
+func newSaverMonitor(cb func()) fyne.CanvasObject {
+	s := &saverMonitor{cb: cb}
+	s.ExtendBaseWidget(s)
+	return s
+}
+
+func (s *saverMonitor) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(canvas.NewRectangle(color.Transparent))
+}
+
+func (s *saverMonitor) MouseIn(*deskDriver.MouseEvent) {
+}
+
+func (s *saverMonitor) MouseMoved(*deskDriver.MouseEvent) {
+	s.cb()
+}
+
+func (s *saverMonitor) MouseOut() {
 }

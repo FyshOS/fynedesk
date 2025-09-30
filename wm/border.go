@@ -4,106 +4,69 @@ import (
 	"fmt"
 	"image/color"
 
+	"fyshos.com/fynedesk"
+	"fyshos.com/fynedesk/internal/icon"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
-	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
-
-	"fyshos.com/fynedesk"
-	wmTheme "fyshos.com/fynedesk/theme"
 )
 
-// makeFiller creates a 0-width object to force padding on the edge of a container
-func makeFiller() fyne.CanvasObject {
-	filler := canvas.NewRectangle(color.Transparent)
-	filler.SetMinSize(fyne.NewSize(0, 2))
-
-	return filler
-}
-
 // NewBorder creates a new window border for the given window details
-func NewBorder(win fynedesk.Window, icon fyne.Resource, canMaximize bool) *Border {
+func NewBorder(win fynedesk.Window, ico fyne.Resource, canMaximize bool) *Border {
 	desk := fynedesk.Instance()
+	border := &Border{win: win}
+	border.ExtendBaseWidget(border)
+	border.SetTitle(win.Properties().Title())
+	border.SetContent(canvas.NewRectangle(color.Transparent))
+	height := border.Theme().Size(theme.SizeNameWindowTitleBarHeight)
 
-	if icon == nil {
+	if ico == nil {
 		iconTheme := desk.Settings().IconTheme()
-		app := desk.IconProvider().FindAppFromWinInfo(win)
+		app := icon.FindAppFromWinInfo(win, desk.IconProvider())
 		if app != nil {
-			icon = app.Icon(iconTheme, int(wmTheme.TitleHeight*2))
+			ico = app.Icon(iconTheme, int(height*2))
 		}
 	}
 
-	max := &widget.Button{Icon: wmTheme.MaximizeIcon, Importance: widget.LowImportance, OnTapped: func() {
-		if win.Maximized() {
-			win.Unmaximize()
-		} else {
-			win.Maximize()
+	if canMaximize {
+		border.OnMaximized = func() {
+			if win.Maximized() {
+				win.Unmaximize()
+			} else {
+				win.Maximize()
+			}
 		}
-	}}
-
+	}
 	if win.Maximized() {
-		max.Icon = theme.ViewRestoreIcon()
-	}
-	if !canMaximize {
-		max.Disable()
+		border.SetMaximized(true)
 	}
 
-	min := &widget.Button{Icon: wmTheme.IconifyIcon, Importance: widget.LowImportance, OnTapped: func() {
+	border.OnMinimized = func() {
 		win.Iconify()
-	}}
-
-	title := canvas.NewText(win.Properties().Title(), theme.Color(theme.ColorNameForeground))
-	buttonPos := fynedesk.Instance().Settings().BorderButtonPosition()
-
-	var titleBar *Border
-	if buttonPos == "Right" {
-		titleBar = newColoredHBox(win.Focused(), win,
-			title,
-			layout.NewSpacer(),
-			min,
-			max,
-			newCloseButton(win),
-			makeFiller(),
-		)
-	} else {
-		titleBar = newColoredHBox(win.Focused(), win, makeFiller(),
-			newCloseButton(win),
-			max,
-			min,
-			title,
-			layout.NewSpacer(),
-		)
 	}
 
-	titleBar.title = title
-	titleBar.max = max
+	buttonAlign := widget.ButtonAlignLeading
+	if fynedesk.Instance().Settings().BorderButtonPosition() == "Right" {
+		buttonAlign = widget.ButtonAlignTrailing
+	}
+	border.Alignment = buttonAlign
 
-	appIcon := &widget.Button{Icon: icon, Importance: widget.LowImportance}
-	appIcon.OnTapped = func() {
-		titleBar.showMenu(appIcon)
+	border.OnTappedIcon = func() {
+		border.showMenu(border) // TODO appIcon position (estimate)
 	}
 
-	if buttonPos == "Right" {
-		titleBar.prepend(appIcon)
-		titleBar.prepend(makeFiller())
-	} else {
-		titleBar.append(appIcon)
-		titleBar.append(makeFiller())
-	}
-	titleBar.appIcon = appIcon
-	return titleBar
+	border.Icon = ico
+	border.Refresh()
+	return border
 }
 
 // Border represents a window border. It draws the title bar and provides functions to manipulate it.
 type Border struct {
-	widget.BaseWidget
-	content *fyne.Container
-	appIcon *widget.Button
-	title   *canvas.Text
-	max     *widget.Button
-	win     fynedesk.Window
+	container.InnerWindow
+	win fynedesk.Window
 }
 
 // DoubleTapped is called when the user double taps a frame, it toggles the maximised state.
@@ -115,18 +78,14 @@ func (c *Border) DoubleTapped(*fyne.PointEvent) {
 	c.win.Maximize()
 }
 
-func (c *Border) prepend(obj fyne.CanvasObject) {
-	c.content.Objects = append([]fyne.CanvasObject{obj}, c.content.Objects...)
+// SetIcon updates the icon used in the window border.
+func (c *Border) SetIcon(icon fyne.Resource) {
+	c.Icon = icon
 	c.Refresh()
 }
 
-func (c *Border) append(obj fyne.CanvasObject) {
-	c.content.Add(obj)
-	c.Refresh()
-}
-
-func (c *Border) showMenu(from fyne.CanvasObject) {
-	name := c.title.Text
+func (c *Border) showMenu(_ fyne.CanvasObject) {
+	name := c.win.Properties().Title()
 	if len(name) > 25 {
 		name = name[:25] + "..."
 	}
@@ -144,7 +103,7 @@ func (c *Border) showMenu(from fyne.CanvasObject) {
 	}
 
 	pos := c.win.Position()
-	menuPos := pos.Add(from.Position())
+	menuPos := pos.AddXY(c.win.Size().Width-32, 0)
 	menu := fyne.NewMenu("",
 		title,
 		fyne.NewMenuItemSeparator(),
@@ -186,85 +145,9 @@ func (c *Border) makeDesktopMenu(pos fyne.Position) *fyne.MenuItem {
 	}
 	desks = append(desks, pin)
 
-	ret := fyne.NewMenuItem("Move to Desktop", func() {
+	return fyne.NewMenuItem("Move to Desktop...", func() {
 		fynedesk.Instance().ShowMenuAt(fyne.NewMenu("", desks...),
 			pos.Add(fyne.NewSize(40, 120)))
 
 	})
-	ret.ChildMenu = fyne.NewMenu("") // No-op to add the arrow...
-	return ret
-}
-
-// CreateRenderer creates a new renderer for this border
-//
-// Implements: fyne.Widget
-func (c *Border) CreateRenderer() fyne.WidgetRenderer {
-	render := &coloredBoxRenderer{b: c, bg: canvas.NewRectangle(theme.Color(theme.ColorNameBackground))}
-	return render
-}
-
-// SetIcon tells the border to change the icon that should be used
-func (c *Border) SetIcon(icon fyne.Resource) {
-	if icon == nil {
-		c.appIcon.Icon = nil
-		return
-	}
-
-	c.appIcon.Icon = icon
-}
-
-// SetMaximized updates the state of the border maximize indicators and refreshes
-func (c *Border) SetMaximized(isMax bool) {
-	if isMax {
-		c.max.Icon = theme.ViewRestoreIcon()
-	} else {
-		c.max.Icon = wmTheme.MaximizeIcon
-	}
-}
-
-// SetTitle updates the title portion of this border and refreshes.
-func (c *Border) SetTitle(title string) {
-	c.title.Text = title
-}
-
-func newColoredHBox(focused bool, win fynedesk.Window, objs ...fyne.CanvasObject) *Border {
-	ret := &Border{win: win}
-	ret.content = container.NewHBox(objs...)
-	ret.ExtendBaseWidget(ret)
-
-	return ret
-}
-
-type coloredBoxRenderer struct {
-	b  *Border
-	bg *canvas.Rectangle
-}
-
-func (r *coloredBoxRenderer) Destroy() {
-}
-
-func (r *coloredBoxRenderer) Layout(size fyne.Size) {
-	r.bg.Resize(size)
-	r.b.content.Resize(size)
-}
-
-func (r *coloredBoxRenderer) MinSize() fyne.Size {
-	return r.b.content.MinSize()
-}
-
-func (r *coloredBoxRenderer) Objects() []fyne.CanvasObject {
-	return []fyne.CanvasObject{r.bg, r.b.content}
-}
-
-func (r *coloredBoxRenderer) Refresh() {
-	r.bg.Resize(r.b.Size()) // Not sure why this resize is needed, but it is...
-	if r.b.win.Focused() {
-		r.bg.FillColor = theme.Color(theme.ColorNameBackground)
-	} else {
-		r.bg.FillColor = theme.Color(theme.ColorNameDisabledButton)
-	}
-	r.bg.Refresh()
-
-	r.b.title.Color = theme.Color(theme.ColorNameForeground)
-	r.b.content.Refresh()
 }

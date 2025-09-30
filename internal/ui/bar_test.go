@@ -4,7 +4,7 @@ import (
 	"image/color"
 	"testing"
 
-	"fyshos.com/fynedesk"
+	"github.com/FyshOS/appie"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -37,12 +37,21 @@ func (d *dummyIcon) Icon(theme string, size int) fyne.Resource {
 	return fyne.NewStaticResource("test.png", []byte{})
 }
 
+func (d *dummyIcon) MimeTypes() []string {
+	return []string{}
+}
+
 func (d *dummyIcon) Run([]string) error {
 	// no-op
 	return nil
 }
 
-func (d *dummyIcon) Source() *fynedesk.AppSource {
+func (d *dummyIcon) RunWithParameters([]string, []string) error {
+	// no-op
+	return nil
+}
+
+func (d *dummyIcon) Source() *appie.AppSource {
 	// no-op
 	return nil
 }

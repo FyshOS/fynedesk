@@ -2,11 +2,13 @@ package ui
 
 import (
 	"os"
+	"os/exec"
 	"runtime"
 	"strings"
 	"sync"
 
 	"fyshos.com/fynedesk"
+	"github.com/FyshOS/appie"
 
 	"fyne.io/fyne/v2"
 )
@@ -26,9 +28,11 @@ type deskSettings struct {
 	moduleNames []string
 
 	narrowPanel, narrowLeftLauncher bool
+	screenSaverClock                bool
+	screenSaver, screenSaverLabel   string
 
 	listenerLock    sync.Mutex
-	changeListeners []chan fynedesk.DeskSettings
+	changeListeners []func(fynedesk.DeskSettings)
 }
 
 func (d *deskSettings) Background() string {
@@ -75,6 +79,18 @@ func (d *deskSettings) NarrowLeftLauncher() bool {
 	return d.narrowLeftLauncher
 }
 
+func (d *deskSettings) ScreenSaverClock() bool {
+	return d.screenSaverClock
+}
+
+func (d *deskSettings) ScreenSaverType() string {
+	return d.screenSaver
+}
+
+func (d *deskSettings) ScreenSaverLabel() string {
+	return d.screenSaverLabel
+}
+
 func (d *deskSettings) BorderButtonPosition() string {
 	return d.borderButtonPosition
 }
@@ -83,7 +99,7 @@ func (d *deskSettings) ClockFormatting() string {
 	return d.clockFormatting
 }
 
-func (d *deskSettings) AddChangeListener(listener chan fynedesk.DeskSettings) {
+func (d *deskSettings) AddChangeListener(listener func(fynedesk.DeskSettings)) {
 	d.listenerLock.Lock()
 	defer d.listenerLock.Unlock()
 	d.changeListeners = append(d.changeListeners, listener)
@@ -91,16 +107,14 @@ func (d *deskSettings) AddChangeListener(listener chan fynedesk.DeskSettings) {
 
 func (d *deskSettings) apply() {
 	d.listenerLock.Lock()
+	listeners := d.changeListeners
 	defer d.listenerLock.Unlock()
 
-	for _, listener := range d.changeListeners {
-		select {
-		case listener <- d:
-		default:
-			l := listener
-			go func() { l <- d }()
+	fyne.Do(func() {
+		for _, listener := range listeners {
+			listener(d)
 		}
-	}
+	})
 }
 
 func isModuleEnabled(name string, settings fynedesk.DeskSettings) bool {
@@ -181,6 +195,31 @@ func (d *deskSettings) setNarrowWidgetPanel(narrow bool) {
 	d.apply()
 }
 
+func (d *deskSettings) setScreenSaver(saver string) {
+	oldSaver := d.screenSaver
+	d.screenSaver = saver
+
+	fyne.CurrentApp().Preferences().SetString("savertype", saver)
+
+	if oldSaver == "XScreensaver" && saver != "XScreensaver" {
+		cmd := exec.Command("xscreensaver-command", "-exit")
+		_ = cmd.Start()
+	} else if oldSaver != "XScreensaver" && saver == "XScreensaver" {
+		cmd := exec.Command("xscreensaver", "--no-splash")
+		_ = cmd.Start()
+	}
+}
+
+func (d *deskSettings) setScreenSaverClock(show bool) {
+	d.screenSaverClock = show
+	fyne.CurrentApp().Preferences().SetBool("saverclock", show)
+}
+
+func (d *deskSettings) setScreenSaverLabel(text string) {
+	d.screenSaverLabel = text
+	fyne.CurrentApp().Preferences().SetString("saverlabel", text)
+}
+
 func (d *deskSettings) setBorderButtonPosition(pos string) {
 	d.borderButtonPosition = pos
 	fyne.CurrentApp().Preferences().SetString("borderbuttonposition", d.borderButtonPosition)
@@ -248,6 +287,9 @@ func (d *deskSettings) load() {
 	d.narrowPanel = fyne.CurrentApp().Preferences().BoolWithFallback("narrowpanel", true)
 
 	d.borderButtonPosition = fyne.CurrentApp().Preferences().StringWithFallback("borderbuttonposition", "Left")
+	d.screenSaver = fyne.CurrentApp().Preferences().StringWithFallback("savertype", "FyshOS")
+	d.screenSaverClock = fyne.CurrentApp().Preferences().BoolWithFallback("saverclock", true)
+	d.screenSaverLabel = fyne.CurrentApp().Preferences().StringWithFallback("saverlabel", "FyneDesk")
 
 	d.clockFormatting = fyne.CurrentApp().Preferences().StringWithFallback("clockformatting", "12h")
 	d.loadRecents()
@@ -257,7 +299,7 @@ func (d *deskSettings) loadRecents() {
 	str := fyne.CurrentApp().Preferences().String("recentapps")
 	desk := fynedesk.Instance().(*desktop)
 
-	var apps []fynedesk.AppData
+	var apps []appie.AppData
 	list := strings.Split(str, ",")
 
 	for _, s := range list {

@@ -78,21 +78,17 @@ func (w *widgetPanel) showAbout() {
 	slideBG := container.New(underlayer, underlay)
 	footerBG := canvas.NewRectangle(shadowColor)
 
-	listen := make(chan fyne.Settings)
-	fyne.CurrentApp().Settings().AddChangeListener(listen)
-	go func() {
-		for range listen {
-			themeBG := theme.Color(theme.ColorNameBackground)
+	fyne.CurrentApp().Settings().AddListener(func(_ fyne.Settings) {
+		themeBG := theme.Color(theme.ColorNameBackground)
 
-			bgColor = withAlpha(themeBG, 0xe0)
-			bg.FillColor = bgColor
-			bg.Refresh()
+		bgColor = withAlpha(themeBG, 0xe0)
+		bg.FillColor = bgColor
+		bg.Refresh()
 
-			shadowColor = withAlpha(themeBG, 0x33)
-			footerBG.FillColor = bgColor
-			footer.Refresh()
-		}
-	}()
+		shadowColor = withAlpha(themeBG, 0x33)
+		footerBG.FillColor = bgColor
+		footer.Refresh()
+	})
 
 	underlay.Resize(fyne.NewSize(512, 512))
 	scroll.OnScrolled = func(p fyne.Position) {

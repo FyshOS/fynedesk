@@ -8,6 +8,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/FyshOS/appie"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
@@ -33,20 +35,20 @@ func (n *network) Destroy() {
 
 func (n *network) wirelessName() (string, error) {
 	net := ""
-	iw, _ := exec.LookPath("iwconfig")
+	iw, _ := exec.LookPath("iw")
 	if iw == "" {
-		iw, _ = exec.LookPath("/usr/sbin/iwconfig")
+		iw, _ = exec.LookPath("/usr/sbin/iw")
 	}
 	if iw != "" {
-		out, err := exec.Command("bash", []string{"-c", iw + " | grep ESSID | cut -d '\"' -f2"}...).Output()
+		out, err := exec.Command("bash", []string{"-c", iw + " dev | grep ssid | cut -d ' ' -f2"}...).Output()
 		if err != nil {
-			log.Println("Error running iwconfig", err)
+			log.Println("Error running iw", err)
 			return "", err
 		}
-		if strings.Contains(string(out), "ESSID") {
+		net = strings.TrimSpace(string(out))
+		if net == "" {
 			return "", errors.New("no network connected")
 		}
-		net = strings.TrimSpace(string(out))
 	} else {
 		out, err := exec.Command("bash", []string{"-c", "/System/Library/PrivateFrameworks/Apple80211.framework/Resources/airport -I  | awk -F' SSID: '  '/ SSID: / {print $2}'"}...).Output()
 		if err != nil {
@@ -110,15 +112,17 @@ func (n *network) tick() {
 		for {
 			val := n.networkName()
 			if val != n.name.Text {
-				n.name.SetText(val)
+				fyne.Do(func() {
+					n.name.SetText(val)
 
-				if val == "" {
-					n.icon.SetIcon(wmtheme.WifiOffIcon)
-				} else if val == networkNameEthernet {
-					n.icon.SetIcon(wmtheme.EthernetIcon)
-				} else {
-					n.icon.SetIcon(wmtheme.WifiIcon)
-				}
+					if val == "" {
+						n.icon.SetIcon(wmtheme.WifiOffIcon)
+					} else if val == networkNameEthernet {
+						n.icon.SetIcon(wmtheme.EthernetIcon)
+					} else {
+						n.icon.SetIcon(wmtheme.WifiIcon)
+					}
+				})
 			}
 			<-tick.C
 		}
@@ -172,6 +176,9 @@ func (n *networkApp) Run(env []string) error {
 	cmd.Env = vars
 	return cmd.Start()
 }
+func (n *networkApp) RunWithParameters(_, env []string) error {
+	return n.Run(env)
+}
 
 func (n *networkApp) Categories() []string {
 	return []string{"Settings"}
@@ -185,6 +192,10 @@ func (n *networkApp) Icon(theme string, size int) fyne.Resource {
 	return wmtheme.WifiIcon
 }
 
-func (n *networkApp) Source() *fynedesk.AppSource {
+func (n *networkApp) MimeTypes() []string {
+	return []string{}
+}
+
+func (n *networkApp) Source() *appie.AppSource {
 	return nil
 }

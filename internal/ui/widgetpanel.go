@@ -2,7 +2,9 @@ package ui
 
 import (
 	"image/color"
+	"os/exec"
 	"os/user"
+	"strconv"
 	"time"
 
 	"github.com/disintegration/imaging"
@@ -18,6 +20,10 @@ import (
 	"fyshos.com/fynedesk"
 	wmtheme "fyshos.com/fynedesk/theme"
 )
+
+// Go date package does not follow changing timezones, so we will.
+// startedOffset is the minutes from UTC in our starting timezone.
+var startedOffset int
 
 type widgetRenderer struct {
 	panel *widgetPanel
@@ -76,11 +82,18 @@ type widgetPanel struct {
 }
 
 func (w *widgetPanel) clockTick() {
-	tick := time.NewTicker(time.Second)
+	// more complex than time.Timer so that when the OS sleeps it does not stack ticks...
+	wait := make(chan struct{})
+	time.AfterFunc(time.Second, func() {
+		wait <- struct{}{}
+	})
 	go func() {
-		for {
-			<-tick.C
-			w.clockRefresh()
+		for range wait {
+			fyne.Do(w.clockRefresh)
+
+			time.AfterFunc(time.Second, func() {
+				wait <- struct{}{}
+			})
 		}
 	}()
 }
@@ -98,15 +111,14 @@ func (w *widgetPanel) clockRefresh() {
 	}
 
 	w.date.SetText(w.formattedDate())
-	canvas.Refresh(w.date)
+	w.date.Refresh()
 }
 
 func (w *widgetPanel) formattedTime() string {
 	if w.desk.Settings().ClockFormatting() == "12h" {
-		return time.Now().Format("03:04pm")
+		return adjustedNow().Format("3:04pm")
 	}
-
-	return time.Now().Format("15:04")
+	return adjustedNow().Format("15:04")
 }
 
 func (w *widgetPanel) formattedDate() string {
@@ -114,12 +126,14 @@ func (w *widgetPanel) formattedDate() string {
 	if w.desk.Settings().NarrowWidgetPanel() {
 		format = "2\nJan"
 	}
-	return time.Now().Format(format)
+
+	return adjustedNow().Format(format)
 }
 
 func (w *widgetPanel) createClock() {
 	var style fyne.TextStyle
 	style.Monospace = true
+	startedOffset = getOffset()
 
 	fg := theme.Color(theme.ColorNameForeground)
 	w.clock = &canvas.Text{
@@ -156,8 +170,10 @@ func (w *widgetPanel) rotate(time *canvas.Text) {
 	w.rotated.Image = out
 	ratio := time.MinSize().Width / time.MinSize().Height
 	space := wmtheme.NarrowBarWidth - theme.Padding()*2
-	w.rotated.SetMinSize(fyne.NewSize(space, space*ratio))
-	w.rotated.Refresh()
+	fyne.Do(func() {
+		w.rotated.SetMinSize(fyne.NewSize(space, space*ratio))
+		w.rotated.Refresh()
+	})
 }
 
 func (w *widgetPanel) CreateRenderer() fyne.WidgetRenderer {
@@ -258,4 +274,28 @@ func (u *vClockPad) MinSize(objects []fyne.CanvasObject) fyne.Size {
 	clockMin := objects[0].MinSize()
 	u.minCache = u.minCache.Max(clockMin)
 	return u.minCache.Subtract(fyne.NewSize(0, theme.Padding()))
+}
+
+func adjustedNow() time.Time {
+	newOffset := getOffset()
+	return time.Now().Add(time.Minute * time.Duration(newOffset-startedOffset))
+}
+
+func getOffset() int {
+	ret, err := exec.Command("date", "+%z").Output()
+	if err != nil {
+		fyne.LogError("Failed to load date offset", err)
+		return 0
+	}
+
+	if len(ret) <= 2 {
+		fyne.LogError("Invalid offset format "+string(ret), err)
+	}
+
+	hourStr := string(ret[0 : len(ret)-3])
+	minStr := string(ret[len(ret)-3:])
+
+	hours, _ := strconv.ParseInt(hourStr, 10, 64)
+	mins, _ := strconv.ParseInt(minStr, 10, 0)
+	return int(hours)*60 + int(mins)
 }

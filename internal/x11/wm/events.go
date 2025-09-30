@@ -70,7 +70,7 @@ func (x *x11WM) handleActiveWin(ev xproto.ClientMessageEvent) {
 func (x *x11WM) handleButtonPress(ev xproto.ButtonPressEvent) {
 	for _, c := range x.clients {
 		if c.(x11.XWin).FrameID() == ev.Event {
-			c.(x11.XWin).NotifyMousePress(ev.RootX, ev.RootY, ev.Detail)
+			c.(x11.XWin).NotifyMousePress(ev.RootX, ev.RootY, ev.Detail, ev.State)
 		}
 	}
 	xevent.ReplayPointer(x.x)
@@ -157,7 +157,7 @@ func (x *x11WM) handleFocus(win xproto.Window) {
 	if c == nil {
 		return
 	}
-	c.Refresh()
+	fyne.Do(c.Refresh)
 }
 
 func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
@@ -170,6 +170,10 @@ func (x *x11WM) handleInitialHints(ev xproto.ClientMessageEvent, hint string) {
 }
 
 func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
+	if screenSaverActive {
+		return
+	}
+
 	userMod := ev.State&xproto.ModMask4 != 0
 	if fynedesk.Instance().Settings().KeyboardModifier() == fyne.KeyModifierAlt {
 		userMod = ev.State&xproto.ModMask1 != 0
@@ -208,7 +212,9 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 			mask := x.modifierToKeyMask(shortcut.Modifier)
 			code := x.keyNameToCode(shortcut.KeyName)
 			if code == ev.Detail && (mask == ev.State-numlock || mask == xproto.ModMaskAny) {
-				go desk.TypedShortcut(shortcut)
+				fyne.Do(func() {
+					desk.TypedShortcut(shortcut)
+				})
 				return
 			}
 		}
@@ -216,6 +222,10 @@ func (x *x11WM) handleKeyPress(ev xproto.KeyPressEvent) {
 }
 
 func (x *x11WM) handleKeyRelease(ev xproto.KeyReleaseEvent) {
+	if screenSaverActive {
+		return
+	}
+
 	userMod := keyCodeSuper
 	if fynedesk.Instance().Settings().KeyboardModifier() == fyne.KeyModifierAlt {
 		userMod = keyCodeAlt
@@ -302,7 +312,7 @@ func (x *x11WM) handlePropertyChange(ev xproto.PropertyNotifyEvent) {
 	}
 	switch propAtom {
 	case "_NET_WM_NAME", "WM_NAME":
-		c.Refresh()
+		fyne.Do(c.Refresh)
 	case "WM_NORMAL_HINTS":
 		// Force a reconfigure to make sure the client is constrained to the new size hints
 		x, y, w, h := c.Geometry()

@@ -6,16 +6,17 @@ package main
 import (
 	"log"
 
+	"github.com/FyshOS/appie"
+
 	"fyne.io/fyne/v2"
 
 	"fyshos.com/fynedesk"
-	"fyshos.com/fynedesk/internal/icon"
 	"fyshos.com/fynedesk/internal/ui"
 	"fyshos.com/fynedesk/internal/x11/wm"
 )
 
 func setupDesktop(a fyne.App) fynedesk.Desktop {
-	icons := icon.NewFDOIconProvider()
+	icons := appie.NewFDOProvider()
 	mgr, err := wm.NewX11WindowManager(a)
 	if err != nil {
 		log.Println("Could not create window manager:", err)

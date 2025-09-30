@@ -19,6 +19,9 @@ type DeskSettings interface {
 
 	KeyboardModifier() fyne.KeyModifier
 	ModuleNames() []string
+	ScreenSaverType() string
+	ScreenSaverClock() bool
+	ScreenSaverLabel() string
 
-	AddChangeListener(listener chan DeskSettings)
+	AddChangeListener(listener func(DeskSettings))
 }

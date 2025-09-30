@@ -5,6 +5,8 @@ import (
 	"os/exec"
 	"strconv"
 
+	"github.com/FyshOS/appie"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -27,8 +29,8 @@ type desktop struct {
 	wm.ShortcutHandler
 	app      fyne.App
 	wm       fynedesk.WindowManager
-	icons    fynedesk.ApplicationProvider
-	recent   []fynedesk.AppData
+	icons    appie.Provider
+	recent   []appie.AppData
 	screens  fynedesk.ScreenList
 	settings fynedesk.DeskSettings
 
@@ -121,7 +123,12 @@ func (l *desktop) ShowMenuAt(menu *fyne.Menu, pos fyne.Position) {
 }
 
 func (l *desktop) updateBackgrounds(path string) {
-	l.root.Content().(*fyne.Container).Objects[0].(*background).updateBackground(path)
+	root := l.root.Content().(*fyne.Container).Objects[0]
+	if back, ok := root.(*background); ok {
+		back.updateBackground(path)
+	} else { // embed mode has another container
+		root.(*fyne.Container).Objects[0].(*background).updateBackground(path)
+	}
 }
 
 func (l *desktop) createPrimaryContent() fyne.CanvasObject {
@@ -150,21 +157,22 @@ func (l *desktop) setupRoot() {
 	l.root.Resize(fyne.NewSize(float32(l.screens.Primary().Width)/scale, float32(l.screens.Primary().Height)/scale))
 }
 
-func (l *desktop) RecentApps() []fynedesk.AppData {
+func (l *desktop) RecentApps() []appie.AppData {
 	return l.recent
 }
 
 func (l *desktop) Run() {
 	go l.wm.Run()
+	go l.watchScreenActivity()
 	l.run() // use the configured run method
 }
 
-func (l *desktop) RunApp(app fynedesk.AppData) error {
+func (l *desktop) RunApp(app appie.AppData) error {
 	vars := l.scaleVars(l.Screens().Active().CanvasScale())
 	err := app.Run(vars)
 
 	if err == nil {
-		l.recent = append([]fynedesk.AppData{app}, l.recent...)
+		l.recent = append([]appie.AppData{app}, l.recent...)
 		// remove if it was already on the list
 		for i := 1; i < len(l.recent); i++ {
 			if l.recent[i] == app {
@@ -223,7 +231,7 @@ func (l *desktop) RootSizePixels() (w, h uint32) {
 	return w, h
 }
 
-func (l *desktop) IconProvider() fynedesk.ApplicationProvider {
+func (l *desktop) IconProvider() appie.Provider {
 	return l.icons
 }
 
@@ -292,14 +300,17 @@ func (l *desktop) MouseInNotify(pos fyne.Position) {
 	if l.bar == nil {
 		return
 	}
-	mouseX, mouseY := pos.X, pos.Y
-	barX, barY := l.bar.Position().X, l.bar.Position().Y
-	barWidth, barHeight := l.bar.Size().Width, l.bar.Size().Height
-	if mouseX >= barX && mouseX <= barX+barWidth {
-		if mouseY >= barY && mouseY <= barY+barHeight {
-			l.bar.MouseIn(&deskDriver.MouseEvent{PointEvent: fyne.PointEvent{AbsolutePosition: pos, Position: pos}})
+
+	fyne.Do(func() {
+		mouseX, mouseY := pos.X, pos.Y
+		barX, barY := l.bar.Position().X, l.bar.Position().Y
+		barWidth, barHeight := l.bar.Size().Width, l.bar.Size().Height
+		if mouseX >= barX && mouseX <= barX+barWidth {
+			if mouseY >= barY && mouseY <= barY+barHeight {
+				l.bar.MouseIn(&deskDriver.MouseEvent{PointEvent: fyne.PointEvent{AbsolutePosition: pos, Position: pos}})
+			}
 		}
-	}
+	})
 }
 
 // MouseOutNotify can be called by the window manager to alert the desktop that the cursor has left the canvas
@@ -307,38 +318,28 @@ func (l *desktop) MouseOutNotify() {
 	if l.bar == nil {
 		return
 	}
-	l.bar.MouseOut()
+	fyne.Do(l.bar.MouseOut)
 }
 
-func (l *desktop) startSettingsChangeListener(settings chan fynedesk.DeskSettings) {
-	for s := range settings {
-		l.clearModuleCache()
-		l.updateBackgrounds(s.Background())
-		l.widgets.reloadModules(l.Modules())
+func (l *desktop) fireSettingsChangeListener(s fynedesk.DeskSettings) {
+	l.clearModuleCache()
+	l.updateBackgrounds(s.Background())
+	l.widgets.reloadModules(l.Modules())
 
-		l.bar.iconSize = float32(l.Settings().LauncherIconSize())
-		l.bar.iconScale = float32(l.Settings().LauncherZoomScale())
-		l.bar.disableZoom = l.Settings().LauncherDisableZoom()
-		l.bar.updateIcons()
-		l.bar.updateIconOrder()
-		l.bar.updateTaskbar()
-	}
-}
-
-func (l *desktop) startFyneSettingsChangeListener(settings chan fyne.Settings) {
-	for range settings {
-		l.updateBackgrounds(l.Settings().Background())
-	}
+	l.bar.iconSize = l.Settings().LauncherIconSize()
+	l.bar.iconScale = l.Settings().LauncherZoomScale()
+	l.bar.disableZoom = l.Settings().LauncherDisableZoom()
+	l.bar.updateIcons()
+	l.bar.updateIconOrder()
+	l.bar.updateTaskbar()
 }
 
 func (l *desktop) addSettingsChangeListener() {
-	listener := make(chan fynedesk.DeskSettings)
-	l.Settings().AddChangeListener(listener)
-	go l.startSettingsChangeListener(listener)
+	l.Settings().AddChangeListener(l.fireSettingsChangeListener)
 
-	fyneListener := make(chan fyne.Settings)
-	l.app.Settings().AddChangeListener(fyneListener)
-	go l.startFyneSettingsChangeListener(fyneListener)
+	l.app.Settings().AddListener(func(_ fyne.Settings) {
+		l.updateBackgrounds(l.Settings().Background())
+	})
 }
 
 func (l *desktop) registerShortcuts() {
@@ -359,19 +360,9 @@ func (l *desktop) registerShortcuts() {
 	l.AddShortcut(fynedesk.NewShortcut("Calculator", fynedesk.KeyCalculator, 0),
 		l.calculator)
 	l.AddShortcut(fynedesk.NewShortcut("Lock screen", fyne.KeyL, fynedesk.UserModifier),
-		l.lockScreen)
-}
-
-func (l *desktop) startXscreensaver() {
-	_, err := exec.LookPath("xscreensaver")
-	if err != nil {
-		fyne.LogError("xscreensaver command not found", err)
-		return
-	}
-	err = exec.Command("xscreensaver", "-no-splash").Start()
-	if err != nil {
-		fyne.LogError("Failed to lock screen", err)
-	}
+		func() {
+			l.TriggerScreenSaver()
+		})
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
@@ -382,7 +373,7 @@ func (l *desktop) Screens() fynedesk.ScreenList {
 // NewDesktop creates a new desktop in fullscreen for main usage.
 // The WindowManager passed in will be used to manage the screen it is loaded on.
 // An ApplicationProvider is used to lookup application icons from the operating system.
-func NewDesktop(app fyne.App, mgr fynedesk.WindowManager, icons fynedesk.ApplicationProvider, screenProvider fynedesk.ScreenList) fynedesk.Desktop {
+func NewDesktop(app fyne.App, mgr fynedesk.WindowManager, icons appie.Provider, screenProvider fynedesk.ScreenList) fynedesk.Desktop {
 	desk := newDesktop(app, mgr, icons)
 	desk.run = desk.runFull
 	screenProvider.AddChangeListener(desk.setupRoot)
@@ -390,7 +381,9 @@ func NewDesktop(app fyne.App, mgr fynedesk.WindowManager, icons fynedesk.Applica
 
 	desk.setupRoot()
 	wm.StartAuthAgent()
-	go desk.startXscreensaver()
+	if desk.Settings().ScreenSaverType() == "XScreensaver" {
+		go desk.startXscreensaver()
+	}
 	return desk
 }
 
@@ -398,17 +391,19 @@ func NewDesktop(app fyne.App, mgr fynedesk.WindowManager, icons fynedesk.Applica
 // An ApplicationProvider is used to lookup application icons from the operating system.
 // If run during CI for testing it will return an in-memory window using the
 // fyne/test package.
-func NewEmbeddedDesktop(app fyne.App, icons fynedesk.ApplicationProvider) fynedesk.Desktop {
-	desk := newDesktop(app, &embededWM{}, icons)
+func NewEmbeddedDesktop(app fyne.App, icons appie.Provider) fynedesk.Desktop {
+	wm := &embededWM{}
+	desk := newDesktop(app, wm, icons)
 	desk.run = desk.runEmbed
 	desk.showMenu = desk.showMenuEmbed
 
 	desk.root = desk.newDesktopWindowEmbed()
-	desk.root.SetContent(desk.createPrimaryContent())
+	over := wm.setWindow(desk.root)
+	desk.root.SetContent(container.NewStack(desk.createPrimaryContent(), over))
 	return desk
 }
 
-func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons fynedesk.ApplicationProvider) *desktop {
+func newDesktop(app fyne.App, wm fynedesk.WindowManager, icons appie.Provider) *desktop {
 	desk := &desktop{app: app, wm: wm, icons: icons, screens: newEmbeddedScreensProvider()}
 	desk.showMenu = desk.showMenuFull
 
@@ -427,16 +422,17 @@ func (l *desktop) calculator() {
 	}
 }
 
-func (l *desktop) lockScreen() {
-	_, err := exec.LookPath("xscreensaver-command")
-	if err != nil {
-		fyne.LogError("xscreensaver-command not found", err)
-		l.WindowManager().Blank()
-		return
-	}
-	err = exec.Command("xscreensaver-command", "-lock").Start()
-	if err != nil {
-		fyne.LogError("Failed to lock screen", err)
-		l.WindowManager().Blank()
-	}
-}
+//func (l *desktop) runCommand() {
+//	w := l.app.NewWindow("Run Command")
+//	input := widget.NewEntry()
+//	// TODO add history etc...
+//	run := widget.NewButton("Run", func() {
+//
+//	})
+//	run.Importance = widget.HighImportance
+//
+//	w.SetContent(container.NewVBox(widget.NewLabel("Enter command to run:"),
+//		container.NewBorder(nil, nil, nil, run, input)))
+//	w.Resize(fyne.NewSize(250, 40))
+//	w.Show()
+//}

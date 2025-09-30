@@ -7,9 +7,9 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/widget"
+	"github.com/FyshOS/backgrounds"
 
 	"fyshos.com/fynedesk"
-	"github.com/FyshOS/backgrounds/builtin"
 )
 
 type background struct {
@@ -44,7 +44,7 @@ func (b *background) updateBackground(path string) {
 	_, err := os.Stat(path)
 	if path == "" || err != nil {
 		set := fyne.CurrentApp().Settings()
-		src := &builtin.Builtin{}
+		src := backgrounds.Default()
 		b.wallpaper.Objects[0] = src.Load(set.Theme(), set.ThemeVariant())
 	} else {
 		bg := canvas.NewImageFromFile(path)
@@ -78,7 +78,7 @@ func newBackground() *background {
 		bg = img
 	} else {
 		set := fyne.CurrentApp().Settings()
-		b := &builtin.Builtin{}
+		b := backgrounds.Default()
 		bg = b.Load(set.Theme(), set.ThemeVariant())
 	}
 

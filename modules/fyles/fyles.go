@@ -12,7 +12,7 @@ import (
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/theme"
 
-	lib "github.com/fyshos/fyles/pkg/fyles"
+	lib "github.com/FyshOS/fyles/pkg/fyles"
 	"golang.org/x/sys/execabs"
 
 	"fyshos.com/fynedesk"

@@ -4,7 +4,9 @@ import (
 	"image/color"
 	"time"
 
+	"fyshos.com/fynedesk/internal/icon"
 	wmTheme "fyshos.com/fynedesk/theme"
+	"github.com/FyshOS/appie"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -32,7 +34,7 @@ type switchIcon struct {
 func (s *switchIcon) CreateRenderer() fyne.WidgetRenderer {
 	var res fyne.Resource
 	title := s.win.Properties().Title()
-	app := s.parent.provider.FindAppFromWinInfo(s.win)
+	app := icon.FindAppFromWinInfo(s.win, s.parent.provider)
 	if app != nil {
 		res = app.Icon(fynedesk.Instance().Settings().IconTheme(), switcherIconSize*2)
 		title = app.Name()
@@ -130,7 +132,8 @@ func (s switchIconRenderer) Destroy() {
 type Switcher struct {
 	win      fyne.Window
 	icons    []fyne.CanvasObject
-	provider fynedesk.ApplicationProvider
+	provider appie.Provider
+	selected fynedesk.Window
 }
 
 func (s *Switcher) currentIndex() int {
@@ -144,7 +147,9 @@ func (s *Switcher) currentIndex() int {
 }
 
 func (s *Switcher) setCurrent(i int) {
-	s.win.Canvas().Focus(s.icons[i].(*switchIcon))
+	icon := s.icons[i].(*switchIcon)
+	s.win.Canvas().Focus(icon)
+	s.selected = icon.win
 }
 
 // Next selects the next logical lower window in the stack.
@@ -179,11 +184,11 @@ func (s *Switcher) Previous() {
 	s.setCurrent(i)
 }
 
-func (s *Switcher) raise(icon *switchIcon) {
-	if icon.win.Iconic() {
-		icon.win.Uniconify()
+func (s *Switcher) raise(win fynedesk.Window) {
+	if win.Iconic() {
+		win.Uniconify()
 	}
-	icon.win.RaiseToTop()
+	win.RaiseToTop()
 }
 
 func (s *Switcher) loadUI(title string) {
@@ -198,9 +203,12 @@ func (s *Switcher) loadUI(title string) {
 		s.win = win
 	}
 
-	win.SetContent(container.NewHBox(s.icons...))
-	win.CenterOnScreen()
-	win.SetTitle(title)
+	// we are called on a goroutine from wm/switcher.go
+	fyne.Do(func() {
+		win.SetContent(container.NewHBox(s.icons...))
+		win.CenterOnScreen()
+		win.SetTitle(title)
+	})
 }
 
 func (s *Switcher) loadIcons(list []fynedesk.Window) []fyne.CanvasObject {
@@ -220,14 +228,20 @@ func (s *Switcher) loadIcons(list []fynedesk.Window) []fyne.CanvasObject {
 // whichever window was selected.
 func (s *Switcher) HideApply() {
 	s.HideCancel()
-	s.raise(s.win.Canvas().Focused().(*switchIcon))
+
+	if s.selected != nil {
+		s.raise(s.selected)
+	}
 }
 
 // HideCancel dismisses the application Switcher without changing window order.
 func (s *Switcher) HideCancel() {
 	go func() {
 		time.Sleep(time.Millisecond * 100)
-		s.win.Hide()
+
+		fyne.Do(func() {
+			s.win.Hide()
+		})
 	}()
 }
 
@@ -236,7 +250,7 @@ func (s *Switcher) Show() {
 	s.win.Show()
 }
 
-func newAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
+func newAppSwitcherAt(off int, wins []fynedesk.Window, prov appie.Provider) *Switcher {
 	s := &Switcher{provider: prov}
 	s.icons = s.loadIcons(wins)
 	if len(s.icons) <= 1 { // don't actually show if only 1 is visible
@@ -247,20 +261,24 @@ func newAppSwitcherAt(off int, wins []fynedesk.Window, prov fynedesk.Application
 	if off < 0 {
 		off = len(s.icons) + off // plus a negative is minus
 	}
-	s.win.Canvas().Focus(s.icons[off].(*switchIcon))
+	fyne.Do(func() {
+		icon := s.icons[off].(*switchIcon)
+		s.selected = icon.win
+		s.win.Canvas().Focus(icon)
+	})
 	return s
 }
 
 // NewAppSwitcher creates the application Switcher to change windows.
 // The most recently used not-top window will be selected by default.
 // If the Switcher was already visible then it will select the next window in order.
-func NewAppSwitcher(wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
+func NewAppSwitcher(wins []fynedesk.Window, prov appie.Provider) *Switcher {
 	return newAppSwitcherAt(1, wins, prov)
 }
 
 // NewAppSwitcherReverse creates the application Switcher to change windows.
 // The least recently used window will be selected by default.
 // If the Switcher was already visible then it will select the last window in order.
-func NewAppSwitcherReverse(wins []fynedesk.Window, prov fynedesk.ApplicationProvider) *Switcher {
+func NewAppSwitcherReverse(wins []fynedesk.Window, prov appie.Provider) *Switcher {
 	return newAppSwitcherAt(-1, wins, prov)
 }

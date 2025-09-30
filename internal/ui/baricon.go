@@ -7,6 +7,9 @@ import (
 	"os/user"
 	"path/filepath"
 
+	"fyshos.com/fynedesk/internal/icon"
+	"github.com/FyshOS/appie"
+
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
@@ -26,12 +29,12 @@ type appWindow struct {
 
 // findApp will try to return an application data associated with a window.
 // This may fail for many reasons, usually related too bad window metadata, and will then return nil.
-func (a *appWindow) findApp() fynedesk.AppData {
+func (a *appWindow) findApp() appie.AppData {
 	if a.win == nil {
 		return nil
 	}
 
-	return a.bar.desk.IconProvider().FindAppFromWinInfo(a.win)
+	return icon.FindAppFromWinInfo(a.win, a.bar.desk.IconProvider())
 }
 
 type barIconRenderer struct {
@@ -88,10 +91,10 @@ func (bi *barIconRenderer) Destroy() {
 type barIcon struct {
 	widget.BaseWidget
 
-	onTapped   func()           // The function that will be called when the icon is clicked
-	resource   fyne.Resource    // The image data of the image that the icon uses
-	appData    fynedesk.AppData // The application data corresponding to this icon.(if it is a launcher)
-	windowData *appWindow       // The window data associated with this icon (if it is a task window)
+	onTapped   func()        // The function that will be called when the icon is clicked
+	resource   fyne.Resource // The image data of the image that the icon uses
+	appData    appie.AppData // The application data corresponding to this icon.(if it is a launcher)
+	windowData *appWindow    // The window data associated with this icon (if it is a task window)
 }
 
 // Tapped means barIcon has been clicked
@@ -99,7 +102,7 @@ func (bi *barIcon) Tapped(*fyne.PointEvent) {
 	bi.onTapped()
 }
 
-func addToBar(icon fynedesk.AppData) {
+func addToBar(icon appie.AppData) {
 	settings := fynedesk.Instance().Settings()
 	icons := settings.LauncherIcons()
 	icons = append(icons, icon.Name())
@@ -107,7 +110,7 @@ func addToBar(icon fynedesk.AppData) {
 	settings.(*deskSettings).setLauncherIcons(icons)
 }
 
-func removeFromBar(icon fynedesk.AppData) {
+func removeFromBar(icon appie.AppData) {
 	settings := fynedesk.Instance().Settings()
 	icons := settings.LauncherIcons()
 
@@ -167,7 +170,7 @@ func (bi *barIcon) CreateRenderer() fyne.WidgetRenderer {
 	return render
 }
 
-func cloneRepo(src *fynedesk.AppSource, path string) error {
+func cloneRepo(src *appie.AppSource, path string, done func()) (err error) {
 	spin := widget.NewActivity()
 	prop := canvas.NewRectangle(color.Transparent)
 	prop.SetMinSize(fyne.NewSquareSize(56))
@@ -184,13 +187,31 @@ func cloneRepo(src *fynedesk.AppSource, path string) error {
 		spin.Stop()
 	}()
 
-	cmd := exec.Command("git", "clone", src.Repo, path)
-	return cmd.Run()
+	go func() {
+		cmd := exec.Command("git", "clone", src.Repo, path)
+		err = cmd.Run()
+		if err == nil {
+			return
+		}
+
+		fyne.Do(done)
+	}()
+
+	return err
 }
 
-func editApp(app fynedesk.AppData, editor string) {
+func editApp(app appie.AppData, editor string) {
 	root := sourceRoot()
 	srcDir := filepath.Join(root, app.Name())
+
+	open := func() {
+		cmd := exec.Command(editor, srcDir)
+		err := cmd.Start()
+
+		if err != nil {
+			fyne.LogError("Failed to start app editor: "+editor, err)
+		}
+	}
 
 	if !exists(srcDir) {
 		if !exists(root) {
@@ -201,22 +222,17 @@ func editApp(app fynedesk.AppData, editor string) {
 			}
 		}
 
-		err := cloneRepo(app.Source(), srcDir)
+		err := cloneRepo(app.Source(), srcDir, open)
 		if err != nil {
 			fyne.LogError("Error cloning the app source", err)
 			return
 		}
 	}
 
-	cmd := exec.Command(editor, srcDir)
-	err := cmd.Start()
-
-	if err != nil {
-		fyne.LogError("Failed to start app editor: "+editor, err)
-	}
+	open()
 }
 
-func newBarIcon(res fyne.Resource, appData fynedesk.AppData, winData *appWindow) *barIcon {
+func newBarIcon(res fyne.Resource, appData appie.AppData, winData *appWindow) *barIcon {
 	barIcon := &barIcon{resource: res, appData: appData, windowData: winData}
 	barIcon.ExtendBaseWidget(barIcon)
 
@@ -227,6 +243,11 @@ func editorPath() string {
 	fysion, err := exec.LookPath("fysion")
 	if err == nil && fysion != "" {
 		return fysion
+	}
+
+	apptrix, err := exec.LookPath("apptrix")
+	if err == nil && apptrix != "" {
+		return apptrix
 	}
 
 	return ""
@@ -243,5 +264,5 @@ func sourceRoot() string {
 		return ""
 	}
 
-	return filepath.Join(u.HomeDir, "FysionApps")
+	return filepath.Join(u.HomeDir, "ApptrixApps")
 }

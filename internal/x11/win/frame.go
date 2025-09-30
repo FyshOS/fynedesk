@@ -7,6 +7,7 @@ import (
 	"context"
 	"image"
 	"math"
+	"strings"
 	"time"
 
 	"github.com/BurntSushi/xgb/xproto"
@@ -15,6 +16,7 @@ import (
 	"github.com/BurntSushi/xgbutil/xwindow"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/driver/desktop"
 	"fyne.io/fyne/v2/driver/software"
 	"fyne.io/fyne/v2/test"
@@ -49,6 +51,7 @@ type frame struct {
 	cancelFunc context.CancelFunc
 
 	pendingGeometry chan *configureGeometry
+	transparency    int
 
 	canvas test.WindowlessCanvas
 	client *client
@@ -134,7 +137,14 @@ func newFrame(c *client) *frame {
 		framed.childHeight = h - borderWidth - titleHeight
 	}
 
-	_ = ewmh.WmNameSet(c.wm.X(), f.Id, "FyneDesk Border")
+	title := "FyneDesk Border"
+	if strings.Contains(c.props.Title(), "Quake Terminal") {
+		title = "Quake Terminal"
+	}
+	if strings.Contains(c.props.Title(), "FyneDesk:skip") {
+		title += " FyneDesk:skip"
+	}
+	_ = ewmh.WmNameSet(c.wm.X(), f.Id, title)
 	var offsetX, offsetY int16 = 0, 0
 	if !full && decorated {
 		offsetX = int16(borderWidth)
@@ -315,7 +325,7 @@ func (f *frame) createPixmaps(depth byte) error {
 
 	backR, backG, backB, _ := theme.Color(theme.ColorNameDisabledButton).RGBA()
 	if f.client.Focused() {
-		backR, backG, backB, _ = theme.Color(theme.ColorNameBackground).RGBA()
+		backR, backG, backB, _ = theme.Color(theme.ColorNameOverlayBackground).RGBA()
 	}
 	bgColor := uint32(uint8(backR))<<16 | uint32(uint8(backG))<<8 | uint32(uint8(backB))
 
@@ -355,8 +365,8 @@ func (f *frame) decorate(force bool) {
 	xproto.PolyFillRectangleChecked(f.client.wm.Conn(), xproto.Drawable(f.client.id), f.rectGC, []xproto.Rectangle{rect})
 
 	rightWidthPix := f.topRightPixelWidth()
-	minWidth := f.canvas.Content().MinSize().Width
-	widthPix := uint16(minWidth*f.canvas.Scale()) - rightWidthPix
+	//minWidth := f.canvas.Content().MinSize().Width
+	widthPix := f.width //uint16(minWidth*f.canvas.Scale()) - rightWidthPix
 	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTop), xproto.Drawable(f.client.id), f.borderTopGC,
 		0, 0, 0, 0, widthPix, heightPix)
 	xproto.CopyArea(f.client.wm.Conn(), xproto.Drawable(f.borderTopRight), xproto.Drawable(f.client.id), f.borderTopRightGC,
@@ -374,13 +384,18 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	}
 
 	if f.canvas == nil {
-		canvas := software.NewCanvas()
-		canvas.SetPadded(false)
+		cnv := software.NewCanvas()
+		cnv.SetPadded(false)
 
-		canvas.SetContent(wm.NewBorder(f.client, f.client.Properties().Icon(), canMaximize))
-		f.canvas = canvas
+		b := wm.NewBorder(f.client, f.client.Properties().Icon(), canMaximize)
+		trans := &transparentTheme{Theme: theme.DefaultTheme(), frame: f}
+		cnv.SetContent(container.NewThemeOverride(b, trans))
+		f.canvas = cnv
 	} else {
-		b := f.canvas.Content().(*wm.Border)
+		b := f.canvas.Content().(*container.ThemeOverride).Content.(*wm.Border)
+		b.CloseIntercept = func() {
+			f.client.Close()
+		}
 		b.SetTitle(f.client.props.Title())
 		b.SetMaximized(f.client.maximized)
 		b.SetIcon(f.client.Properties().Icon())
@@ -394,7 +409,7 @@ func (f *frame) drawDecoration(pidTop xproto.Pixmap, drawTop xproto.Gcontext, pi
 	winPixWidth := f.borderTopWidth + rightWidthPix
 	winPtWidth := float32(winPixWidth) / scale
 	drawWidth := fyne.Max(minWidth, winPtWidth)
-	f.canvas.Resize(fyne.NewSize(drawWidth, wmTheme.TitleHeight))
+	f.canvas.Resize(fyne.NewSize(drawWidth, wmTheme.TitleHeight+16))
 	widthPix := uint16(drawWidth*f.canvas.Scale()) - rightWidthPix
 	img := f.canvas.Capture()
 
@@ -604,7 +619,7 @@ func (f *frame) mouseMotion(x, y int16) {
 	cursor := x11.DefaultCursor
 	if obj != nil {
 		if cur, ok := obj.(desktop.Cursorable); ok {
-			if cur.Cursor() == wm.CloseCursor {
+			if cur.Cursor() == desktop.PointerCursor {
 				cursor = x11.CloseCursor
 			}
 		}
@@ -667,7 +682,23 @@ func (f *frame) lookupResizeCursor(x, y int16) xproto.Cursor {
 	return x11.DefaultCursor
 }
 
-func (f *frame) mousePress(x, y int16, b xproto.Button) {
+func (f *frame) mousePress(x, y int16, b xproto.Button, mods uint16) {
+	if b >= xproto.ButtonIndex4 && mods > 0 {
+		f.transparency -= 5
+		if b == xproto.ButtonIndex5 {
+			f.transparency += 10
+		}
+
+		if f.transparency < 0 {
+			f.transparency = 0
+		} else if f.transparency >= 90 {
+			f.transparency = 90
+		}
+
+		_ = ewmh.WmWindowOpacitySet(f.client.wm.X(), f.client.id, float64(100-f.transparency)/100.0)
+		return
+	}
+
 	if b != xproto.ButtonIndex1 {
 		return
 	}
@@ -693,7 +724,7 @@ func (f *frame) mousePress(x, y int16, b xproto.Button) {
 			return ok
 		},
 	)
-	if obj != nil {
+	if _, ok := obj.(desktop.Cursorable); ok { // a button
 		f.ignoreDrag = true
 		return
 	}
@@ -850,6 +881,18 @@ func (f *frame) show() {
 		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
 		f.client.wm.X().RootWin(), xproto.CursorNone, xproto.ButtonIndex1, xproto.ModMaskAny)
 
+	userMod := uint16(xproto.ModMask4)
+	if fynedesk.Instance().Settings().KeyboardModifier() == fyne.KeyModifierAlt {
+		userMod = xproto.ModMask1
+	}
+
+	xproto.GrabButton(f.client.wm.Conn(), false, f.client.id,
+		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
+		0, xproto.CursorNone, xproto.ButtonIndex4, userMod)
+	xproto.GrabButton(f.client.wm.Conn(), false, f.client.id,
+		xproto.EventMaskButtonPress, xproto.GrabModeSync, xproto.GrabModeSync,
+		0, xproto.CursorNone, xproto.ButtonIndex5, userMod)
+
 	c.RaiseToTop()
 	c.Focus()
 }
@@ -931,4 +974,8 @@ func (f *frame) updateScale() {
 	// update border offset for current scale and redraw borders
 	f.updateGeometry(f.x, f.y, f.width, f.height, true)
 	f.applyTheme(true)
+}
+
+func (f *frame) setTransparency(win xproto.Window, alpha int) {
+	_ = ewmh.WmWindowOpacitySet(f.client.wm.X(), win, float64(alpha))
 }

@@ -5,16 +5,18 @@ import (
 
 	"fyshos.com/fynedesk"
 	wmTest "fyshos.com/fynedesk/test"
+	"github.com/FyshOS/appie"
+
+	"github.com/stretchr/testify/assert"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/test"
 	"fyne.io/fyne/v2/widget"
-	"github.com/stretchr/testify/assert"
 )
 
 func TestLauncher_ListMatches(t *testing.T) {
 	setupIcons("App 1", "App 2", "Another")
-	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
+	launcher := newAppPicker("Test", func(data appie.AppData) {})
 
 	apps := launcher.appButtonListMatching("App")
 	assert.Equal(t, 2, len(apps))
@@ -31,7 +33,7 @@ func TestLauncher_ListMatches(t *testing.T) {
 
 func TestLauncher_ListTyped(t *testing.T) {
 	setupIcons("App 1", "App 2", "Another")
-	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
+	launcher := newAppPicker("Test", func(data appie.AppData) {})
 
 	assert.Equal(t, 0, len(launcher.appList.Objects))
 	test.Type(launcher.entry, "App")
@@ -42,7 +44,7 @@ func TestLauncher_ListTyped(t *testing.T) {
 
 func TestLauncher_ListActive(t *testing.T) {
 	setupIcons("App 1", "App 2", "Another")
-	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
+	launcher := newAppPicker("Test", func(data appie.AppData) {})
 
 	assert.Equal(t, 0, len(launcher.appList.Objects))
 	assert.Equal(t, 0, launcher.activeIndex)
@@ -55,7 +57,7 @@ func TestLauncher_ListActive(t *testing.T) {
 
 func TestLauncher_setActiveIndex(t *testing.T) {
 	setupIcons("App 1", "App 2", "Another")
-	launcher := newAppPicker("Test", func(data fynedesk.AppData) {})
+	launcher := newAppPicker("Test", func(data appie.AppData) {})
 
 	launcher.appList.Objects = launcher.appButtonListMatching("App")
 	assert.Equal(t, 0, launcher.activeIndex)

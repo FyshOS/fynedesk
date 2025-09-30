@@ -259,19 +259,27 @@ func (c *client) NotifyMaximize() {
 }
 
 func (c *client) NotifyMouseDrag(x, y int16) {
-	c.frame.mouseDrag(x, y)
+	fyne.Do(func() {
+		c.frame.mouseDrag(x, y)
+	})
 }
 
 func (c *client) NotifyMouseMotion(x, y int16) {
-	c.frame.mouseMotion(x, y)
+	fyne.Do(func() {
+		c.frame.mouseMotion(x, y)
+	})
 }
 
-func (c *client) NotifyMousePress(x, y int16, b xproto.Button) {
-	c.frame.mousePress(x, y, b)
+func (c *client) NotifyMousePress(x, y int16, b xproto.Button, mods uint16) {
+	fyne.Do(func() {
+		c.frame.mousePress(x, y, b, mods)
+	})
 }
 
 func (c *client) NotifyMouseRelease(x, y int16, b xproto.Button) {
-	c.frame.mouseRelease(x, y, b)
+	fyne.Do(func() {
+		c.frame.mouseRelease(x, y, b)
+	})
 }
 
 func (c *client) NotifyMoveResizeEnded() {

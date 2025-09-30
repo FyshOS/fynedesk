@@ -12,6 +12,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/FyshOS/appie"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
 
@@ -110,6 +111,14 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 	borderButton := &widget.Select{Options: []string{"Left", "Right"}}
 	borderButton.SetSelected(d.settings.BorderButtonPosition())
 
+	saverLabel := widget.NewLabelWithStyle("Screensaver", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+	saverType := &widget.RadioGroup{Options: []string{"FyshOS", "XScreensaver"}, Required: true, Horizontal: true}
+	saverType.SetSelected(d.settings.ScreenSaverType())
+	saverText := widget.NewEntry()
+	saverText.SetText(d.settings.ScreenSaverLabel())
+	saverClock := widget.NewCheck("Clock", nil)
+	saverClock.Checked = d.settings.ScreenSaverClock()
+
 	themeLabel := widget.NewLabel(d.settings.IconTheme())
 	themeIcons := container.NewHBox()
 	d.populateThemeIcons(themeIcons, d.settings.IconTheme())
@@ -118,6 +127,8 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 		themeButton := widget.NewButton(themeName, nil)
 		themeButton.OnTapped = func() {
 			themeLabel.SetText(themeButton.Text)
+
+			fynedesk.Instance().IconProvider().ClearCache()
 			d.populateThemeIcons(themeIcons, themeButton.Text)
 		}
 		themeList.Add(themeButton)
@@ -128,7 +139,9 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 	lay := container.NewBorder(nil, nil, layoutLabel,
 		container.NewGridWithColumns(2, narrowBar, narrowWidget))
 	border := container.NewBorder(nil, nil, borderButtonLabel, borderButton)
-	top := container.NewVBox(bg, time, lay, border)
+	saver := container.NewBorder(nil, nil, container.NewVBox(saverLabel, widget.NewLabel("")),
+		container.NewVBox(saverType, container.NewBorder(nil, nil, saverClock, nil, saverText)))
+	top := container.NewVBox(bg, time, lay, border, saver)
 
 	themeFormLabel := widget.NewLabelWithStyle("Icon Theme", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	themeCurrent := container.NewHBox(layout.NewSpacer(), themeLabel, themeIcons)
@@ -142,6 +155,9 @@ func (d *settingsUI) loadAppearanceScreen() fyne.CanvasObject {
 			d.settings.setBorderButtonPosition(borderButton.Selected)
 			d.settings.setNarrowLeftLauncher(narrowBar.Checked)
 			d.settings.setNarrowWidgetPanel(narrowWidget.Checked)
+			d.settings.setScreenSaver(saverType.Selected)
+			d.settings.setScreenSaverClock(saverClock.Checked)
+			d.settings.setScreenSaverLabel(saverText.Text)
 		}})
 
 	return container.NewBorder(top, applyButton, nil, nil, bottom)
@@ -207,7 +223,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	d.populateOrderList(orderList, addItem)
 
 	addButton.OnTapped = func() {
-		newAppPicker("Choose Application", func(data fynedesk.AppData) {
+		newAppPicker("Choose Application", func(data appie.AppData) {
 			d.launcherIcons = append(d.launcherIcons, data.Name())
 			d.populateOrderList(orderList, addItem)
 		}).Show()
@@ -401,7 +417,9 @@ func (d *settingsUI) loadThemeScreen() fyne.CanvasObject {
 		themeList = make([]string, 1)
 	} else {
 		for _, l := range list {
-			themeList = append(themeList, l.Name())
+			if false { // TODO with 1.21 } !slices.Contains(themeList, l.Name()) {
+				themeList = append(themeList, l.Name())
+			}
 		}
 	}
 
