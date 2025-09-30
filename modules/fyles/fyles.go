@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"time"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -24,7 +25,9 @@ var fylesMeta = fynedesk.ModuleMetadata{
 	NewInstance: newFyles,
 }
 
-type fyles struct{}
+type fyles struct {
+	icons *lib.Panel
+}
 
 func (f *fyles) Destroy() {
 }
@@ -34,6 +37,7 @@ func (f *fyles) ScreenAreaWidget() fyne.CanvasObject {
 	icons.HideParent = true
 	icons.Filter = filterHidden()
 	f.setDesktopDir(icons)
+	f.icons = icons
 
 	desk := fynedesk.Instance()
 	var barPad fyne.CanvasObject
@@ -73,6 +77,11 @@ func (f *fyles) setDesktopDir(p *lib.Panel) {
 }
 
 func (f *fyles) tapped(u fyne.URI) {
+	go func() {
+		time.Sleep(canvas.DurationShort)
+		fyne.Do(f.icons.ClearSelection)
+	}()
+
 	if u.Scheme() == "settings" {
 		fynedesk.Instance().ShowSettings()
 		return
