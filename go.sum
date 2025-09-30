@@ -20,8 +20,8 @@ github.com/FyshOS/backgrounds v0.0.0-20250801103510-beb69e83c20b h1:y2k7oFblVrIn
 github.com/FyshOS/backgrounds v0.0.0-20250801103510-beb69e83c20b/go.mod h1:Ona6bJ2L1Sw+exbXfgmBsBZIHXbQ+boDv43xI1C0NVY=
 github.com/FyshOS/fancyfs v0.0.0-20250930160104-540b1faf4b09 h1:HfEQ+kAztupgytWI7QqzXajwhI9R54i8q4uh2xUFEDs=
 github.com/FyshOS/fancyfs v0.0.0-20250930160104-540b1faf4b09/go.mod h1:HblGbYnAlauX7EiDxpyumu2DhAcxYmJmXvP+ayF/O2g=
-github.com/FyshOS/fyles v0.0.0-20250930160637-1c80ca210837 h1:dXQEDqCfwHDJBD1jBBWWkMFBIGDvooSym9T2mJsEoWg=
-github.com/FyshOS/fyles v0.0.0-20250930160637-1c80ca210837/go.mod h1:YgozzG7CgidZTeohsrb6ayuLP803tRfmPNZ7cUXwdHI=
+github.com/FyshOS/fyles v0.0.0-20250930163235-d8b608ed9864 h1:4ngcVkRRfx+I/OroCNt4AjDAz9DJK//LvPrsl4TI4jc=
+github.com/FyshOS/fyles v0.0.0-20250930163235-d8b608ed9864/go.mod h1:YgozzG7CgidZTeohsrb6ayuLP803tRfmPNZ7cUXwdHI=
 github.com/FyshOS/saver v0.0.0-20250701135623-b55a67b1030b h1:jYMu7OX+TAUjjQFTlwxwG0i/wdiVCslWPDXH+O4vkvU=
 github.com/FyshOS/saver v0.0.0-20250701135623-b55a67b1030b/go.mod h1:+aEJkNRwWJeHMbESN/4LEzVkePYbkaZZs0MbwDj3OWM=
 github.com/Knetic/govaluate v3.0.0+incompatible h1:7o6+MAPhYTCF0+fdvoz1xDedhRb4f6s9Tn1Tt7/WTEg=

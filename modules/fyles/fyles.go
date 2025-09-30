@@ -96,10 +96,14 @@ func (f *fyles) tapped(u fyne.URI) {
 			return
 		}
 	} else {
-		log.Println(">>> dir", u)
+		log.Println("Error opening folder in Fyles app", err)
 		return
 	}
-	log.Println(">>> open", u)
+
+	err = lib.Open(u)
+	if err != nil {
+		log.Println("Error opening file", err)
+	}
 }
 
 // newFyles creates a new module that will manage desktop file icons.
