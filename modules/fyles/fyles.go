@@ -64,11 +64,12 @@ func (f *fyles) Metadata() fynedesk.ModuleMetadata {
 func (f *fyles) setDesktopDir(p *lib.Panel) {
 	home, _ := os.UserHomeDir()
 	u := storage.NewFileURI(filepath.Join(home, "Desktop"))
+	homeDir := newCustomURI("file://"+home, "Home", theme.FolderIcon())
 	settings := newCustomURI("settings://", "Settings", theme.SettingsIcon())
 	trash := newCustomURI("file://"+filepath.Join(home, ".local", "share", "Trash", "files"), "Trash", theme.DeleteIcon())
 
 	list, err := storage.List(u)
-	list = append([]fyne.URI{settings, trash}, list...)
+	list = append([]fyne.URI{homeDir, trash, settings}, list...)
 	if err != nil {
 		fyne.LogError("Could not read Desktop dir", err)
 	} else {
