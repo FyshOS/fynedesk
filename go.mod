@@ -3,6 +3,7 @@ module fyshos.com/fynedesk
 go 1.19
 
 require (
+	codeberg.org/sdassow/unyts v0.4.0
 	fyne.io/fyne/v2 v2.6.3
 	github.com/BurntSushi/xgb v0.0.0-20210121224620-deaf085860bc
 	github.com/BurntSushi/xgbutil v0.0.0-20190907113008-ad855c713046

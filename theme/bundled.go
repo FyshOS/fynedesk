@@ -144,23 +144,16 @@ Data,
 }
 
 //go:embed assets/sound.svg
-	StaticName:    "assets/unyts.png",
+	StaticName:    "assets/wifi.svg",
 	StaticContent: resourcePowerSvgData,
 }
-
-	StaticName:    "assets/so
+{
+	StaticName:    "assets/s
 //go:embed assets/sound.svg
 var resourceSoundSvgData []byte
-	StaticName:    "assets/wifi.svg",
+	StaticName:    "assets/wifi_off.svg",
 	StaticName: "assets/sound.svg",
 	StaticContent: resourceSoundSvgData,
-:
-}
-//go:embed assets/unyts.png
-var resourceUnytsPngData []byte
-	StaticName:    "assets/wifi_off.svg",
-	StaticName: "assets/unyts.png",
-	StaticContent: resourceUnytsPngData,
 }
 //go:embed assets/wifi.svg
 var resourceWifiSvgData []byte
