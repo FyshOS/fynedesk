@@ -11,147 +11,114 @@ import (
 //go:embed assets/battery.svg
 var resourceBatterySvgData []byte
 var resourceBatterySvg = &fyne.StaticResource{
-	StaticName:    "assets/battery.svg",
+	StaticName: "assets/battery.svg",
 	StaticContent: resourceBatterySvgData,
 }
-
-//go:embed assets/brightness.sv
 //go:embed assets/brightness.svg
 var resourceBrightnessSvgData []byte
-	StaticName:    "assets/brightness.svg",
+var resourceBrightnessSvg = &fyne.StaticResource{
 	StaticName: "assets/brightness.svg",
 	StaticContent: resourceBrightnessSvgData,
-/
 }
 //go:embed assets/broken_image.svg
 var resourceBrokenimageSvgData []byte
-	StaticName:    "assets/broken_image.svg",
+var resourceBrokenimageSvg = &fyne.StaticResource{
 	StaticName: "assets/broken_image.svg",
 	StaticContent: resourceBrokenimageSvgData,
-b
 }
 //go:embed assets/calculate.svg
 var resourceCalculateSvgData []byte
-	StaticName:    "assets/calculate.svg",
+var resourceCalculateSvg = &fyne.StaticResource{
 	StaticName: "assets/calculate.svg",
 	StaticContent: resourceCalculateSvgData,
-
-
 }
 //go:embed assets/display.svg
-	StaticName:    "assets/display.svg",
+var resourceDisplaySvgData []byte
 var resourceDisplaySvg = &fyne.StaticResource{
 	StaticName: "assets/display.svg",
-StaticContent: resourceDisplaySvgData,
-
 	StaticContent: resourceDisplaySvgData,
 }
-	StaticName:    "assets/ethernet.svg",
+//go:embed assets/ethernet.svg
 var resourceEthernetSvgData []byte
 var resourceEthernetSvg = &fyne.StaticResource{
-ntent: resourceEthernetSvgData,
-}
-
-
-	StaticName:    "assets/fish_onwhite.png",
+	StaticName: "assets/ethernet.svg",
 	StaticContent: resourceEthernetSvgData,
 }
-shonwhitePng = &fyne.StaticResourc
 //go:embed assets/fish_onwhite.png
 var resourceFishonwhitePngData []byte
 var resourceFishonwhitePng = &fyne.StaticResource{
-	StaticName:    "assets/fyne.png",
+	StaticName: "assets/fish_onwhite.png",
 	StaticContent: resourceFishonwhitePngData,
 }
-:    "assets/fyne.png",
-	S
 //go:embed assets/fyne.png
 var resourceFynePngData []byte
-	StaticName:    "assets/icon.png",
+var resourceFynePng = &fyne.StaticResource{
 	StaticName: "assets/fyne.png",
 	StaticContent: resourceFynePngData,
-/
 }
 //go:embed assets/icon.png
 var resourceIconPngData []byte
-	StaticName:    "assets/internet.svg",
+var resourceIconPng = &fyne.StaticResource{
 	StaticName: "assets/icon.png",
 	StaticContent: resourceIconPngData,
-t
 }
 //go:embed assets/internet.svg
 var resourceInternetSvgData []byte
-	StaticName:    "assets/keyboard.svg",
+var resourceInternetSvg = &fyne.StaticResource{
 	StaticName: "assets/internet.svg",
 	StaticContent: resourceInternetSvgData,
-o
 }
 //go:embed assets/keyboard.svg
 var resourceKeyboardSvgData []byte
-	StaticName:    "assets/lock.svg",
+var resourceKeyboardSvg = &fyne.StaticResource{
 	StaticName: "assets/keyboard.svg",
 	StaticContent: resourceKeyboardSvgData,
-R
 }
 //go:embed assets/lock.svg
 var resourceLockSvgData []byte
-	StaticName:    "assets/maximize.svg",
+var resourceLockSvg = &fyne.StaticResource{
 	StaticName: "assets/lock.svg",
 	StaticContent: resourceLockSvgData,
-e
 }
 //go:embed assets/maximize.svg
 var resourceMaximizeSvgData []byte
-	StaticName:    "assets/minimize.svg",
+var resourceMaximizeSvg = &fyne.StaticResource{
 	StaticName: "assets/maximize.svg",
 	StaticContent: resourceMaximizeSvgData,
-u
 }
 //go:embed assets/minimize.svg
 var resourceMinimizeSvgData []byte
-	StaticName:    "assets/mute.svg",
+var resourceMinimizeSvg = &fyne.StaticResource{
 	StaticName: "assets/minimize.svg",
 	StaticContent: resourceMinimizeSvgData,
-a
 }
 //go:embed assets/mute.svg
 var resourceMuteSvgData []byte
-	StaticName:    "assets/person.svg",
+var resourceMuteSvg = &fyne.StaticResource{
 	StaticName: "assets/mute.svg",
 	StaticContent: resourceMuteSvgData,
-D
 }
 //go:embed assets/person.svg
 var resourcePersonSvgData []byte
-	StaticName:    "assets/pointer.png",
+var resourcePersonSvg = &fyne.StaticResource{
 	StaticName: "assets/person.svg",
 	StaticContent: resourcePersonSvgData,
-c
 }
 //go:embed assets/pointer.png
 var resourcePointerPngData []byte
-	StaticName:    "assets/power.svg",
+var resourcePointerPng = &fyne.StaticResource{
 	StaticName: "assets/pointer.png",
 	StaticContent: resourcePointerPngData,
-
-
 }
 //go:embed assets/power.svg
-	StaticName:    "assets/sound.svg",
+var resourcePowerSvgData []byte
 var resourcePowerSvg = &fyne.StaticResource{
 	StaticName: "assets/power.svg",
-Data,
-}
-
-//go:embed assets/sound.svg
-	StaticName:    "assets/wifi.svg",
 	StaticContent: resourcePowerSvgData,
 }
-{
-	StaticName:    "assets/s
 //go:embed assets/sound.svg
 var resourceSoundSvgData []byte
-	StaticName:    "assets/wifi_off.svg",
+var resourceSoundSvg = &fyne.StaticResource{
 	StaticName: "assets/sound.svg",
 	StaticContent: resourceSoundSvgData,
 }
