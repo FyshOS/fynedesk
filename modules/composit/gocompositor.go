@@ -168,6 +168,7 @@ func setup(conn *xgb.Conn) error {
 	return paintAll(conn, 0)
 }
 
+//gocyclo:ignore
 func run(done chan struct{}) error {
 	conn, err := xgb.NewConn()
 	if err != nil {
@@ -464,6 +465,7 @@ func getBorderArea(conn *xgb.Conn, client *client) (xfixes.Region, error) {
 	return region, nil
 }
 
+//gocyclo:ignore
 func paintAll(conn *xgb.Conn, region xfixes.Region) error {
 	if region == 0 {
 		rect := xproto.Rectangle{X: 0, Y: 0, Width: rootWidth, Height: rootHeight}
