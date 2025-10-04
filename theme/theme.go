@@ -1,3 +1,5 @@
+//go:generate fyne bundle -package theme -o bundled.go assets/
+
 package theme // import "fyshos.com/fynedesk/theme"
 
 import (
@@ -17,7 +19,7 @@ var (
 	// FyneLogo is the fyne tooklit icon
 	FyneLogo = resourceFynePng
 	// FyshOSLogo is the fyne tooklit icon
-	FyshOSLogo = resourceFyshOSPng
+	FyshOSLogo = resourceFishonwhitePng
 	// AppIcon is the image for this application icon
 	AppIcon = resourceIconPng
 

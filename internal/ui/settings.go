@@ -274,7 +274,7 @@ func (d *deskSettings) load() {
 		d.launcherZoomScale = 2.0
 	}
 
-	defaultModules := "Battery|Brightness|Compositor|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops|SystemTray"
+	defaultModules := "Battery|Brightness|Compositor|Sound|Launcher: Calculate|Launcher: Convert units|Launcher: Open URLs|Network|Virtual Desktops|SystemTray"
 	if runtime.GOOS == "darwin" || runtime.GOOS == "windows" { // testing
 		defaultModules = "Battery|Brightness|Sound|Launcher: Calculate|Launcher: Open URLs|Network|Virtual Desktops"
 	}
