@@ -353,6 +353,12 @@ func (l *desktop) registerShortcuts() {
 		func() {
 			// dummy - the wm handles app switcher
 		})
+	l.AddShortcut(fynedesk.NewShortcut("Iconify Window", fyne.KeyF9, fynedesk.UserModifier),
+		l.iconifyCurrentWindow)
+	l.AddShortcut(fynedesk.NewShortcut("Maximize Window", fyne.KeyF10, fynedesk.UserModifier),
+		l.maximizeCurrentWindow)
+	l.AddShortcut(fynedesk.NewShortcut("FullScreen Window", fyne.KeyF11, fynedesk.UserModifier),
+		l.fullscreenCurrentWindow)
 	l.AddShortcut(fynedesk.NewShortcut("Print Window", deskDriver.KeyPrintScreen, fyne.KeyModifierShift),
 		l.screenshotWindow)
 	l.AddShortcut(fynedesk.NewShortcut("Print Screen", deskDriver.KeyPrintScreen, 0),
@@ -360,9 +366,7 @@ func (l *desktop) registerShortcuts() {
 	l.AddShortcut(fynedesk.NewShortcut("Calculator", fynedesk.KeyCalculator, 0),
 		l.calculator)
 	l.AddShortcut(fynedesk.NewShortcut("Lock screen", fyne.KeyL, fynedesk.UserModifier),
-		func() {
-			l.TriggerScreenSaver()
-		})
+		l.TriggerScreenSaver)
 }
 
 // Screens returns the screens provider of the current desktop environment for access to screen functionality.
@@ -419,6 +423,41 @@ func (l *desktop) calculator() {
 	err := exec.Command("calculator").Start()
 	if err != nil {
 		fyne.LogError("Failed to open calculator", err)
+	}
+}
+
+func (l *desktop) fullscreenCurrentWindow() {
+	if len(l.WindowManager().Windows()) == 0 {
+		return
+	}
+
+	w := l.WindowManager().Windows()[0]
+	if w.Fullscreened() {
+		w.Unfullscreen()
+	} else {
+		w.Fullscreen()
+	}
+}
+
+func (l *desktop) iconifyCurrentWindow() {
+	if len(l.WindowManager().Windows()) == 0 {
+		return
+	}
+
+	w := l.WindowManager().Windows()[0]
+	w.Iconify()
+}
+
+func (l *desktop) maximizeCurrentWindow() {
+	if len(l.WindowManager().Windows()) == 0 {
+		return
+	}
+
+	w := l.WindowManager().Windows()[0]
+	if w.Maximized() {
+		w.Unmaximize()
+	} else {
+		w.Maximize()
 	}
 }
 

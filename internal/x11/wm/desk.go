@@ -346,6 +346,15 @@ func (x *x11WM) keyNameToCode(n fyne.KeyName) xproto.Keycode {
 		return keyCodeVolumeLess
 	case fynedesk.KeyVolumeUp:
 		return keyCodeVolumeMore
+	case fyne.KeyF9:
+		codes := keybind.StrToKeycodes(x.x, "F9")
+		return codes[0]
+	case fyne.KeyF10:
+		codes := keybind.StrToKeycodes(x.x, "F10")
+		return codes[0]
+	case fyne.KeyF11:
+		codes := keybind.StrToKeycodes(x.x, "F11")
+		return codes[0]
 	case fyne.KeyL:
 		codes := keybind.StrToKeycodes(x.x, "L")
 		return codes[0]
