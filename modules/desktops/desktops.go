@@ -42,6 +42,10 @@ func (d *desktops) Shortcuts() map[*fynedesk.Shortcut]func() {
 		mapping[&fynedesk.Shortcut{Name: "Switch to Desktop " + id, KeyName: fyne.KeyName(id), Modifier: fynedesk.UserModifier}] = func() {
 			d.setDesktop(deskID)
 		}
+		mapping[&fynedesk.Shortcut{Name: "Move Window to Desktop " + id, KeyName: fyne.KeyName(id), Modifier: fynedesk.UserModifier | fyne.KeyModifierShift}] = func() {
+			w := fynedesk.Instance().WindowManager().Windows()[0]
+			w.SetDesktop(deskID)
+		}
 	}
 
 	mapping[&fynedesk.Shortcut{Name: "Switch to Previous Desktop", KeyName: fyne.KeyUp, Modifier: fynedesk.UserModifier}] = func() {
@@ -55,6 +59,30 @@ func (d *desktops) Shortcuts() map[*fynedesk.Shortcut]func() {
 			return
 		}
 		d.setDesktop(d.current + 1)
+	}
+	mapping[&fynedesk.Shortcut{Name: "Move Window to Previous Desktop", KeyName: fyne.KeyUp, Modifier: fynedesk.UserModifier | fyne.KeyModifierShift}] = func() {
+		if d.current == 0 {
+			return
+		}
+
+		if len(fynedesk.Instance().WindowManager().Windows()) == 0 {
+			return
+		}
+
+		w := fynedesk.Instance().WindowManager().Windows()[0]
+		w.SetDesktop(d.current - 1)
+	}
+	mapping[&fynedesk.Shortcut{Name: "Move Window to Next Desktop", KeyName: fyne.KeyDown, Modifier: fynedesk.UserModifier | fyne.KeyModifierShift}] = func() {
+		if d.current == deskCount-1 {
+			return
+		}
+
+		if len(fynedesk.Instance().WindowManager().Windows()) == 0 {
+			return
+		}
+
+		w := fynedesk.Instance().WindowManager().Windows()[0]
+		w.SetDesktop(d.current + 1)
 	}
 	return mapping
 }
