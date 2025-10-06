@@ -1032,7 +1032,6 @@ func destroyWin(conn *xgb.Conn, window xproto.Window, gone bool) {
 	}
 
 	clients = delete(clients, i, i+1)
-	return
 }
 
 func damageClient(conn *xgb.Conn, e *damage.NotifyEvent) error {

@@ -975,7 +975,3 @@ func (f *frame) updateScale() {
 	f.updateGeometry(f.x, f.y, f.width, f.height, true)
 	f.applyTheme(true)
 }
-
-func (f *frame) setTransparency(win xproto.Window, alpha int) {
-	_ = ewmh.WmWindowOpacitySet(f.client.wm.X(), win, float64(alpha))
-}
