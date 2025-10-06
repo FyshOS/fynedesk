@@ -1,7 +1,7 @@
 package launcher
 
 import (
-	_ "embed"
+	_ "embed" // embed icon
 	"log"
 	"os/exec"
 	"strconv"

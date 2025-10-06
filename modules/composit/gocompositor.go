@@ -1258,7 +1258,7 @@ func makeMask(conn *xgb.Conn, a uint16) (render.Picture, error) {
 		return 0, err
 	}
 
-	formatId, err := findARGBPictFormat(conn, false)
+	formatID, err := findARGBPictFormat(conn, false)
 	if err != nil {
 		xproto.FreePixmap(conn, pixmap)
 		return 0, err
@@ -1272,7 +1272,7 @@ func makeMask(conn *xgb.Conn, a uint16) (render.Picture, error) {
 
 	mask := uint32(render.CpRepeat)
 	values := []uint32{1}
-	err = render.CreatePictureChecked(conn, picture, xproto.Drawable(pixmap), formatId, mask, values).Check()
+	err = render.CreatePictureChecked(conn, picture, xproto.Drawable(pixmap), formatID, mask, values).Check()
 	if err != nil {
 		xproto.FreePixmap(conn, pixmap)
 		return 0, err
