@@ -70,19 +70,23 @@ func NewTray() fynedesk.Module {
 	grid := container.New(collapsingGridWrap(fyne.NewSize(iconSize, iconSize)))
 	t := &tray{box: grid, nodes: make(map[dbus.Sender]*node)}
 
-	conn, _ := dbus.ConnectSessionBus()
+	conn, err := dbus.ConnectSessionBus()
+	if err != nil {
+		fyne.LogError("Could not connect to DBus for system tray events", err)
+		return t
+	}
 	t.conn = conn
 
-	err := conn.ExportAll(struct{}{}, hostPath, "org.kde.StatusNotifierHost")
+	err = conn.ExportAll(struct{}{}, hostPath, "org.kde.StatusNotifierHost")
 	if err != nil {
-		log.Println("Err", err)
+		fyne.LogError("Failed to export notifier host", err)
 		return t
 	}
 
 	// TODO this is create watcher (optional)
 	err = conn.ExportAll(t, path, "org.kde.StatusNotifierWatcher")
 	if err != nil {
-		log.Println("Err2", err)
+		fyne.LogError("Unable to register watcher", err)
 		return t
 	}
 
