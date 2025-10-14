@@ -34,8 +34,13 @@ type auth struct {
 }
 
 func (a *auth) register() {
-	conn2, _ := dbus.SystemBus()
-	err := conn2.ExportAll(a, "/AuthenticationAgent", "org.freedesktop.PolicyKit1.AuthenticationAgent")
+	conn2, err := dbus.SystemBus()
+	if err != nil {
+		fyne.LogError("Could not connect to DBus for authentication events", err)
+		return
+	}
+
+	err = conn2.ExportAll(a, "/AuthenticationAgent", "org.freedesktop.PolicyKit1.AuthenticationAgent")
 	if err != nil {
 		fyne.LogError("Could not start auth agent server", err)
 	}
