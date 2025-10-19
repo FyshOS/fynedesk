@@ -13,7 +13,7 @@ import (
 )
 
 var (
-	exprRegex = regexp.MustCompile(`^[0-9.+\-*/()]+$`)
+	exprRegex = regexp.MustCompile(`^[0-9.+\-*/()<^>:%]+$`)
 	numRegex  = regexp.MustCompile(`^[0-9.]+$`)
 )
 
