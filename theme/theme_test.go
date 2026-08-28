@@ -9,6 +9,7 @@ import (
 	"fyne.io/fyne/v2/theme"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestIconResources(t *testing.T) {
@@ -61,4 +62,40 @@ func TestSetTouchScreen(t *testing.T) {
 	assert.Equal(t, titleButtonHeight, TitleButtonHeight)
 	assert.Equal(t, titleButtonIconSize, TitleButtonIconSize)
 	assert.Equal(t, buttonWidth, ButtonWidth)
+}
+
+// Verify theme color names - both current and legacy for backward compatibility checks.
+func TestWidgetPanelBackground_ThemeColorNames(t *testing.T) {
+	panel := &color.NRGBA{R: 0x0e, G: 0x26, B: 0x34, A: 0xb3}
+	defer fyne.CurrentApp().Settings().SetTheme(theme.DefaultTheme())
+
+	for name, json := range map[string]string{
+		"current": `{"Colors":{"tydePanelBackground":"#0e2634b3"}}`,
+		"legacy":  `{"Colors":{"fynedeskPanelBackground":"#0e2634b3"}}`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			th, err := theme.FromJSON(json)
+			require.NoError(t, err)
+			fyne.CurrentApp().Settings().SetTheme(th)
+
+			assert.Equal(t, panel, WidgetPanelBackground())
+		})
+	}
+}
+
+// A theme that says nothing about the panel still has to give a usable colour,
+// and one you can see the desktop through.
+func TestWidgetPanelBackground_Unthemed(t *testing.T) {
+	defer fyne.CurrentApp().Settings().SetTheme(theme.DefaultTheme())
+
+	th, err := theme.FromJSON(`{"Colors":{"primary":"#ff0000"}}`)
+	require.NoError(t, err)
+	fyne.CurrentApp().Settings().SetTheme(th)
+
+	col := WidgetPanelBackground()
+	assert.NotEqual(t, color.Transparent, col)
+
+	_, _, _, a := col.RGBA()
+	assert.NotZero(t, a)
+	assert.Less(t, a, uint32(0xffff), "the panel is meant to be see-through")
 }
