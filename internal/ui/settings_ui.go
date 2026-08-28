@@ -38,6 +38,28 @@ import (
 	"github.com/godbus/dbus/v5"
 )
 
+const (
+	// themeNameSystem is the Fyne built-in, so choosing it clears the theme.
+	themeNameSystem = "system"
+
+	// themeNameDefault is the theme a FyshOS install ships in its Fyne config.
+	themeNameDefault = "fyshos"
+)
+
+// themeInfo is how one theme is introduced in the settings list.
+type themeInfo struct {
+	title       string
+	description string
+}
+
+// bundledThemeInfo describes the themes that ship with the desktop.
+var bundledThemeInfo = map[string]themeInfo{
+	themeNameDefault: {"FyshOS", "Deep ocean blues with a cyan accent"},
+	themeNameSystem:  {"System", "The stock Fyne colours, light or dark"},
+	"neon":           {"Neon", "Funky orange, blues and purples"},
+	"matrix":         {"Matrix", "Movie-esque greens on black"},
+}
+
 //go:embed "themes/*"
 var bundledThemes embed.FS
 
@@ -487,11 +509,69 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	return container.NewBorder(top, nil, nil, nil, grid)
 }
 
+// themeListEntry returns the title and description to show for a theme directory,
+// falling back to a tidied up version of the name for themes we do not know.
+func themeListEntry(name string) themeInfo {
+	if info, ok := bundledThemeInfo[name]; ok {
+		return info
+	}
+
+	return themeInfo{
+		title:       cases.Title(language.Make("en")).String(name),
+		description: "Custom colours and fonts",
+	}
+}
+
+// themeMarkdown lays out one entry in the theme list: the name of the theme
+// over a line saying how it looks.
+func themeMarkdown(info themeInfo) string {
+	return fmt.Sprintf("## %s\n\n%s", info.title, info.description)
+}
+
+// writeTheme installs the named theme into configDir, over any existing theme.
+// Bundled themes are preferred over ones the user has added in customDir.
+func writeTheme(name, configDir, customDir string) error {
+	in, err := openTheme(name, customDir)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+
+	out, err := os.Create(filepath.Join(configDir, "theme.json"))
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+
+	_, err = io.Copy(out, in)
+	return err
+}
+
+// openTheme finds the JSON for a theme by name, preferring the bundled copy
+// over one the user has added in customDir.
+func openTheme(name, customDir string) (io.ReadCloser, error) {
+	// The system entry has no theme.json of its own, just this empty json.
+	if name == themeNameSystem {
+		return io.NopCloser(strings.NewReader("{}")), nil
+	}
+
+	if builtin, err := bundledThemes.Open(filepath.Join("themes", name, "theme.json")); err == nil {
+		return builtin, nil
+	}
+
+	custom, err := os.Open(filepath.Join(customDir, name, "theme.json"))
+	if err != nil {
+		return nil, err
+	}
+
+	return custom, nil
+}
+
 func (d *settingsUI) loadThemeScreen() fyne.CanvasObject {
 	var themeList []string
 
 	embedList, _ := bundledThemes.ReadDir("themes")
-	currentTheme := fyne.CurrentApp().Preferences().StringWithFallback("currentTheme", "system")
+	currentTheme := fyne.CurrentApp().Preferences().StringWithFallback("currentTheme", themeNameDefault)
 	for _, dir := range embedList {
 		themeList = append(themeList, dir.Name())
 	}
@@ -509,25 +589,8 @@ func (d *settingsUI) loadThemeScreen() fyne.CanvasObject {
 		}
 	}
 
-	useTheme := func(name string) {
-		dest := filepath.Join(filepath.Dir(storageRoot.Path()), "theme.json")
-		out, _ := os.Create(dest)
-		defer out.Close()
-		if name == "default" {
-			_, _ = io.WriteString(out, "{}")
-			return
-		}
-
-		var in io.ReadCloser
-		if builtin, err := bundledThemes.Open(filepath.Join("themes/", name, "theme.json")); err == nil {
-			in = builtin
-		} else {
-			source := filepath.Join(themes.Path(), name, "theme.json")
-			in, _ = os.Open(source)
-		}
-		defer in.Close()
-
-		_, err = io.Copy(out, in)
+	useTheme := func(name string) error {
+		return writeTheme(name, filepath.Dir(storageRoot.Path()), themes.Path())
 	}
 	var themesWidget *widget.List
 	themesWidget = widget.NewList(
@@ -540,7 +603,10 @@ func (d *settingsUI) loadThemeScreen() fyne.CanvasObject {
 			preview.SetMinSize(fyne.NewSize(160, 90))
 			return container.NewBorder(nil, nil, nil, preview,
 				container.NewBorder(nil, install, nil, nil,
-					widget.NewRichTextFromMarkdown("## Theme Name\n\nDescription...")))
+					widget.NewRichTextFromMarkdown(themeMarkdown(themeInfo{
+						title:       "Theme Name",
+						description: "The stock Fyne colours, light or dark",
+					}))))
 		},
 		func(id widget.ListItemID, o fyne.CanvasObject) {
 			outer := o.(*fyne.Container)
@@ -554,11 +620,14 @@ func (d *settingsUI) loadThemeScreen() fyne.CanvasObject {
 			}
 
 			b.OnTapped = func() {
+				if err := useTheme(themeName); err != nil {
+					fyne.LogError("Unable to apply the "+themeName+" theme", err)
+					return
+				}
+
 				currentTheme = themeName
 				fyne.CurrentApp().Preferences().SetString("currentTheme", themeName)
 				themesWidget.Refresh()
-
-				useTheme(themeName)
 			}
 			p := outer.Objects[1].(*canvas.Image)
 			if builtin, err := bundledThemes.Open(filepath.Join("themes/", themeList[id], "preview.png")); err == nil {
@@ -574,8 +643,7 @@ func (d *settingsUI) loadThemeScreen() fyne.CanvasObject {
 			p.Refresh()
 
 			l := inner.Objects[0].(*widget.RichText)
-			title := cases.Title(language.Make("en")).String(themeList[id])
-			l.ParseMarkdown(fmt.Sprintf("## %s\n\nDescription...", title))
+			l.ParseMarkdown(themeMarkdown(themeListEntry(themeList[id])))
 		},
 	)
 
