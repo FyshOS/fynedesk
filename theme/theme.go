@@ -12,12 +12,6 @@ import (
 // ColorNamePanelBackground is used in themes to look up the background color
 const ColorNamePanelBackground fyne.ThemeColorName = "tydePanelBackground"
 
-// colorNamePanelBackgroundLegacy is the name this colour had before the desktop
-// was renamed from FyneDesk to Tyde. Themes written against that name are still
-// out there - and still in the Fyne config of every existing install - so it is
-// tried whenever a theme does not carry the current name.
-const colorNamePanelBackgroundLegacy fyne.ThemeColorName = "fynedeskPanelBackground"
-
 var (
 	// PointerDefault is the standard pointer resource
 	PointerDefault = resourcePointerPng
