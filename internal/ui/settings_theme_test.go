@@ -88,6 +88,6 @@ func TestThemeListEntry_Custom(t *testing.T) {
 }
 
 func TestThemeMarkdown(t *testing.T) {
-	assert.Equal(t, "## Neon\n\nYellow and cyan over deep purple",
+	assert.Equal(t, "## Neon\n\nFunky orange, blues and purples",
 		themeMarkdown(themeListEntry("neon")))
 }
