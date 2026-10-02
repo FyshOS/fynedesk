@@ -100,8 +100,8 @@ func parseAirportDevice(out string) string {
 }
 
 func (n *network) isBlocked() (bool, error) {
-	if ip, _ := exec.LookPath("rfkill"); ip != "" {
-		out, err := exec.Command("bash", []string{"-c", "rfkill | grep \"wlan\""}...).Output()
+	if ip, _ := rfkillPath(); ip != "" {
+		out, err := exec.Command("bash", []string{"-c", ip + " | grep \"wlan\""}...).Output()
 		if err != nil {
 			log.Println("Error running rfkill tool", err)
 			return false, err
@@ -249,8 +249,8 @@ func (n *network) Metadata() tyde.ModuleMetadata {
 }
 
 func (n *network) setFlightMode(block bool) error {
-	if ip, _ := exec.LookPath("rfkill"); ip != "" {
-		out, err := exec.Command("bash", []string{"-c", "rfkill | grep \"wlan\""}...).Output()
+	if ip, _ := rfkillPath(); ip != "" {
+		out, err := exec.Command("bash", []string{"-c", ip + " | grep \"wlan\""}...).Output()
 		if err != nil {
 			log.Println("Error running rfkill tool", err)
 			return err
@@ -266,7 +266,7 @@ func (n *network) setFlightMode(block bool) error {
 			if !block {
 				mode = "unblock"
 			}
-			cmd := exec.Command("bash", []string{"-c", "pkexec rfkill " + mode + " " + id}...)
+			cmd := exec.Command("bash", []string{"-c", "pkexec " + ip + " " + mode + " " + id}...)
 			err = cmd.Start()
 			if err != nil {
 				log.Println("Error running rfkill tool", err)
@@ -404,4 +404,13 @@ func (n *network) toggleFlightMode() {
 // NewNetwork creates a new module that will show network information in the status area
 func NewNetwork() tyde.Module {
 	return &network{}
+}
+
+func rfkillPath() (string, error) {
+	path, err := exec.LookPath("rfkill")
+	if err == nil {
+		return path, nil
+	}
+
+	return exec.LookPath("/usr/sbin/rfkill")
 }
