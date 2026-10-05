@@ -373,7 +373,7 @@ func (f *frame) renderDecoration() {
 	gripPix := int(gripSize * scale)
 	grip := image.NewRGBA(image.Rect(0, 0, gripPix, gripPix))
 	draw.Draw(grip, grip.Bounds(), img, img.Bounds().Max.Sub(image.Pt(gripPix, gripPix)), draw.Src)
-	r, g, bl, _ := f.canvas.Content().(*container.ThemeOverride).Theme.Color(theme.ColorNameBackground, theme.VariantDark).RGBA()
+	r, g, bl, _ := f.canvas.Content().(*container.ThemeOverride).Theme.Color(theme.ColorNameBackground, fyne.CurrentApp().Settings().ThemeVariant()).RGBA()
 	bg := color.RGBA{R: uint8(r >> 8), G: uint8(g >> 8), B: uint8(bl >> 8), A: 0xff}
 
 	f.decorMu.Lock()
