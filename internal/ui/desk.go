@@ -54,6 +54,8 @@ type screenWindow struct {
 	// overviewShader is a full-window overlay that plays the "reveal all" desktop
 	// overview zoom. Hidden except while the overview is opening, shown or closing.
 	overviewShader *canvas.Shader
+	// deskBadge flashes the number of the desktop just switched to, topmost.
+	deskBadge *deskBadge
 }
 
 // ScreenCompositors groups the compositor widgets for a single screen,
@@ -141,6 +143,9 @@ func (l *desktop) setDesktop(id int, cube bool) {
 		// Roll the 3D cube over the top while the windows below slide into place.
 		l.startDeskCube(old, id)
 	}
+	if id != old {
+		l.flashDeskBadge(id)
+	}
 
 	diff := id - l.desk
 	prevTargets := l.deskAnimTargets
@@ -221,6 +226,17 @@ func (l *desktop) setDesktop(id int, cube bool) {
 	})
 	l.deskAnim = a
 	a.Start()
+}
+
+// flashDeskBadge briefly shows the number of desktop id in the centre of every screen.
+func (l *desktop) flashDeskBadge(id int) {
+	for _, sw := range l.screenWindows {
+		if sw.deskBadge == nil {
+			continue
+		}
+		sw.deskBadge.show(id)
+		refreshShaderParent(sw) // an idle secondary window must repaint to show it
+	}
 }
 
 // fitDesktops gathers anything left beyond the last of count desktops onto that
@@ -787,6 +803,10 @@ func (l *desktop) createPrimaryContent(sw *screenWindow) fyne.CanvasObject {
 	sw.deskShaderBG = newDeskShaderBG()
 	sw.deskShader = newDeskShader()
 	objects = append(objects, sw.deskShaderBG, sw.deskShader)
+
+	// Desktop number badge, above the cube so it reads through the transition.
+	sw.deskBadge = newDeskBadge()
+	objects = append(objects, sw.deskBadge)
 	return container.New(l, objects...)
 }
 
@@ -866,6 +886,10 @@ func (l *desktop) createSecondaryContent(sw *screenWindow) fyne.CanvasObject {
 	sw.deskShaderBG = newDeskShaderBG()
 	sw.deskShader = newDeskShader()
 	objects = append(objects, sw.deskShaderBG, sw.deskShader)
+
+	// Desktop number badge, above the cube so it reads through the transition.
+	sw.deskBadge = newDeskBadge()
+	objects = append(objects, sw.deskBadge)
 	return container.New(&secondaryLayout{}, objects...)
 }
 
