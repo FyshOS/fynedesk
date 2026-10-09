@@ -7,6 +7,8 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+
+	"fyshos.com/tyde"
 )
 
 func TestScreensFromOutputs_SideBySide(t *testing.T) {
@@ -65,4 +67,15 @@ func TestScreensFromOutputs_None(t *testing.T) {
 
 	assert.Equal(t, 0, len(screens))
 	assert.Nil(t, primary)
+}
+
+func TestScreenForGeometry_OtherDesktop(t *testing.T) {
+	left := &tyde.Screen{Name: "eDP-1", X: 0, Y: 0, Width: 1920, Height: 1080}
+	right := &tyde.Screen{Name: "HDMI-1", X: 1920, Y: 0, Width: 1920, Height: 1080}
+	xsp := &x11ScreensProvider{screens: []*tyde.Screen{left, right}, active: left}
+
+	assert.Equal(t, right, xsp.ScreenForGeometry(2000, 100, 400, 300))
+	assert.Equal(t, right, xsp.ScreenForGeometry(2000, 100+1080*2, 400, 300), "two desktops below")
+	assert.Equal(t, right, xsp.ScreenForGeometry(2000, 100-1080, 400, 300), "one desktop above")
+	assert.Equal(t, left, xsp.ScreenForGeometry(100, 100-1080*3, 400, 300))
 }

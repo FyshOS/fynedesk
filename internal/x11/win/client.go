@@ -522,7 +522,16 @@ func (c *client) newFrame() {
 	c.frame = newFrame(c)
 }
 
+// positionIsValid reports whether the point lies on a screen of any virtual
+// desktop, as a window on a desktop other than the current one sits a whole
+// number of root heights above or below the visible screens.
 func (c *client) positionIsValid(x, y int) bool {
+	_, rootHeight := tyde.Instance().RootSizePixels()
+	page := floorDiv(y, int(rootHeight))
+	if tyde.Instance().Desktop()+page < 0 {
+		return false // above the first desktop
+	}
+	y -= page * int(rootHeight)
 	for _, screen := range tyde.Instance().Screens().Screens() {
 		if screen.X <= x && screen.X+screen.Width > x &&
 			screen.Y <= y && screen.Y+screen.Height > y {
@@ -533,6 +542,10 @@ func (c *client) positionIsValid(x, y int) bool {
 	return false
 }
 
+// positionNewWindow places a window that has no usable position of its own and
+// records which virtual desktop the window lies on. A window that was already
+// open when the window manager started keeps its place on whichever desktop it
+// was on before.
 func (c *client) positionNewWindow() {
 	attrs, err := xproto.GetGeometry(c.wm.Conn(), xproto.Drawable(c.win)).Reply()
 	if err != nil {
@@ -561,6 +574,9 @@ func (c *client) positionNewWindow() {
 		uint32(x), uint32(y),
 		uint32(w), uint32(h),
 	})
+
+	_, rootHeight := tyde.Instance().RootSizePixels()
+	c.desk = deskForY(y+int(h)/2, int(rootHeight), tyde.Instance().Desktop())
 }
 
 func (c *client) stateMessage(state int) {

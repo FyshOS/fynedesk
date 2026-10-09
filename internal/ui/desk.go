@@ -151,6 +151,9 @@ func (l *desktop) setDesktop(id int, cube bool) {
 	}
 
 	l.desk = id
+	if wm, ok := l.wm.(notify.DesktopNotify); ok {
+		wm.DesktopChangeNotify(id) // recorded on the root so a restart resumes here
+	}
 
 	_, height := l.RootSizePixels()
 	offPix := float32(diff * -int(height))
@@ -1277,6 +1280,9 @@ func rebuildEmbeddedAccessories(layer *fyne.Container) {
 func newDesktop(app fyne.App, wm tyde.WindowManager, icons appie.Provider) *desktop {
 	desk := &desktop{app: app, wm: wm, icons: icons, screens: newEmbeddedScreensProvider()}
 	desk.showMenu = desk.showMenuFull
+	if restored, ok := wm.(interface{ Desktop() int }); ok {
+		desk.desk = restored.Desktop() // carry on from the desktop shown before a restart
+	}
 
 	tyde.SetInstance(desk)
 	desk.settings = newDeskSettings()
