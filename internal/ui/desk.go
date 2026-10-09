@@ -228,14 +228,28 @@ func (l *desktop) setDesktop(id int, cube bool) {
 	a.Start()
 }
 
-// flashDeskBadge briefly shows the number of desktop id in the centre of every screen.
+// flashDeskBadge briefly shows the name or number of desktop id in the centre of
+// every screen.
 func (l *desktop) flashDeskBadge(id int) {
+	label := tyde.DesktopName(l.Settings(), id)
 	for _, sw := range l.screenWindows {
 		if sw.deskBadge == nil {
 			continue
 		}
-		sw.deskBadge.show(id)
+		sw.deskBadge.show(label)
 		refreshShaderParent(sw) // an idle secondary window must repaint to show it
+	}
+}
+
+// desktopNamesChanged notifies all listeners of a desktop change.
+func (l *desktop) desktopNamesChanged() {
+	for _, m := range l.Modules() {
+		if dn, ok := m.(notify.DesktopNotify); ok {
+			dn.DesktopChangeNotify(l.desk)
+		}
+	}
+	if wm, ok := l.wm.(notify.DesktopNotify); ok {
+		wm.DesktopChangeNotify(l.desk)
 	}
 }
 

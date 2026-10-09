@@ -33,7 +33,9 @@ func newPager(d *desktops) *pager {
 		buttons[i] = widget.NewButton("", func() {
 			d.setDesktop(deskID)
 		})
-		labels[i] = widget.NewLabelWithStyle(id, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+		label := widget.NewLabelWithStyle(id, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+		label.Truncation = fyne.TextTruncateClip
+		labels[i] = label
 	}
 
 	cols := pagerMaxCols
@@ -90,6 +92,7 @@ func (p *pager) refreshButtons() {
 	fyne.Do(func() {
 		for i, b := range p.buttons.Objects {
 			l := p.labels.Objects[i]
+			l.(*widget.Label).Text = tyde.DesktopName(desk.Settings(), i)
 			if i == desk.Desktop() {
 				b.(*widget.Button).Importance = widget.HighImportance
 				l.(*widget.Label).Importance = widget.LowImportance

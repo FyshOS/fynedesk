@@ -34,6 +34,7 @@ type deskSettings struct {
 	clockFormatting        string
 	computerType           string
 	desktopCount           int
+	desktopNames           []string
 
 	modifier    fyne.KeyModifier
 	moduleNames []string
@@ -108,6 +109,10 @@ func (d *deskSettings) ComputerType() string {
 
 func (d *deskSettings) DesktopCount() int {
 	return d.desktopCount
+}
+
+func (d *deskSettings) DesktopNames() []string {
+	return d.desktopNames
 }
 
 func (d *deskSettings) AddChangeListener(listener func(tyde.DeskSettings)) {
@@ -260,6 +265,14 @@ func (d *deskSettings) setDesktopCount(count int) {
 	d.apply()
 }
 
+// setDesktopNames stores the names and refreshes what displays them. It does not
+// announce a settings change, as nothing needs rebuilding for a name.
+func (d *deskSettings) setDesktopNames(names []string) {
+	d.desktopNames = names
+	fyne.CurrentApp().Preferences().SetStringList("desktopnames", names)
+	tyde.Instance().(*desktop).desktopNamesChanged()
+}
+
 // clampDesktopCount keeps a desktop count within the range the pager and
 // keyboard shortcuts are designed for.
 func clampDesktopCount(count int) int {
@@ -338,6 +351,7 @@ func (d *deskSettings) load() {
 	d.computerType = fyne.CurrentApp().Preferences().StringWithFallback("computertype", tyde.ComputerLaptop)
 	wmTheme.SetTouchScreen(d.computerType == tyde.ComputerTablet)
 	d.desktopCount = clampDesktopCount(fyne.CurrentApp().Preferences().IntWithFallback("desktopcount", defaultDesktopCount))
+	d.desktopNames = fyne.CurrentApp().Preferences().StringList("desktopnames")
 
 	d.loadRecents()
 }

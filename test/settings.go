@@ -22,6 +22,7 @@ type Settings struct {
 
 	narrowPanel  bool
 	desktopCount int
+	desktopNames []string
 }
 
 // NewSettings returns an in-memory settings instance
@@ -154,6 +155,16 @@ func (s *Settings) DesktopCount() int {
 // SetDesktopCount sets how many virtual desktops are offered.
 func (s *Settings) SetDesktopCount(count int) {
 	s.desktopCount = count
+}
+
+// DesktopNames returns the names given to the virtual desktops.
+func (s *Settings) DesktopNames() []string {
+	return s.desktopNames
+}
+
+// SetDesktopNames sets the names of the virtual desktops.
+func (s *Settings) SetDesktopNames(names []string) {
+	s.desktopNames = names
 }
 
 // ScreenSaverClock returns if the text on the screensaver should be a clock.

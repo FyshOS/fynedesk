@@ -164,7 +164,7 @@ func NewX11WindowManager(a fyne.App) (tyde.WindowManager, error) {
 	if err != nil {
 		fyne.LogError("", err)
 	}
-	err = ewmh.NumberOfDesktopsSet(mgr.x, 1) // Will always be 1 until virtual desktops are supported
+	err = ewmh.NumberOfDesktopsSet(mgr.x, 1) // updated from the settings once they are loaded, see Run
 	if err != nil {
 		fyne.LogError("", err)
 	}
@@ -256,12 +256,14 @@ func (x *x11WM) Desktop() int {
 	return x.desk
 }
 
-// DesktopChangeNotify records the newly current desktop on the root window.
+// DesktopChangeNotify records the newly current desktop on the root window, along
+// with the desktop names in case they are what changed.
 func (x *x11WM) DesktopChangeNotify(id int) {
 	x.desk = id
 	if err := ewmh.CurrentDesktopSet(x.x, uint(id)); err != nil {
 		fyne.LogError("", err)
 	}
+	x.syncDesktopHints()
 }
 
 func (x *x11WM) Conn() *xgb.Conn {
@@ -270,7 +272,26 @@ func (x *x11WM) Conn() *xgb.Conn {
 
 func (x *x11WM) Run() {
 	x.setupBindings()
+	x.syncDesktopHints()
+	tyde.Instance().Settings().AddChangeListener(func(tyde.DeskSettings) { x.syncDesktopHints() })
 	go x.runLoop()
+}
+
+// syncDesktopHints publishes the number and names of the virtual desktops on the
+// root window for other clients (pagers, taskbars) to read.
+func (x *x11WM) syncDesktopHints() {
+	settings := tyde.Instance().Settings()
+	count := settings.DesktopCount()
+	names := make([]string, count)
+	for i := range names {
+		names[i] = tyde.DesktopName(settings, i)
+	}
+	if err := ewmh.NumberOfDesktopsSet(x.x, uint(count)); err != nil {
+		fyne.LogError("", err)
+	}
+	if err := ewmh.DesktopNamesSet(x.x, names); err != nil {
+		fyne.LogError("", err)
+	}
 }
 
 // SetOverlayActive updates X11 input shapes on the root and all frame windows.

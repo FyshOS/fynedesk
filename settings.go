@@ -1,6 +1,21 @@
 package tyde
 
-import "fyne.io/fyne/v2"
+import (
+	"strconv"
+	"strings"
+
+	"fyne.io/fyne/v2"
+)
+
+// DesktopName returns the name the user gave virtual desktop id, or its number
+// counted from one when it has none.
+func DesktopName(s DeskSettings, id int) string {
+	names := s.DesktopNames()
+	if id >= 0 && id < len(names) && strings.TrimSpace(names[id]) != "" {
+		return names[id]
+	}
+	return strconv.Itoa(id + 1)
+}
 
 // The types of computer that Tyde can be configured for.
 const (
@@ -22,7 +37,8 @@ type DeskSettings interface {
 	BorderButtonPosition() string
 	ClockFormatting() string
 	ComputerType() string
-	DesktopCount() int // how many virtual desktops are offered
+	DesktopCount() int      // how many virtual desktops are offered
+	DesktopNames() []string // user-given desktop names, index by desktop; may be shorter than the count
 	NarrowWidgetPanel() bool
 
 	LauncherIcons() []string

@@ -14,9 +14,9 @@ func TestDeskBadgeShow(t *testing.T) {
 	b.Resize(fyne.NewSize(800, 600))
 	assert.False(t, b.Visible())
 
-	b.show(2)
+	b.show("3")
 	assert.True(t, b.Visible())
-	assert.Equal(t, "3", b.text.Text, "desktops are numbered from one")
+	assert.Equal(t, "3", b.text.Text)
 	assert.InDelta(t, 90, b.text.TextSize, 0.01, "sized from the screen height")
 	_, _, _, a := b.text.Color.RGBA()
 	assert.Equal(t, uint32(0xffff), a, "fully opaque while held")
@@ -28,6 +28,10 @@ func TestDeskBadgeShow(t *testing.T) {
 	assert.InDelta(t, 400, bg.Position().X+bg.Size().Width/2, 1)
 	assert.InDelta(t, 300, bg.Position().Y+bg.Size().Height/2, 1)
 	assert.GreaterOrEqual(t, bg.Size().Width, bg.Size().Height)
+
+	b.show("A desktop with a very long name indeed, far wider than the screen")
+	assert.Less(t, b.text.TextSize, float32(90), "a long name is scaled down to fit")
+	assert.LessOrEqual(t, b.text.MinSize().Width, float32(800*deskBadgeMaxWidth)+1)
 
 	b.cancel()
 	b.setOpacity(0)

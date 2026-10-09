@@ -2,7 +2,6 @@ package ui
 
 import (
 	"image/color"
-	"strconv"
 	"time"
 
 	"fyne.io/fyne/v2"
@@ -16,6 +15,8 @@ const (
 	deskBadgeHold = 350 * time.Millisecond
 	// deskBadgeScale is the badge text height as a fraction of the screen height.
 	deskBadgeScale = 0.15
+	// deskBadgeMaxWidth is the widest the text may be as a fraction of the screen width.
+	deskBadgeMaxWidth = 0.8
 )
 
 // deskBadge briefly shows the number of the desktop just switched to, large and
@@ -43,13 +44,19 @@ func newDeskBadge() *deskBadge {
 	return b
 }
 
-// show presents the number of desktop id at full opacity, holds it briefly, then
-// fades it out and hides the badge. A show during a hold or fade starts over.
-func (b *deskBadge) show(id int) {
+// show presents label, a desktop's name or number, at full opacity, holds it
+// briefly, then fades it out and hides the badge. A show during a hold or fade
+// starts over. A long name is scaled down to fit within the screen.
+func (b *deskBadge) show(label string) {
 	b.cancel()
 
-	b.text.Text = strconv.Itoa(id + 1)
+	b.text.Text = label
 	b.text.TextSize = b.Size().Height * deskBadgeScale
+	// Text width is not quite proportional to its size, so converge in a few steps.
+	maxW := b.Size().Width * deskBadgeMaxWidth
+	for i := 0; i < 4 && maxW > 0 && b.text.MinSize().Width > maxW; i++ {
+		b.text.TextSize *= maxW / b.text.MinSize().Width
+	}
 	b.bg.CornerRadius = b.text.TextSize / 4
 	b.setOpacity(1)
 	b.Show()

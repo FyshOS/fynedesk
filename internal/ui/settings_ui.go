@@ -462,8 +462,34 @@ func (d *settingsUI) loadAIScreen() fyne.CanvasObject {
 }
 
 // loadDesktopsScreen builds the virtual desktop configuration: how many desktops
-// to offer.
+// to offer, and a name for each.
 func (d *settingsUI) loadDesktopsScreen() fyne.CanvasObject {
+	names := container.NewVBox()
+	var entries []*widget.Entry
+	applyNames := func() {
+		out := make([]string, len(entries))
+		for i, e := range entries {
+			out[i] = strings.TrimSpace(e.Text)
+		}
+		d.settings.setDesktopNames(out)
+	}
+	populateNames := func() {
+		entries = entries[:0]
+		items := make([]*widget.FormItem, 0, d.settings.DesktopCount())
+		for i := 0; i < d.settings.DesktopCount(); i++ {
+			entry := widget.NewEntry()
+			entry.PlaceHolder = strconv.Itoa(i + 1)
+			if i < len(d.settings.DesktopNames()) {
+				entry.Text = d.settings.DesktopNames()[i]
+			}
+			entry.OnChanged = func(string) { applyNames() }
+			entries = append(entries, entry)
+			items = append(items, widget.NewFormItem("Desktop "+strconv.Itoa(i+1), entry))
+		}
+		names.Objects = []fyne.CanvasObject{widget.NewForm(items...)}
+		names.Refresh()
+	}
+
 	options := make([]string, 0, maxDesktopCount)
 	for i := 1; i <= maxDesktopCount; i++ {
 		options = append(options, strconv.Itoa(i))
@@ -474,12 +500,17 @@ func (d *settingsUI) loadDesktopsScreen() fyne.CanvasObject {
 			return
 		}
 		d.settings.setDesktopCount(n)
+		populateNames()
 	})
 	count.SetSelected(strconv.Itoa(d.settings.DesktopCount()))
+	populateNames()
 
-	form := widget.NewForm(widget.NewFormItem("Number of desktops", count))
-	return container.NewVBox(sectionHeading("Virtual Desktops",
-		"Switch with the pager, the desktop overview or the keyboard shortcuts."), form)
+	return container.NewBorder(
+		container.NewVBox(sectionHeading("Virtual Desktops",
+			"Switch with the pager, the desktop overview or the keyboard shortcuts."),
+			widget.NewForm(widget.NewFormItem("Number of desktops", count)),
+			widget.NewSeparator(), sectionHeading("Names", "Leave blank to show the number.")),
+		nil, nil, nil, container.NewVScroll(names))
 }
 
 func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {

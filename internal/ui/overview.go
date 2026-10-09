@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"image/draw"
 	"math"
-	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -14,6 +13,8 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	xdraw "golang.org/x/image/draw"
+
+	"fyshos.com/tyde"
 )
 
 // deskOverview drives the "reveal all" desktop overview: a zoom-out to show every
@@ -100,7 +101,7 @@ func (o *deskOverview) showContent() {
 	}
 
 	size := l.primaryWin.win.Canvas().Size()
-	content := newOverviewContent(o.count, l.desk, size,
+	content := newOverviewContent(o.count, l.desk, l.Settings(), size,
 		func(d int) { o.selectDesk(d) },
 		func() { o.cancel() })
 	o.content = content
@@ -364,13 +365,14 @@ func maxF(a, b float32) float32 {
 type overviewContent struct {
 	widget.BaseWidget
 	count, current int
+	settings       tyde.DeskSettings // for the desktop names
 	size           fyne.Size
 	onSelect       func(int)
 	onCancel       func()
 }
 
-func newOverviewContent(count, current int, size fyne.Size, sel func(int), cancel func()) *overviewContent {
-	c := &overviewContent{count: count, current: current, size: size, onSelect: sel, onCancel: cancel}
+func newOverviewContent(count, current int, settings tyde.DeskSettings, size fyne.Size, sel func(int), cancel func()) *overviewContent {
+	c := &overviewContent{count: count, current: current, settings: settings, size: size, onSelect: sel, onCancel: cancel}
 	c.ExtendBaseWidget(c)
 	return c
 }
@@ -394,7 +396,7 @@ func (c *overviewContent) FocusLost()     {}
 func (c *overviewContent) CreateRenderer() fyne.WidgetRenderer {
 	objs := make([]fyne.CanvasObject, 0, c.count)
 	for d := 0; d < c.count; d++ {
-		p := newOverviewPanel(d, d == c.current, c.onSelect)
+		p := newOverviewPanel(d, tyde.DesktopName(c.settings, d), d == c.current, c.onSelect)
 		pos, sz := overviewPanelGeometry(c.count, d, c.size)
 		p.Move(pos)
 		p.Resize(sz)
@@ -409,12 +411,13 @@ func (c *overviewContent) CreateRenderer() fyne.WidgetRenderer {
 type overviewPanel struct {
 	widget.BaseWidget
 	index    int
+	label    string // the desktop's name or number
 	current  bool
 	onSelect func(int)
 }
 
-func newOverviewPanel(index int, current bool, sel func(int)) *overviewPanel {
-	p := &overviewPanel{index: index, current: current, onSelect: sel}
+func newOverviewPanel(index int, label string, current bool, sel func(int)) *overviewPanel {
+	p := &overviewPanel{index: index, label: label, current: current, onSelect: sel}
 	p.ExtendBaseWidget(p)
 	return p
 }
@@ -432,7 +435,7 @@ func (p *overviewPanel) CreateRenderer() fyne.WidgetRenderer {
 		border.StrokeWidth = 3
 	}
 
-	label := canvas.NewText(strconv.Itoa(p.index+1), theme.Color(theme.ColorNameForeground))
+	label := canvas.NewText(p.label, theme.Color(theme.ColorNameForeground))
 	label.Alignment = fyne.TextAlignCenter
 	label.TextSize = theme.TextHeadingSize()
 	label.TextStyle = fyne.TextStyle{Bold: true}
