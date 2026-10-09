@@ -11,11 +11,17 @@ import (
 	"fyshos.com/tyde"
 )
 
-const deskCount = 4
+// ModuleName is the name the virtual desktops module is registered and enabled under.
+const ModuleName = "Virtual Desktops"
 
 var desksMeta = tyde.ModuleMetadata{
-	Name:        "Virtual Desktops",
+	Name:        ModuleName,
 	NewInstance: newDesktops,
+}
+
+// deskCount returns the configured number of virtual desktops.
+func deskCount() int {
+	return tyde.Instance().Settings().DesktopCount()
 }
 
 type desktops struct {
@@ -27,6 +33,7 @@ func (d *desktops) DesktopChangeNotify(_ int) {
 }
 
 func (d *desktops) Destroy() {
+	tyde.Instance().WindowManager().RemoveStackListener(d.gui) // the pager is rebuilt with the module
 }
 
 func (d *desktops) Metadata() tyde.ModuleMetadata {
@@ -34,16 +41,24 @@ func (d *desktops) Metadata() tyde.ModuleMetadata {
 }
 
 func (d *desktops) Shortcuts() map[*tyde.Shortcut]func() {
-	mapping := make(map[*tyde.Shortcut]func(), deskCount+2)
-	for i := 0; i < deskCount; i++ {
+	count := deskCount()
+	mapping := make(map[*tyde.Shortcut]func(), count+4)
+	for i := 0; i < count && i < 9; i++ { // one digit key per desktop
 		id := strconv.Itoa(i + 1)
 		deskID := i
+		// The count can shrink after these are bound, so check it when pressed.
 		mapping[&tyde.Shortcut{Name: "Switch to Desktop " + id, KeyName: fyne.KeyName(id), Modifier: tyde.UserModifier}] = func() {
+			if deskID >= deskCount() {
+				return
+			}
 			d.setDesktop(deskID)
 		}
 		mapping[&tyde.Shortcut{Name: "Move Window to Desktop " + id, KeyName: fyne.KeyName(id), Modifier: tyde.UserModifier | fyne.KeyModifierShift}] = func() {
-			w := tyde.Instance().WindowManager().Windows()[0]
-			w.SetDesktop(deskID)
+			wins := tyde.Instance().WindowManager().Windows()
+			if deskID >= deskCount() || len(wins) == 0 {
+				return
+			}
+			wins[0].SetDesktop(deskID)
 		}
 	}
 
@@ -56,7 +71,7 @@ func (d *desktops) Shortcuts() map[*tyde.Shortcut]func() {
 	}
 	mapping[&tyde.Shortcut{Name: "Switch to Next Desktop", KeyName: fyne.KeyDown, Modifier: tyde.UserModifier}] = func() {
 		current := tyde.Instance().Desktop()
-		if current == deskCount-1 {
+		if current >= deskCount()-1 {
 			return
 		}
 		d.setDesktop(current + 1)
@@ -76,7 +91,7 @@ func (d *desktops) Shortcuts() map[*tyde.Shortcut]func() {
 	}
 	mapping[&tyde.Shortcut{Name: "Move Window to Next Desktop", KeyName: fyne.KeyDown, Modifier: tyde.UserModifier | fyne.KeyModifierShift}] = func() {
 		current := tyde.Instance().Desktop()
-		if current == deskCount-1 {
+		if current >= deskCount()-1 {
 			return
 		}
 
@@ -92,7 +107,7 @@ func (d *desktops) Shortcuts() map[*tyde.Shortcut]func() {
 
 func (d *desktops) StatusAreaWidget() fyne.CanvasObject {
 	reveal := widget.NewButtonWithIcon("", theme.GridIcon(), func() {
-		tyde.Instance().ShowDesktopOverview(deskCount)
+		tyde.Instance().ShowDesktopOverview(deskCount())
 	})
 	reveal.Importance = widget.LowImportance
 

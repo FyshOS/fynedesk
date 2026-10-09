@@ -311,10 +311,11 @@ const (
 	overviewMargin = float32(1.08)
 )
 
-// overviewGridCols returns the column count for a count-desktop grid: the smallest
-// square-ish grid that holds them all (4 -> 2x2, 6 -> 3x2).
+// overviewGridCols returns the column count for a count-desktop grid: as close to
+// square as the count allows.
 func overviewGridCols(count int) int {
-	return int(math.Ceil(math.Sqrt(float64(count))))
+	rows := math.Ceil(math.Sqrt(float64(count)))
+	return int(math.Ceil(float64(count) / rows))
 }
 
 // overviewPanelGeometry returns the on-screen position and size of the preview for

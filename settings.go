@@ -22,6 +22,7 @@ type DeskSettings interface {
 	BorderButtonPosition() string
 	ClockFormatting() string
 	ComputerType() string
+	DesktopCount() int // how many virtual desktops are offered
 	NarrowWidgetPanel() bool
 
 	LauncherIcons() []string

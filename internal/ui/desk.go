@@ -7,6 +7,7 @@ import (
 	"math"
 	"os/exec"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2/theme"
 	"github.com/FyshOS/appie"
@@ -220,6 +221,29 @@ func (l *desktop) setDesktop(id int, cube bool) {
 	})
 	l.deskAnim = a
 	a.Start()
+}
+
+// fitDesktops gathers anything left beyond the last of count desktops onto that
+// last desktop.
+func (l *desktop) fitDesktops(count int) {
+	last := count - 1
+	moved := false
+	for _, win := range l.wm.Windows() {
+		if !win.Pinned() && win.Desktop() > last {
+			win.SetDesktop(last)
+			moved = true
+		}
+	}
+	if l.desk <= last {
+		return
+	}
+	if !moved {
+		l.setDesktop(last, true)
+		return
+	}
+	time.AfterFunc(canvas.DurationStandard, func() {
+		fyne.Do(func() { l.setDesktop(last, true) })
+	})
 }
 
 // raiseTopWindow raises and focuses the topmost window that is visible on the
@@ -1093,6 +1117,7 @@ func (l *desktop) RefreshWindowAccessories() {
 }
 
 func (l *desktop) fireSettingsChangeListener(s tyde.DeskSettings) {
+	l.fitDesktops(s.DesktopCount())
 	l.clearModuleCache()
 	l.updateBackgrounds(s.Background())
 	l.widgets.reloadModules(l.Modules())
