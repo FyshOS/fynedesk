@@ -4,7 +4,12 @@
 package composit
 
 import (
+	"image"
+	"image/color"
 	"testing"
+
+	"github.com/BurntSushi/xgb/xproto"
+	"github.com/stretchr/testify/assert"
 )
 
 // convertNaive is a straightforward, independent reference implementation of
@@ -85,3 +90,57 @@ func benchConvert(b *testing.B, fn func(dst, src []byte, argb bool)) {
 
 func BenchmarkConvertNaive(b *testing.B)   { benchConvert(b, convertNaive) }
 func BenchmarkConvertZPixmap(b *testing.B) { benchConvert(b, convertZPixmap) }
+
+func TestConvertZPixmapRegion(t *testing.T) {
+	img := image.NewRGBA(image.Rect(0, 0, 6, 5))
+	before := color.RGBA{R: 1, G: 2, B: 3, A: 4}
+	for i := 0; i < len(img.Pix); i += 4 {
+		img.SetRGBA(i/4%6, i/4/6, before)
+	}
+
+	r := image.Rect(2, 1, 5, 3)
+	src := sampleZPixmap(r.Dx(), r.Dy())
+	want := make([]byte, len(src))
+	convertNaive(want, src, false)
+	convertZPixmapRegion(img, r, src, false)
+
+	for y := 0; y < 5; y++ {
+		for x := 0; x < 6; x++ {
+			if !image.Pt(x, y).In(r) {
+				assert.Equal(t, before, img.RGBAAt(x, y), "pixel %d,%d outside the region", x, y)
+				continue
+			}
+			i := ((y-r.Min.Y)*r.Dx() + x - r.Min.X) * 4
+			assert.Equal(t, color.RGBA{R: want[i], G: want[i+1], B: want[i+2], A: want[i+3]}, img.RGBAAt(x, y),
+				"pixel %d,%d", x, y)
+		}
+	}
+}
+
+func TestCopyRegion(t *testing.T) {
+	src := image.NewRGBA(image.Rect(0, 0, 6, 5))
+	for i := range src.Pix {
+		src.Pix[i] = byte(i)
+	}
+	dst := image.NewRGBA(src.Rect)
+
+	r := image.Rect(1, 2, 4, 5)
+	copyRegion(dst, src, r)
+	for y := 0; y < 5; y++ {
+		for x := 0; x < 6; x++ {
+			want := color.RGBA{}
+			if image.Pt(x, y).In(r) {
+				want = src.RGBAAt(x, y)
+			}
+			assert.Equal(t, want, dst.RGBAAt(x, y), "pixel %d,%d", x, y)
+		}
+	}
+
+	copyRegion(dst, src, image.Rectangle{}) // nothing to copy, must not panic
+}
+
+func TestDamagedRegion(t *testing.T) {
+	area := xproto.Rectangle{X: 10, Y: 20, Width: 30, Height: 40}
+	assert.Equal(t, image.Rect(10, 20, 40, 60), damagedRegion(area, 0))
+	assert.Equal(t, image.Rect(12, 22, 42, 62), damagedRegion(area, 2))
+}

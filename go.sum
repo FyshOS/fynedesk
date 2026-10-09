@@ -1,7 +1,7 @@
 codeberg.org/sdassow/unyts v0.5.1 h1:7mgAqMsgrpsFNXKXFZOzXDlCb3hAW4q0mYyOIN31lLk=
 codeberg.org/sdassow/unyts v0.5.1/go.mod h1:G7IVCrmY/57ojDjMqkmIlRpyLvLF5FrQEbaJv5RzS2k=
-fyne.io/fyne/v2 v2.8.2-0.20260917213848-4df059826be6 h1:4Ei5VDsdyI+5ZHBfAVxoemyOSMP6GRCVsWY6Zh905+k=
-fyne.io/fyne/v2 v2.8.2-0.20260917213848-4df059826be6/go.mod h1:8bBm+lI+VRjvKUHjWHn3wqcZJbqn+PuiYaCMciOjUnE=
+fyne.io/fyne/v2 v2.8.3-0.20261018211521-847e15d76d82 h1:Xpfl7G4eE3S1yr6bLsySyIPgXhs6P5vkwUWUSwNSAgk=
+fyne.io/fyne/v2 v2.8.3-0.20261018211521-847e15d76d82/go.mod h1:eXHJ/D9Y58UcDw7SkguadCRI64M4flXyjoMn827Q5SI=
 fyne.io/systray v1.12.3-0.20260810170012-af4e8e793ec4 h1:149/+Wa5EsLLXfyj2pdTmvnQf2VIlgCIwSjcCTHYhIo=
 fyne.io/systray v1.12.3-0.20260810170012-af4e8e793ec4/go.mod h1:RVwqP9nYMo7h5zViCBHri2FgjXF7H2cub7MAq4NSoLs=
 github.com/ActiveState/termtest/conpty v0.5.0 h1:JLUe6YDs4Jw4xNPCU+8VwTpniYOGeKzQg4SM2YHQNA8=
@@ -55,8 +55,8 @@ github.com/fyne-io/glfw-js v0.4.0 h1:I9hREBeFyI10cNIqbMKYb1PRidyPDgwob8o2la9SfQo
 github.com/fyne-io/glfw-js v0.4.0/go.mod h1:SDchsFZh4n7nVuBoiowOhOgIBdz+qUQVeC1w9fe2yVU=
 github.com/fyne-io/image v0.1.1 h1:WH0z4H7qfvNUw5l4p3bC1q70sa5+YWVt6HCj7y4VNyA=
 github.com/fyne-io/image v0.1.1/go.mod h1:xrfYBh6yspc+KjkgdZU/ifUC9sPA5Iv7WYUBzQKK7JM=
-github.com/fyne-io/oksvg v0.2.0 h1:mxcGU2dx6nwjJsSA9PCYZDuoAcsZ/OuJlvg/Q9Njfo8=
-github.com/fyne-io/oksvg v0.2.0/go.mod h1:dJ9oEkPiWhnTFNCmRgEze+YNprJF7YRbpjgpWS4kzoI=
+github.com/fyne-io/oksvg v0.2.1-0.20260918172519-a9af55fa95d9 h1:owsdpq6a2KhaAA/hoHGQmFM7kOgKo3srXZVGnbEUzr0=
+github.com/fyne-io/oksvg v0.2.1-0.20260918172519-a9af55fa95d9/go.mod h1:dJ9oEkPiWhnTFNCmRgEze+YNprJF7YRbpjgpWS4kzoI=
 github.com/fyne-io/terminal v0.0.0-20260618170948-86c23cc49e34 h1:qnWMN0lahPnKjWzhRKOjSXVg3rKy3Oowvf/aNkElMn8=
 github.com/fyne-io/terminal v0.0.0-20260618170948-86c23cc49e34/go.mod h1:EExhIhaPGBI6PlTGDTWwdbyQ2zD+k0A80O/V4qYNI3w=
 github.com/fyne-io/xgb v0.0.0-20260101193816-5f7669354be2 h1:doVVjeoVBO6zBa03j3YWRLa29OLF9nS6Dh1EHaxoJKY=

@@ -4,7 +4,6 @@ import (
 	"image"
 	"image/color"
 	"sync"
-	"sync/atomic"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -19,11 +18,10 @@ import (
 // WindowImage holds the Fyne image and pixel-space geometry for a single
 // composited window. The platform compositor populates these fields.
 //
-// Images are double-buffered: the compositor writes to Back (from any
-// goroutine) and the renderer swaps Back→Img.Image during its Refresh.
-// Pending is set by the compositor after a push; the renderer clears it
-// after consuming the frame. The compositor should skip capture while
-// Pending is true to avoid wasteful work.
+// Images are double-buffered: the compositor hands over each frame with Push
+// (from any goroutine) and the renderer swaps the latest one into Img.Image
+// during its Refresh. A frame comes with the region of it that changed, so
+// that the renderer uploads only those pixels.
 type WindowImage struct {
 	ID   uint32
 	Img  *canvas.Image
@@ -34,10 +32,64 @@ type WindowImage struct {
 	// Active deepens that shadow for the window that has focus.
 	Shadow, Active bool
 
-	Back    atomic.Value // image.Image — latest frame from compositor
-	Pending atomic.Bool  // true = refresh requested, not yet rendered
+	mu      sync.Mutex
+	back    image.Image     // latest frame from compositor
+	frame   uint64          // the number of that frame
+	dirty   image.Rectangle // where back differs from the frame last rendered
+	pending bool            // true = refresh requested, not yet rendered
 
 	shadow *canvas.Rectangle // drawn beneath Img when Shadow is set
+}
+
+// Push hands over a frame of the window for the renderer to show on its next
+// Refresh, and returns whether that Refresh has yet to be requested. Frames
+// are numbered in sequence and only the pixels in dirty differ from those of
+// the frame before; a window image that missed that frame takes all of them.
+func (wi *WindowImage) Push(img image.Image, dirty image.Rectangle, frame uint64) bool {
+	wi.mu.Lock()
+	defer wi.mu.Unlock()
+
+	if frame != wi.frame+1 {
+		dirty = img.Bounds()
+	}
+	wi.back, wi.frame = img, frame
+	wi.dirty = wi.dirty.Union(dirty)
+
+	refresh := !wi.pending
+	wi.pending = true
+	return refresh
+}
+
+// Pending returns whether a pushed frame is still waiting to be rendered. The
+// renderer may read the image of that frame, or the one before, at any time.
+func (wi *WindowImage) Pending() bool {
+	wi.mu.Lock()
+	defer wi.mu.Unlock()
+
+	return wi.pending
+}
+
+// Latest returns the frame most recently pushed, or nil if there is none.
+func (wi *WindowImage) Latest() image.Image {
+	wi.mu.Lock()
+	defer wi.mu.Unlock()
+
+	return wi.back
+}
+
+// take returns the frame waiting to be rendered and the region of it that
+// differs from the frame rendered before, or false if there is none waiting.
+func (wi *WindowImage) take() (image.Image, image.Rectangle, bool) {
+	wi.mu.Lock()
+	defer wi.mu.Unlock()
+
+	if !wi.pending {
+		return nil, image.Rectangle{}, false
+	}
+	dirty := wi.dirty
+	wi.dirty = image.Rectangle{}
+	wi.pending = false
+	return wi.back, dirty, true
 }
 
 // CompositorWidget is a Fyne widget that displays composited window images.
@@ -247,21 +299,22 @@ func (r *compositorRenderer) Refresh() {
 	objs := make([]fyne.CanvasObject, 0, len(r.widget.images))
 	for _, wi := range r.widget.images {
 		// Swap back→front: pick up the latest frame from the compositor.
-		swapped := wi.Pending.Load()
+		img, dirty, swapped := wi.take()
+		resized := swapped && (wi.Img.Image == nil || wi.Img.Image.Bounds() != img.Bounds())
 		if swapped {
-			if back := wi.Back.Load(); back != nil {
-				wi.Img.Image = back.(image.Image)
-			}
-			wi.Pending.Store(false)
+			wi.Img.Image = img
 		}
 
 		before := wi.Img.Size()
 		r.widget.placeWindow(wi)
 		// Only an image with new content or a new size needs its texture
-		// rebuilt; refreshing every child on each capture is what makes a
-		// resize crawl.
-		if swapped || wi.Img.Size() != before {
+		// touched; refreshing every child on each capture is what makes a
+		// resize crawl. New content of the same size replaces just the pixels
+		// that changed.
+		if resized || wi.Img.Size() != before {
 			wi.Img.Refresh()
+		} else if swapped {
+			wi.Img.RefreshRegion(dirty)
 		}
 		if wi.Shadow {
 			objs = append(objs, wi.shadow)

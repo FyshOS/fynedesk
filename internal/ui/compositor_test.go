@@ -1,11 +1,13 @@
 package ui
 
 import (
+	"image"
 	"image/color"
 	"testing"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"github.com/stretchr/testify/assert"
 
 	wmTheme "fyshos.com/tyde/theme"
 )
@@ -142,4 +144,42 @@ func TestCompositorShadowBeneathManagedWindow(t *testing.T) {
 	if win.shadow.Shadow != wmTheme.WindowShadow(false) {
 		t.Fatal("unfocused window should have the inactive shadow")
 	}
+}
+
+// TestWindowImagePush verifies that the renderer is given the latest frame with
+// all that changed since the one it rendered before, and is asked to refresh
+// only once for it.
+func TestWindowImagePush(t *testing.T) {
+	wi := &WindowImage{}
+	_, _, ok := wi.take()
+	assert.False(t, ok)
+	assert.False(t, wi.Pending())
+
+	bounds := image.Rect(0, 0, 100, 80)
+	first := image.NewRGBA(bounds)
+	assert.True(t, wi.Push(first, bounds, 1))
+	assert.True(t, wi.Pending())
+	assert.Equal(t, first, wi.Latest())
+
+	img, dirty, ok := wi.take()
+	assert.True(t, ok)
+	assert.Same(t, first, img)
+	assert.Equal(t, bounds, dirty)
+	assert.False(t, wi.Pending())
+
+	// Frames that the renderer does not get to are folded into the next.
+	second, third := image.NewRGBA(bounds), image.NewRGBA(bounds)
+	assert.True(t, wi.Push(second, image.Rect(10, 10, 20, 20), 2))
+	assert.False(t, wi.Push(third, image.Rect(50, 15, 60, 30), 3))
+	img, dirty, ok = wi.take()
+	assert.True(t, ok)
+	assert.Same(t, third, img)
+	assert.Equal(t, image.Rect(10, 10, 60, 30), dirty)
+	_, _, ok = wi.take()
+	assert.False(t, ok)
+
+	// A frame that follows one this window image was not given may differ anywhere.
+	assert.True(t, wi.Push(second, image.Rect(10, 10, 20, 20), 5))
+	_, dirty, _ = wi.take()
+	assert.Equal(t, bounds, dirty)
 }

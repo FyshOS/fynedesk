@@ -22,26 +22,61 @@ func capturePixmap(conn *xgb.Conn, drawable xproto.Drawable, width, height uint1
 		return nil
 	}
 
-	reply, err := xproto.GetImage(conn, xproto.ImageFormatZPixmap, drawable,
-		0, 0, width, height, math.MaxUint32).Reply()
-	if err != nil || reply == nil {
-		return nil
-	}
-
 	img := buf
 	if img == nil || img.Rect.Dx() != w || img.Rect.Dy() != h || img.Stride != w*4 {
 		img = image.NewRGBA(image.Rect(0, 0, w, h))
 	}
-	data := reply.Data
-
-	// X11 ZPixmap format: 4 bytes per pixel in BGRx or BGRA order
-	expectedLen := w * h * 4
-	if len(data) < expectedLen {
+	if !captureRegion(conn, drawable, img.Rect, argb, img) {
 		return nil
 	}
-
-	convertZPixmap(img.Pix, data, argb)
 	return img
+}
+
+// captureRegion reads the pixels in region r of an X pixmap into the same
+// region of img, converting them as capturePixmap does. The rest of img is
+// left as it was. It returns false if the pixels could not be read.
+func captureRegion(conn *xgb.Conn, drawable xproto.Drawable, r image.Rectangle, argb bool, img *image.RGBA) bool {
+	reply, err := xproto.GetImage(conn, xproto.ImageFormatZPixmap, drawable,
+		int16(r.Min.X), int16(r.Min.Y), uint16(r.Dx()), uint16(r.Dy()), math.MaxUint32).Reply()
+	if err != nil || reply == nil {
+		return false
+	}
+
+	// X11 ZPixmap format: 4 bytes per pixel in BGRx or BGRA order
+	if len(reply.Data) < r.Dx()*r.Dy()*4 {
+		return false
+	}
+	convertZPixmapRegion(img, r, reply.Data, argb)
+	return true
+}
+
+// convertZPixmapRegion converts X11 ZPixmap data holding the rows of region r
+// into that region of img, as convertZPixmap does.
+func convertZPixmapRegion(img *image.RGBA, r image.Rectangle, data []byte, argb bool) {
+	row := r.Dx() * 4
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		off := img.PixOffset(r.Min.X, y)
+		convertZPixmap(img.Pix[off:off+row], data[:row], argb)
+		data = data[row:]
+	}
+}
+
+// copyRegion copies the pixels in region r of src into the same region of dst,
+// an image with the same bounds.
+func copyRegion(dst, src *image.RGBA, r image.Rectangle) {
+	row := r.Dx() * 4
+	for y := r.Min.Y; y < r.Max.Y; y++ {
+		off := dst.PixOffset(r.Min.X, y)
+		copy(dst.Pix[off:off+row], src.Pix[off:off+row])
+	}
+}
+
+// damagedRegion returns where in the pixmap of a window with the given border
+// width a damage notification's area lies. Damage is reported from the origin
+// of the window, which the pixmap surrounds with its border.
+func damagedRegion(area xproto.Rectangle, border uint16) image.Rectangle {
+	x, y := int(area.X)+int(border), int(area.Y)+int(border)
+	return image.Rect(x, y, x+int(area.Width), y+int(area.Height))
 }
 
 // convertZPixmap converts X11 ZPixmap data (4 bytes/pixel in BGRx or BGRA
