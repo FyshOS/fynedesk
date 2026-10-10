@@ -1,3 +1,5 @@
+//go:build linux || openbsd || freebsd || netbsd
+
 package win
 
 import (
