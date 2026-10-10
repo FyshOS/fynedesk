@@ -156,10 +156,15 @@ func (c *client) SetDesktop(id int) {
 	}
 
 	start := c.Position()
+	startX, startY := c.frame.x, c.frame.y
 	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
 		newY := start.Y - off*f
 		pos := fyne.NewPos(start.X, newY)
 		if f >= 1.0 {
+			// The intermediate ticks below only pretend to move the frame, for the
+			// pager. Put the recorded position back where X11 still has the window
+			// so Move sees a change and configures it.
+			c.frame.x, c.frame.y = startX, startY
 			c.Move(pos) // final frame: sync X11
 		} else {
 			// Update frame position so Position() returns the
@@ -244,6 +249,11 @@ func (c *client) Move(pos fyne.Position) {
 
 	targetX := int16(pos.X * screen.CanvasScale())
 	targetY := int16(pos.Y * screen.CanvasScale())
+
+	// Show the window at its new position now rather than when the ConfigureNotify returns.
+	if x11.VisualMoveCallback != nil && (targetX != c.frame.x || targetY != c.frame.y) {
+		x11.VisualMoveCallback(uint32(c.id), targetX, targetY, c.frame.width, c.frame.height)
+	}
 	c.frame.updateGeometry(targetX, targetY, c.frame.width, c.frame.height, false)
 }
 

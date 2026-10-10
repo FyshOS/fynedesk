@@ -20,10 +20,7 @@ import (
 // deskOverview drives the "reveal all" desktop overview: a zoom-out to show every
 // virtual desktop laid out in a grid, an interactive layer to pick one (or escape
 // to cancel), then a zoom back in to the chosen desktop. The zoom itself is played
-// by per-screen overview shaders over a stitched snapshot of all desktops; the
-// interactive layer sits above the shader on the primary screen only and is shown
-// once the zoom-out settles, mirroring how startDeskCube hands off to the live
-// desktop when its roll completes.
+// by per-screen overview shaders over a stitched snapshot of all desktops.
 type deskOverview struct {
 	desk    *desktop
 	count   int
@@ -108,9 +105,7 @@ func (o *deskOverview) showContent() {
 	l.showOverlay(content, size, fyne.NewPos(0, 0), content)
 }
 
-// selectDesk zooms in to the tapped desktop and switches to it. The window slide
-// is started without the cube transition so it happens unseen beneath the zoom-in,
-// exactly as SetDesktop's slide happens beneath the cube.
+// selectDesk zooms in to the tapped desktop and switches to it.
 func (o *deskOverview) selectDesk(d int) {
 	if !o.active || o.anim != nil {
 		return
@@ -217,7 +212,7 @@ func (l *desktop) drawDeskPreview(strip *image.RGBA, r image.Rectangle, sw *scre
 }
 
 // deskPreviewImage returns the best image of desktop id for screen sw, using exactly
-// the sources the cube transition (startDeskCube) uses so the overview matches it:
+// the sources the cube transition (prepareDeskCube) uses so the overview matches it:
 //
 //  1. The current desktop: a live framebuffer capture via captureOpaque - the whole
 //     desktop as drawn, including the composited windows AND the bar and widget panel.
