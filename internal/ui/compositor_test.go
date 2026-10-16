@@ -1,6 +1,7 @@
 package ui
 
 import (
+	"image"
 	"image/color"
 	"testing"
 
@@ -141,5 +142,42 @@ func TestCompositorShadowBeneathManagedWindow(t *testing.T) {
 	r.Refresh()
 	if win.shadow.Shadow != wmTheme.WindowShadow(false) {
 		t.Fatal("unfocused window should have the inactive shadow")
+	}
+}
+
+// TestCompositorFrameCarriesItsSize verifies that a window keeps its old pixels
+// at their old size until the capture at a new size is swapped in, so a resize
+// never stretches a stale image, while its position follows the window at once.
+func TestCompositorFrameCarriesItsSize(t *testing.T) {
+	cw := NewCompositorWidget(nil) // no screen => canvas scale of 1
+	wi := cw.EnsureWindow(1)
+	wi.X, wi.Y = 100, 200
+	r := cw.CreateRenderer()
+
+	old := image.NewRGBA(image.Rect(0, 0, 400, 300))
+	wi.Back.Store(old)
+	wi.Pending.Store(true)
+	r.Refresh()
+	if wi.Img.Size() != fyne.NewSize(400, 300) || wi.Img.Position() != fyne.NewPos(100, 200) {
+		t.Fatalf("window not laid out from its first frame: %v at %v", wi.Img.Size(), wi.Img.Position())
+	}
+
+	// The window has been resized from its top-left corner in X, but the client
+	// has not repainted yet: the same pixels move to the new corner, unscaled.
+	wi.X, wi.Y = 50, 150
+	r.Refresh()
+	if wi.Img.Image != old || wi.Img.Size() != fyne.NewSize(400, 300) {
+		t.Fatalf("stale pixels were shown at a new size: %v", wi.Img.Size())
+	}
+	if wi.Img.Position() != fyne.NewPos(50, 150) {
+		t.Fatalf("window did not follow its new position, at %v", wi.Img.Position())
+	}
+	// The capture at the new size is laid out at its own bounds.
+	grown := image.NewRGBA(image.Rect(0, 0, 500, 350))
+	wi.Back.Store(grown)
+	wi.Pending.Store(true)
+	r.Refresh()
+	if wi.Img.Image != grown || wi.Img.Size() != fyne.NewSize(500, 350) {
+		t.Fatalf("new frame not laid out at its own size: %v", wi.Img.Size())
 	}
 }

@@ -249,8 +249,10 @@ func (r *compositorRenderer) Refresh() {
 		// Swap back→front: pick up the latest frame from the compositor.
 		swapped := wi.Pending.Load()
 		if swapped {
-			if back := wi.Back.Load(); back != nil {
-				wi.Img.Image = back.(image.Image)
+			if back, ok := wi.Back.Load().(image.Image); ok && back != nil {
+				wi.Img.Image = back
+				bounds := back.Bounds()
+				wi.W, wi.H = uint16(bounds.Dx()), uint16(bounds.Dy())
 			}
 			wi.Pending.Store(false)
 		}
