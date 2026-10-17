@@ -368,7 +368,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	disableTaskbar := widget.NewCheck("Disable Taskbar", nil)
 	disableTaskbar.SetChecked(d.settings.LauncherDisableTaskbar())
 
-	details := container.NewVBox(widget.NewSeparator(), sectionHeading("Configuration", ""),
+	details := container.NewVBox(widget.NewSeparator(), widget.NewRichTextFromMarkdown("## Configuration"),
 		disableTaskbar)
 
 	applyButton := container.NewHBox(layout.NewSpacer(),
@@ -432,9 +432,9 @@ func (d *settingsUI) loadModulesScreen() fyne.CanvasObject {
 		}
 	}
 	return container.NewGridWithColumns(2,
-		container.NewBorder(sectionHeading("Modules", ""), nil, nil, nil,
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Modules"), nil, nil, nil,
 			container.NewVScroll(container.NewVBox(modules...))),
-		container.NewBorder(sectionHeading("Launchers", ""), nil, nil, nil,
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Launchers"), nil, nil, nil,
 			container.NewVScroll(container.NewVBox(launchers...))))
 }
 
@@ -506,10 +506,9 @@ func (d *settingsUI) loadDesktopsScreen() fyne.CanvasObject {
 	populateNames()
 
 	return container.NewBorder(
-		container.NewVBox(sectionHeading("Virtual Desktops",
-			"Switch with the pager, the desktop overview or the keyboard shortcuts."),
+		container.NewVBox(widget.NewRichTextFromMarkdown("## Virtual Desktops"),
 			widget.NewForm(widget.NewFormItem("Number of desktops", count)),
-			widget.NewSeparator(), sectionHeading("Names", "Leave blank to show the number.")),
+			widget.NewSeparator(), widget.NewRichTextFromMarkdown("## Names\n\nLeave blank to show the number.")),
 		nil, nil, nil, container.NewVScroll(names))
 }
 
@@ -527,9 +526,9 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	}
 	modVBox := container.NewVBox(mods...)
 	rows := container.NewHBox(
-		container.NewBorder(sectionHeading("Action", ""), nil, nil, nil, container.NewVBox(names...)),
-		container.NewBorder(sectionHeading("Modifier", ""), nil, nil, nil, modVBox),
-		container.NewBorder(sectionHeading("Key Name", ""), nil, nil, nil, container.NewVBox(keys...)),
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Action"), nil, nil, nil, container.NewVBox(names...)),
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Modifier"), nil, nil, nil, modVBox),
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Key Name"), nil, nil, nil, container.NewVBox(keys...)),
 	)
 	grid := container.NewScroll(rows)
 
@@ -737,7 +736,7 @@ func (w *widgetPanel) showSettings(panel string) {
 	scale := ui.makeScaleGroup(win)
 	screens := screenmanager.New(win)
 	screens.OnConfigurationChanged = w.desk.Screens().RefreshScreens
-	screenui := container.NewBorder(sectionHeading("Screens", ""), nil, nil, nil, screens)
+	screenui := container.NewBorder(widget.NewRichTextFromMarkdown("## Screens"), nil, nil, nil, screens)
 
 	groups := []settingsGroup{
 		{title: "Appearance", panels: []*settingsPanel{

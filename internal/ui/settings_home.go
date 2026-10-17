@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	deskDriver "fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 
@@ -103,7 +104,7 @@ func (t *settingsTile) Cursor() deskDriver.Cursor {
 // detail view, with an animated transition between them.
 type settingsNav struct {
 	groups     []settingsGroup
-	headerIcon fyne.Resource // icon shown top-left on the home screen (matches the docked slot)
+	headerIcon fyne.Resource // icon shown top-right on the home screen (matches the docked slot)
 
 	root   *fyne.Container // stack: home, detail, flyer overlay
 	home   fyne.CanvasObject
@@ -132,17 +133,18 @@ func newSettingsNav(groups []settingsGroup, headerIcon fyne.Resource) *settingsN
 	n.detailIcon = canvas.NewImageFromResource(nil)
 	n.detailIcon.FillMode = canvas.ImageFillContain
 	n.detailIcon.SetMinSize(fyne.NewSquareSize(headerIconSize))
-	n.detailTitle = widget.NewLabelWithStyle("", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	n.detailTitle = widget.NewLabelWithStyle("", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	n.detailTitle.SizeName = theme.SizeNameHeadingText
 	n.backButton = widget.NewButtonWithIcon("Back", theme.NavigateBackIcon(), n.close)
 	n.backButton.Importance = widget.LowImportance
 	n.detailContent = container.NewStack()
 
 	// A fixed-height header keeps the docked icon at a predictable corner, so
-	// the flight target lands where the real icon will sit.
+	// the flight target lands where the real icon will sit. Back sits in the
+	// usual top-left, the icon docks top-right and the title centres between.
 	iconSlot := container.NewGridWrap(fyne.NewSquareSize(headerIconSize), n.detailIcon)
-	header := container.NewBorder(nil, nil,
-		container.NewHBox(iconSlot, n.detailTitle), container.NewCenter(n.backButton))
+	header := container.NewStack(n.detailTitle, container.NewHBox(
+		container.NewCenter(n.backButton), layout.NewSpacer(), iconSlot))
 	n.detail = container.NewPadded(container.NewBorder(
 		container.NewVBox(header, widget.NewSeparator()), nil, nil, nil,
 		n.detailContent,
@@ -180,15 +182,15 @@ func (n *settingsNav) buildHome() fyne.CanvasObject {
 
 	scroll := container.NewVScroll(groups)
 
-	// A persistent header (settings icon + title) mirrors the detail view.
+	// A persistent header (title + settings icon) mirrors the detail view.
 	homeIcon := canvas.NewImageFromResource(n.headerIcon)
 	homeIcon.FillMode = canvas.ImageFillContain
 	homeIcon.SetMinSize(fyne.NewSquareSize(headerIconSize))
 	iconSlot := container.NewGridWrap(fyne.NewSquareSize(headerIconSize), homeIcon)
-	title := widget.NewLabelWithStyle("Settings", fyne.TextAlignLeading, fyne.TextStyle{Bold: true})
+	title := widget.NewLabelWithStyle("Settings", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	title.SizeName = theme.SizeNameHeadingText
-	head := container.NewVBox(
-		container.NewBorder(nil, nil, container.NewHBox(iconSlot, title), nil),
+	head := container.NewVBox(container.NewStack(title,
+		container.NewHBox(layout.NewSpacer(), iconSlot)),
 		widget.NewSeparator(),
 	)
 	body := container.NewPadded(container.NewBorder(head, nil, nil, nil, scroll))
@@ -246,8 +248,9 @@ func (n *settingsNav) open(p *settingsPanel) {
 	n.flyer.Resource = p.icon
 	n.flyer.Refresh()
 
+	// The slot hugs the padded top-right corner of the detail view.
 	pad := theme.Padding()
-	iconCenter := fyne.NewPos(pad+headerIconSize/2, pad+headerIconSize/2)
+	iconCenter := fyne.NewPos(n.root.Size().Width-pad-headerIconSize/2, pad+headerIconSize/2)
 	n.animate(start, tileIconSize, headerIconSize, iconCenter, func() {
 		n.home.Hide()
 		n.detail.Show()
@@ -396,14 +399,4 @@ func (n *settingsNav) setFlyerBGAlpha(centreY float32) {
 	bg.A = uint8(a * 255)
 	n.flyerBG.FillColor = bg
 	n.flyerBG.Refresh()
-}
-
-// sectionHeading titles a block of settings with a bold sub-heading label (and an
-// optional caption beneath).
-func sectionHeading(title, subtitle string) fyne.CanvasObject {
-	if subtitle == "" {
-		return widget.NewRichTextFromMarkdown("## " + title)
-	}
-
-	return widget.NewRichTextFromMarkdown("## " + title + "\n\n" + subtitle)
 }
