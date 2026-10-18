@@ -1,8 +1,8 @@
 package wm
 
 import (
-	"fmt"
 	"image/color"
+	"strconv"
 
 	"fyshos.com/tyde"
 	"fyshos.com/tyde/internal/icon"
@@ -126,10 +126,16 @@ func (c *Border) showMenu() {
 }
 
 func (c *Border) makeDesktopMenu() *fyne.MenuItem {
-	desks := make([]*fyne.MenuItem, 4)
-	for i := 0; i < 4; i++ {
+	settings := tyde.Instance().Settings()
+	count := settings.DesktopCount()
+	desks := make([]*fyne.MenuItem, count)
+	for i := 0; i < count; i++ {
 		deskID := i
-		desks[i] = fyne.NewMenuItem(fmt.Sprintf("Desktop %d", i+1), func() {
+		label := tyde.DesktopName(settings, i)
+		if label == strconv.Itoa(i+1) { // unnamed: the bare number reads better as "Desktop N"
+			label = "Desktop " + label
+		}
+		desks[i] = fyne.NewMenuItem(label, func() {
 			if c.win.Pinned() {
 				c.win.Unpin()
 			}

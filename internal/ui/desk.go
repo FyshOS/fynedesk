@@ -7,6 +7,7 @@ import (
 	"math"
 	"os/exec"
 	"strconv"
+	"time"
 
 	"fyne.io/fyne/v2/theme"
 	"github.com/FyshOS/appie"
@@ -53,6 +54,8 @@ type screenWindow struct {
 	// overviewShader is a full-window overlay that plays the "reveal all" desktop
 	// overview zoom. Hidden except while the overview is opening, shown or closing.
 	overviewShader *canvas.Shader
+	// deskBadge flashes the number of the desktop just switched to, topmost.
+	deskBadge *deskBadge
 }
 
 // ScreenCompositors groups the compositor widgets for a single screen,
@@ -90,20 +93,19 @@ type desktop struct {
 	showMenu    func(*fyne.Menu, fyne.Position)
 	moduleCache []tyde.Module
 
-	bar             *bar
-	widgets         *widgetPanel
-	mouse           fyne.CanvasObject
-	overlayLayer    *overlayLayer   // above-windows layer for OverlayAreaModule widgets (primary screen)
-	accessoryLayer  *fyne.Container // embedded-mode home for WindowAccessoryModule items (no compositor to host them)
-	screenWindows   []*screenWindow
-	primaryWin      *screenWindow
-	running         bool // true once the run loop has started and windows can be shown directly
-	desk            int
-	deskAnim        *fyne.Animation
-	deskAnimTargets map[tyde.Window]fyne.Position // where the in-flight animation is heading
-	deskCubeAnim    *fyne.Animation               // drives the 3D cube transition overlay
-	overview        *deskOverview                 // the "reveal all" overview, when on screen
-	compositorDone  chan struct{}
+	bar            *bar
+	widgets        *widgetPanel
+	mouse          fyne.CanvasObject
+	overlayLayer   *overlayLayer   // above-windows layer for OverlayAreaModule widgets (primary screen)
+	accessoryLayer *fyne.Container // embedded-mode home for WindowAccessoryModule items (no compositor to host them)
+	screenWindows  []*screenWindow
+	primaryWin     *screenWindow
+	running        bool // true once the run loop has started and windows can be shown directly
+	desk           int
+	deskMove       func()          // moves the windows onto the chosen desktop once the cube roll hides them
+	deskCubeAnim   *fyne.Animation // drives the 3D cube transition overlay
+	overview       *deskOverview   // the "reveal all" overview, when on screen
+	compositorDone chan struct{}
 
 	// overlayShapes maps each shown overlay to the screen-pixel rectangle it occupies,
 	// so frame input shapes can be made transparent only under the overlay content.
@@ -131,92 +133,109 @@ func (l *desktop) SetDesktop(id int) {
 	l.setDesktop(id, true)
 }
 
-// setDesktop switches to desktop id, sliding the windows into place. When cube is
-// true the 3D cube transition is rolled over the top to mask the slide; the desktop
-// overview passes false because its own zoom-in already masks the slide.
+// setDesktop switches to desktop id using the appropriate transition.
 func (l *desktop) setDesktop(id int, cube bool) {
 	old := l.desk
-	if id != old && cube {
-		// Roll the 3D cube over the top while the windows below slide into place.
+	if id == old {
+		return
+	}
+	l.runDeskMove() // a roll cut short before half way still owes its move
+
+	if cube {
 		l.startDeskCube(old, id)
 	}
-
-	diff := id - l.desk
-	prevTargets := l.deskAnimTargets
-
-	// Stop any in-flight animation; the new one takes over.
-	if l.deskAnim != nil {
-		l.deskAnim.Stop()
-		l.deskAnim = nil
-	}
+	l.flashDeskBadge(id)
 
 	l.desk = id
+	if wm, ok := l.wm.(notify.DesktopNotify); ok {
+		wm.DesktopChangeNotify(id) // recorded on the root so a restart resumes here
+	}
 
-	_, height := l.RootSizePixels()
-	offPix := float32(diff * -int(height))
+	// Only the windows open now belong to the old layout: one opened while the
+	// roll is still hiding the move is placed for the new desktop already.
 	wins := l.wm.Windows()
-
-	starts := make([]fyne.Position, len(wins))
-	targets := make(map[tyde.Window]fyne.Position, len(wins))
-	for i, win := range wins {
-		// If the previous animation was heading somewhere, start from
-		// that target rather than the current (mid-flight) position.
-		if prev, ok := prevTargets[win]; ok {
-			starts[i] = prev
-		} else {
-			starts[i] = win.Position()
-		}
-
-		display := l.Screens().ScreenForWindow(win)
-		off := offPix / display.CanvasScale()
-		targets[win] = fyne.NewPos(starts[i].X, starts[i].Y+off)
-	}
-
-	type visualMover interface {
-		MoveVisual(fyne.Position)
-	}
-
-	l.deskAnimTargets = targets
-	var a *fyne.Animation
-	a = fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
-		if l.deskAnim != a {
-			return // superseded by a newer animation
-		}
-		for i, item := range wins {
-			if item.Pinned() {
+	_, height := l.RootSizePixels()
+	offPix := float32((old - id) * int(height))
+	l.deskMove = func() {
+		for _, win := range wins {
+			if win.Pinned() {
 				continue
 			}
-
-			target := targets[item]
-			newX := starts[i].X + (target.X-starts[i].X)*f
-			newY := starts[i].Y + (target.Y-starts[i].Y)*f
-			pos := fyne.NewPos(newX, newY)
-
-			if f >= 1.0 {
-				item.Move(pos)
-			} else if vm, ok := item.(visualMover); ok {
-				vm.MoveVisual(pos)
-			} else {
-				item.Move(pos)
+			pos := win.Position()
+			off := offPix / l.Screens().ScreenForWindow(win).CanvasScale()
+			win.Move(fyne.NewPos(pos.X, pos.Y+off))
+		}
+		for _, m := range l.Modules() {
+			if desk, ok := m.(notify.DesktopNotify); ok {
+				desk.DesktopChangeNotify(id)
 			}
 		}
+		l.raiseTopWindow(id)
+	}
 
-		// Completion runs once the slide finishes, independent of the window loop:
-		// it must fire even with no windows, or when the last window is pinned and
-		// skipped above, so modules (e.g. the pager) always learn of the switch.
-		if f >= 1.0 {
-			l.deskAnim = nil
-			l.deskAnimTargets = nil
-			for _, m := range l.Modules() {
-				if desk, ok := m.(notify.DesktopNotify); ok {
-					desk.DesktopChangeNotify(id)
-				}
-			}
-			l.raiseTopWindow(id)
+	if cube {
+		return
+	}
+	l.runDeskMove()
+}
+
+// runDeskMove performs the window move owed by the latest desktop switch, if it
+// has not happened yet.
+func (l *desktop) runDeskMove() {
+	move := l.deskMove
+	if move == nil {
+		return
+	}
+	l.deskMove = nil
+	move()
+}
+
+// flashDeskBadge briefly shows the name or number of desktop id in the centre of
+// every screen.
+func (l *desktop) flashDeskBadge(id int) {
+	label := tyde.DesktopName(l.Settings(), id)
+	for _, sw := range l.screenWindows {
+		if sw.deskBadge == nil {
+			continue
 		}
+		sw.deskBadge.show(label)
+		refreshShaderParent(sw) // an idle secondary window must repaint to show it
+	}
+}
+
+// desktopNamesChanged notifies all listeners of a desktop change.
+func (l *desktop) desktopNamesChanged() {
+	for _, m := range l.Modules() {
+		if dn, ok := m.(notify.DesktopNotify); ok {
+			dn.DesktopChangeNotify(l.desk)
+		}
+	}
+	if wm, ok := l.wm.(notify.DesktopNotify); ok {
+		wm.DesktopChangeNotify(l.desk)
+	}
+}
+
+// fitDesktops gathers anything left beyond the last of count desktops onto that
+// last desktop.
+func (l *desktop) fitDesktops(count int) {
+	last := count - 1
+	moved := false
+	for _, win := range l.wm.Windows() {
+		if !win.Pinned() && win.Desktop() > last {
+			win.SetDesktop(last)
+			moved = true
+		}
+	}
+	if l.desk <= last {
+		return
+	}
+	if !moved {
+		l.setDesktop(last, true)
+		return
+	}
+	time.AfterFunc(canvas.DurationStandard, func() {
+		fyne.Do(func() { l.setDesktop(last, true) })
 	})
-	l.deskAnim = a
-	a.Start()
 }
 
 // raiseTopWindow raises and focuses the topmost window that is visible on the
@@ -292,9 +311,7 @@ func refreshShaderParent(sw *screenWindow) {
 // startDeskCube begins the 3D cube transition from desktop old to id. For each
 // screen it captures the current desktop as the front face and uses the cached
 // snapshot of the target desktop (or the current frame, first time) as the face
-// rolling in, then animates the shader's progress uniform. The overlay covers
-// the screen, so the window slide driven by SetDesktop happens unseen beneath
-// it and the live target desktop is revealed when the roll completes.
+// rolling in, then animates the shader's progress uniform.
 func (l *desktop) startDeskCube(old, id int) {
 	if l.deskCubeAnim != nil {
 		l.deskCubeAnim.Stop()
@@ -374,6 +391,9 @@ func (l *desktop) startDeskCube(old, id int) {
 		for _, s := range shaders {
 			s.Uniforms["progress"] = p
 			s.Refresh()
+		}
+		if f >= 0.5 {
+			l.runDeskMove() // both faces are edge-on: neither desktop is in view
 		}
 
 		if f >= 1.0 {
@@ -760,6 +780,10 @@ func (l *desktop) createPrimaryContent(sw *screenWindow) fyne.CanvasObject {
 	sw.deskShaderBG = newDeskShaderBG()
 	sw.deskShader = newDeskShader()
 	objects = append(objects, sw.deskShaderBG, sw.deskShader)
+
+	// Desktop number badge, above the cube so it reads through the transition.
+	sw.deskBadge = newDeskBadge()
+	objects = append(objects, sw.deskBadge)
 	return container.New(l, objects...)
 }
 
@@ -839,6 +863,10 @@ func (l *desktop) createSecondaryContent(sw *screenWindow) fyne.CanvasObject {
 	sw.deskShaderBG = newDeskShaderBG()
 	sw.deskShader = newDeskShader()
 	objects = append(objects, sw.deskShaderBG, sw.deskShader)
+
+	// Desktop number badge, above the cube so it reads through the transition.
+	sw.deskBadge = newDeskBadge()
+	objects = append(objects, sw.deskBadge)
 	return container.New(&secondaryLayout{}, objects...)
 }
 
@@ -1090,6 +1118,7 @@ func (l *desktop) RefreshWindowAccessories() {
 }
 
 func (l *desktop) fireSettingsChangeListener(s tyde.DeskSettings) {
+	l.fitDesktops(s.DesktopCount())
 	l.clearModuleCache()
 	l.updateBackgrounds(s.Background())
 	l.widgets.reloadModules(l.Modules())
@@ -1277,6 +1306,9 @@ func rebuildEmbeddedAccessories(layer *fyne.Container) {
 func newDesktop(app fyne.App, wm tyde.WindowManager, icons appie.Provider) *desktop {
 	desk := &desktop{app: app, wm: wm, icons: icons, screens: newEmbeddedScreensProvider()}
 	desk.showMenu = desk.showMenuFull
+	if restored, ok := wm.(interface{ Desktop() int }); ok {
+		desk.desk = restored.Desktop() // carry on from the desktop shown before a restart
+	}
 
 	tyde.SetInstance(desk)
 	desk.settings = newDeskSettings()

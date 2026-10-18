@@ -3,6 +3,7 @@ package ui
 import (
 	"image"
 	"image/color"
+	"math"
 	"testing"
 
 	"fyne.io/fyne/v2"
@@ -27,6 +28,17 @@ func TestCaptureIsBlank(t *testing.T) {
 		}
 	}
 	assert.False(t, captureIsBlank(withContent))
+}
+
+// The overview grid is as square as the count allows, growing down before it grows
+// across, and the column choice always agrees with the row count the shader derives.
+func TestOverviewGridCols(t *testing.T) {
+	for count, cols := range map[int]int{1: 1, 2: 1, 3: 2, 4: 2, 5: 2, 6: 2, 7: 3, 8: 3, 9: 3, 10: 3, 12: 3, 16: 4} {
+		assert.Equal(t, cols, overviewGridCols(count), "count %d", count)
+		rows := int(math.Ceil(float64(count) / float64(cols)))
+		assert.GreaterOrEqual(t, rows, cols, "count %d is not taller than wide", count)
+		assert.Less(t, (rows-1)*cols, count, "count %d leaves an empty row", count)
+	}
 }
 
 // Four desktops lay out as a centred 2x2 grid: equal cells, no overlaps, a visible

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"image"
-
 	// Register decoders so any common image can be re-encoded as the .face PNG.
 	_ "image/gif"
 	_ "image/jpeg"
@@ -66,7 +65,7 @@ func (d *settingsUI) loadAccountScreen() fyne.CanvasObject {
 func (d *settingsUI) loadFingerprintCard() fyne.CanvasObject {
 	client, err := newFprintClient()
 	if err != nil {
-		return container.NewVBox(sectionHeading("Fingerprint", ""),
+		return container.NewVBox(widget.NewRichTextFromMarkdown("## Fingerprint"),
 			widget.NewLabel("No fingerprint sensor detected."))
 	}
 	d.fprint = client // closed when the settings window closes
@@ -94,7 +93,7 @@ func (d *settingsUI) loadFingerprintCard() fyne.CanvasObject {
 		d.fingerprintLoginToggle(),
 	)
 	return container.NewVBox(
-		sectionHeading("Fingerprint", "Unlock the screen and log in with a fingerprint"),
+		widget.NewRichTextFromMarkdown("## Fingerprint\n\nUnlock the screen and log in with a fingerprint"),
 		content,
 	)
 }
@@ -300,7 +299,7 @@ func (d *settingsUI) loadPasswordCard(name string) fyne.CanvasObject {
 	}
 
 	return container.NewVBox(
-		sectionHeading("Change Password", "Signed in as "+name),
+		widget.NewRichTextFromMarkdown("## Change Password\n\nSigned in as "+name),
 		form,
 	)
 }

@@ -17,6 +17,7 @@ import (
 
 	"fyshos.com/tyde"
 	"fyshos.com/tyde/internal/x11"
+	wmTheme "fyshos.com/tyde/theme"
 	"fyshos.com/tyde/wm"
 )
 
@@ -156,10 +157,15 @@ func (c *client) SetDesktop(id int) {
 	}
 
 	start := c.Position()
+	startX, startY := c.frame.x, c.frame.y
 	fyne.NewAnimation(canvas.DurationStandard, func(f float32) {
 		newY := start.Y - off*f
 		pos := fyne.NewPos(start.X, newY)
 		if f >= 1.0 {
+			// The intermediate ticks below only pretend to move the frame, for the
+			// pager. Put the recorded position back where X11 still has the window
+			// so Move sees a change and configures it.
+			c.frame.x, c.frame.y = startX, startY
 			c.Move(pos) // final frame: sync X11
 		} else {
 			// Update frame position so Position() returns the
@@ -244,6 +250,11 @@ func (c *client) Move(pos fyne.Position) {
 
 	targetX := int16(pos.X * screen.CanvasScale())
 	targetY := int16(pos.Y * screen.CanvasScale())
+
+	// Show the window at its new position now rather than when the ConfigureNotify returns.
+	if x11.VisualMoveCallback != nil && (targetX != c.frame.x || targetY != c.frame.y) {
+		x11.VisualMoveCallback(uint32(c.id), targetX, targetY, c.frame.width, c.frame.height)
+	}
 	c.frame.updateGeometry(targetX, targetY, c.frame.width, c.frame.height, false)
 }
 
@@ -522,7 +533,16 @@ func (c *client) newFrame() {
 	c.frame = newFrame(c)
 }
 
+// positionIsValid reports whether the point lies on a screen of any virtual
+// desktop, as a window on a desktop other than the current one sits a whole
+// number of root heights above or below the visible screens.
 func (c *client) positionIsValid(x, y int) bool {
+	_, rootHeight := tyde.Instance().RootSizePixels()
+	page := floorDiv(y, int(rootHeight))
+	if tyde.Instance().Desktop()+page < 0 {
+		return false // above the first desktop
+	}
+	y -= page * int(rootHeight)
 	for _, screen := range tyde.Instance().Screens().Screens() {
 		if screen.X <= x && screen.X+screen.Width > x &&
 			screen.Y <= y && screen.Y+screen.Height > y {
@@ -533,6 +553,49 @@ func (c *client) positionIsValid(x, y int) bool {
 	return false
 }
 
+// constrainToContent nudges a window so that its frame lies within the content
+// area of the screen it occupies, clear of the bar and widget panel.
+func (c *client) constrainToContent(x, y, w, h int, decorated bool) (int, int) {
+	inst := tyde.Instance()
+	_, rootHeight := inst.RootSizePixels()
+	top := floorDiv(y+h/2, int(rootHeight)) * int(rootHeight)
+	y -= top
+	screen := inst.Screens().ScreenForGeometry(x, y, w, h)
+	bx, by, bw, bh := inst.ContentBoundsPixels(screen)
+	var border, title int
+	if decorated {
+		border = wm.ScaleToPixels(wmTheme.BorderWidth, screen)
+		title = wm.ScaleToPixels(wmTheme.TitleHeight, screen)
+	}
+	fx, fy := constrainToRect(x-border, y-title, w+border*2, h+border+title,
+		screen.X+int(bx), screen.Y+int(by), int(bw), int(bh))
+
+	return fx + border, fy + title + top
+}
+
+// constrainToRect moves the rectangle at x,y of size w,h to lie within the
+// rectangle rx,ry of size rw,rh.
+func constrainToRect(x, y, w, h, rx, ry, rw, rh int) (int, int) {
+	if x+w > rx+rw {
+		x = rx + rw - w
+	}
+	if x < rx {
+		x = rx
+	}
+	if y+h > ry+rh {
+		y = ry + rh - h
+	}
+	if y < ry {
+		y = ry
+	}
+
+	return x, y
+}
+
+// positionNewWindow places a window that has no usable position of its own and
+// records which virtual desktop the window lies on. A window that was already
+// open when the window manager started keeps its place on whichever desktop it
+// was on before.
 func (c *client) positionNewWindow() {
 	attrs, err := xproto.GetGeometry(c.wm.Conn(), xproto.Drawable(c.win)).Reply()
 	if err != nil {
@@ -543,24 +606,28 @@ func (c *client) positionNewWindow() {
 	requestPosition := false
 	hints, err := icccm.WmNormalHintsGet(c.wm.X(), c.win)
 	if err == nil {
-		if (hints.Flags&icccm.SizeHintPPosition != 0 || hints.Flags&icccm.SizeHintUSPosition != 0) && c.Parent() == nil {
+		if hints.Flags&icccm.SizeHintUSPosition != 0 && c.Parent() == nil {
 			requestPosition = true
 		}
 	}
 
 	x, y, w, h := int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height)
 	hasPosition := x != 0 || y != 0
+	decorated := !windowBorderless(c.wm.X(), c.win)
 	if !requestPosition && !hasPosition || !c.positionIsValid(x, y) {
-		decorated := !windowBorderless(c.wm.X(), c.win)
 		x, y, w, h = wm.PositionForNewWindow(c, int(attrs.X), int(attrs.Y), uint(attrs.Width), uint(attrs.Height),
 			decorated, tyde.Instance().Screens())
 	}
+	x, y = c.constrainToContent(x, y, int(w), int(h), decorated)
 
 	xproto.ConfigureWindow(c.wm.Conn(), c.win, xproto.ConfigWindowX|xproto.ConfigWindowY|
 		xproto.ConfigWindowWidth|xproto.ConfigWindowHeight, []uint32{
 		uint32(x), uint32(y),
 		uint32(w), uint32(h),
 	})
+
+	_, rootHeight := tyde.Instance().RootSizePixels()
+	c.desk = deskForY(y+int(h)/2, int(rootHeight), tyde.Instance().Desktop())
 }
 
 func (c *client) stateMessage(state int) {

@@ -12,6 +12,9 @@ import (
 	"fyshos.com/tyde"
 )
 
+// pagerMaxCols is how many desktops sit side by side in the wide widget panel.
+const pagerMaxCols = 4
+
 type pager struct {
 	buttons, labels *fyne.Container
 	wins            *fyne.Container
@@ -21,24 +24,29 @@ type pager struct {
 func newPager(d *desktops) *pager {
 	p := &pager{wins: container.NewWithoutLayout()}
 
-	buttons := make([]fyne.CanvasObject, deskCount)
-	labels := make([]fyne.CanvasObject, deskCount)
-	for i := 0; i < deskCount; i++ {
+	count := deskCount()
+	buttons := make([]fyne.CanvasObject, count)
+	labels := make([]fyne.CanvasObject, count)
+	for i := 0; i < count; i++ {
 		id := strconv.Itoa(i + 1)
 		deskID := i
 		buttons[i] = widget.NewButton("", func() {
 			d.setDesktop(deskID)
 		})
-		labels[i] = widget.NewLabelWithStyle(id, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+		label := widget.NewLabelWithStyle(id, fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
+		label.Truncation = fyne.TextTruncateClip
+		labels[i] = label
 	}
 
-	if tyde.Instance() != nil && tyde.Instance().Settings().NarrowWidgetPanel() {
-		p.buttons = container.NewGridWithColumns(1, buttons...)
-		p.labels = container.NewGridWithColumns(1, labels...)
-	} else {
-		p.buttons = container.NewGridWithColumns(4, buttons...)
-		p.labels = container.NewGridWithColumns(4, labels...)
+	cols := pagerMaxCols
+	if count < cols {
+		cols = count
 	}
+	if tyde.Instance().Settings().NarrowWidgetPanel() {
+		cols = 1
+	}
+	p.buttons = container.NewGridWithColumns(cols, buttons...)
+	p.labels = container.NewGridWithColumns(cols, labels...)
 	p.refresh()
 	tyde.Instance().WindowManager().AddStackListener(p)
 
@@ -56,25 +64,10 @@ func (p *pager) WindowMoved(win tyde.Window) {
 		return
 	}
 
-	desk := tyde.Instance()
-	oldID := desk.Desktop()
-	pivot := p.buttons.Objects[oldID]
-	screen := desk.Screens().ScreenForWindow(win)
-
-	deskID := win.Desktop()
-	yPad := theme.Padding() * float32(deskID-oldID)
-	if win.Pinned() {
-		yPad = 0
-	}
-
-	scale := screen.CanvasScale()
-	x := (win.Position().X * scale) / float32(screen.Width) * pivot.Size().Width
-	y := (win.Position().Y * scale) / float32(screen.Height) * pivot.Size().Height
-	w := (win.Size().Width * scale) / float32(screen.Width) * pivot.Size().Width
-	h := (win.Size().Height * scale) / float32(screen.Height) * pivot.Size().Height
 	fyne.Do(func() {
-		obj.Move(pivot.Position().Add(fyne.NewPos(x, y+yPad)))
-		obj.Resize(fyne.NewSize(w, h))
+		if !p.place(win, obj) {
+			obj.Hide()
+		}
 		p.wins.Refresh()
 	})
 }
@@ -91,10 +84,7 @@ func (p *pager) WindowStateChanged(_ tyde.Window) {
 }
 
 func (p *pager) refresh() {
-	desk := tyde.Instance()
-	fyne.Do(func() {
-		p.refreshFrom(desk.Desktop())
-	})
+	fyne.Do(p.refreshNow)
 }
 
 func (p *pager) refreshButtons() {
@@ -102,6 +92,7 @@ func (p *pager) refreshButtons() {
 	fyne.Do(func() {
 		for i, b := range p.buttons.Objects {
 			l := p.labels.Objects[i]
+			l.(*widget.Label).Text = tyde.DesktopName(desk.Settings(), i)
 			if i == desk.Desktop() {
 				b.(*widget.Button).Importance = widget.HighImportance
 				l.(*widget.Label).Importance = widget.LowImportance
@@ -116,14 +107,12 @@ func (p *pager) refreshButtons() {
 	})
 }
 
-func (p *pager) refreshFrom(oldID int) {
-	desk := tyde.Instance()
+func (p *pager) refreshNow() {
 	wins := tyde.Instance().WindowManager().Windows()
 
 	p.refreshButtons()
 
 	var rects []fyne.CanvasObject
-	pivot := p.buttons.Objects[oldID]
 	winObjs := make(map[tyde.Window]fyne.CanvasObject, len(wins))
 
 	for j := len(wins) - 1; j >= 0; j-- {
@@ -132,33 +121,51 @@ func (p *pager) refreshFrom(oldID int) {
 			continue
 		}
 
-		deskID := win.Desktop()
-		yPad := theme.Padding() * float32(deskID-oldID)
-		screen := tyde.Instance().Screens().ScreenForWindow(win)
-		if win.Pinned() {
-			yPad = theme.Padding() * float32(desk.Desktop()-oldID)
-			yPad -= float32(oldID-desk.Desktop()) * pivot.Size().Height
-		}
-
 		var obj fyne.CanvasObject
 		obj = canvas.NewRectangle(theme.Color(theme.ColorNameDisabled))
 		if win.Properties().Icon() != nil {
 			obj = container.NewStack(obj,
 				canvas.NewImageFromResource(win.Properties().Icon()))
 		}
+		if !p.place(win, obj) {
+			continue
+		}
 		rects = append(rects, obj)
 		winObjs[win] = obj
-
-		scale := screen.CanvasScale()
-		x := (win.Position().X * scale) / float32(screen.Width) * pivot.Size().Width
-		y := (win.Position().Y * scale) / float32(screen.Height) * pivot.Size().Height
-		w := (win.Size().Width * scale) / float32(screen.Width) * pivot.Size().Width
-		h := (win.Size().Height * scale) / float32(screen.Height) * pivot.Size().Height
-		obj.Resize(fyne.NewSize(w, h))
-		obj.Move(pivot.Position().Add(fyne.NewPos(x, y+yPad)))
 	}
 
 	p.winObjs = winObjs
 	p.wins.Objects = rects
 	p.wins.Refresh()
+}
+
+// place sizes and positions obj, the preview of win, within the pager cell of the
+// desktop the window is on, scaled from the window's screen to the cell. Window
+// positions are relative to the current desktop, so the page offset of the window's
+// own desktop is removed to find where it sits on that desktop. A pinned window is
+// shown on the current desktop. Returns false if the window's desktop has no cell.
+func (p *pager) place(win tyde.Window, obj fyne.CanvasObject) bool {
+	desk := tyde.Instance()
+	current := desk.Desktop()
+	id := win.Desktop()
+	if win.Pinned() {
+		id = current
+	}
+	if id < 0 || id >= len(p.buttons.Objects) {
+		return false
+	}
+
+	cell := p.buttons.Objects[id]
+	screen := desk.Screens().ScreenForWindow(win)
+	scale := screen.CanvasScale()
+	_, rootHeight := desk.RootSizePixels()
+	pageY := float32((id - current) * int(rootHeight))
+
+	x := (win.Position().X*scale - float32(screen.X)) / float32(screen.Width) * cell.Size().Width
+	y := (win.Position().Y*scale - float32(screen.Y) - pageY) / float32(screen.Height) * cell.Size().Height
+	w := win.Size().Width * scale / float32(screen.Width) * cell.Size().Width
+	h := win.Size().Height * scale / float32(screen.Height) * cell.Size().Height
+	obj.Resize(fyne.NewSize(w, h))
+	obj.Move(cell.Position().Add(fyne.NewPos(x, y)))
+	return true
 }

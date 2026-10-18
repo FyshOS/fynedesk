@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 	"sync"
 
@@ -33,6 +34,7 @@ import (
 
 	"fyshos.com/tyde"
 	"fyshos.com/tyde/modules/ai"
+	"fyshos.com/tyde/modules/desktops"
 	"fyshos.com/tyde/modules/updates"
 	wmtheme "fyshos.com/tyde/theme"
 	"fyshos.com/tyde/wm"
@@ -366,7 +368,7 @@ func (d *settingsUI) loadBarScreen() fyne.CanvasObject {
 	disableTaskbar := widget.NewCheck("Disable Taskbar", nil)
 	disableTaskbar.SetChecked(d.settings.LauncherDisableTaskbar())
 
-	details := container.NewVBox(widget.NewSeparator(), sectionHeading("Configuration", ""),
+	details := container.NewVBox(widget.NewSeparator(), widget.NewRichTextFromMarkdown("## Configuration"),
 		disableTaskbar)
 
 	applyButton := container.NewHBox(layout.NewSpacer(),
@@ -430,9 +432,9 @@ func (d *settingsUI) loadModulesScreen() fyne.CanvasObject {
 		}
 	}
 	return container.NewGridWithColumns(2,
-		container.NewBorder(sectionHeading("Modules", ""), nil, nil, nil,
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Modules"), nil, nil, nil,
 			container.NewVScroll(container.NewVBox(modules...))),
-		container.NewBorder(sectionHeading("Launchers", ""), nil, nil, nil,
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Launchers"), nil, nil, nil,
 			container.NewVScroll(container.NewVBox(launchers...))))
 }
 
@@ -459,6 +461,57 @@ func (d *settingsUI) loadAIScreen() fyne.CanvasObject {
 	return container.NewBorder(head, nil, nil, nil, ai.SettingsContent())
 }
 
+// loadDesktopsScreen builds the virtual desktop configuration: how many desktops
+// to offer, and a name for each.
+func (d *settingsUI) loadDesktopsScreen() fyne.CanvasObject {
+	names := container.NewVBox()
+	var entries []*widget.Entry
+	applyNames := func() {
+		out := make([]string, len(entries))
+		for i, e := range entries {
+			out[i] = strings.TrimSpace(e.Text)
+		}
+		d.settings.setDesktopNames(out)
+	}
+	populateNames := func() {
+		entries = entries[:0]
+		items := make([]*widget.FormItem, 0, d.settings.DesktopCount())
+		for i := 0; i < d.settings.DesktopCount(); i++ {
+			entry := widget.NewEntry()
+			entry.PlaceHolder = strconv.Itoa(i + 1)
+			if i < len(d.settings.DesktopNames()) {
+				entry.Text = d.settings.DesktopNames()[i]
+			}
+			entry.OnChanged = func(string) { applyNames() }
+			entries = append(entries, entry)
+			items = append(items, widget.NewFormItem("Desktop "+strconv.Itoa(i+1), entry))
+		}
+		names.Objects = []fyne.CanvasObject{widget.NewForm(items...)}
+		names.Refresh()
+	}
+
+	options := make([]string, 0, maxDesktopCount)
+	for i := 1; i <= maxDesktopCount; i++ {
+		options = append(options, strconv.Itoa(i))
+	}
+	count := widget.NewSelect(options, func(s string) {
+		n, err := strconv.Atoi(s)
+		if err != nil || n == d.settings.DesktopCount() {
+			return
+		}
+		d.settings.setDesktopCount(n)
+		populateNames()
+	})
+	count.SetSelected(strconv.Itoa(d.settings.DesktopCount()))
+	populateNames()
+
+	return container.NewBorder(
+		container.NewVBox(widget.NewRichTextFromMarkdown("## Virtual Desktops"),
+			widget.NewForm(widget.NewFormItem("Number of desktops", count)),
+			widget.NewSeparator(), widget.NewRichTextFromMarkdown("## Names\n\nLeave blank to show the number.")),
+		nil, nil, nil, container.NewVScroll(names))
+}
+
 func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	var names, mods, keys []fyne.CanvasObject
 	shortcuts := tyde.Instance().(wm.ShortcutManager).Shortcuts()
@@ -473,9 +526,9 @@ func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {
 	}
 	modVBox := container.NewVBox(mods...)
 	rows := container.NewHBox(
-		container.NewBorder(sectionHeading("Action", ""), nil, nil, nil, container.NewVBox(names...)),
-		container.NewBorder(sectionHeading("Modifier", ""), nil, nil, nil, modVBox),
-		container.NewBorder(sectionHeading("Key Name", ""), nil, nil, nil, container.NewVBox(keys...)),
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Action"), nil, nil, nil, container.NewVBox(names...)),
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Modifier"), nil, nil, nil, modVBox),
+		container.NewBorder(widget.NewRichTextFromMarkdown("## Key Name"), nil, nil, nil, container.NewVBox(keys...)),
 	)
 	grid := container.NewScroll(rows)
 
@@ -683,7 +736,7 @@ func (w *widgetPanel) showSettings(panel string) {
 	scale := ui.makeScaleGroup(win)
 	screens := screenmanager.New(win)
 	screens.OnConfigurationChanged = w.desk.Screens().RefreshScreens
-	screenui := container.NewBorder(sectionHeading("Screens", ""), nil, nil, nil, screens)
+	screenui := container.NewBorder(widget.NewRichTextFromMarkdown("## Screens"), nil, nil, nil, screens)
 
 	groups := []settingsGroup{
 		{title: "Appearance", panels: []*settingsPanel{
@@ -707,17 +760,20 @@ func (w *widgetPanel) showSettings(panel string) {
 		}},
 	}
 
+	// Modules with their own settings add a panel while they are enabled.
 	for _, mod := range tyde.AvailableModules() {
-		if mod.Name != updates.ModuleName {
+		if !isModuleEnabled(mod.Name, w.desk.Settings()) {
 			continue
 		}
 
-		if isModuleEnabled(mod.Name, w.desk.Settings()) {
+		switch mod.Name {
+		case desktops.ModuleName:
+			groups[1].panels = append(groups[1].panels,
+				&settingsPanel{title: "Desktops", icon: theme.GridIcon(), build: ui.loadDesktopsScreen})
+		case updates.ModuleName:
 			groups[2].panels = append(groups[2].panels,
-				&settingsPanel{title: "Updates", icon: wmtheme.UpdateIcon, build: updates.SettingsContent},
-			)
+				&settingsPanel{title: "Updates", icon: wmtheme.UpdateIcon, build: updates.SettingsContent})
 		}
-		break
 	}
 
 	settingsIcon := theme.SettingsIcon()

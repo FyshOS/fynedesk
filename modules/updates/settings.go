@@ -12,6 +12,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
 )
@@ -65,8 +66,13 @@ func (p *updatesPanel) build() fyne.CanvasObject {
 	p.list = widget.NewList(
 		func() int { return len(p.items) },
 		func() fyne.CanvasObject {
-			return container.NewBorder(nil, nil,
-				widget.NewLabel("package"), widget.NewLabel("version"))
+			name := widget.NewLabel("package")
+			name.Truncation = fyne.TextTruncateEllipsis
+			version := widget.NewLabel("version")
+			version.SizeName = theme.SizeNameCaptionText
+			version.Importance = widget.LowImportance
+			version.Truncation = fyne.TextTruncateEllipsis
+			return container.New(layout.NewCustomPaddedVBoxLayout(-1.5*theme.InnerPadding()), name, version)
 		},
 		func(id widget.ListItemID, obj fyne.CanvasObject) {
 			if id >= len(p.items) {

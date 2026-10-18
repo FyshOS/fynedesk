@@ -303,6 +303,10 @@ func (r *compositorRenderer) Refresh() {
 		resized := swapped && (wi.Img.Image == nil || wi.Img.Image.Bounds() != img.Bounds())
 		if swapped {
 			wi.Img.Image = img
+			// The frame carries the window's size: a stale image is never
+			// stretched to a new geometry, it is replaced by the capture at it.
+			bounds := img.Bounds()
+			wi.W, wi.H = uint16(bounds.Dx()), uint16(bounds.Dy())
 		}
 
 		before := wi.Img.Size()

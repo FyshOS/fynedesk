@@ -73,17 +73,19 @@ func (xsp *x11ScreensProvider) Screens() []*tyde.Screen {
 	return xsp.screens
 }
 
+// ScreenForGeometry returns the screen whose area contains the centre of the
+// rectangle. Virtual desktops stack vertically in root coordinates, so the centre
+// is first wrapped into the height of the root to resolve the screen a window on
+// another desktop would show on.
 func (xsp *x11ScreensProvider) ScreenForGeometry(x int, y int, width int, height int) *tyde.Screen {
 	if len(xsp.screens) <= 1 {
 		return xsp.screens[0]
 	}
+	middleW := x + width/2
+	middleH := wrapIntoRoot(y+height/2, xsp.screens)
 	for i := 0; i < len(xsp.screens); i++ {
 		xx, yy, ww, hh := xsp.screens[i].X, xsp.screens[i].Y,
 			xsp.screens[i].Width, xsp.screens[i].Height
-		middleW := width / 2
-		middleH := height / 2
-		middleW += x
-		middleH += y
 		if middleW >= xx && middleH >= yy &&
 			middleW <= xx+ww && middleH <= yy+hh {
 			return xsp.screens[i]
@@ -102,6 +104,25 @@ func (xsp *x11ScreensProvider) ScreenForWindow(win tyde.Window) *tyde.Screen {
 		return xsp.Primary()
 	}
 	return xsp.ScreenForGeometry(x, y, int(w), int(h))
+}
+
+// wrapIntoRoot folds a root-relative y onto the visible root, whose height is the
+// bottom edge of the lowest screen; one virtual desktop is one root height.
+func wrapIntoRoot(y int, screens []*tyde.Screen) int {
+	rootHeight := 0
+	for _, s := range screens {
+		if bottom := s.Y + s.Height; bottom > rootHeight {
+			rootHeight = bottom
+		}
+	}
+	if rootHeight == 0 {
+		return y
+	}
+	y %= rootHeight
+	if y < 0 {
+		y += rootHeight
+	}
+	return y
 }
 
 func getScale(widthPx, widthMm uint16) float32 {

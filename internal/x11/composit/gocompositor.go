@@ -26,6 +26,7 @@ import (
 	"github.com/BurntSushi/xgb/composite"
 	"github.com/BurntSushi/xgb/damage"
 	"github.com/BurntSushi/xgb/shape"
+	"github.com/BurntSushi/xgb/xfixes"
 	"github.com/BurntSushi/xgb/xproto"
 	"github.com/BurntSushi/xgbutil"
 
@@ -46,6 +47,12 @@ type client struct {
 	visualMoving bool // position being managed by VisualMoveCallback (drag/animation)
 	pending      bool // true = a refresh was requested, awaiting render
 	priority     bool // newly mapped: capture and paint ahead of the bulk re-capture
+
+	// repaintTimer is set while the window has been resized but not captured
+	// since. The window keeps its old frame, at its old size, until the client
+	// repaints at the new size; if it has not by the time the timer fires, the
+	// damage is simulated instead - see resizeGrace.
+	repaintTimer *time.Timer
 
 	geom       xproto.GetGeometryReply
 	attributes xproto.GetWindowAttributesReply
@@ -106,6 +113,13 @@ const (
 	// backgroundDim is the translucency applied to background windows that have no explicit opacity.
 	// (see win.defaultBackgroundTransparency).
 	backgroundDim = 0.1
+
+	// resizeGrace is how long a resized window is given to repaint at its new
+	// size before the compositor captures it regardless. Until the client
+	// repaints its pixmap holds whatever the X server seeded it with, so a
+	// capture would show stale content; a client that never repaints (one that
+	// is hung, say) must not leave the window stuck at its old size though.
+	resizeGrace = 150 * time.Millisecond
 )
 
 type cookieReply[R any] interface {
@@ -133,6 +147,9 @@ func setup(conn *xgb.Conn) error {
 		return err
 	}
 	if _, err := shape.QueryVersion(conn).Reply(); err != nil {
+		return err
+	}
+	if err := initExtension[*xfixes.QueryVersionReply, xfixes.QueryVersionCookie](conn, xfixes.Init, xfixes.QueryVersion, 2, 0); err != nil {
 		return err
 	}
 
@@ -415,7 +432,9 @@ func Run(done chan struct{}, screenComps []ui.ScreenCompositors) error {
 						}
 					}
 					if e.Atom == decorationAtom { // the WM has a new frame to paint
-						if c := getClientFromWindow(e.Window); c != nil {
+						// A window awaiting its repaint after a resize is painted
+						// with the latest frame when that capture happens.
+						if c := getClientFromWindow(e.Window); c != nil && c.repaintTimer == nil {
 							c.dirty = wholeWindow
 							allDamage = true
 						}
@@ -900,6 +919,7 @@ func captureClient(conn *xgb.Conn, ws *widgets, c *client, refreshed map[*ui.Com
 		}
 	}
 	c.dirty = image.Rectangle{}
+	stopRepaintTimer(c)
 
 	for i := range c.stale {
 		c.stale[i] = c.stale[i].Union(dirty)
@@ -944,20 +964,12 @@ func captureClient(conn *xgb.Conn, ws *widgets, c *client, refreshed map[*ui.Com
 			continue
 		}
 
-		wi.Img.Translucency = translucency
-
-		localX := c.geom.X - int16(sw.screen.X)
-		localY := c.geom.Y - int16(sw.screen.Y)
-
+		// The renderer lays the window out at the image's size when it swaps it in.
 		if wi.W == 0 {
-			wi.X = localX
-			wi.Y = localY
-			wi.W = totalW
-			wi.H = totalH
-			fyne.Do(func() {
-				target.PlaceWindow(wi)
-			})
+			wi.X = c.geom.X - int16(sw.screen.X)
+			wi.Y = c.geom.Y - int16(sw.screen.Y)
 		}
+		wi.Img.Translucency = translucency
 
 		// Only request a refresh when none is pending — the pending
 		// refresh takes the frame at render time so it always gets the
@@ -986,6 +998,34 @@ func flushRefresh(refreshed map[*ui.CompositorWidget]bool) {
 			target.Refresh()
 		}
 	})
+}
+
+// awaitRepaint gives resized client c resizeGrace to repaint at its new size.
+// Should it not, its whole window is reported damaged (DamageAdd) so that the
+// usual damage event captures it anyway and it does not stay at its old size.
+func awaitRepaint(conn *xgb.Conn, c *client) {
+	stopRepaintTimer(c)
+	win := xproto.Drawable(c.win)
+	rect := xproto.Rectangle{Width: c.geom.Width + c.geom.BorderWidth*2, Height: c.geom.Height + c.geom.BorderWidth*2}
+	c.repaintTimer = time.AfterFunc(resizeGrace, func() {
+		region, err := xfixes.NewRegionId(conn)
+		if err != nil {
+			return
+		}
+
+		if xfixes.CreateRegionChecked(conn, region, []xproto.Rectangle{rect}).Check() == nil {
+			_ = damage.AddChecked(conn, win, region).Check()
+		}
+		xfixes.DestroyRegion(conn, region)
+	})
+}
+
+// stopRepaintTimer ends any wait for c to repaint after a resize.
+func stopRepaintTimer(c *client) {
+	if c.repaintTimer != nil {
+		c.repaintTimer.Stop()
+		c.repaintTimer = nil
+	}
 }
 
 // snapshotWindows composes the windows of the desktop offsetY pixels from the
@@ -1291,6 +1331,7 @@ func unmapWin(conn *xgb.Conn, ws *widgets, window xproto.Window) {
 	}
 	c.attributes.MapState = xproto.MapStateUnmapped
 	c.dirty = image.Rectangle{}
+	stopRepaintTimer(c)
 	freeClientPixmap(conn, c)
 
 	if ws != nil && !c.skipped {
@@ -1312,6 +1353,7 @@ func destroyWin(conn *xgb.Conn, ws *widgets, window xproto.Window) {
 	return
 
 found:
+	stopRepaintTimer(c)
 	freeClientPixmap(conn, c)
 	if c.damage != 0 {
 		_ = damage.Destroy(conn, c.damage).Check()
@@ -1348,7 +1390,11 @@ func configureClient(conn *xgb.Conn, ws *widgets, e xproto.ConfigureNotifyEvent)
 
 	resized := client.geom.Width != e.Width || client.geom.Height != e.Height
 	if resized {
+		// The X server has given the window a new pixmap, seeded with whatever
+		// was beneath it rather than the client's content. Keep showing the
+		// last good frame at its old size and wait for the client to repaint.
 		freeClientPixmap(conn, client)
+		client.dirty = image.Rectangle{}
 	}
 
 	client.geom.X = e.X
@@ -1357,6 +1403,9 @@ func configureClient(conn *xgb.Conn, ws *widgets, e xproto.ConfigureNotifyEvent)
 	client.geom.Height = e.Height
 	client.geom.BorderWidth = e.BorderWidth
 	client.attributes.OverrideRedirect = e.OverrideRedirect
+	if resized {
+		awaitRepaint(conn, client)
+	}
 
 	restackClientOnly(e.Window, e.AboveSibling)
 
@@ -1393,8 +1442,9 @@ func configureClient(conn *xgb.Conn, ws *widgets, e xproto.ConfigureNotifyEvent)
 		}
 	}
 
-	if screenChanged {
-		// Force recapture so the new screen gets a fresh image
+	if screenChanged && !resized {
+		// Force recapture so the new screen gets a fresh image. A resized
+		// window is captured for every screen once the client repaints.
 		client.dirty = wholeWindow
 		allDamage = true
 	}
@@ -1420,7 +1470,7 @@ func configureClient(conn *xgb.Conn, ws *widgets, e xproto.ConfigureNotifyEvent)
 		localX := client.geom.X - int16(sw.screen.X)
 		localY := client.geom.Y - int16(sw.screen.Y)
 
-		if resized || screenChanged {
+		if screenChanged {
 			fyne.Do(func() {
 				wi.X = localX
 				wi.Y = localY
@@ -1428,8 +1478,6 @@ func configureClient(conn *xgb.Conn, ws *widgets, e xproto.ConfigureNotifyEvent)
 				wi.H = totalH
 				target.Refresh()
 			})
-			client.dirty = wholeWindow
-			allDamage = true
 		} else {
 			wi.X = localX
 			wi.Y = localY

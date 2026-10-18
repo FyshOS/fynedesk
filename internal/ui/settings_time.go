@@ -406,7 +406,7 @@ func (d *settingsUI) loadTimeScreen() fyne.CanvasObject {
 		})
 	}()
 
-	tzSection := container.NewBorder(sectionHeading("Time Zone", ""), nil, nil, nil,
+	tzSection := container.NewBorder(widget.NewRichTextFromMarkdown("## Time Zone"), nil, nil, nil,
 		container.NewBorder(search, selectedLabel, nil, nil, mapWidget))
 
 	// --- apply ---

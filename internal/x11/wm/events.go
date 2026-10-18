@@ -391,14 +391,23 @@ func (x *x11WM) handleScreenChange(timestamp xproto.Timestamp) {
 	x.configureSavers()
 }
 
-func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeState func(), addState func(), toggleCheck bool) {
+// handleStateActionRequest applies a _NET_WM_STATE change, with inState
+// the window's current state. Removing a state the window is not in (or
+// adding one it already has) is a no-op.
+func (x *x11WM) handleStateActionRequest(ev xproto.ClientMessageEvent, removeState func(), addState func(), inState bool) {
 	switch x11.WindowStateAction(ev.Data.Data32[0]) {
 	case x11.WindowStateActionRemove:
+		if !inState {
+			return
+		}
 		removeState()
 	case x11.WindowStateActionAdd:
+		if inState {
+			return
+		}
 		addState()
 	case x11.WindowStateActionToggle:
-		if toggleCheck {
+		if inState {
 			removeState()
 		} else {
 			addState()

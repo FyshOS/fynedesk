@@ -105,26 +105,35 @@ func newFrame(c *client) *frame {
 	full := c.Fullscreened()
 	decorated := c.Properties().Decorated()
 	maximized := c.Maximized()
-	screen := tyde.Instance().Screens().ScreenForGeometry(int(x), int(y), int(w), int(h))
+
+	// Keep the window on its own virtual desktop: the frame goes a whole number of
+	// root heights above or below the visible screens. The client's y is wrapped
+	// onto that desktop as well, since a minimised window is parked on the root
+	// at the position it had when hidden and does not follow desktop switches.
+	inst := tyde.Instance()
+	_, rootHeight := inst.RootSizePixels()
+	top := deskTop(c.desk, int(rootHeight), inst.Desktop())
+	y = int16(floorMod(int(y)+int(h)/2, int(rootHeight)) - int(h)/2 + top)
+	screen := inst.Screens().ScreenForGeometry(int(x), int(y), int(w), int(h))
 	borderWidth := uint16(wm.ScaleToPixels(wmTheme.BorderWidth, screen))
 	titleHeight := uint16(wm.ScaleToPixels(wmTheme.TitleHeight, screen))
 	if full || maximized {
 		// Remember the original geometry so a later unfullscreen/unmaximize
 		// has somewhere to restore to (NotifyFullscreen/NotifyMaximize is not
 		// called for windows that come up already in this state).
-		c.restoreX = attrs.X
-		c.restoreY = attrs.Y
+		c.restoreX = x
+		c.restoreY = y
 		c.restoreWidth = attrs.Width
 		c.restoreHeight = attrs.Height
 
-		activeHead := tyde.Instance().Screens().ScreenForGeometry(int(attrs.X), int(attrs.Y), int(attrs.Width), int(attrs.Height))
+		activeHead := inst.Screens().ScreenForGeometry(int(x), int(y), int(w), int(h))
 		x = int16(activeHead.X)
-		y = int16(activeHead.Y)
+		y = int16(activeHead.Y + top)
 		if full {
 			w = uint16(activeHead.Width)
 			h = uint16(activeHead.Height)
 		} else {
-			maxX, maxY, maxWidth, maxHeight := tyde.Instance().ContentBoundsPixels(activeHead)
+			maxX, maxY, maxWidth, maxHeight := inst.ContentBoundsPixels(activeHead)
 			x += int16(maxX)
 			y += int16(maxY)
 			w = uint16(maxWidth)
@@ -136,8 +145,8 @@ func newFrame(c *client) *frame {
 		if x < 0 {
 			x = 0
 		}
-		if y < 0 {
-			y = 0
+		if int(y) < top {
+			y = int16(top)
 		}
 		if !maximized {
 			w = attrs.Width + borderWidth*2
@@ -542,14 +551,17 @@ func (f *frame) maximizeApply() {
 	f.client.restoreX = f.x
 	f.client.restoreY = f.y
 
-	head := tyde.Instance().Screens().ScreenForWindow(f.client)
-	maxX, maxY, maxWidth, maxHeight := tyde.Instance().ContentBoundsPixels(head)
+	inst := tyde.Instance()
+	head := inst.Screens().ScreenForWindow(f.client)
+	maxX, maxY, maxWidth, maxHeight := inst.ContentBoundsPixels(head)
 	if f.client.Fullscreened() {
 		maxX, maxY = 0, 0
 		maxWidth = uint32(head.Width)
 		maxHeight = uint32(head.Height)
 	}
-	f.updateGeometry(int16(head.X+int(maxX)), int16(head.Y+int(maxY)), uint16(maxWidth), uint16(maxHeight), true)
+	_, rootHeight := inst.RootSizePixels()
+	top := deskTop(f.client.desk, int(rootHeight), inst.Desktop()) // stay on the window's own desktop
+	f.updateGeometry(int16(head.X+int(maxX)), int16(head.Y+int(maxY)+top), uint16(maxWidth), uint16(maxHeight), true)
 	f.notifyInnerGeometry()
 	f.applyTheme()
 }

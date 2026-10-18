@@ -5,7 +5,6 @@ import (
 	"image/color"
 	"image/draw"
 	"math"
-	"strconv"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
@@ -14,15 +13,14 @@ import (
 	"fyne.io/fyne/v2/widget"
 
 	xdraw "golang.org/x/image/draw"
+
+	"fyshos.com/tyde"
 )
 
 // deskOverview drives the "reveal all" desktop overview: a zoom-out to show every
 // virtual desktop laid out in a grid, an interactive layer to pick one (or escape
 // to cancel), then a zoom back in to the chosen desktop. The zoom itself is played
-// by per-screen overview shaders over a stitched snapshot of all desktops; the
-// interactive layer sits above the shader on the primary screen only and is shown
-// once the zoom-out settles, mirroring how startDeskCube hands off to the live
-// desktop when its roll completes.
+// by per-screen overview shaders over a stitched snapshot of all desktops.
 type deskOverview struct {
 	desk    *desktop
 	count   int
@@ -100,16 +98,14 @@ func (o *deskOverview) showContent() {
 	}
 
 	size := l.primaryWin.win.Canvas().Size()
-	content := newOverviewContent(o.count, l.desk, size,
+	content := newOverviewContent(o.count, l.desk, l.Settings(), size,
 		func(d int) { o.selectDesk(d) },
 		func() { o.cancel() })
 	o.content = content
 	l.showOverlay(content, size, fyne.NewPos(0, 0), content)
 }
 
-// selectDesk zooms in to the tapped desktop and switches to it. The window slide
-// is started without the cube transition so it happens unseen beneath the zoom-in,
-// exactly as SetDesktop's slide happens beneath the cube.
+// selectDesk zooms in to the tapped desktop and switches to it.
 func (o *deskOverview) selectDesk(d int) {
 	if !o.active || o.anim != nil {
 		return
@@ -216,7 +212,7 @@ func (l *desktop) drawDeskPreview(strip *image.RGBA, r image.Rectangle, sw *scre
 }
 
 // deskPreviewImage returns the best image of desktop id for screen sw, using exactly
-// the sources the cube transition (startDeskCube) uses so the overview matches it:
+// the sources the cube transition (prepareDeskCube) uses so the overview matches it:
 //
 //  1. The current desktop: a live framebuffer capture via captureOpaque - the whole
 //     desktop as drawn, including the composited windows AND the bar and widget panel.
@@ -311,10 +307,11 @@ const (
 	overviewMargin = float32(1.08)
 )
 
-// overviewGridCols returns the column count for a count-desktop grid: the smallest
-// square-ish grid that holds them all (4 -> 2x2, 6 -> 3x2).
+// overviewGridCols returns the column count for a count-desktop grid: as close to
+// square as the count allows.
 func overviewGridCols(count int) int {
-	return int(math.Ceil(math.Sqrt(float64(count))))
+	rows := math.Ceil(math.Sqrt(float64(count)))
+	return int(math.Ceil(float64(count) / rows))
 }
 
 // overviewPanelGeometry returns the on-screen position and size of the preview for
@@ -363,13 +360,14 @@ func maxF(a, b float32) float32 {
 type overviewContent struct {
 	widget.BaseWidget
 	count, current int
+	settings       tyde.DeskSettings // for the desktop names
 	size           fyne.Size
 	onSelect       func(int)
 	onCancel       func()
 }
 
-func newOverviewContent(count, current int, size fyne.Size, sel func(int), cancel func()) *overviewContent {
-	c := &overviewContent{count: count, current: current, size: size, onSelect: sel, onCancel: cancel}
+func newOverviewContent(count, current int, settings tyde.DeskSettings, size fyne.Size, sel func(int), cancel func()) *overviewContent {
+	c := &overviewContent{count: count, current: current, settings: settings, size: size, onSelect: sel, onCancel: cancel}
 	c.ExtendBaseWidget(c)
 	return c
 }
@@ -393,7 +391,7 @@ func (c *overviewContent) FocusLost()     {}
 func (c *overviewContent) CreateRenderer() fyne.WidgetRenderer {
 	objs := make([]fyne.CanvasObject, 0, c.count)
 	for d := 0; d < c.count; d++ {
-		p := newOverviewPanel(d, d == c.current, c.onSelect)
+		p := newOverviewPanel(d, tyde.DesktopName(c.settings, d), d == c.current, c.onSelect)
 		pos, sz := overviewPanelGeometry(c.count, d, c.size)
 		p.Move(pos)
 		p.Resize(sz)
@@ -408,12 +406,13 @@ func (c *overviewContent) CreateRenderer() fyne.WidgetRenderer {
 type overviewPanel struct {
 	widget.BaseWidget
 	index    int
+	label    string // the desktop's name or number
 	current  bool
 	onSelect func(int)
 }
 
-func newOverviewPanel(index int, current bool, sel func(int)) *overviewPanel {
-	p := &overviewPanel{index: index, current: current, onSelect: sel}
+func newOverviewPanel(index int, label string, current bool, sel func(int)) *overviewPanel {
+	p := &overviewPanel{index: index, label: label, current: current, onSelect: sel}
 	p.ExtendBaseWidget(p)
 	return p
 }
@@ -431,7 +430,7 @@ func (p *overviewPanel) CreateRenderer() fyne.WidgetRenderer {
 		border.StrokeWidth = 3
 	}
 
-	label := canvas.NewText(strconv.Itoa(p.index+1), theme.Color(theme.ColorNameForeground))
+	label := canvas.NewText(p.label, theme.Color(theme.ColorNameForeground))
 	label.Alignment = fyne.TextAlignCenter
 	label.TextSize = theme.TextHeadingSize()
 	label.TextStyle = fyne.TextStyle{Bold: true}
