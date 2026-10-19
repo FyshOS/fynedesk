@@ -373,7 +373,7 @@ func (f *frame) renderDecoration() {
 	f.canvas.SetScale(scale)
 
 	right := f.topRightPixelWidth()
-	drawWidth := fyne.Max(f.canvas.Content().MinSize().Width, float32(f.width)/scale)
+	drawWidth := max(f.canvas.Content().MinSize().Width, float32(f.width)/scale)
 	f.canvas.Resize(fyne.NewSize(drawWidth, wmTheme.TitleHeight+gripSize))
 	img := f.canvas.Capture()
 
