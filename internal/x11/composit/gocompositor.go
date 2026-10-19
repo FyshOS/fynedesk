@@ -862,61 +862,15 @@ func refreshWindows(conn *xgb.Conn, ws *widgets) {
 // and marks the affected compositor widgets for refresh (via flushRefresh). It
 // returns whether a capture happened.
 func captureClient(conn *xgb.Conn, ws *widgets, c *client, refreshed map[*ui.CompositorWidget]bool) bool {
-	if c.dirty.Empty() || c.skipped || c.fullscreened || c.visualMoving {
+	if !clientCapturable(c) || !ensureNamedPixmap(conn, c) {
 		return false
-	}
-	if c.attributes.MapState != xproto.MapStateViewable {
-		return false
-	}
-	if c.geom.X+int16(c.geom.Width) < 1 || c.geom.Y+int16(c.geom.Height) < 1 ||
-		c.geom.X >= int16(rootWidth) || c.geom.Y >= int16(rootHeight) {
-		return false
-	}
-
-	// Ensure we have a named pixmap
-	if c.pixmap == 0 {
-		pixmap, err := xproto.NewPixmapId(conn)
-		if err != nil {
-			return false
-		}
-		if err = composite.NameWindowPixmapChecked(conn, c.win, pixmap).Check(); err != nil {
-			return false
-		}
-		c.pixmap = pixmap
 	}
 
 	winID, isFullScreen, pending := checkPending(c, ws)
 
-	totalW := c.geom.Width + c.geom.BorderWidth*2
-	totalH := c.geom.Height + c.geom.BorderWidth*2
-	isARGB := c.opaqueType == argb
-
-	// When a refresh is pending the renderer may read the previous
-	// write buffer, so use a fresh allocation to avoid a race.
-	buf, stale := c.bufs[c.writeIdx], c.stale[c.writeIdx]
-	if pending {
-		buf = nil
-	}
-
-	bounds := image.Rect(0, 0, int(totalW), int(totalH))
-	dirty := c.dirty.Intersect(bounds)
-	img := buf
-	if c.latest != nil && c.latest.Rect == bounds && dirty != bounds {
-		// Most of the last frame still stands: bring the buffer up to date
-		// with it and capture only what was drawn to since.
-		if img == nil || img.Rect != bounds {
-			img, stale = image.NewRGBA(bounds), bounds
-		}
-		copyRegion(img, c.latest, stale)
-		if !captureRegion(conn, xproto.Drawable(c.pixmap), dirty, isARGB, img) {
-			return false
-		}
-	} else {
-		dirty = bounds
-		img = capturePixmap(conn, xproto.Drawable(c.pixmap), totalW, totalH, isARGB, buf)
-		if img == nil {
-			return false
-		}
+	img, dirty, ok := captureFrame(conn, c, pending)
+	if !ok {
+		return false
 	}
 	c.dirty = image.Rectangle{}
 	stopRepaintTimer(c)
@@ -932,54 +886,133 @@ func captureClient(conn *xgb.Conn, ws *widgets, c *client, refreshed map[*ui.Com
 	c.latest = img
 	c.frame++
 
-	w := wmWindow(c)
-	if xw, ok := w.(x11.XWin); ok {
-		xw.Decorate(img) // the WM paints the frame over its own border pixels
-	}
-	radius := float32(0)
-	fyne.DoAndWait(func() {
-		radius = theme.Size(theme.SizeNameInnerWindowRadius)
-	})
-	if w == nil || (!w.Fullscreened() && !w.Maximized()) {
-		scale := float32(1)
-		if len(ws.screens) > 0 {
-			scale = ws.screens[0].screen.CanvasScale()
-		}
-		roundCorners(img, int(radius*scale))
-	}
-
+	decorateFrame(ws, c, img)
 	translucency := computeTranslucency(conn, c)
 
 	// Push the frame to all screen widgets for this window.
 	// The renderer will swap it into Img.Image on its next Refresh.
 	for _, sw := range ws.screensForClient(c) {
-		var target *ui.CompositorWidget
+		target := sw.normal
 		if isFullScreen {
 			target = sw.overlay
-		} else {
-			target = sw.normal
 		}
-		wi := target.GetWindow(winID)
-		if wi == nil {
-			continue
-		}
-
-		// The renderer lays the window out at the image's size when it swaps it in.
-		if wi.W == 0 {
-			wi.X = c.geom.X - int16(sw.screen.X)
-			wi.Y = c.geom.Y - int16(sw.screen.Y)
-		}
-		wi.Img.Translucency = translucency
-
-		// Only request a refresh when none is pending — the pending
-		// refresh takes the frame at render time so it always gets the
-		// latest one.
-		if wi.Push(img, dirty, c.frame) {
+		if pushFrame(target, sw, c, winID, img, dirty, translucency) {
 			refreshed[target] = true
 		}
 	}
 	c.pending = true
 	return true
+}
+
+// clientCapturable reports whether c is damaged, mapped and at least partly
+// on screen, so that there is something worth capturing.
+func clientCapturable(c *client) bool {
+	if c.dirty.Empty() || c.skipped || c.fullscreened || c.visualMoving {
+		return false
+	}
+	if c.attributes.MapState != xproto.MapStateViewable {
+		return false
+	}
+	if c.geom.X+int16(c.geom.Width) < 1 || c.geom.Y+int16(c.geom.Height) < 1 ||
+		c.geom.X >= int16(rootWidth) || c.geom.Y >= int16(rootHeight) {
+		return false
+	}
+	return true
+}
+
+// ensureNamedPixmap makes sure c has a named pixmap to capture from.
+func ensureNamedPixmap(conn *xgb.Conn, c *client) bool {
+	if c.pixmap != 0 {
+		return true
+	}
+	pixmap, err := xproto.NewPixmapId(conn)
+	if err != nil {
+		return false
+	}
+	if err = composite.NameWindowPixmapChecked(conn, c.win, pixmap).Check(); err != nil {
+		return false
+	}
+	c.pixmap = pixmap
+	return true
+}
+
+// captureFrame reads c's current content into an image, capturing only the
+// damaged region on top of the last frame when possible. It returns the image,
+// the region of it that changed and whether the capture succeeded.
+func captureFrame(conn *xgb.Conn, c *client, pending bool) (*image.RGBA, image.Rectangle, bool) {
+	totalW := c.geom.Width + c.geom.BorderWidth*2
+	totalH := c.geom.Height + c.geom.BorderWidth*2
+	isARGB := c.opaqueType == argb
+
+	// When a refresh is pending the renderer may read the previous
+	// write buffer, so use a fresh allocation to avoid a race.
+	buf, stale := c.bufs[c.writeIdx], c.stale[c.writeIdx]
+	if pending {
+		buf = nil
+	}
+
+	bounds := image.Rect(0, 0, int(totalW), int(totalH))
+	dirty := c.dirty.Intersect(bounds)
+	if c.latest == nil || c.latest.Rect != bounds || dirty == bounds {
+		img := capturePixmap(conn, xproto.Drawable(c.pixmap), totalW, totalH, isARGB, buf)
+		return img, bounds, img != nil
+	}
+
+	// Most of the last frame still stands: bring the buffer up to date
+	// with it and capture only what was drawn to since.
+	img := buf
+	if img == nil || img.Rect != bounds {
+		img, stale = image.NewRGBA(bounds), bounds
+	}
+	copyRegion(img, c.latest, stale)
+	if !captureRegion(conn, xproto.Drawable(c.pixmap), dirty, isARGB, img) {
+		return nil, image.Rectangle{}, false
+	}
+	return img, dirty, true
+}
+
+// decorateFrame lets the WM paint its frame over img and rounds the corners
+// of windows that are not filling the screen.
+func decorateFrame(ws *widgets, c *client, img *image.RGBA) {
+	w := wmWindow(c)
+	if xw, ok := w.(x11.XWin); ok {
+		xw.Decorate(img) // the WM paints the frame over its own border pixels
+	}
+	if w != nil && (w.Fullscreened() || w.Maximized()) {
+		return
+	}
+	radius := float32(0)
+	fyne.DoAndWait(func() {
+		radius = theme.Size(theme.SizeNameInnerWindowRadius)
+	})
+	scale := float32(1)
+	if len(ws.screens) > 0 {
+		scale = ws.screens[0].screen.CanvasScale()
+	}
+	roundCorners(img, int(radius*scale))
+}
+
+// pushFrame hands img to the window item for c in target, returning whether
+// target needs a refresh as a result.
+func pushFrame(target *ui.CompositorWidget, sw *screenWidgets, c *client, winID uint32,
+	img *image.RGBA, dirty image.Rectangle, translucency float64,
+) bool {
+	wi := target.GetWindow(winID)
+	if wi == nil {
+		return false
+	}
+
+	// The renderer lays the window out at the image's size when it swaps it in.
+	if wi.W == 0 {
+		wi.X = c.geom.X - int16(sw.screen.X)
+		wi.Y = c.geom.Y - int16(sw.screen.Y)
+	}
+	wi.Img.Translucency = translucency
+
+	// Only request a refresh when none is pending — the pending
+	// refresh takes the frame at render time so it always gets the
+	// latest one.
+	return wi.Push(img, dirty, c.frame)
 }
 
 // flushRefresh issues a single widget-level refresh for each compositor marked
