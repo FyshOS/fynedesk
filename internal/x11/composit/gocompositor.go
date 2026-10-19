@@ -42,7 +42,6 @@ type client struct {
 	opacity      uint32
 	opacitySet   bool // true if the window has an explicit _NET_WM_WINDOW_OPACITY value
 	opaqueType   opaqueType
-	damaged      bool
 	skipped      bool // desktop root window or other skipped windows
 	fullscreened bool // unredirected for fullscreen bypass
 	visualMoving bool // position being managed by VisualMoveCallback (drag/animation)
@@ -60,12 +59,24 @@ type client struct {
 	damage     damage.Damage
 	pixmap     xproto.Pixmap // cached NameWindowPixmap
 
+	// dirty is the part of the pixmap drawn to since it was last captured.
+	dirty image.Rectangle
+
 	// Double-buffered capture: the compositor writes to bufs[writeIdx] and
 	// toggles writeIdx on each successful push so that the buffer being
-	// displayed by the renderer is never mutated.
+	// displayed by the renderer is never mutated. Only what was drawn to is
+	// captured, so a buffer misses what was captured into the others since it
+	// was written: stale is the part of each that latest, the frame last
+	// pushed, has newer pixels for.
 	bufs     [2]*image.RGBA
+	stale    [2]image.Rectangle
 	writeIdx int
+	latest   *image.RGBA
+	frame    uint64 // the number of the frame last pushed
 }
+
+// wholeWindow is the dirty region of a window that is to be captured in full.
+var wholeWindow = image.Rect(0, 0, math.MaxUint16, math.MaxUint16)
 
 var (
 	defaultScreen int
@@ -424,7 +435,7 @@ func Run(done chan struct{}, screenComps []ui.ScreenCompositors) error {
 						// A window awaiting its repaint after a resize is painted
 						// with the latest frame when that capture happens.
 						if c := getClientFromWindow(e.Window); c != nil && c.repaintTimer == nil {
-							c.damaged = true
+							c.dirty = wholeWindow
 							allDamage = true
 						}
 					}
@@ -582,7 +593,7 @@ func (ws *widgets) applyPending(conn *xgb.Conn) bool {
 		} else {
 			ensureWindowOnScreens(ws, c)
 		}
-		c.damaged = true
+		c.dirty = wholeWindow
 	}
 	syncOrder(ws)
 	refreshWindows(conn, ws)
@@ -702,9 +713,7 @@ func copyImageFromOtherScreen(ws *widgets, winID uint32, target *ui.WindowImage,
 			// Prefer the displayed image, but fall back to the latest captured buffer.
 			img := src.Img.Image
 			if img == nil {
-				if back, ok := src.Back.Load().(image.Image); ok {
-					img = back
-				}
+				img = src.Latest()
 			}
 			if img != nil {
 				target.Img.Image = img
@@ -763,13 +772,13 @@ func updateFullscreen(conn *xgb.Conn, ws *widgets, c *client) {
 		if c.damage == 0 {
 			dmg, err := damage.NewDamageId(conn)
 			if err == nil {
-				if err = damage.CreateChecked(conn, dmg, xproto.Drawable(c.win), damage.ReportLevelNonEmpty).Check(); err == nil {
+				if err = damage.CreateChecked(conn, dmg, xproto.Drawable(c.win), damage.ReportLevelBoundingBox).Check(); err == nil {
 					c.damage = dmg
 				}
 			}
 		}
 		ensureWindowOnScreens(ws, c)
-		c.damaged = true
+		c.dirty = wholeWindow
 		allDamage = true
 		syncOrder(ws)
 		ws.refreshAll()
@@ -849,11 +858,56 @@ func refreshWindows(conn *xgb.Conn, ws *widgets) {
 	flushRefresh(refreshed)
 }
 
-// captureClient grabs window c's current pixmap into its back buffer and marks
-// the affected compositor widgets for refresh (via flushRefresh). It returns
-// whether a capture happened.
+// captureClient grabs what was drawn to window c's pixmap into its back buffer
+// and marks the affected compositor widgets for refresh (via flushRefresh). It
+// returns whether a capture happened.
 func captureClient(conn *xgb.Conn, ws *widgets, c *client, refreshed map[*ui.CompositorWidget]bool) bool {
-	if !c.damaged || c.skipped || c.fullscreened || c.visualMoving {
+	if !clientCapturable(c) || !ensureNamedPixmap(conn, c) {
+		return false
+	}
+
+	winID, isFullScreen, pending := checkPending(c, ws)
+
+	img, dirty, ok := captureFrame(conn, c, pending)
+	if !ok {
+		return false
+	}
+	c.dirty = image.Rectangle{}
+	stopRepaintTimer(c)
+
+	for i := range c.stale {
+		c.stale[i] = c.stale[i].Union(dirty)
+	}
+	if !pending {
+		c.bufs[c.writeIdx] = img
+		c.stale[c.writeIdx] = image.Rectangle{}
+		c.writeIdx = 1 - c.writeIdx
+	}
+	c.latest = img
+	c.frame++
+
+	decorateFrame(ws, c, img)
+	translucency := computeTranslucency(conn, c)
+
+	// Push the frame to all screen widgets for this window.
+	// The renderer will swap it into Img.Image on its next Refresh.
+	for _, sw := range ws.screensForClient(c) {
+		target := sw.normal
+		if isFullScreen {
+			target = sw.overlay
+		}
+		if pushFrame(target, sw, c, winID, img, dirty, translucency) {
+			refreshed[target] = true
+		}
+	}
+	c.pending = true
+	return true
+}
+
+// clientCapturable reports whether c is damaged, mapped and at least partly
+// on screen, so that there is something worth capturing.
+func clientCapturable(c *client) bool {
+	if c.dirty.Empty() || c.skipped || c.fullscreened || c.visualMoving {
 		return false
 	}
 	if c.attributes.MapState != xproto.MapStateViewable {
@@ -863,95 +917,102 @@ func captureClient(conn *xgb.Conn, ws *widgets, c *client, refreshed map[*ui.Com
 		c.geom.X >= int16(rootWidth) || c.geom.Y >= int16(rootHeight) {
 		return false
 	}
+	return true
+}
 
-	// Ensure we have a named pixmap
-	if c.pixmap == 0 {
-		pixmap, err := xproto.NewPixmapId(conn)
-		if err != nil {
-			return false
-		}
-		if err = composite.NameWindowPixmapChecked(conn, c.win, pixmap).Check(); err != nil {
-			return false
-		}
-		c.pixmap = pixmap
+// ensureNamedPixmap makes sure c has a named pixmap to capture from.
+func ensureNamedPixmap(conn *xgb.Conn, c *client) bool {
+	if c.pixmap != 0 {
+		return true
 	}
+	pixmap, err := xproto.NewPixmapId(conn)
+	if err != nil {
+		return false
+	}
+	if err = composite.NameWindowPixmapChecked(conn, c.win, pixmap).Check(); err != nil {
+		return false
+	}
+	c.pixmap = pixmap
+	return true
+}
 
-	winID, isFullScreen, pending := checkPending(c, ws)
-
+// captureFrame reads c's current content into an image, capturing only the
+// damaged region on top of the last frame when possible. It returns the image,
+// the region of it that changed and whether the capture succeeded.
+func captureFrame(conn *xgb.Conn, c *client, pending bool) (*image.RGBA, image.Rectangle, bool) {
 	totalW := c.geom.Width + c.geom.BorderWidth*2
 	totalH := c.geom.Height + c.geom.BorderWidth*2
 	isARGB := c.opaqueType == argb
 
 	// When a refresh is pending the renderer may read the previous
-	// write buffer via Back, so use a fresh allocation to avoid a race.
-	buf := c.bufs[c.writeIdx]
+	// write buffer, so use a fresh allocation to avoid a race.
+	buf, stale := c.bufs[c.writeIdx], c.stale[c.writeIdx]
 	if pending {
 		buf = nil
 	}
-	img := capturePixmap(conn, xproto.Drawable(c.pixmap), totalW, totalH, isARGB, buf)
-	if img == nil {
-		return false
-	}
-	c.damaged = false
-	stopRepaintTimer(c)
 
-	if !pending {
-		c.bufs[c.writeIdx] = img
-		c.writeIdx = 1 - c.writeIdx
+	bounds := image.Rect(0, 0, int(totalW), int(totalH))
+	dirty := c.dirty.Intersect(bounds)
+	if c.latest == nil || c.latest.Rect != bounds || dirty == bounds {
+		img := capturePixmap(conn, xproto.Drawable(c.pixmap), totalW, totalH, isARGB, buf)
+		return img, bounds, img != nil
 	}
 
+	// Most of the last frame still stands: bring the buffer up to date
+	// with it and capture only what was drawn to since.
+	img := buf
+	if img == nil || img.Rect != bounds {
+		img, stale = image.NewRGBA(bounds), bounds
+	}
+	copyRegion(img, c.latest, stale)
+	if !captureRegion(conn, xproto.Drawable(c.pixmap), dirty, isARGB, img) {
+		return nil, image.Rectangle{}, false
+	}
+	return img, dirty, true
+}
+
+// decorateFrame lets the WM paint its frame over img and rounds the corners
+// of windows that are not filling the screen.
+func decorateFrame(ws *widgets, c *client, img *image.RGBA) {
 	w := wmWindow(c)
 	if xw, ok := w.(x11.XWin); ok {
 		xw.Decorate(img) // the WM paints the frame over its own border pixels
+	}
+	if w != nil && (w.Fullscreened() || w.Maximized()) {
+		return
 	}
 	radius := float32(0)
 	fyne.DoAndWait(func() {
 		radius = theme.Size(theme.SizeNameInnerWindowRadius)
 	})
-	if w == nil || (!w.Fullscreened() && !w.Maximized()) {
-		scale := float32(1)
-		if len(ws.screens) > 0 {
-			scale = ws.screens[0].screen.CanvasScale()
-		}
-		roundCorners(img, int(radius*scale))
+	scale := float32(1)
+	if len(ws.screens) > 0 {
+		scale = ws.screens[0].screen.CanvasScale()
+	}
+	roundCorners(img, int(radius*scale))
+}
+
+// pushFrame hands img to the window item for c in target, returning whether
+// target needs a refresh as a result.
+func pushFrame(target *ui.CompositorWidget, sw *screenWidgets, c *client, winID uint32,
+	img *image.RGBA, dirty image.Rectangle, translucency float64,
+) bool {
+	wi := target.GetWindow(winID)
+	if wi == nil {
+		return false
 	}
 
-	translucency := computeTranslucency(conn, c)
-
-	// Push to back buffer on all screen widgets for this window.
-	// The renderer will swap Back→Img.Image on its next Refresh.
-	for _, sw := range ws.screensForClient(c) {
-		var target *ui.CompositorWidget
-		if isFullScreen {
-			target = sw.overlay
-		} else {
-			target = sw.normal
-		}
-		wi := target.GetWindow(winID)
-		if wi == nil {
-			continue
-		}
-
-		// The renderer lays the window out at the image's size when it swaps it in.
-		if wi.W == 0 {
-			wi.X = c.geom.X - int16(sw.screen.X)
-			wi.Y = c.geom.Y - int16(sw.screen.Y)
-		}
-		wi.Back.Store(img)
-		wi.Img.Translucency = translucency
-
-		// Only request a refresh when none is pending — the pending
-		// refresh reads Back at render time so it always gets the
-		// latest frame.
-		if !pending {
-			wi.Pending.Store(true)
-			refreshed[target] = true
-		}
+	// The renderer lays the window out at the image's size when it swaps it in.
+	if wi.W == 0 {
+		wi.X = c.geom.X - int16(sw.screen.X)
+		wi.Y = c.geom.Y - int16(sw.screen.Y)
 	}
-	if !pending {
-		c.pending = true
-	}
-	return true
+	wi.Img.Translucency = translucency
+
+	// Only request a refresh when none is pending — the pending
+	// refresh takes the frame at render time so it always gets the
+	// latest one.
+	return wi.Push(img, dirty, c.frame)
 }
 
 // flushRefresh issues a single widget-level refresh for each compositor marked
@@ -1088,7 +1149,7 @@ func checkPending(c *client, ws *widgets) (uint32, bool, bool) {
 			} else {
 				target = sw.normal
 			}
-			if wi := target.GetWindow(winID); wi != nil && wi.Pending.Load() {
+			if wi := target.GetWindow(winID); wi != nil && wi.Pending() {
 				pending = true
 				break
 			}
@@ -1232,7 +1293,6 @@ func addClient(conn *xgb.Conn, window xproto.Window) error {
 		attributes: *attr,
 		geom:       *geom,
 		opacity:    opaque,
-		damaged:    false,
 	}
 
 	// Skip the desktop root window, skip-hinted windows, and screensavers.
@@ -1246,7 +1306,7 @@ func addClient(conn *xgb.Conn, window xproto.Window) error {
 		if err != nil {
 			return err
 		}
-		if err = damage.CreateChecked(conn, c.damage, xproto.Drawable(window), damage.ReportLevelNonEmpty).Check(); err != nil {
+		if err = damage.CreateChecked(conn, c.damage, xproto.Drawable(window), damage.ReportLevelBoundingBox).Check(); err != nil {
 			return err
 		}
 	}
@@ -1268,7 +1328,7 @@ func mapWin(conn *xgb.Conn, ws *widgets, window xproto.Window) error {
 	_ = xproto.ChangeWindowAttributes(conn, window, xproto.CwEventMask, mask)
 
 	c.attributes.MapState = xproto.MapStateViewable
-	c.damaged = true
+	c.dirty = wholeWindow
 	c.priority = true // a just-mapped window is what the user is waiting to see
 	updateOpacity(conn, 1, c)
 
@@ -1303,7 +1363,7 @@ func unmapWin(conn *xgb.Conn, ws *widgets, window xproto.Window) {
 		return
 	}
 	c.attributes.MapState = xproto.MapStateUnmapped
-	c.damaged = false
+	c.dirty = image.Rectangle{}
 	stopRepaintTimer(c)
 	freeClientPixmap(conn, c)
 
@@ -1367,7 +1427,7 @@ func configureClient(conn *xgb.Conn, ws *widgets, e xproto.ConfigureNotifyEvent)
 		// was beneath it rather than the client's content. Keep showing the
 		// last good frame at its old size and wait for the client to repaint.
 		freeClientPixmap(conn, client)
-		client.damaged = false
+		client.dirty = image.Rectangle{}
 	}
 
 	client.geom.X = e.X
@@ -1418,7 +1478,7 @@ func configureClient(conn *xgb.Conn, ws *widgets, e xproto.ConfigureNotifyEvent)
 	if screenChanged && !resized {
 		// Force recapture so the new screen gets a fresh image. A resized
 		// window is captured for every screen once the client repaints.
-		client.damaged = true
+		client.dirty = wholeWindow
 		allDamage = true
 	}
 
@@ -1529,7 +1589,7 @@ func damageClient(conn *xgb.Conn, e *damage.NotifyEvent) error {
 		return err
 	}
 
-	client.damaged = true
+	client.dirty = client.dirty.Union(damagedRegion(e.Area, client.geom.BorderWidth))
 	allDamage = true
 	return nil
 }

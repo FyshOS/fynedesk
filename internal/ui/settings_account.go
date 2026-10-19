@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+
 	// Register decoders so any common image can be re-encoded as the .face PNG.
 	_ "image/gif"
 	_ "image/jpeg"

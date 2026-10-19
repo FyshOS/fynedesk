@@ -7,6 +7,7 @@ import (
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/canvas"
+	"github.com/stretchr/testify/assert"
 
 	wmTheme "fyshos.com/tyde/theme"
 )
@@ -145,6 +146,44 @@ func TestCompositorShadowBeneathManagedWindow(t *testing.T) {
 	}
 }
 
+// TestWindowImagePush verifies that the renderer is given the latest frame with
+// all that changed since the one it rendered before, and is asked to refresh
+// only once for it.
+func TestWindowImagePush(t *testing.T) {
+	wi := &WindowImage{}
+	_, _, ok := wi.take()
+	assert.False(t, ok)
+	assert.False(t, wi.Pending())
+
+	bounds := image.Rect(0, 0, 100, 80)
+	first := image.NewRGBA(bounds)
+	assert.True(t, wi.Push(first, bounds, 1))
+	assert.True(t, wi.Pending())
+	assert.Equal(t, first, wi.Latest())
+
+	img, dirty, ok := wi.take()
+	assert.True(t, ok)
+	assert.Same(t, first, img)
+	assert.Equal(t, bounds, dirty)
+	assert.False(t, wi.Pending())
+
+	// Frames that the renderer does not get to are folded into the next.
+	second, third := image.NewRGBA(bounds), image.NewRGBA(bounds)
+	assert.True(t, wi.Push(second, image.Rect(10, 10, 20, 20), 2))
+	assert.False(t, wi.Push(third, image.Rect(50, 15, 60, 30), 3))
+	img, dirty, ok = wi.take()
+	assert.True(t, ok)
+	assert.Same(t, third, img)
+	assert.Equal(t, image.Rect(10, 10, 60, 30), dirty)
+	_, _, ok = wi.take()
+	assert.False(t, ok)
+
+	// A frame that follows one this window image was not given may differ anywhere.
+	assert.True(t, wi.Push(second, image.Rect(10, 10, 20, 20), 5))
+	_, dirty, _ = wi.take()
+	assert.Equal(t, bounds, dirty)
+}
+
 // TestCompositorFrameCarriesItsSize verifies that a window keeps its old pixels
 // at their old size until the capture at a new size is swapped in, so a resize
 // never stretches a stale image, while its position follows the window at once.
@@ -155,8 +194,7 @@ func TestCompositorFrameCarriesItsSize(t *testing.T) {
 	r := cw.CreateRenderer()
 
 	old := image.NewRGBA(image.Rect(0, 0, 400, 300))
-	wi.Back.Store(old)
-	wi.Pending.Store(true)
+	wi.Push(old, old.Bounds(), 1)
 	r.Refresh()
 	if wi.Img.Size() != fyne.NewSize(400, 300) || wi.Img.Position() != fyne.NewPos(100, 200) {
 		t.Fatalf("window not laid out from its first frame: %v at %v", wi.Img.Size(), wi.Img.Position())
@@ -174,8 +212,7 @@ func TestCompositorFrameCarriesItsSize(t *testing.T) {
 	}
 	// The capture at the new size is laid out at its own bounds.
 	grown := image.NewRGBA(image.Rect(0, 0, 500, 350))
-	wi.Back.Store(grown)
-	wi.Pending.Store(true)
+	wi.Push(grown, grown.Bounds(), 2)
 	r.Refresh()
 	if wi.Img.Image != grown || wi.Img.Size() != fyne.NewSize(500, 350) {
 		t.Fatalf("new frame not laid out at its own size: %v", wi.Img.Size())
