@@ -509,7 +509,8 @@ func (d *settingsUI) loadDesktopsScreen() fyne.CanvasObject {
 		container.NewVBox(widget.NewRichTextFromMarkdown("## Virtual Desktops"),
 			widget.NewForm(widget.NewFormItem("Number of desktops", count)),
 			widget.NewSeparator(), widget.NewRichTextFromMarkdown("## Names\n\nLeave blank to show the number.")),
-		nil, nil, nil, container.NewVScroll(names))
+		nil, nil, nil, container.NewVScroll(names),
+	)
 }
 
 func (d *settingsUI) loadKeyboardScreen() fyne.CanvasObject {

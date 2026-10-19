@@ -144,7 +144,8 @@ func newSettingsNav(groups []settingsGroup, headerIcon fyne.Resource) *settingsN
 	// usual top-left, the icon docks top-right and the title centres between.
 	iconSlot := container.NewGridWrap(fyne.NewSquareSize(headerIconSize), n.detailIcon)
 	header := container.NewStack(n.detailTitle, container.NewHBox(
-		container.NewCenter(n.backButton), layout.NewSpacer(), iconSlot))
+		container.NewCenter(n.backButton), layout.NewSpacer(), iconSlot,
+	))
 	n.detail = container.NewPadded(container.NewBorder(
 		container.NewVBox(header, widget.NewSeparator()), nil, nil, nil,
 		n.detailContent,
@@ -189,8 +190,9 @@ func (n *settingsNav) buildHome() fyne.CanvasObject {
 	iconSlot := container.NewGridWrap(fyne.NewSquareSize(headerIconSize), homeIcon)
 	title := widget.NewLabelWithStyle("Settings", fyne.TextAlignCenter, fyne.TextStyle{Bold: true})
 	title.SizeName = theme.SizeNameHeadingText
-	head := container.NewVBox(container.NewStack(title,
-		container.NewHBox(layout.NewSpacer(), iconSlot)),
+	head := container.NewVBox(
+		container.NewStack(title,
+			container.NewHBox(layout.NewSpacer(), iconSlot)),
 		widget.NewSeparator(),
 	)
 	body := container.NewPadded(container.NewBorder(head, nil, nil, nil, scroll))
