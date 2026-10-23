@@ -82,6 +82,8 @@ Examples:
   tyde_ctl windows             List the open windows
   tyde_ctl focus Firefox       Bring the Firefox window to the front
   tyde_ctl maximize            Maximize the focused window
+  tyde_ctl move Firefox left   Tile the Firefox window to the left half
+  tyde_ctl resize 1280 720     Resize the focused window
   tyde_ctl big Hello World     Show "Hello World" in large type
 
 Built-in commands:

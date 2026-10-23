@@ -122,6 +122,7 @@ func TestCommands_Builtins(t *testing.T) {
 	assert.Equal(t, []string{
 		"welcome", "fathom", "restart",
 		"windows", "focus", "close", "minimize", "maximize", "fullscreen", "restore", "pin", "unpin",
+		"move", "resize",
 	}, names)
 }
 

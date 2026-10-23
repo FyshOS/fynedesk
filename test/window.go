@@ -87,8 +87,10 @@ func (w *Window) Maximized() bool {
 	return w.maximized
 }
 
-// Move the window, does nothing in test windows
-func (w *Window) Move(_ fyne.Position) {}
+// Move records the new position of the window
+func (w *Window) Move(pos fyne.Position) {
+	w.x, w.y = int(pos.X), int(pos.Y)
+}
 
 // Parent returns a window that this should be positioned within, if set.
 func (w *Window) Parent() tyde.Window {
@@ -110,8 +112,10 @@ func (w *Window) Position() fyne.Position {
 	return fyne.NewPos(float32(w.x), float32(w.y))
 }
 
-// Resize the window, does nothing in test windows
-func (w *Window) Resize(_ fyne.Size) {}
+// Resize records the new size of the window
+func (w *Window) Resize(size fyne.Size) {
+	w.width, w.height = uint(size.Width), uint(size.Height)
+}
 
 // Size returns the current size.
 func (w *Window) Size() fyne.Size {

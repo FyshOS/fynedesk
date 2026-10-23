@@ -413,7 +413,7 @@ func (c *client) Resize(s fyne.Size) {
 	}
 	screen := tyde.Instance().Screens().ScreenForWindow(c)
 
-	c.frame.updateGeometry(c.frame.x, c.frame.y, uint16(s.Width*screen.Scale), uint16(s.Height*screen.Scale), false)
+	c.frame.updateGeometry(c.frame.x, c.frame.y, uint16(s.Width*screen.CanvasScale()), uint16(s.Height*screen.CanvasScale()), false)
 }
 
 func (c *client) Size() fyne.Size {
