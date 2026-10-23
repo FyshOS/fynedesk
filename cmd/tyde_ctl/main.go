@@ -29,8 +29,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	switch os.Args[1] {
-	case "list":
+	if os.Args[1] == "list" {
 		fmt.Println("Available commands:")
 		for _, c := range commands {
 			fmt.Println("  " + usage(c))
@@ -40,18 +39,21 @@ func main() {
 	}
 
 	for _, cmd := range commands {
-		if cmd.Name == os.Args[1] {
-			input := strings.Join(os.Args[1:], " ")
-			var reply string
-			if err := client.Call("Service.Launch", input, &reply); err != nil {
-				fmt.Fprintln(os.Stderr, err)
-				os.Exit(1)
-			}
-			fmt.Println(reply)
+		if cmd.Name != os.Args[1] {
+			continue
 		}
+
+		var reply string
+		if err := client.Call("Service.Launch", strings.Join(os.Args[1:], " "), &reply); err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			os.Exit(1)
+		}
+		fmt.Println(reply)
+		return
 	}
 
-	fmt.Println("Could not find command matching:", os.Args[1])
+	fmt.Fprintln(os.Stderr, "Could not find command matching:", os.Args[1])
+	os.Exit(1)
 }
 
 // usage writes a command's invocation line, e.g. "brightness <a percentage …>".
@@ -75,8 +77,12 @@ Commands available depend on loaded modules - "tyde_ctl list" shows those availa
 Examples:
   tyde_ctl brightness up       Increase screen brightness
   tyde_ctl brightness 50       Set brightness to 50%
+  tyde_ctl desktop 2           Switch to the second virtual desktop
+  tyde_ctl send Firefox to 3   Move the Firefox window to the third desktop
+  tyde_ctl windows             List the open windows
+  tyde_ctl focus Firefox       Bring the Firefox window to the front
+  tyde_ctl maximize            Maximize the focused window
   tyde_ctl big Hello World     Show "Hello World" in large type
-  tyde_ctl 2+2                 Evaluate expression
 
 Built-in commands:
   list     Show the commands this desktop offers, with their arguments

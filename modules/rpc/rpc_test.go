@@ -119,7 +119,10 @@ func TestCommands_Builtins(t *testing.T) {
 	for _, c := range Commands() {
 		names = append(names, c.Name)
 	}
-	assert.Equal(t, []string{"welcome", "fathom", "restart"}, names)
+	assert.Equal(t, []string{
+		"welcome", "fathom", "restart",
+		"windows", "focus", "close", "minimize", "maximize", "fullscreen", "restore", "pin", "unpin",
+	}, names)
 }
 
 func TestCommands_FromModule(t *testing.T) {

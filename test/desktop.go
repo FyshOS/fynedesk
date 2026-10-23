@@ -17,6 +17,7 @@ type Desktop struct {
 	screens  tyde.ScreenList
 	wm       tyde.WindowManager
 	modules  []tyde.Module
+	desk     int
 }
 
 // NewDesktop returns a new in-memory desktop instance
@@ -49,13 +50,14 @@ func (*Desktop) RootSizePixels() (w, h uint32) {
 	return 320, 240
 }
 
-// Desktop returns the index of the current desktop (in test this is always 0)
-func (*Desktop) Desktop() int {
-	return 0
+// Desktop returns the index of the current desktop, 0 until SetDesktop is called
+func (td *Desktop) Desktop() int {
+	return td.desk
 }
 
-// SetDesktop sets the desired desktop index, a no-op in test code
-func (*Desktop) SetDesktop(int) {
+// SetDesktop records the desired desktop index, with no windows to move in tests
+func (td *Desktop) SetDesktop(id int) {
+	td.desk = id
 }
 
 // ShowDesktopOverview reveals all desktops, a no-op in test code

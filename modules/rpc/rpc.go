@@ -8,6 +8,7 @@ import (
 	"net/rpc"
 	"os"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -92,7 +93,7 @@ func RunCommand(cmd tyde.Command, args string) (string, error) {
 // Commands lists everything Run understands: the desktop's own commands plus
 // those each loaded module offers.
 func Commands() []tyde.Command {
-	cmds := append([]tyde.Command(nil), builtins...)
+	cmds := slices.Concat(builtins, windowCommands)
 
 	desk := tyde.Instance()
 	if desk == nil {
