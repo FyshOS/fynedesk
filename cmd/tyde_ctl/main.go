@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"fyshos.com/tyde"
 	frpc "fyshos.com/tyde/modules/rpc"
 )
 
@@ -22,26 +23,43 @@ func main() {
 	}
 	defer client.Close()
 
-	if os.Args[1] == "list" {
-		var modules []string
-		if err := client.Call("Service.ListModules", "", &modules); err != nil {
-			fmt.Fprintln(os.Stderr, err)
-			os.Exit(1)
-		}
-		fmt.Println("Available suggestion modules:")
-		for _, m := range modules {
-			fmt.Println("  -", m)
+	var commands []tyde.Command
+	if err := client.Call("Service.ListCommands", "", &commands); err != nil {
+		fmt.Fprintln(os.Stderr, err)
+		os.Exit(1)
+	}
+
+	switch os.Args[1] {
+	case "list":
+		fmt.Println("Available commands:")
+		for _, c := range commands {
+			fmt.Println("  " + usage(c))
+			fmt.Println("      " + c.Description)
 		}
 		return
 	}
 
-	input := strings.Join(os.Args[1:], " ")
-	var reply string
-	if err := client.Call("Service.Launch", input, &reply); err != nil {
-		fmt.Fprintln(os.Stderr, err)
-		os.Exit(1)
+	for _, cmd := range commands {
+		if cmd.Name == os.Args[1] {
+			input := strings.Join(os.Args[1:], " ")
+			var reply string
+			if err := client.Call("Service.Launch", input, &reply); err != nil {
+				fmt.Fprintln(os.Stderr, err)
+				os.Exit(1)
+			}
+			fmt.Println(reply)
+		}
 	}
-	fmt.Println(reply)
+
+	fmt.Println("Could not find command matching:", os.Args[1])
+}
+
+// usage writes a command's invocation line, e.g. "brightness <a percentage …>".
+func usage(c tyde.Command) string {
+	if c.Args == "" {
+		return c.Name
+	}
+	return c.Name + " [" + c.Args + "]"
 }
 
 func printHelp() {
@@ -52,8 +70,7 @@ Usage:
   tyde_ctl list
   tyde_ctl help
 
-Commands are passed to Tyde's launch suggestion modules, the same
-way text typed into the app launcher is processed.
+Commands available depend on loaded modules - "tyde_ctl list" shows those available.
 
 Examples:
   tyde_ctl brightness up       Increase screen brightness
@@ -62,7 +79,7 @@ Examples:
   tyde_ctl 2+2                 Evaluate expression
 
 Built-in commands:
-  list    Show loaded suggestion modules
-  help    Show this help message
+  list     Show the commands this desktop offers, with their arguments
+  help     Show this help message
 `)
 }

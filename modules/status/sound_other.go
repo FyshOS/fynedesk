@@ -47,7 +47,19 @@ func (b *sound) setValue(vol int) {
 	}
 
 	b.updateIcon(vol, b.muted())
-	b.bar.SetValue(float64(vol))
+	if b.bar != nil { // no status area: the mixer is still set, there is just nothing to draw
+		b.bar.SetValue(float64(vol))
+	}
+}
+
+func (b *sound) setMute(mute bool) {
+	if err := b.client.SetMute(mute); err != nil {
+		fyne.LogError("Failed to set mute", err)
+		return
+	}
+
+	val, _ := b.value()
+	b.updateIcon(val, mute)
 }
 
 func (b *sound) toggleMute() {

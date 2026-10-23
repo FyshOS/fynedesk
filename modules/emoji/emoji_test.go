@@ -120,3 +120,21 @@ func TestModule_ShowPicker(t *testing.T) {
 
 	assert.True(t, m.picker.shown)
 }
+
+// The command copies the same emoji the launcher would have, because it runs
+// the very suggestion the launcher builds.
+func TestModule_Command_Copies(t *testing.T) {
+	m := newTestModule(t)
+	fyne.CurrentApp().Clipboard().SetContent("")
+
+	cmds := m.Commands()
+	if !assert.Len(t, cmds, 1) {
+		return
+	}
+	assert.Equal(t, launchAliases[0], cmds[0].Name)
+
+	reply, err := cmds[0].Run("rocket")
+	assert.NoError(t, err)
+	assert.Contains(t, reply, "🚀")
+	assert.Equal(t, "🚀", fyne.CurrentApp().Clipboard().Content())
+}

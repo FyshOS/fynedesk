@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"fyshos.com/tyde/internal/modhelper"
 	"github.com/FyshOS/dryvers"
 
 	"fyshos.com/tyde"
@@ -54,7 +55,9 @@ func (b *brightness) setValue(value int) {
 	_ = b.bright.Set(float64(value) / 100)
 
 	newVal, _ := b.bright.Get()
-	b.bar.SetValue(newVal)
+	if b.bar != nil { // a command can arrive before, or without, a status area to update
+		b.bar.SetValue(newVal)
+	}
 }
 
 func (b *brightness) LaunchSuggestions(input string) []tyde.LaunchSuggestion {
@@ -92,17 +95,44 @@ func (b *brightness) LaunchSuggestions(input string) []tyde.LaunchSuggestion {
 		return nil
 	}
 
+	item := b.item(val)
+	if item == nil {
+		return nil
+	}
+	return []tyde.LaunchSuggestion{item}
+}
+
+func (b *brightness) item(val string) tyde.LaunchSuggestion {
+	val = strings.ToLower(strings.TrimSpace(val))
+
 	if _, err := strconv.Atoi(val); err != nil {
 		if !startsWith(val, "d") && !startsWith(val, "u") {
 			return nil
 		}
 	}
 
-	return []tyde.LaunchSuggestion{&brightItem{input: val, b: b}}
+	return &brightItem{input: val, b: b}
 }
 
 func (b *brightness) Metadata() tyde.ModuleMetadata {
 	return brightnessMeta
+}
+
+// Commands describes the brightness command, offered only where there is a backlight.
+func (b *brightness) Commands() []tyde.Command {
+	if val, err := b.bright.Get(); err != nil || val == 0 {
+		return nil
+	}
+
+	c := tyde.Command{
+		Name:        "brightness",
+		Description: "Set or step the screen backlight brightness",
+		Args:        "a percentage from 1 to 100, or 'up' / 'down' to step by 5%",
+		Examples:    []string{"brightness 50", "brightness up"},
+	}
+
+	modhelper.AnswerWith(&c, b.item)
+	return []tyde.Command{c}
 }
 
 func (b *brightness) Shortcuts() map[*tyde.Shortcut]func() {

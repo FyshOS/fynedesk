@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"fyshos.com/tyde/internal/modhelper"
 
 	"fyshos.com/tyde"
 )
@@ -36,6 +37,27 @@ func (l *largeType) Destroy() {
 
 func (l *largeType) Metadata() tyde.ModuleMetadata {
 	return largeTypeMeta
+}
+
+// Commands offers the large type display. Only the first alias is listed: the
+// rest are typing shortcuts, not separate things to do.
+func (l *largeType) Commands() []tyde.Command {
+	c := tyde.Command{
+		Name:        largeTypeAliases[0],
+		Description: "Show a short piece of text across the screen in large type",
+		Args:        "the text to display",
+		Examples:    []string{"largetype Hello World"},
+	}
+
+	modhelper.AnswerWith(&c, l.item)
+	return []tyde.Command{c}
+}
+
+func (l *largeType) item(text string) tyde.LaunchSuggestion {
+	if strings.TrimSpace(text) == "" {
+		return nil
+	}
+	return &largeTypeItem{text: text}
 }
 
 func (l *largeType) LaunchSuggestions(input string) []tyde.LaunchSuggestion {

@@ -55,12 +55,12 @@ const (
 	prefClaudeKey     = "ai.key.claude"
 	prefOpenAIKey     = "ai.key.openai"
 	prefLocalEndpoint = "ai.endpoint.local"
+	prefTools         = "ai.tools"          // let the assistant run desktop commands (default on)
 	prefLocalThinking = "ai.local.thinking" // let a reasoning model think (slower)
 	prefLocalManaged  = "ai.local.managed"  // let tyde run the server via kronk (default on)
 	prefClaudeModel   = "ai.model.claude"
 	prefOpenAIModel   = "ai.model.openai"
 	prefLocalModel    = "ai.model.local"
-	prefLegacyModel   = "ai.model" // one model for all providers, migrated away below
 )
 
 // modelPref maps a provider to the preference holding its optional model

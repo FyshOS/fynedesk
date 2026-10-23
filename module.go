@@ -33,6 +33,25 @@ type LaunchSuggestionModule interface {
 	LaunchSuggestions(string) []LaunchSuggestion
 }
 
+// Command is an action that can be asked for by name from outside the desktop UI.
+type Command struct {
+	Name        string   // the word that invokes it, e.g. "brightness"
+	Description string   // one line saying what running it does
+	Args        string   // what may follow the name, empty when it takes none
+	Examples    []string // optional complete invocations, e.g. "brightness 50"
+
+	// Run performs the command with any parameters. Refuse arguments you cannot act on
+	// with an error rather than doing nothing quietly.
+	Run func(args string) (string, error)
+}
+
+// CommandModule is a module that offers commands that can be executed. Implementing this is
+// all that is needed for a module's actions to appear in tyde_ctl and the AI assistant.
+type CommandModule interface {
+	Module
+	Commands() []Command
+}
+
 // StatusAreaModule describes a module that can add items to the status area
 // (the bottom of the widget panel)
 type StatusAreaModule interface {

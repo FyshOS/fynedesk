@@ -8,6 +8,7 @@ import (
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"fyshos.com/tyde/internal/modhelper"
 
 	"github.com/mafik/pulseaudio"
 
@@ -36,37 +37,41 @@ func (b *sound) LaunchSuggestions(input string) []tyde.LaunchSuggestion {
 	}
 
 	lower := strings.ToLower(input)
-	matches := false
 	val := lower
-	if startsWith(lower, "volume ") {
-		if len(lower) > 7 {
-			val = lower[7:]
-		} else {
-			val = ""
+	switch {
+	case startsWith(lower, "volume "):
+		val = "" // still being typed: "vol", "volum" - nothing to act on yet
+		if len(lower) > len("volume ") {
+			val = lower[len("volume "):]
 		}
-	} else if startsWith(lower, "vol ") {
-		if len(lower) > 4 {
-			val = lower[4:]
-		} else {
-			val = ""
+	case startsWith(lower, "vol "):
+		val = ""
+		if len(lower) > len("vol ") {
+			val = lower[len("vol "):]
 		}
-	} else if lower == "mute" || lower == "unmute" {
-		matches = true
-	} else {
+	case lower == "mute" || lower == "unmute":
+		// the word is the value
+	default:
 		return nil
 	}
 
-	if !matches {
-		if startsWith(val, "u") || startsWith(val, "d") || val == "mute" || val == "unmute" {
-			matches = true
+	item := b.item(val)
+	if item == nil {
+		return nil
+	}
+	return []tyde.LaunchSuggestion{item}
+}
+
+func (b *sound) item(val string) tyde.LaunchSuggestion {
+	val = strings.ToLower(strings.TrimSpace(val))
+
+	if _, err := strconv.Atoi(val); err != nil {
+		if !startsWith(val, "u") && !startsWith(val, "d") && val != "mute" && val != "unmute" {
+			return nil
 		}
 	}
 
-	if matches {
-		return []tyde.LaunchSuggestion{&volItem{input: val, s: b}}
-	}
-
-	return nil
+	return &volItem{input: val, s: b}
 }
 
 func (b *sound) Shortcuts() map[*tyde.Shortcut]func() {
@@ -124,6 +129,43 @@ func (b *sound) Metadata() tyde.ModuleMetadata {
 	return soundMeta
 }
 
+// Commands describes the volume commands, offered only where there is a mixer
+// to talk to - the same test LaunchSuggestions makes before matching.
+func (b *sound) Commands() []tyde.Command {
+	if _, err := b.value(); err != nil {
+		return nil
+	}
+
+	c1 := tyde.Command{
+		Name:        "volume",
+		Description: "Set or step the output volume",
+		Args:        "a percentage from 0 to 100, or 'up' / 'down' to step by 5%",
+		Examples:    []string{"volume 30", "volume down"},
+	}
+	modhelper.AnswerWith(&c1, b.item)
+
+	c2 := tyde.Command{
+		Name:        "mute",
+		Description: "Mute the sound output",
+	}
+	modhelper.AnswerWith(&c2, b.always("mute"))
+
+	c3 := tyde.Command{
+		Name:        "unmute",
+		Description: "Unmute the sound output",
+	}
+	modhelper.AnswerWith(&c3, b.always("unmute"))
+	return []tyde.Command{c1, c2, c3}
+}
+
+// always ignores what followed the command name: "mute" means the one thing
+// whether or not anything was typed after it.
+func (b *sound) always(val string) func(string) tyde.LaunchSuggestion {
+	return func(string) tyde.LaunchSuggestion {
+		return b.item(val)
+	}
+}
+
 func (b *sound) offsetValue(diff int) {
 	currVal, err := b.value()
 	if err != nil {
@@ -142,6 +184,10 @@ func (b *sound) offsetValue(diff int) {
 }
 
 func (b *sound) updateIcon(vol int, mute bool) {
+	if b.mute == nil {
+		return // a command can arrive before, or without, a status area to update
+	}
+
 	if mute {
 		b.mute.SetIcon(wmtheme.MuteIcon)
 	} else {
@@ -182,9 +228,9 @@ func (i *volItem) Title() string {
 
 func (i *volItem) Launch() {
 	if i.input == "mute" {
-		_ = i.s.client.SetMute(true)
+		i.s.setMute(true)
 	} else if i.input == "unmute" {
-		_ = i.s.client.SetMute(false)
+		i.s.setMute(false)
 	} else if startsWith(i.input, "u") {
 		i.s.offsetValue(5)
 	} else if startsWith(i.input, "d") {

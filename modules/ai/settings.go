@@ -57,8 +57,15 @@ func SettingsContent() fyne.CanvasObject {
 		rebuild()
 	}
 
+	// Tool use is a property of the assistant rather than of a provider, so it
+	// sits below the provider's own setup and survives switching between them.
+	tools := widget.NewCheck("Allow Fathom to run desktop commands", func(on bool) {
+		p.SetBool(prefTools, on)
+	})
+	tools.SetChecked(p.BoolWithFallback(prefTools, true))
+
 	head := widget.NewForm(widget.NewFormItem("Provider", provider))
-	return container.NewVBox(head, body)
+	return container.NewVBox(head, body, tools)
 }
 
 // cloudSettings builds the API-key + model form for a cloud provider. Both the

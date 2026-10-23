@@ -16,6 +16,7 @@ import (
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/theme"
 	"fyne.io/fyne/v2/widget"
+	"fyshos.com/tyde/internal/modhelper"
 
 	"fyshos.com/tyde"
 )
@@ -126,6 +127,29 @@ func (m *module) searchSuggestions(query string) []tyde.LaunchSuggestion {
 // "tyde_ctl emoji" do. Must be called on the UI thread.
 func (m *module) ShowPicker() {
 	m.picker.show()
+}
+
+// Commands offers the picker, and the emoji search behind it, to tyde_ctl and
+// the assistant.
+func (m *module) Commands() []tyde.Command {
+	c := tyde.Command{
+		Name:        launchAliases[0],
+		Description: "Open the emoji picker, or copy an emoji to the clipboard by name",
+		Args:        "optional: the name of the emoji to copy",
+		Examples:    []string{"emoji", "emoji fire"},
+	}
+
+	modhelper.AnswerWith(&c, m.item)
+	return []tyde.Command{c}
+}
+
+func (m *module) item(query string) tyde.LaunchSuggestion {
+	query = strings.ToLower(strings.TrimSpace(query))
+	if query == "" {
+		return &openItem{m: m}
+	}
+
+	return m.searchSuggestions(query)[0]
 }
 
 // openItem is the launcher suggestion that opens the picker.

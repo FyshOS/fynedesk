@@ -2,9 +2,12 @@ package ai
 
 import (
 	"context"
+	"image/color"
+	"strconv"
 	"strings"
 
 	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/layout"
 	"fyne.io/fyne/v2/theme"
@@ -15,8 +18,11 @@ import (
 	"github.com/tmc/langchaingo/llms"
 )
 
-const systemPrompt = "You are a helpful AI assistant built into the FyshOS desktop. " +
-	"Answer concisely and format replies in Markdown when it helps readability."
+const systemPrompt = "You are an AI assistant called Fathom, part of the FyshOS desktop. " +
+	"Answer concisely and format replies in Markdown when it helps readability. " +
+	"The tools you are given run this desktop's own commands: use them when asked to " +
+	"change a setting or show something on screen, then say what happened in a sentence. " +
+	"Talk about the commands by what they do rather than by their tool names."
 
 // chatUI is the conversation view: a scrolling transcript above an input row.
 // history holds the running conversation passed to the model on each turn.
@@ -129,7 +135,6 @@ func (c *chatUI) submit() {
 		return
 	}
 
-	reply, stopSpinner := c.addPendingReply()
 	c.setBusy(true)
 
 	// Make the request cancellable so closing the tab (stop) abandons the reply
@@ -145,73 +150,115 @@ func (c *chatUI) submit() {
 	go func() {
 		defer recoverAI("chat goroutine")
 		defer cancel()
-		var sb strings.Builder
-		resp, genErr := llm.GenerateContent(
-			ctx, hist,
-			// Without an explicit limit langchaingo defaults max_tokens to 2048,
-			// which truncates longer replies mid-sentence (stop_reason max_tokens).
-			llms.WithMaxTokens(8192),
-			llms.WithStreamingFunc(func(_ context.Context, chunk []byte) error {
-				sb.Write(chunk)
-				text := sb.String()
-				// A local server can emit empty leading chunks (a role-only delta,
-				// keep-alives) before any tokens - and the model may take a while to
-				// load and start generating. Keep the activity indicator up until
-				// real text actually arrives, or it vanishes into a blank pause.
-				if text == "" {
-					return nil
-				}
-				fyne.Do(func() {
-					defer recoverAI("chat stream render")
-					stopSpinner() // first real reply text has arrived
-					// Plain markdown while streaming: don't swap in copyable code
-					// blocks on every chunk - re-parsing rebuilds the segments each
-					// time, and churning their types under Fyne's renderer is both
-					// wasteful and crash-prone. The copy buttons are added once the
-					// reply is complete (final render below).
-					reply.ParseMarkdown(text)
-					c.scroll.ScrollToBottom()
-				})
-				return nil
-			}),
-		)
 
-		final := sb.String()
-		if genErr == nil && final == "" && resp != nil && len(resp.Choices) > 0 {
-			final = resp.Choices[0].Content // provider streamed nothing; use the full reply
-		}
-
-		// A "max_tokens" stop reason means the model hit the output cap and the
-		// reply is incomplete - flag it so the reader knows to ask for more.
-		truncated := genErr == nil && resp != nil && len(resp.Choices) > 0 &&
-			resp.Choices[0].StopReason == "max_tokens"
+		hist = c.converse(ctx, llm, hist)
 
 		fyne.Do(func() {
-			defer recoverAI("chat final render")
-			stopSpinner() // ensure it stops even if nothing streamed
-			switch {
-			case genErr != nil:
-				reply.ParseMarkdown("⚠️ " + genErr.Error())
-			case final != "":
-				shown := final
-				if truncated {
-					shown += " …\n\n*(reply truncated - ask to continue)*"
-				}
-				renderMarkdown(reply, shown)
-			}
-			c.scroll.ScrollToBottom()
+			defer recoverAI("chat turn end")
+			// Record the exchange on the UI thread (the same goroutine as the
+			// human-turn append) so history has a single writer.
+			c.history = hist
+
 			c.setBusy(false)
 			if c.isActive == nil || c.isActive() { // don't grab focus from another tab
 				c.win.Canvas().Focus(c.entry)
 			}
-
-			// Record the exchange on the UI thread (the same goroutine as the
-			// human-turn append) so history has a single writer.
-			if genErr == nil {
-				c.history = append(c.history, llms.TextParts(llms.ChatMessageTypeAI, final))
-			}
 		})
 	}()
+}
+
+// converse runs the model until it answers in words rather than command calls.
+// Each command call is run and its result handed back, so it can say what it did.
+func (c *chatUI) converse(ctx context.Context, llm llms.Model, hist []llms.MessageContent) []llms.MessageContent {
+	tools := desktopTools()
+	if len(tools) == 0 && usedTools(hist) {
+		// This conversation has already run a command, and a provider rejects a
+		// tool result it has no matching tool for. So turning tool use off ih this conversation.
+		tools = commandTools()
+	}
+
+	for turn := 0; ; turn++ {
+		reply := c.addPendingReply()
+		final, resp, genErr := c.generate(ctx, llm, hist, tools, reply)
+		call := firstToolCall(resp)
+		c.finishReply(reply, final, resp, genErr, call != nil)
+
+		if genErr != nil || call == nil {
+			if genErr == nil && final != "" {
+				hist = append(hist, llms.TextParts(llms.ChatMessageTypeAI, final))
+			}
+			return hist
+		}
+
+		// A command was asked for. The request is recorded as an assistant turn of
+		// its own - anything the model said alongside it is shown but not kept.
+		hist = append(hist, llms.MessageContent{
+			Role:  llms.ChatMessageTypeAI,
+			Parts: []llms.ContentPart{*call},
+		})
+
+		line, result := runTool(call.FunctionCall.Name, call.FunctionCall.Arguments)
+		c.showCommand(line, result)
+		hist = append(hist, llms.MessageContent{
+			Role: llms.ChatMessageTypeTool,
+			Parts: []llms.ContentPart{llms.ToolCallResponse{
+				ToolCallID: call.ID,
+				Name:       call.FunctionCall.Name,
+				Content:    result,
+			}},
+		})
+
+		if turn+1 >= maxToolTurns {
+			c.showNote("Stopped after " + strconv.Itoa(maxToolTurns) + " commands.")
+			return hist
+		}
+	}
+}
+
+// generate asks the model for one reply, streaming it into the given row as it arrives.
+// It returns the complete text alongside the raw response, which carries any tool call or error.
+func (c *chatUI) generate(ctx context.Context, llm llms.Model, hist []llms.MessageContent,
+	tools []llms.Tool, reply *pendingReply) (string, *llms.ContentResponse, error) {
+	var sb strings.Builder
+
+	opts := []llms.CallOption{
+		// Without an explicit limit langchaingo defaults max_tokens to 2048,
+		// which truncates longer replies mid-sentence (stop_reason max_tokens).
+		llms.WithMaxTokens(8192),
+		llms.WithStreamingFunc(func(_ context.Context, chunk []byte) error {
+			sb.Write(chunk)
+			text := sb.String()
+			// A local server can emit empty leading chunks before any tokens.
+			// Keep the activity indicator up until real text actually arrives.
+			// A tool call being spelled out as text counts as not yet arrived.
+			if text == "" || looksLikeToolCall(text) {
+				return nil
+			}
+			fyne.Do(func() {
+				defer recoverAI("chat stream render")
+				reply.stop() // first real reply text has arrived
+				// Plain Markdown while streaming, hold off on code copy blocks until complete.
+				// The copy buttons are added once the reply is complete (final render below).
+				reply.body.ParseMarkdown(text)
+				c.scroll.ScrollToBottom()
+			})
+			return nil
+		}),
+	}
+	if len(tools) > 0 {
+		opts = append(opts, llms.WithTools(tools))
+	}
+
+	resp, err := llm.GenerateContent(ctx, hist, opts...)
+	if err != nil {
+		return "", nil, err
+	}
+
+	final := sb.String()
+	if final == "" && resp != nil && len(resp.Choices) > 0 {
+		final = resp.Choices[0].Content // provider streamed nothing; use the full reply
+	}
+	return final, resp, nil
 }
 
 // renderMarkdown parses Markdown into the reply body and upgrades its code
@@ -234,27 +281,114 @@ func (c *chatUI) addMessage(icon fyne.Resource, text string) *widget.RichText {
 	return body
 }
 
+// pendingReply is the assistant's row in the transcript while a reply is in flight.
+type pendingReply struct {
+	body *widget.RichText
+	row  fyne.CanvasObject
+	stop func()
+}
+
 // addPendingReply appends the assistant's reply row with a running activity
-// indicator beside the empty body, and returns the body to stream into plus a
-// stop func that removes the indicator.
-func (c *chatUI) addPendingReply() (*widget.RichText, func()) {
-	body := widget.NewRichTextFromMarkdown("")
-	body.Wrapping = fyne.TextWrapWord
+// indicator beside the empty body.
+func (c *chatUI) addPendingReply() *pendingReply {
+	var reply *pendingReply
+	fyne.DoAndWait(func() {
+		body := widget.NewRichTextFromMarkdown("")
+		body.Wrapping = fyne.TextWrapWord
 
-	spinner := widget.NewActivity()
-	spinner.Start()
+		spinner := widget.NewActivity()
+		spinner.Start()
 
-	content := container.NewVBox(container.NewHBox(spinner), body)
-	row := container.NewBorder(nil, nil, container.NewVBox(widget.NewIcon(Icon), layout.NewSpacer()), nil, content)
-	c.log.Add(container.NewPadded(row))
-	c.log.Refresh()
-	c.scroll.ScrollToBottom()
+		waiting := container.NewHBox(spinner)
+		content := container.NewVBox(waiting, body)
+		row := container.NewPadded(container.NewBorder(nil, nil,
+			container.NewVBox(widget.NewIcon(Icon), layout.NewSpacer()), nil, content))
+		c.log.Add(row)
+		c.log.Refresh()
+		c.scroll.ScrollToBottom()
 
-	stop := func() {
-		spinner.Stop()
-		spinner.Hide()
+		stopped := false
+		reply = &pendingReply{body: body, row: row, stop: func() {
+			if stopped {
+				return
+			}
+			stopped = true
+			spinner.Stop()
+			content.Remove(waiting)
+		}}
+	})
+	return reply
+}
+
+// finishReply renders a completed turn into its row - the model's words or error.
+// A turn that only asked to run a command is empty so comes out of the transcript.
+func (c *chatUI) finishReply(reply *pendingReply, final string, resp *llms.ContentResponse,
+	genErr error, called bool) {
+	truncated := genErr == nil && resp != nil && len(resp.Choices) > 0 &&
+		resp.Choices[0].StopReason == "max_tokens"
+
+	fyne.DoAndWait(func() {
+		reply.stop() // ensure it stops even if nothing streamed
+		switch {
+		case genErr != nil:
+			reply.body.ParseMarkdown("⚠️ " + genErr.Error())
+		case called:
+			c.log.Remove(reply.row)
+			c.log.Refresh()
+		case final != "":
+			shown := final
+			if truncated {
+				shown += " …\n\n*(reply truncated - ask to continue)*"
+			}
+			renderMarkdown(reply.body, shown)
+		default:
+			c.log.Remove(reply.row) // nothing said at all: leave no empty row
+			c.log.Refresh()
+		}
+		c.scroll.ScrollToBottom()
+	})
+}
+
+// showCommand notes a command the model ran, so the person reading can see what
+// the assistant did to their desktop rather than only its account of it.
+func (c *chatUI) showCommand(line, result string) {
+	text := "tyde_ctl " + line
+	if problem, failed := strings.CutPrefix(result, "error: "); failed {
+		if line == "" {
+			text = problem // nothing ran, so there is no command line to show
+		} else {
+			text += " - " + problem
+		}
 	}
-	return body, stop
+	c.addNote(text, fyne.TextStyle{Monospace: true})
+}
+
+// showNote adds a line from the desktop rather than the model, such as a limit
+// having been reached.
+func (c *chatUI) showNote(text string) {
+	c.addNote(text, fyne.TextStyle{Italic: true})
+}
+
+// addNote appends a quiet line from the desktop rather than from either party
+// in the conversation.
+func (c *chatUI) addNote(text string, style fyne.TextStyle) {
+	fyne.DoAndWait(func() {
+		note := widget.NewRichText(&widget.TextSegment{Text: text, Style: widget.RichTextStyle{
+			ColorName: theme.ColorNameDisabled,
+			SizeName:  theme.SizeNameCaptionText,
+			TextStyle: style,
+		}})
+		note.Wrapping = fyne.TextWrapWord
+
+		// Indent past where the speaker icons go, so the note lines up with what
+		// was said rather than hanging off the edge of the conversation.
+		indent := canvas.NewRectangle(color.Transparent)
+		indent.SetMinSize(fyne.NewSquareSize(theme.IconInlineSize()))
+
+		c.log.Add(container.NewPadded(container.NewBorder(nil, nil, indent, nil, note)))
+		c.log.Refresh()
+		c.scroll.ScrollToBottom()
+	})
 }
 
 // setBusy toggles the input while a reply is in flight.

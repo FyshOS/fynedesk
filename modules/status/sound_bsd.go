@@ -59,15 +59,24 @@ func (b *sound) setValue(vol int) {
 		return
 	}
 
-	b.bar.SetValue(float64(vol))
+	if b.bar != nil { // no status area: the mixer is still set, there is just nothing to draw
+		b.bar.SetValue(float64(vol))
+	}
 	b.updateIcon(vol, muted)
 }
 
+func (b *sound) setMute(mute bool) {
+	if mute == muted {
+		return
+	}
+	b.toggleMute()
+}
+
 func (b *sound) toggleMute() {
-	if !muted {
+	muted = !muted
+	if muted {
 		b.setValue(0)
 	} else {
 		b.setValue(volume)
 	}
-	muted = !muted
 }

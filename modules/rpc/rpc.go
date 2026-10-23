@@ -52,6 +52,119 @@ func LaunchInput(input string) (string, error) {
 	return "", fmt.Errorf("no match for %q", input)
 }
 
+// Run performs a line of text, as typed at tyde_ctl: the command named by its
+// first word if there is one, otherwise the first launch suggestion the input
+// matches. Returns an error if nothing matches.
+//
+// This must parse the command parts, a caller that already holds a Command should
+// use RunCommand instead.
+func Run(input string) (string, error) {
+	if tyde.Instance() == nil {
+		return "", errors.New("desktop not running")
+	}
+
+	trimmed := strings.TrimSpace(input)
+	name, args, _ := strings.Cut(trimmed, " ")
+
+	for _, cmd := range Commands() {
+		if strings.EqualFold(name, cmd.Name) {
+			return RunCommand(cmd, args)
+		}
+	}
+	return LaunchInput(trimmed)
+}
+
+// RunCommand performs a command from Commands, on the UI thread where module
+// code expects to be.
+func RunCommand(cmd tyde.Command, args string) (string, error) {
+	var reply string
+	var err error
+	fyne.DoAndWait(func() {
+		reply, err = cmd.Run(strings.TrimSpace(args))
+	})
+
+	if err != nil {
+		return "", fmt.Errorf("%s: %w", cmd.Name, err)
+	}
+	return reply, nil
+}
+
+// Commands lists everything Run understands: the desktop's own commands plus
+// those each loaded module offers.
+func Commands() []tyde.Command {
+	cmds := append([]tyde.Command(nil), builtins...)
+
+	desk := tyde.Instance()
+	if desk == nil {
+		return cmds
+	}
+	for _, m := range desk.Modules() {
+		provider, ok := m.(tyde.CommandModule)
+		if !ok {
+			continue
+		}
+		for _, cmd := range provider.Commands() {
+			if cmd.Run == nil {
+				// Nothing to run means nothing to offer. Caught here, where the
+				// commands are gathered, rather than by every caller.
+				fyne.LogError("Module "+m.Metadata().Name+" describes command "+
+					cmd.Name+" with no action", nil)
+				continue
+			}
+			cmds = append(cmds, cmd)
+		}
+	}
+	return cmds
+}
+
+// builtins are the commands the desktop itself answers.
+var builtins = []tyde.Command{
+	{
+		Name:        "welcome",
+		Description: "Open the FyshOS welcome and first-run setup window",
+		Run: func(string) (string, error) {
+			welcomer, ok := tyde.Instance().(interface{ ShowWelcome() })
+			if !ok {
+				return "", errors.New("this desktop has no welcome window")
+			}
+			welcomer.ShowWelcome()
+			return "Welcome window", nil
+		},
+	},
+	{
+		// The assistant is a window the desktop opens, not something it can ask
+		// the assistant module to describe: an AI that offers itself a command to
+		// open itself is no use to anyone.
+		Name:        "fathom",
+		Description: "Open the Fathom AI assistant chat window",
+		Run: func(string) (string, error) {
+			desk := tyde.Instance()
+			if desk == nil {
+				return "", errors.New("desktop not running")
+			}
+
+			for _, m := range desk.Modules() {
+				if chat, ok := m.(interface{ ShowChat() }); ok {
+					chat.ShowChat()
+					return "Fathom AI", nil
+				}
+			}
+			return "", errors.New("the AI assistant module is not enabled")
+		},
+	},
+	{
+		Name:        "restart",
+		Description: "Restart the desktop, keeping the session and open apps",
+		Run: func(string) (string, error) {
+			if os.Getenv("FYNE_DESK_RUNNER") == "" {
+				return "", errors.New("tyde was not launched with tyde_runner, cannot restart")
+			}
+			os.Exit(5)
+			return "", nil
+		},
+	},
+}
+
 var rpcMeta = tyde.ModuleMetadata{
 	Name:        "Remote Control",
 	NewInstance: newRPC,
@@ -68,7 +181,6 @@ func SocketPath() string {
 
 type rpcModule struct {
 	listener net.Listener
-	commands map[string]func() error
 }
 
 func (r *rpcModule) Metadata() tyde.ModuleMetadata {
@@ -83,19 +195,12 @@ func (r *rpcModule) Destroy() {
 }
 
 // Service is the RPC service exposed over the Unix socket.
-type Service struct {
-	module *rpcModule
-}
+type Service struct{}
 
-// Launch passes the input string through the launch suggestion modules
-// and executes the first match.
+// Launch runs a desktop built-in, or passes the input string through the
+// launch suggestion modules and executes the first match.
 func (s *Service) Launch(input string, reply *string) error {
-	if s.module != nil {
-		if v, ok := s.module.commands[strings.ToLower(input)]; ok {
-			return v()
-		}
-	}
-	title, err := LaunchInput(input)
+	title, err := Run(input)
 	if err != nil {
 		return err
 	}
@@ -103,91 +208,23 @@ func (s *Service) Launch(input string, reply *string) error {
 	return nil
 }
 
-// ListModules returns the names of loaded LaunchSuggestionModules.
-func (s *Service) ListModules(_ string, reply *[]string) error {
-	desk := tyde.Instance()
-	if desk == nil {
+// ListCommands returns every command Launch understands, so a caller can offer
+// them without knowing which modules are loaded.
+func (s *Service) ListCommands(_ string, reply *[]tyde.Command) error {
+	if tyde.Instance() == nil {
 		return errors.New("desktop not running")
 	}
-
-	var names []string
-	for _, m := range desk.Modules() {
-		if _, ok := m.(tyde.LaunchSuggestionModule); !ok {
-			continue
-		}
-		name := m.Metadata().Name
-		name = strings.TrimPrefix(name, "Launcher: ")
-		names = append(names, name)
-	}
-	*reply = names
+	*reply = Commands()
 	return nil
-}
-
-// moduleAction runs a command that an optional module provides.
-// The loaded modules are asked in turn and the first one offering the
-// action performs it - or the user is told which module they need to enable.
-func moduleAction(what string, find func(tyde.Module) func()) error {
-	desk := tyde.Instance()
-	if desk == nil {
-		return errors.New("desktop not running")
-	}
-
-	for _, m := range desk.Modules() {
-		if action := find(m); action != nil {
-			fyne.Do(action)
-			return nil
-		}
-	}
-	return fmt.Errorf("the %s module is not enabled", what)
-}
-
-// showAI opens the AI assistant's chat window with no prompt set - what the
-// "Fathom" launcher does.
-func showAI() error {
-	return moduleAction("AI assistant", func(m tyde.Module) func() {
-		if chat, ok := m.(interface{ ShowChat() }); ok {
-			return chat.ShowChat
-		}
-		return nil
-	})
-}
-
-// showEmoji opens the emoji picker - what the "Emoji Picker" launcher does.
-func showEmoji() error {
-	return moduleAction("emoji picker", func(m tyde.Module) func() {
-		if picker, ok := m.(interface{ ShowPicker() }); ok {
-			return picker.ShowPicker
-		}
-		return nil
-	})
 }
 
 func newRPC() tyde.Module {
 	sock := SocketPath()
 	os.Remove(sock) // clean up stale socket
 
-	mod := &rpcModule{commands: map[string]func() error{
-		"welcome": func() error {
-			if welcomer, ok := tyde.Instance().(interface{ ShowWelcome() }); ok {
-				fyne.Do(welcomer.ShowWelcome)
-			} else {
-				return errors.New("desktop does not support welcome")
-			}
-			return nil
-		},
-		"fathom": showAI,
-		"emoji":  showEmoji,
-		"restart": func() error {
-			if os.Getenv("FYNE_DESK_RUNNER") != "" {
-				os.Exit(5)
-				return nil
-			} else {
-				return errors.New("tyde was not launched with tyde_runner, cannot restart")
-			}
-		},
-	}}
+	mod := &rpcModule{}
 	srv := rpc.NewServer()
-	srv.Register(&Service{module: mod})
+	srv.Register(&Service{})
 
 	ln, err := net.Listen("unix", sock)
 	if err != nil {

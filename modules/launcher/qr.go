@@ -10,6 +10,7 @@ import (
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
 	"fyne.io/fyne/v2/theme"
+	"fyshos.com/tyde/internal/modhelper"
 
 	"github.com/FyshOS/fyqr/pkg/qrgen"
 
@@ -38,6 +39,27 @@ func (q *qr) Destroy() {
 
 func (q *qr) Metadata() tyde.ModuleMetadata {
 	return qrMeta
+}
+
+// Commands offers the QR code display, under the first of its aliases.
+func (q *qr) Commands() []tyde.Command {
+	c := tyde.Command{
+		Name:        qrAliases[0],
+		Description: "Show a scannable QR code for a URL or piece of text",
+		Args:        "the URL or text to encode",
+		Examples:    []string{"qr https://fyshos.com"},
+	}
+
+	modhelper.AnswerWith(&c, q.item)
+	return []tyde.Command{c}
+}
+
+func (q *qr) item(content string) tyde.LaunchSuggestion {
+	content = strings.TrimSpace(content)
+	if content == "" {
+		return nil
+	}
+	return &qrItem{content: content}
 }
 
 func (q *qr) LaunchSuggestions(input string) []tyde.LaunchSuggestion {
