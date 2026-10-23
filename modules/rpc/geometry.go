@@ -58,15 +58,13 @@ func moveWindow(args string) (string, error) {
 	screen, scale := screenOf(win)
 	cx, cy, cw, ch := tyde.Instance().ContentBoundsPixels(screen)
 	x, y := screen.X+int(cx), screen.Y+int(cy)+desktopOffset(win)
-	size := win.Size()
-	w, h := int(size.Width*scale), int(size.Height*scale)
 
 	switch where.kind {
 	case placeNamed:
 		frac := places[where.name]
 		x += int(float32(cw) * frac[0])
 		y += int(float32(ch) * frac[1])
-		w, h = int(float32(cw)*frac[2]), int(float32(ch)*frac[3])
+		w, h := int(float32(cw)*frac[2]), int(float32(ch)*frac[3])
 		win.Resize(fyne.NewSize(float32(w)/scale, float32(h)/scale))
 	case placeAt:
 		x, y = screen.X+where.x, screen.Y+where.y+desktopOffset(win)
