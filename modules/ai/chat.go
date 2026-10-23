@@ -218,7 +218,8 @@ func (c *chatUI) converse(ctx context.Context, llm llms.Model, hist []llms.Messa
 // generate asks the model for one reply, streaming it into the given row as it arrives.
 // It returns the complete text alongside the raw response, which carries any tool call or error.
 func (c *chatUI) generate(ctx context.Context, llm llms.Model, hist []llms.MessageContent,
-	tools []llms.Tool, reply *pendingReply) (string, *llms.ContentResponse, error) {
+	tools []llms.Tool, reply *pendingReply,
+) (string, *llms.ContentResponse, error) {
 	var sb strings.Builder
 
 	opts := []llms.CallOption{
@@ -323,7 +324,8 @@ func (c *chatUI) addPendingReply() *pendingReply {
 // finishReply renders a completed turn into its row - the model's words or error.
 // A turn that only asked to run a command is empty so comes out of the transcript.
 func (c *chatUI) finishReply(reply *pendingReply, final string, resp *llms.ContentResponse,
-	genErr error, called bool) {
+	genErr error, called bool,
+) {
 	truncated := genErr == nil && resp != nil && len(resp.Choices) > 0 &&
 		resp.Choices[0].StopReason == "max_tokens"
 
